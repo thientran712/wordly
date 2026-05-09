@@ -5,95 +5,166 @@ import Header from "@/components/Header";
 import WordCard from "@/components/WordCard";
 import StatsBar from "@/components/StatsBar";
 import SettingsModal from "@/components/SettingsModal";
-import { vocabulary, greetings } from "@/data/vocabulary";
-
-const STORAGE_KEYS = {
-  settings: 'wordly_settings',
-  learned: 'wordly_learned',
-  bookmarks: 'wordly_bookmarks',
-  index: 'wordly_index'
-};
+import { greetings } from "@/data/vocabulary";
+import { createClient } from "@/lib/supabase-client";
 
 const defaultSettings = {
-  email: '',
-  name: '',
-  time: '07:00',
-  frequency: 'daily',
-  customDays: [],
-  level: 'intermediate',
-  enabled: false
+  email: '', name: '', time: '07:00:00',
+  frequency: 'daily', customDays: [],
+  level: 'intermediate', enabled: false
 };
 
+function transformWord(dbWord) {
+  return {
+    id: dbWord.id,
+    word: dbWord.word, phonetic: dbWord.phonetic, pos: dbWord.pos,
+    defEn: dbWord.def_en, defVi: dbWord.def_vi,
+    exEn: dbWord.ex_en, exVi: dbWord.ex_vi,
+    syn: dbWord.synonyms || []
+  };
+}
+
 export default function Home() {
+  const [vocabulary, setVocabulary] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [learnedWords, setLearnedWords] = useState(new Set());
-  const [bookmarkedWords, setBookmarkedWords] = useState(new Set());
+  const [learnedWordIds, setLearnedWordIds] = useState(new Set());
+  const [bookmarkedWordIds, setBookmarkedWordIds] = useState(new Set());
   const [settings, setSettings] = useState(defaultSettings);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [greetingEmoji, setGreetingEmoji] = useState('👋');
   const [toast, setToast] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
-  // Load from localStorage on mount
+  // Initial fetch: user info, words, progress, email prefs
   useEffect(() => {
-    try {
-      const s = localStorage.getItem(STORAGE_KEYS.settings);
-      if (s) setSettings(JSON.parse(s));
-      
-      const l = localStorage.getItem(STORAGE_KEYS.learned);
-      if (l) setLearnedWords(new Set(JSON.parse(l)));
-      
-      const b = localStorage.getItem(STORAGE_KEYS.bookmarks);
-      if (b) setBookmarkedWords(new Set(JSON.parse(b)));
-      
-      const i = localStorage.getItem(STORAGE_KEYS.index);
-      if (i) {
-        setCurrentIndex(parseInt(JSON.parse(i)));
-      } else {
-        // Set initial word based on day of year
-        const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-        setCurrentIndex(dayOfYear % vocabulary.length);
+    async function init() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          setUserEmail(user.email || "");
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("name")
+            .eq("id", user.id)
+            .single();
+          setUserName(profile?.name || user.email?.split("@")[0] || "");
+        }
+
+        // Fetch all data in parallel
+        const [wordsRes, progressRes, prefsRes] = await Promise.all([
+          fetch("/api/words"),
+          fetch("/api/progress"),
+          fetch("/api/email-preferences"),
+        ]);
+
+        const wordsData = await wordsRes.json();
+        const progressData = await progressRes.json();
+        const prefsData = await prefsRes.json();
+
+        if (wordsData.words) {
+          setVocabulary(wordsData.words.map(transformWord));
+        }
+
+        if (progressData.progress) {
+          const learnedIds = new Set();
+          const bookmarkIds = new Set();
+          progressData.progress.forEach(p => {
+            if (p.review_count > 0) learnedIds.add(p.word_id);
+            if (p.is_bookmarked) bookmarkIds.add(p.word_id);
+          });
+          setLearnedWordIds(learnedIds);
+          setBookmarkedWordIds(bookmarkIds);
+        }
+
+        if (prefsData.preferences) {
+          const p = prefsData.preferences;
+          setSettings({
+            email: user?.email || '',
+            name: '',
+            time: p.send_time || '07:00:00',
+            frequency: p.frequency || 'daily',
+            customDays: p.custom_days || [],
+            level: 'intermediate',
+            enabled: p.enabled || false,
+          });
+        }
+      } catch (e) {
+        console.error("Init error:", e);
+      } finally {
+        setIsLoading(false);
+        setMounted(true);
       }
-    } catch (e) {
-      console.error('Load error:', e);
     }
-    
+    init();
     setGreetingEmoji(greetings[Math.floor(Math.random() * greetings.length)]);
-    setMounted(true);
   }, []);
 
-  // Persist learned words & current word
+  // Set initial word position based on day of year
   useEffect(() => {
-    if (!mounted) return;
-    try {
-      const updated = new Set(learnedWords);
-      updated.add(currentIndex);
-      setLearnedWords(updated);
-      localStorage.setItem(STORAGE_KEYS.learned, JSON.stringify([...updated]));
-      localStorage.setItem(STORAGE_KEYS.index, JSON.stringify(currentIndex));
-    } catch (e) {}
-  }, [currentIndex, mounted]);
+    if (vocabulary.length > 0) {
+      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+      setCurrentIndex(dayOfYear % vocabulary.length);
+    }
+  }, [vocabulary]);
+
+  // Mark current word as learned (in DB)
+  useEffect(() => {
+    if (!mounted || vocabulary.length === 0) return;
+    const word = vocabulary[currentIndex];
+    if (!word) return;
+    
+    if (!learnedWordIds.has(word.id)) {
+      fetch("/api/progress/mark-learned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word_id: word.id }),
+      }).then(() => {
+        setLearnedWordIds(prev => new Set(prev).add(word.id));
+      }).catch(e => console.error("Mark learned error:", e));
+    }
+  }, [currentIndex, mounted, vocabulary]);
 
   const nextWord = () => {
+    if (vocabulary.length === 0) return;
     setCurrentIndex((currentIndex + 1) % vocabulary.length);
   };
 
   const prevWord = () => {
+    if (vocabulary.length === 0) return;
     setCurrentIndex((currentIndex - 1 + vocabulary.length) % vocabulary.length);
   };
 
-  const toggleBookmark = () => {
-    const updated = new Set(bookmarkedWords);
-    if (updated.has(currentIndex)) {
-      updated.delete(currentIndex);
-    } else {
-      updated.add(currentIndex);
+  const toggleBookmark = async () => {
+    const word = vocabulary[currentIndex];
+    if (!word) return;
+    
+    const newBookmarkState = !bookmarkedWordIds.has(word.id);
+    const updated = new Set(bookmarkedWordIds);
+    if (newBookmarkState) {
+      updated.add(word.id);
       showToast('💖 Đã thêm vào yêu thích!');
+    } else {
+      updated.delete(word.id);
     }
-    setBookmarkedWords(updated);
+    setBookmarkedWordIds(updated);
+
     try {
-      localStorage.setItem(STORAGE_KEYS.bookmarks, JSON.stringify([...updated]));
-    } catch (e) {}
+      await fetch("/api/progress/bookmark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          word_id: word.id, 
+          is_bookmarked: newBookmarkState 
+        }),
+      });
+    } catch (e) {
+      console.error("Bookmark error:", e);
+    }
   };
 
   const markKnown = () => {
@@ -118,14 +189,27 @@ export default function Home() {
     }
   };
 
-  const handleSaveSettings = (newSettings) => {
+  const handleSaveSettings = async (newSettings) => {
     setSettings(newSettings);
+    
     try {
-      localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(newSettings));
-    } catch (e) {}
-    showToast('✓ Đã lưu cài đặt!');
-    triggerConfetti();
-    setIsModalOpen(false);
+      await fetch("/api/email-preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          enabled: newSettings.enabled,
+          send_time: newSettings.time,
+          frequency: newSettings.frequency,
+          custom_days: newSettings.customDays,
+        }),
+      });
+      showToast('✓ Đã lưu cài đặt!');
+      triggerConfetti();
+      setIsModalOpen(false);
+    } catch (e) {
+      console.error("Save settings error:", e);
+      showToast('⚠️ Lỗi khi lưu');
+    }
   };
 
   const showToast = (msg) => {
@@ -133,7 +217,6 @@ export default function Home() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Keyboard navigation
   useEffect(() => {
     const handler = (e) => {
       if (isModalOpen) return;
@@ -147,14 +230,34 @@ export default function Home() {
   const getDateString = () => {
     if (!mounted) return '';
     return new Date().toLocaleDateString('vi-VN', { 
-      weekday: 'long', 
-      day: 'numeric', 
-      month: 'long' 
+      weekday: 'long', day: 'numeric', month: 'long' 
     });
   };
 
+  if (isLoading || vocabulary.length === 0) {
+    return (
+      <>
+        <div className="bg-blobs">
+          <div className="blob blob-1"></div>
+          <div className="blob blob-2"></div>
+          <div className="blob blob-3"></div>
+          <div className="blob blob-4"></div>
+        </div>
+        <main className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl mb-4 animate-bounce-soft">🌈</div>
+            <p className="text-xl font-semibold gradient-text-purple-pink">
+              Đang tải từ vựng...
+            </p>
+          </div>
+        </main>
+      </>
+    );
+  }
+
   const word = vocabulary[currentIndex];
   const progressPercent = ((currentIndex + 1) / vocabulary.length) * 100;
+  const isCurrentBookmarked = word ? bookmarkedWordIds.has(word.id) : false;
 
   return (
     <>
@@ -167,15 +270,15 @@ export default function Home() {
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
         <Header 
-          streak={Math.min(learnedWords.size, 365)}
+          streak={Math.min(learnedWordIds.size, 365)}
+          userName={userName}
           onOpenSettings={() => setIsModalOpen(true)}
         />
 
-        {/* Greeting */}
         <div className="mb-6 text-center">
           <div className="text-5xl inline-block animate-bounce-soft">{greetingEmoji}</div>
           <h2 className="font-serif text-3xl sm:text-4xl font-bold mt-2 mb-1 tracking-tight">
-            Chào bạn, sẵn sàng học{" "}
+            {userName ? `Chào ${userName}, ` : "Chào bạn, "}sẵn sàng học{" "}
             <em className="italic" style={{ background: 'linear-gradient(135deg, #FF5C8A, #FFB627)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               từ mới
             </em>
@@ -184,7 +287,6 @@ export default function Home() {
           <p className="text-[--ink-soft] text-base">{getDateString()}</p>
         </div>
 
-        {/* Progress Pill */}
         <div className="bg-white rounded-full px-4 sm:px-6 py-3.5 flex items-center gap-3 sm:gap-4 mx-auto w-fit shadow-[0_8px_24px_rgba(108,92,231,0.08)] border-2 border-[--line] mb-8">
           <span className="text-lg">📚</span>
           <div className="w-32 sm:w-52 h-2 bg-[--whisper] rounded-full overflow-hidden relative shimmer-effect">
@@ -205,7 +307,7 @@ export default function Home() {
           word={word}
           currentIndex={currentIndex}
           total={vocabulary.length}
-          isBookmarked={bookmarkedWords.has(currentIndex)}
+          isBookmarked={isCurrentBookmarked}
           onBookmark={toggleBookmark}
           onPrev={prevWord}
           onNext={nextWord}
@@ -213,8 +315,8 @@ export default function Home() {
         />
 
         <StatsBar 
-          streak={Math.min(learnedWords.size, 365)}
-          learned={learnedWords.size}
+          streak={Math.min(learnedWordIds.size, 365)}
+          learned={learnedWordIds.size}
           todayNum={currentIndex + 1}
           emailEnabled={settings.enabled}
         />
@@ -227,7 +329,6 @@ export default function Home() {
         onSave={handleSaveSettings}
       />
 
-      {/* Toast */}
       {toast && (
         <div 
           className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white px-6 py-3.5 rounded-full font-semibold text-sm z-[200] shadow-[0_20px_48px_rgba(45,27,78,0.12)] border-2 border-[--mint] text-[--grass] flex items-center gap-2 animate-fade-in"
