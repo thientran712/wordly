@@ -17,9 +17,12 @@ const defaultSettings = {
 function transformWord(dbWord) {
   return {
     id: dbWord.id,
-    word: dbWord.word, phonetic: dbWord.phonetic, pos: dbWord.pos,
-    defEn: dbWord.def_en, defVi: dbWord.def_vi,
-    exEn: dbWord.ex_en, exVi: dbWord.ex_vi,
+    word: dbWord.word,
+    phonetic: dbWord.phonetic,
+    pos: dbWord.pos,
+    level: dbWord.level,
+    defEn: dbWord.def_en,
+    exEn: dbWord.ex_en,
     syn: dbWord.synonyms || []
   };
 }
@@ -36,9 +39,7 @@ export default function Home() {
   const [toast, setToast] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
 
-  // Initial fetch: user info, words, progress, email prefs
   useEffect(() => {
     async function init() {
       try {
@@ -46,7 +47,6 @@ export default function Home() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
-          setUserEmail(user.email || "");
           const { data: profile } = await supabase
             .from("profiles")
             .select("name")
@@ -55,7 +55,6 @@ export default function Home() {
           setUserName(profile?.name || user.email?.split("@")[0] || "");
         }
 
-        // Fetch all data in parallel
         const [wordsRes, progressRes, prefsRes] = await Promise.all([
           fetch("/api/words"),
           fetch("/api/progress"),
@@ -104,7 +103,6 @@ export default function Home() {
     setGreetingEmoji(greetings[Math.floor(Math.random() * greetings.length)]);
   }, []);
 
-  // Set initial word position based on day of year
   useEffect(() => {
     if (vocabulary.length > 0) {
       const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
@@ -112,7 +110,6 @@ export default function Home() {
     }
   }, [vocabulary]);
 
-  // Mark current word as learned (in DB)
   useEffect(() => {
     if (!mounted || vocabulary.length === 0) return;
     const word = vocabulary[currentIndex];
@@ -147,7 +144,7 @@ export default function Home() {
     const updated = new Set(bookmarkedWordIds);
     if (newBookmarkState) {
       updated.add(word.id);
-      showToast('💖 Đã thêm vào yêu thích!');
+      showToast('💖 Added to favorites!');
     } else {
       updated.delete(word.id);
     }
@@ -168,7 +165,7 @@ export default function Home() {
   };
 
   const markKnown = () => {
-    showToast('✓ Tuyệt vời! Tiếp tục nào!');
+    showToast('✓ Great job! Keep going!');
     triggerConfetti();
     setTimeout(nextWord, 600);
   };
@@ -203,12 +200,12 @@ export default function Home() {
           custom_days: newSettings.customDays,
         }),
       });
-      showToast('✓ Đã lưu cài đặt!');
+      showToast('✓ Settings saved!');
       triggerConfetti();
       setIsModalOpen(false);
     } catch (e) {
       console.error("Save settings error:", e);
-      showToast('⚠️ Lỗi khi lưu');
+      showToast('⚠️ Save error');
     }
   };
 
@@ -247,7 +244,7 @@ export default function Home() {
           <div className="text-center">
             <div className="text-6xl mb-4 animate-bounce-soft">🌈</div>
             <p className="text-xl font-semibold gradient-text-purple-pink">
-              Đang tải từ vựng...
+              Loading vocabulary...
             </p>
           </div>
         </main>
@@ -278,11 +275,11 @@ export default function Home() {
         <div className="mb-6 text-center">
           <div className="text-5xl inline-block animate-bounce-soft">{greetingEmoji}</div>
           <h2 className="font-serif text-3xl sm:text-4xl font-bold mt-2 mb-1 tracking-tight">
-            {userName ? `Chào ${userName}, ` : "Chào bạn, "}sẵn sàng học{" "}
+            {userName ? `Hi ${userName}, ` : "Hi there, "}ready to learn{" "}
             <em className="italic" style={{ background: 'linear-gradient(135deg, #FF5C8A, #FFB627)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              từ mới
+              new words
             </em>
-            {" "}chưa?
+            ?
           </h2>
           <p className="text-[--ink-soft] text-base">{getDateString()}</p>
         </div>
@@ -299,7 +296,7 @@ export default function Home() {
             ></div>
           </div>
           <div className="font-bold text-xs sm:text-sm whitespace-nowrap">
-            <span className="text-[--grass]">{currentIndex + 1}</span> / {vocabulary.length} từ
+            <span className="text-[--grass]">{currentIndex + 1}</span> / {vocabulary.length} words
           </div>
         </div>
 

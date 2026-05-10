@@ -30,6 +30,12 @@ export async function middleware(request) {
   const path = request.nextUrl.pathname;
   const isAuthPage = path === "/login" || path === "/signup";
   const isPublicApi = path.startsWith("/api/words");
+  const isCronApi = path.startsWith("/api/cron");
+
+  // Cron endpoints không cần auth (có CRON_SECRET riêng)
+  if (isCronApi) {
+    return response;
+  }
 
   // Nếu chưa login và đang ở trang cần auth → redirect login
   if (!user && !isAuthPage && !isPublicApi) {

@@ -35,10 +35,10 @@ export async function PUT(request) {
     .from("email_preferences")
     .upsert({
       user_id: user.id,
-      enabled: body.enabled,
+      enabled: true,  // Auto-enable khi user save settings
       send_time: body.send_time,
       frequency: body.frequency,
-      custom_days: body.custom_days,
+      custom_days: body.custom_days || [],
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" })
     .select();
