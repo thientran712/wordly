@@ -28,41 +28,47 @@ export async function middleware(request) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isAuthPage = path === "/login" || path === "/signup";
+  const isAuthPage = path === "/login" || path === "/signup" || 
+                     path === "/forgot-password" || path === "/reset-password";
+  const isApi = path.startsWith("/api/");
   const isPublicApi = path.startsWith("/api/words");
   const isCronApi = path.startsWith("/api/cron");
+  const isAuthCallback = path.startsWith("/auth/callback");
   const isOnboardingPage = path === "/onboarding";
 
-  // Cron endpoints không cần auth
-  if (isCronApi) {
+  // Cron + auth callback không cần check
+  if (isCronApi || isAuthCallback) {
     return response;
   }
 
-  // Chưa login + trang cần auth → login
-  if (!user && !isAuthPage && !isPublicApi) {
+  // Chưa login + page cần auth → redirect login
+  if (!user && !isAuthPage && !isPublicApi && !isApi) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // API routes: nếu chưa login, trả 401 (không redirect)
+  if (!user && isApi && !isPublicApi) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   // Đã login + trang login/signup → home
-  if (user && isAuthPage) {
+  if (user && (path === "/login" || path === "/signup" || path === "/forgot-password")) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // User đã login → check onboarding status
-  if (user && !isAuthPage && !isPublicApi && !isOnboardingPage) {
+  // CHỈ check onboarding cho PAGE routes, KHÔNG cho API routes
+  if (user && !isAuthPage && !isPublicApi && !isApi && !isOnboardingPage) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarded_at")
       .eq("id", user.id)
       .single();
     
-    // Nếu chưa onboard → redirect onboarding
     if (!profile?.onboarded_at) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
   }
   
-  // User đã onboard mà vào /onboarding → redirect home
   if (user && isOnboardingPage) {
     const { data: profile } = await supabase
       .from("profiles")

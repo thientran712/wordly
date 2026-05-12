@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, LogOut, User, BarChart3 } from "lucide-react";
+import { Settings, LogOut, User, BarChart3, UserCog } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
 export default function Header({ streak, userName, onOpenSettings }) {
@@ -54,7 +54,7 @@ export default function Header({ streak, userName, onOpenSettings }) {
         <button
           onClick={onOpenSettings}
           className="w-11 h-11 rounded-2xl bg-white border-2 border-[--line] cursor-pointer flex items-center justify-center transition-all duration-300 hover:bg-[--lavender] hover:border-[--electric] hover:rotate-45 text-[--ink-soft]"
-          title="Settings"
+          title="Email Settings"
         >
           <Settings size={20} />
         </button>
@@ -76,7 +76,7 @@ export default function Header({ streak, userName, onOpenSettings }) {
                 onClick={() => setIsMenuOpen(false)}
               />
               <div 
-                className="absolute right-0 top-14 z-50 bg-white rounded-2xl border-2 border-[--line] py-2 min-w-[200px] animate-fade-in"
+                className="absolute right-0 top-14 z-50 bg-white rounded-2xl border-2 border-[--line] py-2 min-w-[220px] animate-fade-in"
                 style={{ boxShadow: '0 12px 32px rgba(45, 27, 78, 0.15)' }}
               >
                 {userName && (
@@ -85,6 +85,27 @@ export default function Header({ streak, userName, onOpenSettings }) {
                     <p className="font-bold text-sm truncate">{userName}</p>
                   </div>
                 )}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    router.push("/profile");
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                >
+                  <UserCog size={16} />
+                  Edit Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    router.push("/words");
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                >
+                  <BarChart3 size={16} />
+                  Browse Words
+                </button>
+                <div className="h-px bg-[--line] my-1"></div>
                 <button
                   onClick={handleLogout}
                   className="w-full px-4 py-3 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--hot-pink] transition-colors flex items-center gap-2"
