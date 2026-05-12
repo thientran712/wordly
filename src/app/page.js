@@ -14,24 +14,12 @@ const defaultSettings = {
   level: 'intermediate', enabled: false
 };
 
-function transformWord(dbWord) {
-  return {
-    id: dbWord.id,
-    word: dbWord.word,
-    phonetic: dbWord.phonetic,
-    pos: dbWord.pos,
-    level: dbWord.level,
-    defEn: dbWord.def_en,
-    exEn: dbWord.ex_en,
-    syn: dbWord.synonyms || []
-  };
-}
-
 export default function Home() {
-  const [vocabulary, setVocabulary] = useState([]);
+  const [currentWord, setCurrentWord] = useState(null);
+  const [currentProgress, setCurrentProgress] = useState(null);
+  const [currentSource, setCurrentSource] = useState("new");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [learnedWordIds, setLearnedWordIds] = useState(new Set());
+  const [learnedCount, setLearnedCount] = useState(0);
   const [bookmarkedWordIds, setBookmarkedWordIds] = useState(new Set());
   const [settings, setSettings] = useState(defaultSettings);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,7 +27,10 @@ export default function Home() {
   const [toast, setToast] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("");
+  const [streak, setStreak] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0); // Today's reviews
 
+  // Initial fetch
   useEffect(() => {
     async function init() {
       try {
@@ -49,37 +40,32 @@ export default function Home() {
         if (user) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("name")
+            .select("name, current_streak")
             .eq("id", user.id)
             .single();
           setUserName(profile?.name || user.email?.split("@")[0] || "");
+          setStreak(profile?.current_streak || 0);
         }
 
-        const [wordsRes, progressRes, prefsRes] = await Promise.all([
-          fetch("/api/words"),
-          fetch("/api/progress"),
-          fetch("/api/email-preferences"),
-        ]);
-
-        const wordsData = await wordsRes.json();
+        // Fetch progress data
+        const progressRes = await fetch("/api/progress");
         const progressData = await progressRes.json();
-        const prefsData = await prefsRes.json();
-
-        if (wordsData.words) {
-          setVocabulary(wordsData.words.map(transformWord));
-        }
-
+        
         if (progressData.progress) {
-          const learnedIds = new Set();
           const bookmarkIds = new Set();
+          let learned = 0;
           progressData.progress.forEach(p => {
-            if (p.review_count > 0) learnedIds.add(p.word_id);
             if (p.is_bookmarked) bookmarkIds.add(p.word_id);
+            if (p.state !== 'new') learned++;
           });
-          setLearnedWordIds(learnedIds);
           setBookmarkedWordIds(bookmarkIds);
+          setLearnedCount(learned);
         }
 
+        // Fetch email preferences
+        const prefsRes = await fetch("/api/email-preferences");
+        const prefsData = await prefsRes.json();
+        
         if (prefsData.preferences) {
           const p = prefsData.preferences;
           setSettings({
@@ -92,6 +78,10 @@ export default function Home() {
             enabled: p.enabled || false,
           });
         }
+
+        // Fetch first word
+        await fetchNextWord();
+        
       } catch (e) {
         console.error("Init error:", e);
       } finally {
@@ -103,50 +93,80 @@ export default function Home() {
     setGreetingEmoji(greetings[Math.floor(Math.random() * greetings.length)]);
   }, []);
 
-  useEffect(() => {
-    if (vocabulary.length > 0) {
-      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-      setCurrentIndex(dayOfYear % vocabulary.length);
+  // Fetch next word using FSRS smart selection
+  const fetchNextWord = async (excludeId = null) => {
+    try {
+      const url = excludeId 
+        ? `/api/words/next?exclude=${excludeId}`
+        : "/api/words/next";
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.word) {
+        setCurrentWord(data.word);
+        setCurrentProgress(data.progress);
+        setCurrentSource(data.source);
+      }
+    } catch (e) {
+      console.error("Fetch next word error:", e);
     }
-  }, [vocabulary]);
-
-  useEffect(() => {
-    if (!mounted || vocabulary.length === 0) return;
-    const word = vocabulary[currentIndex];
-    if (!word) return;
-    
-    if (!learnedWordIds.has(word.id)) {
-      fetch("/api/progress/mark-learned", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word_id: word.id }),
-      }).then(() => {
-        setLearnedWordIds(prev => new Set(prev).add(word.id));
-      }).catch(e => console.error("Mark learned error:", e));
-    }
-  }, [currentIndex, mounted, vocabulary]);
-
-  const nextWord = () => {
-    if (vocabulary.length === 0) return;
-    setCurrentIndex((currentIndex + 1) % vocabulary.length);
   };
 
-  const prevWord = () => {
-    if (vocabulary.length === 0) return;
-    setCurrentIndex((currentIndex - 1 + vocabulary.length) % vocabulary.length);
+  // Handle rating
+  const handleRate = async (rating) => {
+    if (!currentWord) return;
+    
+    try {
+      const res = await fetch("/api/progress/rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          word_id: currentWord.id, 
+          rating 
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        // Show toast với feedback
+        const messages = {
+          1: "🔄 We'll review this soon",
+          2: "💪 Keep practicing!",
+          3: `✓ See you in ${data.progress.next_review_in_days || 3} days`,
+          4: `🚀 Mastered! Next review in ${data.progress.next_review_in_days || 7} days`,
+        };
+        showToast(messages[rating]);
+        
+        // Update learned count
+        if (rating >= 3) {
+          setLearnedCount(prev => prev + 1);
+          triggerConfetti();
+        }
+        
+        setReviewCount(prev => prev + 1);
+        
+        // Fetch next word
+        setTimeout(() => {
+          fetchNextWord(currentWord.id);
+        }, 800);
+      }
+    } catch (e) {
+      console.error("Rate error:", e);
+      showToast('⚠️ Error saving rating');
+    }
   };
 
   const toggleBookmark = async () => {
-    const word = vocabulary[currentIndex];
-    if (!word) return;
+    if (!currentWord) return;
     
-    const newBookmarkState = !bookmarkedWordIds.has(word.id);
+    const newBookmarkState = !bookmarkedWordIds.has(currentWord.id);
     const updated = new Set(bookmarkedWordIds);
     if (newBookmarkState) {
-      updated.add(word.id);
+      updated.add(currentWord.id);
       showToast('💖 Added to favorites!');
     } else {
-      updated.delete(word.id);
+      updated.delete(currentWord.id);
     }
     setBookmarkedWordIds(updated);
 
@@ -155,19 +175,13 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          word_id: word.id, 
+          word_id: currentWord.id, 
           is_bookmarked: newBookmarkState 
         }),
       });
     } catch (e) {
       console.error("Bookmark error:", e);
     }
-  };
-
-  const markKnown = () => {
-    showToast('✓ Great job! Keep going!');
-    triggerConfetti();
-    setTimeout(nextWord, 600);
   };
 
   const triggerConfetti = () => {
@@ -214,11 +228,15 @@ export default function Home() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // Keyboard shortcuts for rating
   useEffect(() => {
     const handler = (e) => {
       if (isModalOpen) return;
-      if (e.key === 'ArrowRight') nextWord();
-      if (e.key === 'ArrowLeft') prevWord();
+      const ratingMap = { '1': 1, '2': 2, '3': 3, '4': 4 };
+      if (ratingMap[e.key] && currentWord) {
+        e.preventDefault();
+        handleRate(ratingMap[e.key]);
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -231,7 +249,7 @@ export default function Home() {
     });
   };
 
-  if (isLoading || vocabulary.length === 0) {
+  if (isLoading || !currentWord) {
     return (
       <>
         <div className="bg-blobs">
@@ -244,7 +262,7 @@ export default function Home() {
           <div className="text-center">
             <div className="text-6xl mb-4 animate-bounce-soft">🌈</div>
             <p className="text-xl font-semibold gradient-text-purple-pink">
-              Loading vocabulary...
+              Loading your next word...
             </p>
           </div>
         </main>
@@ -252,9 +270,7 @@ export default function Home() {
     );
   }
 
-  const word = vocabulary[currentIndex];
-  const progressPercent = ((currentIndex + 1) / vocabulary.length) * 100;
-  const isCurrentBookmarked = word ? bookmarkedWordIds.has(word.id) : false;
+  const isCurrentBookmarked = bookmarkedWordIds.has(currentWord.id);
 
   return (
     <>
@@ -267,7 +283,7 @@ export default function Home() {
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
         <Header 
-          streak={Math.min(learnedWordIds.size, 365)}
+          streak={streak}
           userName={userName}
           onOpenSettings={() => setIsModalOpen(true)}
         />
@@ -286,35 +302,29 @@ export default function Home() {
 
         <div className="bg-white rounded-full px-4 sm:px-6 py-3.5 flex items-center gap-3 sm:gap-4 mx-auto w-fit shadow-[0_8px_24px_rgba(108,92,231,0.08)] border-2 border-[--line] mb-8">
           <span className="text-lg">📚</span>
-          <div className="w-32 sm:w-52 h-2 bg-[--whisper] rounded-full overflow-hidden relative shimmer-effect">
-            <div 
-              className="h-full rounded-full transition-all duration-500"
-              style={{ 
-                width: `${progressPercent}%`,
-                background: 'linear-gradient(90deg, #B8F3D2, #00B4D8)'
-              }}
-            ></div>
-          </div>
           <div className="font-bold text-xs sm:text-sm whitespace-nowrap">
-            <span className="text-[--grass]">{currentIndex + 1}</span> / {vocabulary.length} words
+            <span className="text-[--grass]">{reviewCount}</span> reviewed today
+          </div>
+          <span className="text-[--line]">·</span>
+          <div className="font-bold text-xs sm:text-sm whitespace-nowrap">
+            <span className="text-[--electric]">{learnedCount}</span> learned total
           </div>
         </div>
 
         <WordCard 
-          word={word}
-          currentIndex={currentIndex}
-          total={vocabulary.length}
+          word={currentWord}
+          progress={currentProgress}
+          source={currentSource}
+          currentIndex={reviewCount}
           isBookmarked={isCurrentBookmarked}
           onBookmark={toggleBookmark}
-          onPrev={prevWord}
-          onNext={nextWord}
-          onKnown={markKnown}
+          onRate={handleRate}
         />
 
         <StatsBar 
-          streak={Math.min(learnedWordIds.size, 365)}
-          learned={learnedWordIds.size}
-          todayNum={currentIndex + 1}
+          streak={streak}
+          learned={learnedCount}
+          todayNum={reviewCount}
           emailEnabled={settings.enabled}
         />
       </main>

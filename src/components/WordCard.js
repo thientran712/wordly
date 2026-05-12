@@ -1,10 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Volume2, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Volume2, X, Frown, Smile, Sparkles } from "lucide-react";
 
-export default function WordCard({ word, currentIndex, total, isBookmarked, onBookmark, onPrev, onNext, onKnown }) {
+export default function WordCard({ 
+  word, 
+  currentIndex, 
+  total, 
+  isBookmarked, 
+  onBookmark, 
+  onRate,
+  progress, // FSRS progress (nullable)
+  source,   // 'review' | 'new' | 'fallback'
+}) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isRating, setIsRating] = useState(false);
 
   const speakWord = () => {
     if ('speechSynthesis' in window) {
@@ -16,6 +26,23 @@ export default function WordCard({ word, currentIndex, total, isBookmarked, onBo
       speechSynthesis.speak(utterance);
     }
   };
+
+  const handleRate = async (rating) => {
+    if (isRating) return;
+    setIsRating(true);
+    try {
+      await onRate(rating);
+    } finally {
+      setTimeout(() => setIsRating(false), 500);
+    }
+  };
+
+  // Badge text based on source
+  const badgeText = source === 'review' 
+    ? `🔄 Review · ${formatStability(progress?.stability)}`
+    : source === 'new'
+    ? '✨ New word'
+    : `📚 Day ${currentIndex + 1}`;
 
   return (
     <div 
@@ -32,10 +59,14 @@ export default function WordCard({ word, currentIndex, total, isBookmarked, onBo
         <div className="flex justify-between items-center mb-6">
           <div 
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs sm:text-sm"
-            style={{ background: 'linear-gradient(135deg, #DCC9FF, #FFC1D8)' }}
+            style={{ 
+              background: source === 'review' 
+                ? 'linear-gradient(135deg, #FFE9A8, #FFD0E2)' 
+                : 'linear-gradient(135deg, #DCC9FF, #FFC1D8)' 
+            }}
           >
             <span className="w-2 h-2 rounded-full bg-[--hot-pink] animate-pulse-dot"></span>
-            <span>Word of the day · Day {currentIndex + 1}</span>
+            <span>{badgeText}</span>
           </div>
           <button
             onClick={onBookmark}
@@ -91,7 +122,7 @@ export default function WordCard({ word, currentIndex, total, isBookmarked, onBo
           </div>
         </div>
 
-        {/* Definition - Full width */}
+        {/* Definition */}
         <div className="mt-8 mb-4">
           <div 
             className="p-6 rounded-3xl border-2"
@@ -101,13 +132,13 @@ export default function WordCard({ word, currentIndex, total, isBookmarked, onBo
               📖 Definition
             </div>
             <div className="text-base sm:text-xl font-medium leading-relaxed text-[--ink]">
-              {word.defEn}
+              {word.def_en}
             </div>
           </div>
         </div>
 
-        {/* Example - Full width */}
-        {word.exEn && (
+        {/* Example */}
+        {word.ex_en && (
           <div className="mb-4">
             <div 
               className="p-6 rounded-3xl border-2"
@@ -118,15 +149,15 @@ export default function WordCard({ word, currentIndex, total, isBookmarked, onBo
               </div>
               <div className="text-base sm:text-lg font-medium leading-relaxed text-[--ink] italic">
                 <span className="font-serif text-3xl text-[--ocean] opacity-40 leading-none mr-1">"</span>
-                {word.exEn}
+                {word.ex_en}
                 <span className="font-serif text-3xl text-[--ocean] opacity-40 leading-none ml-1">"</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Synonyms - Only show if any */}
-        {word.syn && word.syn.length > 0 && (
+        {/* Synonyms */}
+        {word.synonyms && word.synonyms.length > 0 && (
           <div 
             className="p-6 rounded-3xl border-2 mb-4"
             style={{ background: 'linear-gradient(135deg, #F0FFF4, #E0FBE8)', borderColor: '#B8E8C9' }}
@@ -135,7 +166,7 @@ export default function WordCard({ word, currentIndex, total, isBookmarked, onBo
               ✨ Synonyms
             </div>
             <div className="flex flex-wrap gap-2">
-              {word.syn.map((s, i) => (
+              {word.synonyms.map((s, i) => (
                 <span 
                   key={i}
                   className="px-3.5 py-2 bg-white border-2 rounded-full font-semibold text-xs sm:text-sm text-[--grass] cursor-default transition-all hover:bg-[--mint] hover:scale-105"
@@ -148,36 +179,103 @@ export default function WordCard({ word, currentIndex, total, isBookmarked, onBo
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-3 sm:gap-4 mt-8 items-center">
-          <button
-            onClick={onPrev}
-            className="inline-flex items-center justify-center gap-2.5 px-6 py-4 bg-white text-[--ink-soft] border-2 border-[--line] rounded-full font-bold text-sm sm:text-base cursor-pointer transition-all hover:bg-[--whisper] hover:border-[--electric] hover:text-[--electric] hover:-translate-x-1"
-          >
-            <ArrowLeft size={18} />
-            <span>Previous</span>
-          </button>
-          <button
-            onClick={onKnown}
-            className="px-6 py-4 border-2 rounded-full font-bold text-sm sm:text-base cursor-pointer transition-all hover:scale-105 inline-flex items-center justify-center gap-2"
-            style={{ background: '#B8F3D2', color: '#00C896', borderColor: '#00C896' }}
-          >
-            <Check size={18} />
-            <span>I know this</span>
-          </button>
-          <button
-            onClick={onNext}
-            className="inline-flex items-center justify-center gap-2.5 px-8 py-4 text-white border-none rounded-full font-bold text-base cursor-pointer transition-all hover:translate-x-1 hover:-translate-y-0.5"
-            style={{ 
-              background: 'linear-gradient(135deg, #FF5C8A, #FF6B47)',
-              boxShadow: '0 8px 20px rgba(255, 92, 138, 0.4)'
-            }}
-          >
-            <span>Next word</span>
-            <ArrowRight size={18} />
-          </button>
+        {/* FSRS Rating Buttons */}
+        <div className="mt-8">
+          <p className="text-center text-sm font-semibold text-[--ink-soft] mb-4">
+            How well did you remember this word?
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <RateButton
+              rating={1}
+              label="Again"
+              icon={<X size={20} />}
+              description="< 10 min"
+              color="#FF5C8A"
+              bgColor="#FFE8EE"
+              borderColor="#FFB4C8"
+              onClick={handleRate}
+              disabled={isRating}
+              shortcut="1"
+            />
+            <RateButton
+              rating={2}
+              label="Hard"
+              icon={<Frown size={20} />}
+              description="< 1 day"
+              color="#FF6B47"
+              bgColor="#FFE9DD"
+              borderColor="#FFC9B4"
+              onClick={handleRate}
+              disabled={isRating}
+              shortcut="2"
+            />
+            <RateButton
+              rating={3}
+              label="Good"
+              icon={<Smile size={20} />}
+              description="~ 3 days"
+              color="#00C896"
+              bgColor="#E0FBE8"
+              borderColor="#B8E8C9"
+              onClick={handleRate}
+              disabled={isRating}
+              shortcut="3"
+            />
+            <RateButton
+              rating={4}
+              label="Easy"
+              icon={<Sparkles size={20} />}
+              description="~ 7 days"
+              color="#6C5CE7"
+              bgColor="#EFEAFE"
+              borderColor="#C9B8FA"
+              onClick={handleRate}
+              disabled={isRating}
+              shortcut="4"
+            />
+          </div>
+          <p className="text-center text-xs text-[--ink-soft] mt-3 opacity-60">
+            💡 Use keyboard 1-4 for quick rating
+          </p>
         </div>
       </div>
     </div>
   );
+}
+
+function RateButton({ rating, label, icon, description, color, bgColor, borderColor, onClick, disabled, shortcut }) {
+  return (
+    <button
+      onClick={() => onClick(rating)}
+      disabled={disabled}
+      className="relative px-3 py-4 rounded-2xl border-2 font-bold cursor-pointer transition-all hover:scale-105 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group"
+      style={{
+        background: bgColor,
+        borderColor: borderColor,
+        color: color,
+        boxShadow: `0 4px 12px ${color}25`,
+      }}
+    >
+      <div className="flex flex-col items-center gap-1">
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className="text-sm sm:text-base">{label}</span>
+        </div>
+        <span className="text-xs opacity-70">{description}</span>
+      </div>
+      <span 
+        className="absolute top-1 right-2 text-xs font-mono opacity-40 group-hover:opacity-80 transition-opacity"
+      >
+        {shortcut}
+      </span>
+    </button>
+  );
+}
+
+function formatStability(days) {
+  if (!days || days < 1) return "just learned";
+  if (days < 7) return `${Math.round(days)}d strong`;
+  if (days < 30) return `${Math.round(days / 7)}w strong`;
+  if (days < 365) return `${Math.round(days / 30)}mo strong`;
+  return `${Math.round(days / 365)}y strong`;
 }
