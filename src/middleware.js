@@ -31,20 +31,48 @@ export async function middleware(request) {
   const isAuthPage = path === "/login" || path === "/signup";
   const isPublicApi = path.startsWith("/api/words");
   const isCronApi = path.startsWith("/api/cron");
+  const isOnboardingPage = path === "/onboarding";
 
-  // Cron endpoints không cần auth (có CRON_SECRET riêng)
+  // Cron endpoints không cần auth
   if (isCronApi) {
     return response;
   }
 
-  // Nếu chưa login và đang ở trang cần auth → redirect login
+  // Chưa login + trang cần auth → login
   if (!user && !isAuthPage && !isPublicApi) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Nếu đã login và đang ở trang login/signup → redirect home
+  // Đã login + trang login/signup → home
   if (user && isAuthPage) {
     return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // User đã login → check onboarding status
+  if (user && !isAuthPage && !isPublicApi && !isOnboardingPage) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarded_at")
+      .eq("id", user.id)
+      .single();
+    
+    // Nếu chưa onboard → redirect onboarding
+    if (!profile?.onboarded_at) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+  }
+  
+  // User đã onboard mà vào /onboarding → redirect home
+  if (user && isOnboardingPage) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarded_at")
+      .eq("id", user.id)
+      .single();
+    
+    if (profile?.onboarded_at) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   return response;

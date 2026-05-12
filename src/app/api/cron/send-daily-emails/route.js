@@ -1,8 +1,8 @@
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendDailyWordEmail } from "@/lib/send-email";
+import { dbToCard, predictRetrievability } from "@/lib/fsrs";
 
 export async function GET(request) {
-  // Bảo mật: chỉ Vercel Cron hoặc người có CRON_SECRET mới gọi được
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -11,14 +11,13 @@ export async function GET(request) {
   const supabase = createAdminClient();
   const now = new Date();
   
-  // 1. Lấy tất cả email preferences đang enabled
+  // 1. Get all enabled email preferences
   const { data: preferences, error: prefError } = await supabase
     .from("email_preferences")
     .select("*")
     .eq("enabled", true);
   
   if (prefError) {
-    console.error("Fetch preferences error:", prefError);
     return Response.json({ error: prefError.message }, { status: 500 });
   }
   
@@ -27,34 +26,23 @@ export async function GET(request) {
       success: true,
       message: "No users with email enabled",
       sent: 0,
-      skipped: 0,
     });
   }
   
-  // 2. Lấy profile của các users đó
+  // 2. Get profiles
   const userIds = preferences.map(p => p.user_id);
-  const { data: profiles, error: profileError } = await supabase
+  const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
     .in("id", userIds);
   
-  if (profileError) {
-    console.error("Fetch profiles error:", profileError);
-    return Response.json({ error: profileError.message }, { status: 500 });
-  }
+  // 3. Get auth users for emails
+  const { data: authData } = await supabase.auth.admin.listUsers();
   
-  // 3. Lấy email từ auth.users (vì profiles có thể không có email)
-  const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-  
-  if (authError) {
-    console.error("Fetch auth users error:", authError);
-    return Response.json({ error: authError.message }, { status: 500 });
-  }
-  
-  // Build lookup map: user_id → { email, name, streak, timezone }
+  // Build user lookup
   const userMap = {};
   for (const profile of profiles || []) {
-    const authUser = authUsers.users.find(u => u.id === profile.id);
+    const authUser = authData.users.find(u => u.id === profile.id);
     userMap[profile.id] = {
       email: profile.email || authUser?.email,
       name: profile.name || authUser?.email?.split("@")[0],
@@ -75,26 +63,23 @@ export async function GET(request) {
         continue;
       }
       
-      // Tính giờ hiện tại theo timezone của user
+      // Calculate timezone-aware current time
       const userNow = new Date(now.toLocaleString("en-US", { timeZone: userInfo.timezone }));
       const currentHour = userNow.getHours();
       const currentMinute = userNow.getMinutes();
       const currentDay = userNow.getDay();
       
-      // Parse send_time (format: HH:MM:SS)
       const [sendHour, sendMinute] = pref.send_time.split(":").map(Number);
-      
-      // Check khoảng thời gian (cron chạy mỗi 15 phút, cho phép sai số 15 phút)
       const minutesDiff = Math.abs(
         (currentHour * 60 + currentMinute) - (sendHour * 60 + sendMinute)
       );
       
       if (minutesDiff > 15) {
-        skipped.push({ email: userInfo.email, reason: "wrong time", currentTime: `${currentHour}:${currentMinute}`, scheduledTime: pref.send_time });
+        skipped.push({ email: userInfo.email, reason: "wrong time" });
         continue;
       }
       
-      // Check tần suất
+      // Check frequency
       if (pref.frequency === "weekdays" && (currentDay === 0 || currentDay === 6)) {
         skipped.push({ email: userInfo.email, reason: "weekend" });
         continue;
@@ -104,7 +89,7 @@ export async function GET(request) {
         continue;
       }
       
-      // Check đã gửi hôm nay chưa
+      // Anti-duplicate check
       const lastSent = pref.last_sent_at ? new Date(pref.last_sent_at) : null;
       if (lastSent) {
         const lastSentLocal = new Date(lastSent.toLocaleString("en-US", { timeZone: userInfo.timezone }));
@@ -114,52 +99,31 @@ export async function GET(request) {
         }
       }
       
-      // Lấy danh sách word_id đã học của user
-      const { data: learnedProgress } = await supabase
-        .from("user_progress")
-        .select("word_id")
-        .eq("user_id", pref.user_id)
-        .gt("review_count", 0);
-      
-      const learnedIds = (learnedProgress || []).map(p => p.word_id);
-      
-      // Lấy 1 từ chưa học
-      let selectedWord;
-      let wordsQuery = supabase.from("words").select("*").limit(1);
-      
-      if (learnedIds.length > 0) {
-        wordsQuery = wordsQuery.not("id", "in", `(${learnedIds.map(id => `"${id}"`).join(",")})`);
-      }
-      
-      const { data: unlearned } = await wordsQuery;
-      
-      if (unlearned && unlearned.length > 0) {
-        selectedWord = unlearned[0];
-      } else {
-        // Đã học hết, gửi random
-        const { data: allWords } = await supabase.from("words").select("*");
-        if (allWords && allWords.length > 0) {
-          selectedWord = allWords[Math.floor(Math.random() * allWords.length)];
-        }
-      }
+      // ============================================
+      // FSRS SMART WORD SELECTION
+      // ============================================
+      const selectedWord = await selectBestWordForUser(supabase, pref.user_id);
       
       if (!selectedWord) {
         errors.push({ email: userInfo.email, error: "No word available" });
         continue;
       }
       
-      // Gửi email
+      // Send email
       const result = await sendDailyWordEmail({
         to: userInfo.email,
         userName: userInfo.name,
-        word: selectedWord,
+        word: selectedWord.word,
         streak: userInfo.streak,
       });
       
       if (result.success) {
-        sentTo.push({ email: userInfo.email, word: selectedWord.word });
+        sentTo.push({ 
+          email: userInfo.email, 
+          word: selectedWord.word.word,
+          source: selectedWord.source,
+        });
         
-        // Update last_sent_at
         await supabase
           .from("email_preferences")
           .update({ last_sent_at: new Date().toISOString() })
@@ -181,4 +145,89 @@ export async function GET(request) {
     errors: errors.length,
     details: { sentTo, skipped, errors },
   });
+}
+
+// ============================================
+// FSRS-BASED WORD SELECTION FOR EMAIL
+// ============================================
+async function selectBestWordForUser(supabase, userId) {
+  const now = new Date().toISOString();
+  
+  // PRIORITY 1: Từ overdue (đã qua due_at)
+  // → User cần ôn gấp, retention đang giảm
+  const { data: overdueWords } = await supabase
+    .from("user_progress")
+    .select(`
+      word_id, stability, difficulty, state, due_at, last_reviewed_at,
+      words!inner(*)
+    `)
+    .eq("user_id", userId)
+    .lt("due_at", now)
+    .in("state", ["learning", "review", "relearning"])
+    .order("due_at", { ascending: true }) // Overdue lâu nhất trước
+    .limit(5);
+  
+  if (overdueWords && overdueWords.length > 0) {
+    // Pick từ có retrievability thấp nhất (sắp quên nhất)
+    let bestPick = overdueWords[0];
+    let lowestR = 1.0;
+    
+    for (const item of overdueWords) {
+      const card = dbToCard({
+        ...item,
+        due_at: item.due_at,
+        last_reviewed_at: item.last_reviewed_at,
+      });
+      const r = predictRetrievability(card);
+      
+      if (r < lowestR) {
+        lowestR = r;
+        bestPick = item;
+      }
+    }
+    
+    return {
+      word: bestPick.words,
+      source: 'review_urgent',
+      retrievability: lowestR,
+    };
+  }
+  
+  // PRIORITY 2: Từ mới chưa học
+  // Strategy: lấy từ user chưa thấy bao giờ
+  const { data: learnedIds } = await supabase
+    .from("user_progress")
+    .select("word_id")
+    .eq("user_id", userId);
+  
+  const learnedSet = new Set((learnedIds || []).map(r => r.word_id));
+  
+  // Get candidates (lấy 100 từ ngẫu nhiên, filter ra từ chưa học)
+  const { data: candidates } = await supabase
+    .from("words")
+    .select("*")
+    .limit(200);
+  
+  if (candidates) {
+    const newWords = candidates.filter(w => !learnedSet.has(w.id));
+    
+    if (newWords.length > 0) {
+      // Random pick
+      const picked = newWords[Math.floor(Math.random() * newWords.length)];
+      return {
+        word: picked,
+        source: 'new',
+      };
+    }
+  }
+  
+  // FALLBACK: User đã học hết tất cả từ → random
+  const { data: fallback } = await supabase
+    .from("words")
+    .select("*")
+    .limit(1);
+  
+  return fallback?.[0] 
+    ? { word: fallback[0], source: 'fallback' }
+    : null;
 }
