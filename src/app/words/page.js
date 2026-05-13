@@ -91,7 +91,7 @@ export default function WordsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/learn")}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/50 transition-all"
           >
             <ArrowLeft size={18} />

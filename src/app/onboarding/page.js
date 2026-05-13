@@ -13,6 +13,7 @@ export default function OnboardingPage() {
     daily_goal: 5,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const steps = [
     {
@@ -60,10 +61,11 @@ export default function OnboardingPage() {
   };
 
   const handleNext = async () => {
+    setError(null);
+    
     if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
-      // Submit
       setIsLoading(true);
       try {
         const res = await fetch("/api/onboarding", {
@@ -72,13 +74,17 @@ export default function OnboardingPage() {
           body: JSON.stringify(data),
         });
         
-        if (res.ok) {
-          router.push("/");
-          router.refresh();
+        const result = await res.json();
+        
+        if (res.ok && result.success) {
+          window.location.href = "/learn";
+        } else {
+          setError(result.error || "Failed to save");
+          setIsLoading(false);
         }
       } catch (e) {
         console.error("Onboarding error:", e);
-      } finally {
+        setError(e.message);
         setIsLoading(false);
       }
     }
@@ -101,11 +107,10 @@ export default function OnboardingPage() {
 
       <main className="relative z-10 min-h-screen flex items-center justify-center p-4 sm:p-8">
         <div 
-          className="bg-white rounded-[32px] p-8 sm:p-12 max-w-2xl w-full border-[3px] border-white animate-fade-in"
+          className="bg-white rounded-[32px] p-6 sm:p-12 max-w-2xl w-full border-[3px] border-white animate-fade-in"
           style={{ boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
         >
-          {/* Progress dots */}
-          <div className="flex gap-2 justify-center mb-8">
+          <div className="flex gap-2 justify-center mb-6 sm:mb-8">
             {steps.map((_, i) => (
               <div
                 key={i}
@@ -120,16 +125,14 @@ export default function OnboardingPage() {
             ))}
           </div>
 
-          {/* Title */}
-          <div className="text-center mb-8">
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight mb-2">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight mb-2">
               {currentStep.title}
             </h1>
-            <p className="text-[--ink-soft]">{currentStep.subtitle}</p>
+            <p className="text-sm sm:text-base text-[--ink-soft]">{currentStep.subtitle}</p>
           </div>
 
-          {/* Options */}
-          <div className={`grid gap-3 mb-8 ${
+          <div className={`grid gap-3 mb-6 sm:mb-8 ${
             currentStep.options.length <= 4 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-3'
           }`}>
             {currentStep.options.map((opt) => {
@@ -138,7 +141,7 @@ export default function OnboardingPage() {
                 <button
                   key={opt.value}
                   onClick={() => handleSelect(opt.value)}
-                  className="text-left p-4 rounded-2xl border-2 transition-all cursor-pointer hover:scale-[1.02] relative"
+                  className="text-left p-3 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer hover:scale-[1.02] relative"
                   style={{
                     background: selected ? 'linear-gradient(135deg, #FFF1F8, #FFE8F0)' : 'white',
                     borderColor: selected ? '#FF5C8A' : '#E8DFF5',
@@ -150,22 +153,27 @@ export default function OnboardingPage() {
                       <Check size={14} strokeWidth={3} />
                     </div>
                   )}
-                  <div className="font-bold text-base sm:text-lg mb-1">{opt.label}</div>
+                  <div className="font-bold text-sm sm:text-lg mb-1">{opt.label}</div>
                   <div className="text-xs sm:text-sm text-[--ink-soft]">{opt.desc}</div>
                 </button>
               );
             })}
           </div>
 
-          {/* Navigation */}
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-[#FFE8E8] border-2 border-[#FFB4A8] text-sm text-[#B83426]">
+              ⚠️ {error}
+            </div>
+          )}
+
           <div className="flex gap-3 justify-between items-center">
             <button
               onClick={handleBack}
               disabled={step === 0}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-bold text-sm cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[--whisper]"
+              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full font-bold text-sm cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[--whisper]"
             >
               <ArrowLeft size={18} />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </button>
 
             <span className="text-xs text-[--ink-soft]">
@@ -175,7 +183,7 @@ export default function OnboardingPage() {
             <button
               onClick={handleNext}
               disabled={!isSelected || isLoading}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-white font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 background: 'linear-gradient(135deg, #FF5C8A, #6C5CE7)',
                 boxShadow: '0 12px 32px rgba(255, 92, 138, 0.25)',

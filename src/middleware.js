@@ -35,29 +35,39 @@ export async function middleware(request) {
   const isCronApi = path.startsWith("/api/cron");
   const isAuthCallback = path.startsWith("/auth/callback");
   const isOnboardingPage = path === "/onboarding";
+  const isLandingPage = path === "/";
+  const isLearnPage = path === "/learn";
+  
+  // Public routes - no auth check
+  const isPublicPage = isLandingPage;
 
-  // Cron + auth callback không cần check
   if (isCronApi || isAuthCallback) {
     return response;
   }
 
-  // Chưa login + page cần auth → redirect login
-  if (!user && !isAuthPage && !isPublicApi && !isApi) {
+  // Public landing accessible by everyone
+  if (isPublicPage && !user) {
+    return response;
+  }
+
+  // Logged-in users on landing → go to /learn
+  if (isPublicPage && user) {
+    return NextResponse.redirect(new URL("/learn", request.url));
+  }
+
+  if (!user && !isAuthPage && !isPublicApi && !isApi && !isPublicPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // API routes: nếu chưa login, trả 401 (không redirect)
   if (!user && isApi && !isPublicApi) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Đã login + trang login/signup → home
   if (user && (path === "/login" || path === "/signup" || path === "/forgot-password")) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/learn", request.url));
   }
 
-  // CHỈ check onboarding cho PAGE routes, KHÔNG cho API routes
-  if (user && !isAuthPage && !isPublicApi && !isApi && !isOnboardingPage) {
+  if (user && !isAuthPage && !isPublicApi && !isApi && !isOnboardingPage && !isPublicPage) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarded_at")
@@ -77,7 +87,7 @@ export async function middleware(request) {
       .single();
     
     if (profile?.onboarded_at) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/learn", request.url));
     }
   }
 
