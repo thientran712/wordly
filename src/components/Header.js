@@ -23,13 +23,13 @@ export default function Header({ streak, userName, onOpenSettings }) {
         <div 
           className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-[0_4px_16px_rgba(255,92,138,0.35)] transition-transform hover:rotate-12 hover:scale-110 cursor-pointer flex-shrink-0"
           style={{ background: 'linear-gradient(135deg, #FF5C8A, #6C5CE7)', transform: 'rotate(-5deg)' }}
-          onClick={() => router.push('/learn')}
+          onClick={() => router.push('/')}
         >
           🌈
         </div>
-        <span 
+        <span
           className="font-serif font-black text-xl sm:text-3xl gradient-text-purple-pink tracking-tight cursor-pointer truncate"
-          onClick={() => router.push('/learn')}
+          onClick={() => router.push('/')}
         >
           Wordly
         </span>

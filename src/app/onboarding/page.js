@@ -77,7 +77,7 @@ export default function OnboardingPage() {
         const result = await res.json();
         
         if (res.ok && result.success) {
-          window.location.href = "/learn";
+          window.location.href = "/";
         } else {
           setError(result.error || "Failed to save");
           setIsLoading(false);

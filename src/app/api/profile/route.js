@@ -67,18 +67,17 @@ export async function PUT(request) {
     }
   }
   
-  updates.updated_at = new Date().toISOString();
-  
   const { data, error } = await supabase
     .from("profiles")
     .update(updates)
     .eq("id", user.id)
     .select()
     .single();
-  
+
   if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error("[profile PUT] Supabase error:", error);
+    return Response.json({ error: error.message, code: error.code }, { status: 500 });
   }
-  
+
   return Response.json({ success: true, profile: data });
 }

@@ -36,8 +36,6 @@ export async function middleware(request) {
   const isAuthCallback = path.startsWith("/auth/callback");
   const isOnboardingPage = path === "/onboarding";
   const isLandingPage = path === "/";
-  const isLearnPage = path === "/learn";
-  
   // Public routes - no auth check
   const isPublicPage = isLandingPage;
 
@@ -45,14 +43,12 @@ export async function middleware(request) {
     return response;
   }
 
-  // Public landing accessible by everyone
-  if (isPublicPage && !user) {
-    return response;
-  }
-
-  // Logged-in users on landing → go to /learn
-  if (isPublicPage && user) {
-    return NextResponse.redirect(new URL("/learn", request.url));
+  // Trang chủ (/) là trang học - ai cũng truy cập được
+  if (isPublicPage) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    // Logged-in user → tiếp tục vào trang chủ
   }
 
   if (!user && !isAuthPage && !isPublicApi && !isApi && !isPublicPage) {
@@ -64,7 +60,7 @@ export async function middleware(request) {
   }
 
   if (user && (path === "/login" || path === "/signup" || path === "/forgot-password")) {
-    return NextResponse.redirect(new URL("/learn", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (user && !isAuthPage && !isPublicApi && !isApi && !isOnboardingPage && !isPublicPage) {
@@ -73,21 +69,21 @@ export async function middleware(request) {
       .select("onboarded_at")
       .eq("id", user.id)
       .single();
-    
+
     if (!profile?.onboarded_at) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
   }
-  
+
   if (user && isOnboardingPage) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarded_at")
       .eq("id", user.id)
       .single();
-    
+
     if (profile?.onboarded_at) {
-      return NextResponse.redirect(new URL("/learn", request.url));
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 
