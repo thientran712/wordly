@@ -20,11 +20,17 @@ export async function sendDailyWordEmail({ to, userName, word, streak }) {
   const subject = `🌈 Từ vựng hôm nay: ${word.word}`;
 
   try {
+
     const info = await transporter.sendMail({
       from: `"Wordly" <${process.env.GMAIL_USER}>`,
       to,
       subject,
       html,
+      headers: {
+        "List-Unsubscribe": `<${appUrl}/profile>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        "X-Mailer": "Wordly",
+      },
     });
 
     return { success: true, id: info.messageId };
