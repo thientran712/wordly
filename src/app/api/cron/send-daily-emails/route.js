@@ -147,14 +147,31 @@ export async function GET(request) {
   });
 }
 
+const LEVEL_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+function getTargetLevels(skillLevel) {
+  const idx = LEVEL_ORDER.indexOf(skillLevel);
+  if (idx === -1) return LEVEL_ORDER.slice(2); // default B1 trở lên
+  return LEVEL_ORDER.slice(idx);
+}
+
 // ============================================
 // FSRS-BASED WORD SELECTION FOR EMAIL
 // ============================================
 async function selectBestWordForUser(supabase, userId) {
   const now = new Date().toISOString();
-  
+
+  // Lấy skill_level của user
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("skill_level")
+    .eq("id", userId)
+    .single();
+
+  const skillLevel = profile?.skill_level || 'B1';
+  const targetLevels = getTargetLevels(skillLevel);
+
   // PRIORITY 1: Từ overdue (đã qua due_at)
-  // → User cần ôn gấp, retention đang giảm
   const { data: overdueWords } = await supabase
     .from("user_progress")
     .select(`
@@ -164,14 +181,13 @@ async function selectBestWordForUser(supabase, userId) {
     .eq("user_id", userId)
     .lt("due_at", now)
     .in("state", ["learning", "review", "relearning"])
-    .order("due_at", { ascending: true }) // Overdue lâu nhất trước
+    .order("due_at", { ascending: true })
     .limit(5);
-  
+
   if (overdueWords && overdueWords.length > 0) {
-    // Pick từ có retrievability thấp nhất (sắp quên nhất)
     let bestPick = overdueWords[0];
     let lowestR = 1.0;
-    
+
     for (const item of overdueWords) {
       const card = dbToCard({
         ...item,
@@ -179,53 +195,50 @@ async function selectBestWordForUser(supabase, userId) {
         last_reviewed_at: item.last_reviewed_at,
       });
       const r = predictRetrievability(card);
-      
+
       if (r < lowestR) {
         lowestR = r;
         bestPick = item;
       }
     }
-    
+
     return {
       word: bestPick.words,
       source: 'review_urgent',
       retrievability: lowestR,
     };
   }
-  
-  // PRIORITY 2: Từ mới chưa học
-  // Strategy: lấy từ user chưa thấy bao giờ
+
+  // PRIORITY 2: Từ mới theo level của user (cùng logic với /api/words/next)
   const { data: learnedIds } = await supabase
     .from("user_progress")
     .select("word_id")
     .eq("user_id", userId);
-  
+
   const learnedSet = new Set((learnedIds || []).map(r => r.word_id));
-  
-  // Get candidates (lấy 100 từ ngẫu nhiên, filter ra từ chưa học)
-  const { data: candidates } = await supabase
-    .from("words")
-    .select("*")
-    .limit(200);
-  
-  if (candidates) {
-    const newWords = candidates.filter(w => !learnedSet.has(w.id));
-    
-    if (newWords.length > 0) {
-      // Random pick
-      const picked = newWords[Math.floor(Math.random() * newWords.length)];
-      return {
-        word: picked,
-        source: 'new',
-      };
-    }
+
+  // Fetch song song từng level, gộp lại rồi random
+  const levelFetches = await Promise.all(
+    targetLevels.map(lvl =>
+      supabase.from("words").select("*").eq("level", lvl).limit(500)
+    )
+  );
+
+  const pool = levelFetches
+    .flatMap(({ data }) => data || [])
+    .filter(w => !learnedSet.has(w.id));
+
+  if (pool.length > 0) {
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    return { word: picked, source: 'new' };
   }
-  
-  // FALLBACK: User đã học hết tất cả từ → random
+
+  // FALLBACK: học hết tất cả → random bất kỳ
   const { data: fallback } = await supabase
     .from("words")
     .select("*")
-    .limit(1);
+    .order("level", { ascending: false })
+    .limit(20);
   
   return fallback?.[0] 
     ? { word: fallback[0], source: 'fallback' }
