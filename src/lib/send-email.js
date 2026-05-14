@@ -1,40 +1,42 @@
-import { Resend } from "resend";
 import { render } from "@react-email/render";
 import DailyWordEmail from "@/emails/DailyWordEmail";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-// EMAIL TEST: Trong giai đoạn dev, chỉ gửi được tới email đăng ký Resend
-// Khi có domain, đổi FROM_EMAIL và xóa logic giới hạn này
-const TEST_EMAIL = "huythien7122@gmail.com";
-const FROM_EMAIL = "Wordly <onboarding@resend.dev>";
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const FROM_EMAIL = "huythien7122@gmail.com";
+const FROM_NAME = "Wordly";
 
 export async function sendDailyWordEmail({ to, userName, word, streak }) {
-  // Trong dev: ép gửi đến email test
-  const recipient = process.env.NODE_ENV === "production" ? to : TEST_EMAIL;
-  
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  
+
   const html = await render(
     DailyWordEmail({ userName, word, streak, appUrl })
   );
-  
+
   const subject = `🌈 Từ vựng hôm nay: ${word.word}`;
-  
+
   try {
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: recipient,
-      subject,
-      html,
+    const res = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": process.env.BREVO_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: FROM_NAME, email: FROM_EMAIL },
+        to: [{ email: to, name: userName }],
+        subject,
+        htmlContent: html,
+      }),
     });
-    
-    if (error) {
-      console.error("Resend error:", error);
-      return { success: false, error: error.message };
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Brevo error:", data);
+      return { success: false, error: data.message || "Unknown error" };
     }
-    
-    return { success: true, id: data.id };
+
+    return { success: true, id: data.messageId };
   } catch (err) {
     console.error("Send email error:", err);
     return { success: false, error: err.message };
