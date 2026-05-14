@@ -1,0 +1,27 @@
+name: Send Daily Word Emails
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Run every hour — code filters by user timezone
+  workflow_dispatch:       # Allow manual trigger from GitHub UI
+
+jobs:
+  send-emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Trigger email cron
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "${{ secrets.VERCEL_APP_URL }}/api/cron/send-daily-emails" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+
+          echo "Response status: $response"
+
+          if [ "$response" != "200" ]; then
+            echo "❌ Cron failed with status $response"
+            exit 1
+          fi
+
+          echo "✅ Cron triggered successfully"
