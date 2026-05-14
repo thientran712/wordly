@@ -35,7 +35,9 @@ export default function DailyWordEmail({
           <Section style={wordCard}>
             <Text style={dayBadge}>✨ Word of the Day</Text>
             <Heading style={wordMain}>{word.word}</Heading>
-            {word.phonetic && <Text style={phonetic}>{word.phonetic}</Text>}
+            {word.phonetic && !word.phonetic.endsWith('.mp3') && (
+              <Text style={phonetic}>{word.phonetic}</Text>
+            )}
             <Text style={posPill}>{word.pos}</Text>
           </Section>
 
