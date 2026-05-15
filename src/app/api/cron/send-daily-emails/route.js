@@ -178,7 +178,7 @@ async function selectBestWordForUser(supabase, userId) {
       words!inner(*)
     `)
     .eq("user_id", userId)
-    .lt("due_at", now)
+    .lte("due_at", now)
     .in("state", ["learning", "review", "relearning"])
     .order("due_at", { ascending: true })
     .limit(5);
@@ -232,14 +232,29 @@ async function selectBestWordForUser(supabase, userId) {
     return { word: picked, source: 'new' };
   }
 
-  // FALLBACK: học hết tất cả → random bất kỳ
-  const { data: fallback } = await supabase
+  // PRIORITY 3: học hết level của mình → mở rộng sang các level khác,
+  // ưu tiên level cao nhất có sẵn (đồng nhất với web /api/words/next)
+  const { data: allCandidates } = await supabase
     .from("words")
     .select("*")
     .order("level", { ascending: false })
+    .limit(500);
+
+  const anyNewWords = (allCandidates || []).filter(w => !learnedSet.has(w.id));
+
+  if (anyNewWords.length > 0) {
+    const topCandidates = anyNewWords.slice(0, Math.min(30, anyNewWords.length));
+    const picked = topCandidates[Math.floor(Math.random() * topCandidates.length)];
+    return { word: picked, source: 'new_expanded' };
+  }
+
+  // FALLBACK CUỐI: đã học hết mọi từ → random bất kỳ
+  const { data: fallback } = await supabase
+    .from("words")
+    .select("*")
     .limit(20);
-  
-  return fallback?.[0] 
-    ? { word: fallback[0], source: 'fallback' }
+
+  return fallback?.[0]
+    ? { word: fallback[Math.floor(Math.random() * fallback.length)], source: 'fallback' }
     : null;
 }
