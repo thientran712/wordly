@@ -35,20 +35,21 @@ export default function Home() {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("name, current_streak")
-            .eq("id", user.id)
-            .single();
-          setUserName(profile?.name || user.email?.split("@")[0] || "");
-          setStreak(profile?.current_streak || 0);
+
+        const [profileResult, progressData, prefsData] = await Promise.all([
+          user
+            ? supabase.from("profiles").select("name, current_streak").eq("id", user.id).single()
+            : Promise.resolve({ data: null }),
+          fetch("/api/progress").then(r => r.json()).catch(() => ({})),
+          fetch("/api/email-preferences").then(r => r.json()).catch(() => ({})),
+          fetchNextWord(),
+        ]);
+
+        if (user && profileResult?.data) {
+          setUserName(profileResult.data.name || user.email?.split("@")[0] || "");
+          setStreak(profileResult.data.current_streak || 0);
         }
 
-        const progressRes = await fetch("/api/progress");
-        const progressData = await progressRes.json();
-        
         if (progressData.progress) {
           const bookmarkIds = new Set();
           let learned = 0;
@@ -60,9 +61,6 @@ export default function Home() {
           setLearnedCount(learned);
         }
 
-        const prefsRes = await fetch("/api/email-preferences");
-        const prefsData = await prefsRes.json();
-        
         if (prefsData.preferences) {
           const p = prefsData.preferences;
           setSettings({
@@ -75,9 +73,6 @@ export default function Home() {
             enabled: p.enabled || false,
           });
         }
-
-        await fetchNextWord();
-        
       } catch (e) {
         console.error("Init error:", e);
       } finally {
@@ -222,7 +217,7 @@ export default function Home() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  });
+  }, [isModalOpen, currentWord]);
 
   const getDateString = () => {
     if (!mounted) return '';

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Mail, Target, BookOpen, Hash, Loader2, Check, Bell, Send } from "lucide-react";
+import { ArrowLeft, User, Mail, Target, BookOpen, Loader2, Check, Bell, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
 const LEVEL_LABELS = {
@@ -14,13 +14,6 @@ const LEVEL_LABELS = {
   C2: 'Proficient',
 };
 
-const GOAL_LABELS = {
-  daily: '💬 Daily Life',
-  toeic: '📊 TOEIC',
-  ielts: '🎓 IELTS',
-  business: '💼 Business',
-  travel: '✈️ Travel',
-};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -35,8 +28,6 @@ export default function ProfilePage() {
   // Form state
   const [name, setName] = useState("");
   const [skillLevel, setSkillLevel] = useState("");
-  const [learningGoal, setLearningGoal] = useState("");
-  const [dailyGoal, setDailyGoal] = useState(5);
 
   // Email preferences state
   const [emailEnabled, setEmailEnabled] = useState(false);
@@ -66,8 +57,6 @@ export default function ProfilePage() {
         setAuthProvider(profileData.auth_provider);
         setName(profileData.profile.name || "");
         setSkillLevel(profileData.profile.skill_level || "");
-        setLearningGoal(profileData.profile.learning_goal || "");
-        setDailyGoal(profileData.profile.daily_goal || 5);
       }
 
       if (emailPrefData.preferences) {
@@ -96,8 +85,6 @@ export default function ProfilePage() {
         body: JSON.stringify({
           name,
           skill_level: skillLevel,
-          learning_goal: learningGoal,
-          daily_goal: parseInt(dailyGoal),
         }),
       });
       
@@ -333,52 +320,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Goal */}
-            <div>
-              <label className="font-bold text-sm mb-2 block">Learning Goal</label>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                {Object.entries(GOAL_LABELS).map(([value, label]) => {
-                  const selected = learningGoal === value;
-                  return (
-                    <button
-                      type="button"
-                      key={value}
-                      onClick={() => setLearningGoal(value)}
-                      className="py-2.5 px-2 rounded-xl border-2 font-semibold text-xs cursor-pointer transition-all"
-                      style={{
-                        background: selected ? '#B8F3D2' : '#F8F4FF',
-                        borderColor: selected ? '#00C896' : '#E8DFF5',
-                        color: selected ? '#00754C' : '#5D4B7B',
-                        transform: selected ? 'scale(1.03)' : 'scale(1)',
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Daily Goal */}
-            <div>
-              <label className="font-bold text-sm mb-2 flex items-center gap-1.5">
-                <Hash size={14} />
-                Daily Words Goal: <span className="text-[--hot-pink]">{dailyGoal} words/day</span>
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="30"
-                value={dailyGoal}
-                onChange={(e) => setDailyGoal(e.target.value)}
-                className="w-full h-2 bg-[--whisper] rounded-full appearance-none cursor-pointer accent-[--hot-pink]"
-              />
-              <div className="flex justify-between text-xs text-[--ink-soft] mt-1">
-                <span>1</span>
-                <span>15</span>
-                <span>30</span>
-              </div>
-            </div>
           </div>
         </div>
 

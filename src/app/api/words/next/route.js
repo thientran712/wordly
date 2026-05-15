@@ -75,7 +75,7 @@ export async function GET(request) {
   // Fetch riêng từng level để đảm bảo mỗi level được đại diện (tránh bias theo insertion order).
   const levelFetches = await Promise.all(
     targetLevels.map(lvl =>
-      supabase.from("words").select("*").eq("level", lvl).limit(500)
+      supabase.from("words").select("*").eq("level", lvl).limit(80)
     )
   );
 

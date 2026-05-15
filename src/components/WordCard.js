@@ -90,7 +90,7 @@ export default function WordCard({
             {word.word}
           </h1>
           <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4">
-            {word.phonetic && (
+            {word.phonetic && !word.phonetic.endsWith('.mp3') && (
               <span className="font-serif italic text-base sm:text-2xl text-[--ink-soft] w-full sm:w-auto">
                 {word.phonetic}
               </span>

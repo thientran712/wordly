@@ -220,7 +220,7 @@ async function selectBestWordForUser(supabase, userId) {
   // Fetch song song từng level, gộp lại rồi random
   const levelFetches = await Promise.all(
     targetLevels.map(lvl =>
-      supabase.from("words").select("*").eq("level", lvl).limit(500)
+      supabase.from("words").select("*").eq("level", lvl).limit(80)
     )
   );
 
