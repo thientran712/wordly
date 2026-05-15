@@ -3,16 +3,8 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import WordCard from "@/components/WordCard";
-import StatsBar from "@/components/StatsBar";
-import SettingsModal from "@/components/SettingsModal";
 import { greetings } from "@/data/vocabulary";
 import { createClient } from "@/lib/supabase-client";
-
-const defaultSettings = {
-  email: '', name: '', time: '07:00:00',
-  frequency: 'daily', customDays: [],
-  level: 'intermediate', enabled: false
-};
 
 export default function Home() {
   const [currentWord, setCurrentWord] = useState(null);
@@ -21,13 +13,12 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [learnedCount, setLearnedCount] = useState(0);
   const [bookmarkedWordIds, setBookmarkedWordIds] = useState(new Set());
-  const [settings, setSettings] = useState(defaultSettings);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [greetingEmoji, setGreetingEmoji] = useState('👋');
   const [toast, setToast] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("");
   const [streak, setStreak] = useState(0);
+  const [totalDays, setTotalDays] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
@@ -36,18 +27,22 @@ export default function Home() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        const [profileResult, progressData, prefsData] = await Promise.all([
+        const [profileResult, progressData, streakData] = await Promise.all([
           user
-            ? supabase.from("profiles").select("name, current_streak").eq("id", user.id).single()
+            ? supabase.from("profiles").select("name").eq("id", user.id).single()
             : Promise.resolve({ data: null }),
           fetch("/api/progress").then(r => r.json()).catch(() => ({})),
-          fetch("/api/email-preferences").then(r => r.json()).catch(() => ({})),
+          fetch("/api/stats/streak").then(r => r.json()).catch(() => ({})),
           fetchNextWord(),
         ]);
 
         if (user && profileResult?.data) {
           setUserName(profileResult.data.name || user.email?.split("@")[0] || "");
-          setStreak(profileResult.data.current_streak || 0);
+        }
+
+        if (streakData) {
+          setStreak(streakData.streak || 0);
+          setTotalDays(streakData.total_days || 0);
         }
 
         if (progressData.progress) {
@@ -61,18 +56,6 @@ export default function Home() {
           setLearnedCount(learned);
         }
 
-        if (prefsData.preferences) {
-          const p = prefsData.preferences;
-          setSettings({
-            email: user?.email || '',
-            name: '',
-            time: p.send_time || '07:00:00',
-            frequency: p.frequency || 'daily',
-            customDays: p.custom_days || [],
-            level: 'intermediate',
-            enabled: p.enabled || false,
-          });
-        }
       } catch (e) {
         console.error("Init error:", e);
       } finally {
@@ -180,27 +163,6 @@ export default function Home() {
     }
   };
 
-  const handleSaveSettings = async (newSettings) => {
-    setSettings(newSettings);
-    try {
-      await fetch("/api/email-preferences", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          enabled: newSettings.enabled,
-          send_time: newSettings.time,
-          frequency: newSettings.frequency,
-          custom_days: newSettings.customDays,
-        }),
-      });
-      showToast('✓ Settings saved!');
-      triggerConfetti();
-      setIsModalOpen(false);
-    } catch (e) {
-      showToast('⚠️ Save error');
-    }
-  };
-
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
@@ -208,7 +170,6 @@ export default function Home() {
 
   useEffect(() => {
     const handler = (e) => {
-      if (isModalOpen) return;
       const ratingMap = { '1': 1, '2': 2, '3': 3, '4': 4 };
       if (ratingMap[e.key] && currentWord) {
         e.preventDefault();
@@ -217,7 +178,7 @@ export default function Home() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isModalOpen, currentWord]);
+  }, [currentWord]);
 
   const getDateString = () => {
     if (!mounted) return '';
@@ -258,33 +219,24 @@ export default function Home() {
         <div className="blob blob-4"></div>
       </div>
 
-      <main className="relative z-10 max-w-6xl mx-auto px-3 sm:px-8 py-4 sm:py-8 pb-16">
-        <Header 
+      <main className="relative z-10 w-full max-w-2xl sm:max-w-3xl lg:max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-6 pb-10">
+        <Header
           streak={streak}
+          totalDays={totalDays}
           userName={userName}
-          onOpenSettings={() => setIsModalOpen(true)}
         />
 
-        <div className="mb-4 sm:mb-6 text-center">
-          <div className="text-4xl sm:text-5xl inline-block animate-bounce-soft">{greetingEmoji}</div>
-          <h2 className="font-serif text-xl sm:text-4xl font-bold mt-2 mb-1 tracking-tight px-2">
-            {userName ? `Hi ${userName}, ` : "Hi there, "}ready to learn{" "}
-            <em className="italic" style={{ background: 'linear-gradient(135deg, #FF5C8A, #FFB627)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              new words
-            </em>
-            ?
-          </h2>
-          <p className="text-[--ink-soft] text-xs sm:text-base">{getDateString()}</p>
-        </div>
-
-        <div className="bg-white rounded-full px-3 sm:px-6 py-2 sm:py-3.5 flex items-center gap-2 sm:gap-4 mx-auto w-fit shadow-[0_8px_24px_rgba(108,92,231,0.08)] border-2 border-[--line] mb-4 sm:mb-8">
-          <span className="text-base sm:text-lg">📚</span>
-          <div className="font-bold text-[10px] sm:text-sm whitespace-nowrap">
-            <span className="text-[--grass]">{reviewCount}</span> today
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <span className="text-lg">{greetingEmoji}</span>
+          <div>
+            <span className="font-bold text-sm sm:text-base">
+              {userName ? `Hi ${userName}` : "Hi there"}
+            </span>
+            <span className="text-[--ink-soft] text-xs ml-2">{getDateString()}</span>
           </div>
-          <span className="text-[--line]">·</span>
-          <div className="font-bold text-[10px] sm:text-sm whitespace-nowrap">
-            <span className="text-[--electric]">{learnedCount}</span> total
+          <div className="ml-auto flex items-center gap-3 text-xs font-semibold text-[--ink-soft]">
+            <span><b className="text-[--grass]">{reviewCount}</b> hôm nay</span>
+            <span><b className="text-[--electric]">{learnedCount}</b> tổng</span>
           </div>
         </div>
 
@@ -298,20 +250,7 @@ export default function Home() {
           onRate={handleRate}
         />
 
-        <StatsBar 
-          streak={streak}
-          learned={learnedCount}
-          todayNum={reviewCount}
-          emailEnabled={settings.enabled}
-        />
       </main>
-
-      <SettingsModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        settings={settings}
-        onSave={handleSaveSettings}
-      />
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-full font-semibold text-xs sm:text-sm z-[200] shadow-[0_20px_48px_rgba(45,27,78,0.12)] border-2 border-[--mint] text-[--grass] flex items-center gap-2 animate-fade-in max-w-[90vw] text-center">

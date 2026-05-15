@@ -114,7 +114,6 @@ export async function GET(request) {
         to: userInfo.email,
         userName: userInfo.name,
         word: selectedWord.word,
-        streak: userInfo.streak,
       });
       
       if (result.success) {

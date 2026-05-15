@@ -252,6 +252,16 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 4px 12px rgba(255, 92, 138, 0.25);
 }
 
+/* Universal button transitions + press feedback */
+button:not(:disabled) {
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease,
+              border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+button:not(:disabled):active {
+  transform: scale(0.95) !important;
+}
+
 /* Touch-friendly tap targets */
 @media (max-width: 767px) {
   button, a, [role="button"] {

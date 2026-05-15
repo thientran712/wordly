@@ -210,7 +210,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/50 transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/60 hover:-translate-y-0.5 hover:shadow-sm"
           >
             <ArrowLeft size={18} />
             <span className="font-semibold">Back</span>
@@ -305,7 +305,7 @@ export default function ProfilePage() {
                       key={value}
                       onClick={() => setSkillLevel(value)}
                       title={label}
-                      className="py-2 px-2 rounded-xl border-2 font-bold text-sm cursor-pointer transition-all"
+                      className="py-2 px-2 rounded-xl border-2 font-bold text-sm cursor-pointer hover:-translate-y-0.5 hover:shadow-sm"
                       style={{
                         background: selected ? '#DCC9FF' : '#F8F4FF',
                         borderColor: selected ? '#6C5CE7' : '#E8DFF5',
@@ -378,7 +378,7 @@ export default function ProfilePage() {
                       type="button"
                       key={f.value}
                       onClick={() => setFrequency(f.value)}
-                      className="px-4 py-2 rounded-xl border-2 font-semibold text-sm transition-all"
+                      className="px-4 py-2 rounded-xl border-2 font-semibold text-sm hover:-translate-y-0.5 hover:shadow-sm"
                       style={{
                         background: frequency === f.value ? '#DCC9FF' : '#F8F4FF',
                         borderColor: frequency === f.value ? '#6C5CE7' : '#E8DFF5',
@@ -401,7 +401,7 @@ export default function ProfilePage() {
                         type="button"
                         key={i}
                         onClick={() => toggleCustomDay(i)}
-                        className="w-10 h-10 rounded-xl border-2 font-bold text-xs transition-all"
+                        className="w-10 h-10 rounded-xl border-2 font-bold text-xs hover:-translate-y-0.5 hover:shadow-sm"
                         style={{
                           background: customDays.includes(i) ? '#B8F3D2' : '#F8F4FF',
                           borderColor: customDays.includes(i) ? '#00C896' : '#E8DFF5',
@@ -420,7 +420,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleSendTest}
                 disabled={isSendingTest}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[--electric] text-[--electric] font-semibold text-sm hover:bg-[--lavender] transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[--electric] text-[--electric] font-semibold text-sm hover:bg-[--lavender] hover:-translate-y-0.5 hover:shadow-sm disabled:opacity-50"
               >
                 {isSendingTest ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 Gửi email test
@@ -433,7 +433,7 @@ export default function ProfilePage() {
             type="button"
             onClick={handleSaveEmail}
             disabled={isSavingEmail}
-            className="w-full mt-5 py-3 text-white border-none rounded-2xl font-bold text-sm cursor-pointer transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full mt-5 py-3 text-white border-none rounded-2xl font-bold text-sm cursor-pointer hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             style={{
               background: emailSuccess
                 ? 'linear-gradient(135deg, #00C896, #B8F3D2)'
@@ -450,7 +450,7 @@ export default function ProfilePage() {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full py-4 text-white border-none rounded-2xl font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full py-4 text-white border-none rounded-2xl font-bold text-sm cursor-pointer hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
           style={{ 
             background: success 
               ? 'linear-gradient(135deg, #00C896, #B8F3D2)'

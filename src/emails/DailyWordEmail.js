@@ -3,10 +3,9 @@ import {
   Section, Text, Button, Hr
 } from "@react-email/components";
 
-export default function DailyWordEmail({ 
+export default function DailyWordEmail({
   userName = "there",
   word = {},
-  streak = 0,
   appUrl = "https://wordly.app"
 }) {
   const previewText = `🌈 Word of the day: ${word.word || ""}`;
@@ -28,7 +27,7 @@ export default function DailyWordEmail({
               Hi <strong>{userName}</strong> 👋
             </Text>
             <Text style={subtitle}>
-              Day {streak + 1} of your journey. Ready for a new word?
+              Ready for a new word today?
             </Text>
           </Section>
 
@@ -66,14 +65,6 @@ export default function DailyWordEmail({
             <Button href={appUrl} style={ctaButton}>
               🚀 Learn more on Wordly
             </Button>
-          </Section>
-
-          <Hr style={divider} />
-
-          <Section style={statsSection}>
-            <Text style={statsText}>
-              🔥 <strong>{streak} days</strong> streak · You're doing great!
-            </Text>
           </Section>
 
           <Hr style={divider} />
@@ -116,8 +107,6 @@ const synonymsText = { fontSize: "14px", fontWeight: "600", color: "#00C896", ma
 const ctaSection = { textAlign: "center", margin: "32px 0" };
 const ctaButton = { background: "linear-gradient(135deg, #FF5C8A, #6C5CE7)", color: "#ffffff", fontSize: "15px", fontWeight: "700", textDecoration: "none", padding: "14px 32px", borderRadius: "100px", display: "inline-block" };
 const divider = { border: "none", borderTop: "1px solid #E8DFF5", margin: "24px 0" };
-const statsSection = { textAlign: "center" };
-const statsText = { fontSize: "14px", color: "#8B5500", backgroundColor: "#FFE9A8", padding: "10px 20px", borderRadius: "100px", display: "inline-block", margin: "0" };
 const footer = { textAlign: "center" };
 const footerText = { fontSize: "11px", color: "#5D4B7B", margin: "0 0 8px 0", lineHeight: "1.5" };
 const footerCopy = { fontSize: "11px", color: "#B8A8D8", margin: "0" };

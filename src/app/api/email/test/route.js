@@ -13,7 +13,7 @@ export async function POST() {
   // Lấy profile của user
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, current_streak")
+    .select("name")
     .eq("id", user.id)
     .single();
   
@@ -34,7 +34,6 @@ export async function POST() {
     to: user.email,
     userName: profile?.name || user.email.split("@")[0],
     word: randomWord,
-    streak: profile?.current_streak || 0,
   });
   
   if (!result.success) {

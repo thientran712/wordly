@@ -10,11 +10,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendDailyWordEmail({ to, userName, word, streak }) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+export async function sendDailyWordEmail({ to, userName, word }) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://wordly.app";
 
   const html = await render(
-    DailyWordEmail({ userName, word, streak, appUrl })
+    DailyWordEmail({ userName, word, appUrl })
   );
 
   const subject = `🌈 Từ vựng hôm nay: ${word.word}`;

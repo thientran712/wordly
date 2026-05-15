@@ -84,7 +84,7 @@ export default function WordsPage() {
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/60 hover:-translate-y-0.5 hover:shadow-sm"
           >
             <ArrowLeft size={18} />
             <span className="font-semibold">Back</span>
@@ -104,7 +104,7 @@ export default function WordsPage() {
             <button
               key={t.value}
               onClick={() => { setTab(t.value); resetFilters(); }}
-              className="px-5 py-2.5 rounded-full font-bold text-sm transition-colors"
+              className="px-5 py-2.5 rounded-full font-bold text-sm hover:-translate-y-0.5"
               style={{
                 background: tab === t.value ? "#FF5C8A" : "white",
                 color: tab === t.value ? "white" : "var(--ink-soft)",
@@ -137,7 +137,7 @@ export default function WordsPage() {
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <button
             onClick={() => setLevel("")}
-            className="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+            className="px-3 py-1.5 rounded-full text-xs font-bold hover:-translate-y-0.5 hover:shadow-sm"
             style={{
               background: level === "" ? "#2D1B4E" : "white",
               color: level === "" ? "white" : "var(--ink-soft)",
@@ -150,7 +150,7 @@ export default function WordsPage() {
             <button
               key={l}
               onClick={() => setLevel(level === l ? "" : l)}
-              className="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+              className="px-3 py-1.5 rounded-full text-xs font-bold hover:-translate-y-0.5 hover:shadow-sm"
               style={{
                 background: level === l ? "#DCC9FF" : "white",
                 color: level === l ? "#5B3FBC" : "var(--ink-soft)",
@@ -228,7 +228,7 @@ function WordRow({ word, onClick, onSpeak }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-4 py-3.5 bg-white rounded-2xl border-2 border-[--line] hover:border-[--electric] hover:scale-[1.01] transition-all flex items-center gap-3"
+      className="w-full text-left px-4 py-3.5 bg-white rounded-2xl border-2 border-[--line] hover:border-[--electric] hover:scale-[1.01] hover:shadow-md flex items-center gap-3"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -257,7 +257,7 @@ function WordRow({ word, onClick, onSpeak }) {
           )}
           <button
             onClick={e => onSpeak(e, word.word)}
-            className="w-8 h-8 rounded-full bg-[--whisper] flex items-center justify-center text-[--electric] hover:bg-[--lavender] transition-colors"
+            className="w-8 h-8 rounded-full bg-[--whisper] flex items-center justify-center text-[--electric] hover:bg-[--lavender] hover:scale-110"
           >
             <Volume2 size={14} />
           </button>

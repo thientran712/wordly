@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, LogOut, User, UserCog, BookOpen } from "lucide-react";
+import { LogOut, BookOpen, UserCog, User } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
-export default function Header({ streak, userName, onOpenSettings }) {
+export default function Header({ streak, totalDays, userName }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isStreakOpen, setIsStreakOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -17,111 +18,137 @@ export default function Header({ streak, userName, onOpenSettings }) {
   };
 
   return (
-    <header className="flex gap-2 sm:gap-3 justify-between items-center px-3 sm:px-6 py-2.5 sm:py-3 bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl border-2 border-white/80 shadow-[0_8px_24px_rgba(108,92,231,0.08)] mb-6 sm:mb-8 relative">
-      {/* Left: Logo */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-        <div 
-          className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-[0_4px_16px_rgba(255,92,138,0.35)] transition-transform hover:rotate-12 hover:scale-110 cursor-pointer flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #FF5C8A, #6C5CE7)', transform: 'rotate(-5deg)' }}
-          onClick={() => router.push('/')}
+    <header className="flex justify-between items-center px-4 sm:px-5 py-3 bg-white/80 backdrop-blur-xl rounded-2xl border border-[--line] shadow-[0_4px_16px_rgba(108,92,231,0.07)] mb-5 relative z-50">
+      {/* Logo */}
+      <div
+        className="flex items-center gap-2 cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
+        onClick={() => router.push("/")}
+      >
+        <div
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-lg shadow-[0_2px_8px_rgba(255,92,138,0.3)] flex-shrink-0"
+          style={{ background: "linear-gradient(135deg, #FF5C8A, #6C5CE7)", transform: "rotate(-5deg)" }}
         >
           🌈
         </div>
-        <span
-          className="font-serif font-black text-xl sm:text-3xl gradient-text-purple-pink tracking-tight cursor-pointer truncate"
-          onClick={() => router.push('/')}
-        >
+        <span className="font-serif font-black text-xl sm:text-2xl gradient-text-purple-pink tracking-tight">
           Wordly
         </span>
       </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-        {/* Streak - hide text on small mobile */}
-        <div 
-          className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-[0_4px_12px_rgba(255,182,39,0.25)]"
-          style={{ background: 'linear-gradient(135deg, #FFE9A8, #FFB627)', color: '#8B5500' }}
-        >
-          <span className="text-base sm:text-lg animate-wiggle">🔥</span>
-          <span className="hidden xs:inline">{streak}</span>
-          <span className="hidden sm:inline">days</span>
-        </div>
-
-        {/* Settings - hide on mobile */}
-        <button
-          onClick={onOpenSettings}
-          className="hidden sm:flex w-11 h-11 rounded-2xl bg-white border-2 border-[--line] cursor-pointer items-center justify-center transition-all duration-300 hover:bg-[--lavender] hover:border-[--electric] hover:rotate-45 text-[--ink-soft]"
-          title="Email Settings"
-        >
-          <Settings size={20} />
-        </button>
-
-        {/* User Menu */}
+      {/* Right side */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Streak badge + popup */}
         <div className="relative">
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:scale-110 text-white"
-            style={{ background: 'linear-gradient(135deg, #6C5CE7, #FF5C8A)' }}
+            onClick={() => { setIsStreakOpen(!isStreakOpen); setIsMenuOpen(false); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs hover:-translate-y-0.5 hover:shadow-md"
+            style={{ background: "linear-gradient(135deg, #FFE9A8, #FFB627)", color: "#8B5500" }}
+            title="Xem thống kê streak"
+          >
+            🔥 <span>{streak}</span>
+            <span className="hidden sm:inline">days</span>
+          </button>
+
+          {isStreakOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setIsStreakOpen(false)} />
+              <div
+                className="absolute left-0 top-12 z-50 rounded-2xl py-3 min-w-[220px] animate-fade-in"
+                style={{
+                  background: "white",
+                  boxShadow: "0 24px 64px rgba(45,27,78,0.22), 0 0 0 1.5px rgba(255,182,39,0.35)",
+                }}
+              >
+                <div className="px-4 py-2 border-b border-[--line]">
+                  <p className="text-[10px] text-[--ink-soft] uppercase tracking-wider mb-2">Thống kê học tập</p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-center flex-1">
+                      <div className="text-2xl font-black" style={{ color: "#D97706" }}>{streak}</div>
+                      <div className="text-[10px] font-semibold text-[--ink-soft] mt-0.5">🔥 Liên tiếp</div>
+                    </div>
+                    <div className="w-px h-10 bg-[--line]" />
+                    <div className="text-center flex-1">
+                      <div className="text-2xl font-black" style={{ color: "#6C5CE7" }}>{totalDays}</div>
+                      <div className="text-[10px] font-semibold text-[--ink-soft] mt-0.5">📅 Tổng ngày</div>
+                    </div>
+                  </div>
+                </div>
+                <p className="px-4 pt-2 text-[10px] text-[--ink-soft] leading-relaxed">
+                  {streak > 0
+                    ? `Tuyệt vời! Bạn đang học ${streak} ngày liên tiếp.`
+                    : "Học hôm nay để bắt đầu streak nhé! 💪"}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* My Words — icon + label on sm+, icon only on xs */}
+        <button
+          onClick={() => router.push("/words")}
+          title="My Words"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[--whisper] border border-[--line] text-[--ink-soft] hover:bg-[--lavender] hover:border-[--electric] hover:text-[--electric] hover:-translate-y-0.5 hover:shadow-sm text-xs font-semibold"
+        >
+          <BookOpen size={15} />
+          <span className="hidden sm:inline">My Words</span>
+        </button>
+
+        {/* Profile — icon + label on sm+ */}
+        <button
+          onClick={() => router.push("/profile")}
+          title="Profile"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[--whisper] border border-[--line] text-[--ink-soft] hover:bg-[--lavender] hover:border-[--electric] hover:text-[--electric] hover:-translate-y-0.5 hover:shadow-sm text-xs font-semibold"
+        >
+          <UserCog size={15} />
+          <span className="hidden sm:inline">Profile</span>
+        </button>
+
+        {/* User avatar — sign out + mobile nav */}
+        <div className="relative">
+          <button
+            onClick={() => { setIsMenuOpen(!isMenuOpen); setIsStreakOpen(false); }}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white cursor-pointer flex-shrink-0 hover:scale-110 hover:shadow-[0_4px_16px_rgba(108,92,231,0.4)]"
+            style={{ background: "linear-gradient(135deg, #6C5CE7, #FF5C8A)" }}
             title={userName || "Account"}
           >
-            <User size={18} />
+            <User size={16} />
           </button>
 
           {isMenuOpen && (
             <>
-              <div 
-                className="fixed inset-0 z-40"
-                onClick={() => setIsMenuOpen(false)}
-              />
-              <div 
-                className="absolute right-0 top-12 sm:top-14 z-50 bg-white rounded-2xl border-2 border-[--line] py-2 min-w-[220px] animate-fade-in"
-                style={{ boxShadow: '0 12px 32px rgba(45, 27, 78, 0.15)' }}
+              <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+              <div
+                className="absolute right-0 top-12 z-50 rounded-2xl py-1.5 min-w-[200px]"
+                style={{
+                  background: "white",
+                  boxShadow: "0 24px 64px rgba(45,27,78,0.22), 0 0 0 1.5px rgba(108,92,231,0.18)",
+                }}
               >
                 {userName && (
-                  <div className="px-4 py-3 border-b border-[--line]">
-                    <p className="text-xs text-[--ink-soft]">Welcome</p>
+                  <div className="px-4 py-2.5 border-b border-[--line]">
+                    <p className="text-[10px] text-[--ink-soft] uppercase tracking-wider">Xin chào</p>
                     <p className="font-bold text-sm truncate">{userName}</p>
                   </div>
                 )}
-                {/* Mobile-only menu items */}
+                {/* Mobile nav */}
                 <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onOpenSettings();
-                  }}
-                  className="sm:hidden w-full px-4 py-3 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                  onClick={() => { setIsMenuOpen(false); router.push("/words"); }}
+                  className="sm:hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
                 >
-                  <Settings size={16} />
-                  Email Settings
-                </button>
-                
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    router.push("/profile");
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
-                >
-                  <UserCog size={16} />
-                  Edit Profile
+                  <BookOpen size={15} /> My Words
                 </button>
                 <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    router.push("/words");
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                  onClick={() => { setIsMenuOpen(false); router.push("/profile"); }}
+                  className="sm:hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
                 >
-                  <BookOpen size={16} />
-                  Browse Words
+                  <UserCog size={15} /> Profile
                 </button>
-                <div className="h-px bg-[--line] my-1"></div>
+                <div className="sm:hidden h-px bg-[--line] my-1" />
                 <button
                   onClick={handleLogout}
-                  className="w-full px-4 py-3 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--hot-pink] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--hot-pink] transition-colors flex items-center gap-2"
                 >
-                  <LogOut size={16} />
-                  Sign out
+                  <LogOut size={15} /> Sign out
                 </button>
               </div>
             </>
