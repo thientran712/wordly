@@ -5,15 +5,31 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Search, Volume2 } from "lucide-react";
 
 const STATE_CONFIG = {
-  learning:   { label: "Learning",  bg: "#FFF1F8", border: "#FFD0E2", color: "#FF5C8A", emoji: "🌱" },
-  review:     { label: "Review",    bg: "#F0EDFC", border: "#DCC9FF", color: "#6C5CE7", emoji: "🌿" },
-  relearning: { label: "Relearning",bg: "#FFE9A8", border: "#FFD75A", color: "#8B5500", emoji: "🔁" },
+  learning:   { label: "Learning",   bg: "#FFF1F8", border: "#FFD0E2", color: "#FF5C8A", emoji: "🌱" },
+  review:     { label: "Review",     bg: "#F0EDFC", border: "#DCC9FF", color: "#6C5CE7", emoji: "🌿" },
+  relearning: { label: "Relearning", bg: "#FFE9A8", border: "#FFD75A", color: "#8B5500", emoji: "🔁" },
 };
+
+const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+function formatLearnedDate(dateStr) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Hôm nay";
+  if (diffDays === 1) return "Hôm qua";
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} tháng trước`;
+  return `${Math.floor(diffDays / 365)} năm trước`;
+}
 
 export default function WordsPage() {
   const router = useRouter();
   const [tab, setTab] = useState("learned");
   const [query, setQuery] = useState("");
+  const [level, setLevel] = useState("");
   const [words, setWords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedWord, setSelectedWord] = useState(null);
@@ -21,7 +37,7 @@ export default function WordsPage() {
   const fetchWords = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({ tab, q: query });
+      const params = new URLSearchParams({ tab, q: query, level });
       const res = await fetch(`/api/words/search?${params}`);
       const data = await res.json();
       if (data.words) setWords(data.words);
@@ -30,7 +46,7 @@ export default function WordsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [tab, query]);
+  }, [tab, query, level]);
 
   useEffect(() => {
     const timer = setTimeout(fetchWords, 300);
@@ -47,6 +63,13 @@ export default function WordsPage() {
     }
   };
 
+  const resetFilters = () => {
+    setQuery("");
+    setLevel("");
+  };
+
+  const hasActiveFilters = query || level;
+
   return (
     <>
       <div className="bg-blobs">
@@ -61,7 +84,7 @@ export default function WordsPage() {
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/50 transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/50 transition-colors"
           >
             <ArrowLeft size={18} />
             <span className="font-semibold">Back</span>
@@ -80,8 +103,8 @@ export default function WordsPage() {
           ].map(t => (
             <button
               key={t.value}
-              onClick={() => { setTab(t.value); setQuery(""); }}
-              className="px-5 py-2.5 rounded-full font-bold text-sm transition-all"
+              onClick={() => { setTab(t.value); resetFilters(); }}
+              className="px-5 py-2.5 rounded-full font-bold text-sm transition-colors"
               style={{
                 background: tab === t.value ? "#FF5C8A" : "white",
                 color: tab === t.value ? "white" : "var(--ink-soft)",
@@ -95,7 +118,7 @@ export default function WordsPage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-5">
+        <div className="relative mb-3">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[--ink-soft]" />
           <input
             type="text"
@@ -110,30 +133,70 @@ export default function WordsPage() {
           )}
         </div>
 
+        {/* Level filter */}
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          <button
+            onClick={() => setLevel("")}
+            className="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+            style={{
+              background: level === "" ? "#2D1B4E" : "white",
+              color: level === "" ? "white" : "var(--ink-soft)",
+              border: level === "" ? "none" : "2px solid var(--line)",
+            }}
+          >
+            Tất cả
+          </button>
+          {LEVELS.map(l => (
+            <button
+              key={l}
+              onClick={() => setLevel(level === l ? "" : l)}
+              className="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+              style={{
+                background: level === l ? "#DCC9FF" : "white",
+                color: level === l ? "#5B3FBC" : "var(--ink-soft)",
+                border: level === l ? "2px solid #6C5CE7" : "2px solid var(--line)",
+              }}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+
         {/* Count */}
         {!isLoading && (
           <p className="text-sm text-[--ink-soft] mb-4">
             <span className="font-bold text-[--ink]">{words.length}</span> từ
-            {query && <> · kết quả cho "<span className="font-bold">{query}</span>"</>}
+            {hasActiveFilters && (
+              <>
+                {" "}·{" "}
+                <button onClick={resetFilters} className="text-[--hot-pink] font-semibold hover:underline">
+                  Xoá filter
+                </button>
+              </>
+            )}
           </p>
         )}
 
         {/* Word list */}
         {isLoading ? (
           <div className="text-center py-16">
-            <div className="text-4xl mb-3 animate-bounce-soft">📖</div>
+            <div className="text-4xl mb-3">📖</div>
             <p className="text-[--ink-soft]">Đang tải...</p>
           </div>
         ) : words.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-4xl mb-3">{tab === "bookmarked" ? "💔" : "📭"}</div>
+            <div className="text-4xl mb-3">{hasActiveFilters ? "🔍" : tab === "bookmarked" ? "💔" : "📭"}</div>
             <p className="text-[--ink-soft] font-semibold">
-              {tab === "bookmarked"
+              {hasActiveFilters
+                ? "Không tìm thấy từ nào"
+                : tab === "bookmarked"
                 ? "Chưa có từ yêu thích nào"
                 : "Chưa học từ nào cả"}
             </p>
             <p className="text-sm text-[--ink-soft] mt-1">
-              {tab === "bookmarked"
+              {hasActiveFilters
+                ? <button onClick={resetFilters} className="text-[--hot-pink] font-semibold hover:underline">Xoá filter</button>
+                : tab === "bookmarked"
                 ? "Nhấn 💖 khi học để lưu từ yêu thích"
                 : "Bắt đầu học để từ hiện ra ở đây!"}
             </p>
@@ -178,25 +241,32 @@ function WordRow({ word, onClick, onSpeak }) {
         <p className="text-xs text-[--ink-soft] truncate mt-0.5">{word.def_en}</p>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        <span
-          className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-          style={{ background: state.bg, color: state.color }}
-        >
-          {state.emoji} {state.label}
-        </span>
-        {word.level && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-            style={{ background: "#DCC9FF", color: "#5B3FBC" }}>
-            {word.level}
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <div className="flex items-center gap-2">
+          <span
+            className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+            style={{ background: state.bg, color: state.color }}
+          >
+            {state.emoji} {state.label}
+          </span>
+          {word.level && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+              style={{ background: "#DCC9FF", color: "#5B3FBC" }}>
+              {word.level}
+            </span>
+          )}
+          <button
+            onClick={e => onSpeak(e, word.word)}
+            className="w-8 h-8 rounded-full bg-[--whisper] flex items-center justify-center text-[--electric] hover:bg-[--lavender] transition-colors"
+          >
+            <Volume2 size={14} />
+          </button>
+        </div>
+        {word.learned_at && (
+          <span className="text-[10px] text-[--ink-soft]">
+            🗓 {formatLearnedDate(word.learned_at)}
           </span>
         )}
-        <button
-          onClick={e => onSpeak(e, word.word)}
-          className="w-8 h-8 rounded-full bg-[--whisper] flex items-center justify-center text-[--electric] hover:bg-[--lavender] transition-all"
-        >
-          <Volume2 size={14} />
-        </button>
       </div>
     </button>
   );
@@ -257,6 +327,11 @@ function WordDetailModal({ word, onClose }) {
               <Volume2 size={16} />
             </button>
           </div>
+          {word.learned_at && (
+            <p className="text-xs text-[--ink-soft]">
+              🗓 Bắt đầu học {formatLearnedDate(word.learned_at)}
+            </p>
+          )}
         </div>
 
         <div className="space-y-3">

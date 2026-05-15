@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, LogOut, User, BarChart3, UserCog, BookOpen, Menu } from "lucide-react";
+import { Settings, LogOut, User, UserCog, BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
 export default function Header({ streak, userName, onOpenSettings }) {
@@ -47,15 +47,6 @@ export default function Header({ streak, userName, onOpenSettings }) {
           <span className="hidden sm:inline">days</span>
         </div>
 
-        {/* Stats - hide on mobile, show in menu */}
-        <button
-          onClick={() => router.push('/stats')}
-          className="hidden sm:flex w-11 h-11 rounded-2xl bg-white border-2 border-[--line] cursor-pointer items-center justify-center transition-all duration-300 hover:bg-[--lavender] hover:border-[--electric] hover:scale-110 text-[--ink-soft]"
-          title="Statistics"
-        >
-          <BarChart3 size={20} />
-        </button>
-
         {/* Settings - hide on mobile */}
         <button
           onClick={onOpenSettings}
@@ -93,16 +84,6 @@ export default function Header({ streak, userName, onOpenSettings }) {
                   </div>
                 )}
                 {/* Mobile-only menu items */}
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    router.push("/stats");
-                  }}
-                  className="sm:hidden w-full px-4 py-3 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
-                >
-                  <BarChart3 size={16} />
-                  Statistics
-                </button>
                 <button
                   onClick={() => {
                     setIsMenuOpen(false);
