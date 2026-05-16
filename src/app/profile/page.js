@@ -434,7 +434,7 @@ export default function ProfilePage() {
 
           {emailEnabled && (
             <div className="pt-4 border-t-2 border-[--line]">
-              <p className="text-xs text-[--ink-soft]">📬 Email sẽ được gửi lúc <strong>7:00 sáng</strong> mỗi ngày.</p>
+              <p className="text-xs text-[--ink-soft]">📬 Email sẽ được gửi lúc <strong>7:00 tối</strong> mỗi ngày.</p>
             </div>
           )}
 
