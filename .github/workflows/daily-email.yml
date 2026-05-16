@@ -13,11 +13,20 @@ jobs:
     steps:
       - name: Trigger email cron
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" -L \
-            -X GET "${{ secrets.VERCEL_APP_URL }}/api/cron/send-daily-emails" \
+          # Strip trailing slash from URL
+          BASE_URL="${{ secrets.VERCEL_APP_URL }}"
+          BASE_URL="${BASE_URL%/}"
+
+          echo "Calling: $BASE_URL/api/cron/send-daily-emails"
+
+          response=$(curl -s -L --location-trusted \
+            -o /tmp/response_body.txt \
+            -w "%{http_code}" \
+            -X GET "$BASE_URL/api/cron/send-daily-emails" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
 
           echo "Response status: $response"
+          echo "Response body: $(cat /tmp/response_body.txt)"
 
           if [ "$response" != "200" ]; then
             echo "❌ Cron failed with status $response"
