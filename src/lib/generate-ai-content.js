@@ -86,16 +86,24 @@ export async function getOrGenerateWordContent(adminSupabase, { word_id, word, p
   const prompt = buildPrompt(word, pos || "", word_level || "", sl, learning_goal || "daily");
 
   try {
-    const { getOpenAIClient } = await import("@/lib/openai");
-    const completion = await getOpenAIClient().chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.75,
-      max_tokens: 1500,
-      response_format: { type: "json_object" },
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.75,
+        max_tokens: 1500,
+        response_format: { type: "json_object" },
+      }),
     });
 
-    const parsed = JSON.parse(completion.choices[0].message.content);
+    if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
     if (!Array.isArray(parsed.meanings) || parsed.meanings.length === 0) throw new Error("Invalid shape");
 
     parsed.meanings = parsed.meanings.slice(0, 3);
