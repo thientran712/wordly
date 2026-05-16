@@ -10,12 +10,12 @@ export async function POST(request) {
   }
   
   const { word_id, rating } = await request.json();
-  
-  // Validate
-  if (!word_id || !rating || rating < 1 || rating > 4) {
+
+  // Validate — rating 0 = "retire" (never review again), 1-4 = FSRS
+  if (!word_id || rating === undefined || rating === null || rating < 0 || rating > 4) {
     return Response.json({ error: "Invalid input" }, { status: 400 });
   }
-  
+
   // 1. Get current progress (if exists)
   const { data: existing } = await supabase
     .from("user_progress")
@@ -23,16 +23,46 @@ export async function POST(request) {
     .eq("user_id", user.id)
     .eq("word_id", word_id)
     .single();
-  
+
+  // Handle rating=0: retire word (set due far in future, skip FSRS)
+  if (rating === 0) {
+    const farFuture = new Date();
+    farFuture.setFullYear(farFuture.getFullYear() + 50);
+
+    const { error: retireError } = await supabase
+      .from("user_progress")
+      .upsert({
+        user_id: user.id,
+        word_id,
+        state: 'review',
+        stability: 9999,
+        difficulty: existing?.difficulty || 5.0,
+        due_at: farFuture.toISOString(),
+        scheduled_days: 18250,
+        elapsed_days: 0,
+        lapses: existing?.lapses || 0,
+        review_count: (existing?.review_count || 0) + 1,
+        last_reviewed_at: new Date().toISOString(),
+        is_bookmarked: existing?.is_bookmarked || false,
+      }, { onConflict: "user_id,word_id" });
+
+    if (retireError) {
+      console.error("Retire word error:", retireError);
+      return Response.json({ error: retireError.message }, { status: 500 });
+    }
+
+    return Response.json({ success: true, retired: true });
+  }
+
   // 2. Convert to FSRS card
   const currentCard = dbToCard(existing);
-  
+
   // 3. Apply rating → get new state
   const { card: newCard, log } = rateCard(currentCard, rating);
-  
+
   // 4. Save to user_progress (upsert)
   const dbData = cardToDb(newCard);
-  
+
   const { data: progress, error: progressError } = await supabase
     .from("user_progress")
     .upsert({
@@ -43,12 +73,12 @@ export async function POST(request) {
     }, { onConflict: "user_id,word_id" })
     .select()
     .single();
-  
+
   if (progressError) {
     console.error("Update progress error:", progressError);
     return Response.json({ error: progressError.message }, { status: 500 });
   }
-  
+
   // 5. Log review history
   const { error: logError } = await supabase
     .from("review_logs")
@@ -65,12 +95,12 @@ export async function POST(request) {
       elapsed_days: dbData.elapsed_days,
       scheduled_days: dbData.scheduled_days,
     });
-  
+
   if (logError) {
     console.error("Log review error:", logError);
     // Don't fail the request - log error is non-critical
   }
-  
+
   // 6. Return new state for UI feedback
   return Response.json({
     success: true,
@@ -79,7 +109,6 @@ export async function POST(request) {
       difficulty: dbData.difficulty,
       state: dbData.state,
       due_at: dbData.due_at,
-      // Tell user when next review is
       next_review_in_days: dbData.scheduled_days,
     },
   });

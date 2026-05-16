@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Volume2, RotateCcw, Frown, Smile, Zap, Sparkles } from "lucide-react";
+import { Volume2, RotateCcw, Frown, Smile, Zap, EyeOff } from "lucide-react";
 
 const RATINGS = [
   { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "#E5405E", bg: "#FFF0F3", border: "#FFCCD6", hoverShadow: "rgba(229,64,94,0.25)" },
@@ -12,18 +12,29 @@ const RATINGS = [
 
 const CONTEXT_ICONS = { love: "💕", life: "🌿", work: "💼" };
 
+const LOADING_MESSAGES = [
+  "✨ AI đang giải thích từ này...",
+  "🧠 Đang tra từ điển thông minh...",
+  "📖 Đang tìm nghĩa hay nhất cho bạn...",
+  "🔍 AI đang phân tích từ vựng...",
+  "💡 Đang tạo ví dụ thực tế...",
+  "🌟 Sắp có rồi, chờ xíu nhé...",
+];
+
 export default function WordCard({ word, currentIndex, isBookmarked, onBookmark, onRate, progress, source, skillLevel, learningGoal }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRating, setIsRating] = useState(false);
   const [hovered, setHovered] = useState(null);
   const [aiContent, setAiContent] = useState(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
 
   // Fetch AI content whenever the word changes
   useEffect(() => {
     if (!word?.id) return;
     setAiContent(null);
     setIsLoadingAI(true);
+    setLoadingMsg(LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)]);
 
     fetch("/api/ai/word-content", {
       method: "POST",
@@ -64,7 +75,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
 
   return (
     <div
-      className="bg-white rounded-3xl border border-[--line] overflow-hidden mb-3 animate-fade-in"
+      className="bg-white rounded-3xl border border-[--line] overflow-clip mb-3 animate-fade-in"
       style={{ boxShadow: "0 8px 32px rgba(45,27,78,0.08)" }}
       key={currentIndex}
     >
@@ -103,18 +114,8 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
             {word.word}
           </h1>
 
-          {/* Phonetic + badges + audio */}
+          {/* Badges + audio */}
           <div className="flex flex-wrap items-center gap-2.5 mb-6">
-            {word.phonetic && !word.phonetic.endsWith(".mp3") && (
-              <span className="font-serif italic text-lg text-[--ink-soft]">{word.phonetic}</span>
-            )}
-            {word.phonetic && !word.phonetic.endsWith(".mp3") && (
-              <span className="text-[--line] select-none">·</span>
-            )}
-            <span className="px-3 py-1 rounded-full font-bold text-xs uppercase tracking-wider"
-              style={{ background: "#ECFDF5", color: "#059669", border: "1.5px solid #A7F3D0" }}>
-              {word.pos}
-            </span>
             {word.level && (
               <span className="px-3 py-1 rounded-full font-bold text-xs uppercase tracking-wider"
                 style={{ background: "#F5F3FF", color: "#6C5CE7", border: "1.5px solid #C4B5FD" }}>
@@ -135,81 +136,110 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
             </button>
           </div>
 
-          {/* Definition */}
-          <div className="mb-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--hot-pink] mb-2">📖 Definition</p>
-            <p className="text-lg lg:text-xl leading-relaxed text-[--ink] font-medium">{word.def_en}</p>
-          </div>
-
-          {word.ex_en && <div className="h-px bg-[--line] mb-5" />}
-
-          {/* Example */}
-          {word.ex_en && (
-            <div className="mb-5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--ocean] mb-2">💬 Example</p>
-              <p className="text-lg lg:text-xl leading-relaxed text-[--ink-soft] italic">"{word.ex_en}"</p>
-            </div>
-          )}
-
-          {/* Synonyms */}
-          {word.synonyms?.length > 0 && (
+          {/* ── AI Content: meanings + examples + paragraph ── */}
+          {isLoadingAI ? (
+            <AILoadingSkeleton message={loadingMsg} />
+          ) : aiContent?.meanings?.length > 0 ? (
             <>
-              <div className="h-px bg-[--line] mb-4" />
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--grass]">✨ Also</span>
-                {word.synonyms.slice(0, 6).map((s, i) => (
-                  <span key={i}
-                    className="px-2.5 py-1 rounded-full text-sm font-semibold cursor-default hover:scale-105"
-                    style={{ background: "#F0FDF4", color: "#059669", border: "1.5px solid #A7F3D0" }}>
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ── AI Content ── */}
-          {(isLoadingAI || aiContent) && (
-            <div className="mt-5 pt-5 border-t border-[--line]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5"
-                style={{ color: "#6C5CE7" }}>
-                <Sparkles size={11} />
-                AI Examples
+              {/* Meaning count header */}
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--hot-pink] mb-3">
+                📖 {aiContent.meanings.length} nghĩa phổ biến
               </p>
 
-              {isLoadingAI ? (
-                <AILoadingSkeleton />
-              ) : (
-                <>
-                  {/* 3 examples */}
-                  <div className="space-y-2.5 mb-4">
-                    {aiContent.examples.map((ex, i) => (
-                      <div key={i} className="flex gap-2.5 items-start">
-                        <span className="text-base leading-none mt-0.5 flex-shrink-0">
-                          {CONTEXT_ICONS[ex.context] || "•"}
+              {/* Meanings */}
+              <div className="mb-5 space-y-3">
+                {aiContent.meanings.map((m, i) => (
+                  <div key={i}
+                    className="rounded-2xl px-4 py-3.5 border border-[--line]"
+                    style={{ background: i === 0 ? "#FAFBFF" : "#FEFEFE" }}
+                  >
+                    {/* POS badge + phonetic + number */}
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-[10px] font-black text-[--ink-soft] opacity-40">
+                        {i + 1}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider"
+                        style={{ background: "#ECFDF5", color: "#059669", border: "1.5px solid #A7F3D0" }}>
+                        {m.pos}
+                      </span>
+                      {m.phonetic_ipa && (
+                        <span className="flex items-center gap-1">
+                          <span className="text-[9px] font-bold uppercase tracking-wider opacity-40 text-[--ink-soft]">🇺🇸 IPA</span>
+                          <span className="font-serif italic text-sm text-[--ink-soft]">{m.phonetic_ipa}</span>
                         </span>
-                        <p className="text-sm lg:text-base leading-relaxed text-[--ink-soft] italic">
-                          "{ex.sentence}"
+                      )}
+                    </div>
+                    {m.memory_vi && (
+                      <div className="rounded-xl px-3 py-2.5 mb-2"
+                        style={{ background: "linear-gradient(135deg,#FFFBEB,#FFF3E0)", border: "1.5px solid #FDE68A" }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#D97706" }}>
+                          💡 Mẹo nhớ
+                        </p>
+                        <p className="text-sm leading-relaxed" style={{ color: "#92400E" }}>
+                          {m.memory_vi}
                         </p>
                       </div>
-                    ))}
-                  </div>
+                    )}
 
-                  {/* Paragraph */}
-                  {aiContent.paragraph && (
-                    <>
-                      <div className="h-px bg-[--line] mb-3" />
-                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--ink-soft] mb-2">
-                        📝 In a story
+                    {/* EN definition */}
+                    <p className="text-base lg:text-lg font-semibold text-[--ink] leading-snug mb-1">
+                      {m.definition_en}
+                    </p>
+
+                    {/* VI definition */}
+                    {m.definition_vi && (
+                      <p className="text-sm text-[--ink-soft] mb-2.5">
+                        🇻🇳 {m.definition_vi}
                       </p>
-                      <p className="text-sm lg:text-base leading-relaxed text-[--ink]">
-                        {aiContent.paragraph}
-                      </p>
-                    </>
-                  )}
-                </>
-              )}
+                    )}
+
+                    {/* 3 examples per meaning */}
+                    {m.examples?.length > 0 && (
+                      <div className="mt-2.5 space-y-2">
+                        {m.examples.map((ex, j) => (
+                          <div key={j} className="flex gap-2 items-start">
+                            <span className="flex-shrink-0 text-sm leading-snug mt-0.5">
+                              {CONTEXT_ICONS[ex.context] || "•"}
+                            </span>
+                            <p className="text-sm leading-relaxed text-[--ink-soft] italic">
+                              "{ex.sentence}"
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+            </>
+          ) : (
+            /* Fallback nếu AI lỗi */
+            <div className="mb-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--hot-pink] mb-2">📖 Definition</p>
+              <p className="text-lg lg:text-xl leading-relaxed text-[--ink] font-medium">{word.def_en}</p>
             </div>
+          )}
+
+          {/* Synonyms — AI generated */}
+          {!isLoadingAI && (
+            <>
+              <div className="h-px bg-[--line] mt-4 mb-4" />
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--grass]">✨ Also</span>
+                {aiContent?.synonyms?.length > 0 ? (
+                  aiContent.synonyms.map((s, i) => (
+                    <span key={i}
+                      className="px-2.5 py-1 rounded-full text-sm font-semibold cursor-default hover:scale-105 transition-transform"
+                      style={{ background: "#F0FDF4", color: "#059669", border: "1.5px solid #A7F3D0" }}>
+                      {s}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-[--ink-soft] italic">Không có từ đồng nghĩa</span>
+                )}
+              </div>
+            </>
           )}
 
           {/* Mobile rating */}
@@ -238,12 +268,21 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                 </button>
               ))}
             </div>
+            <button
+              onClick={() => handleRate(0)}
+              disabled={isRating}
+              className="mt-3 w-full py-2.5 rounded-xl border border-gray-200 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 hover:bg-gray-50 active:scale-95"
+              style={{ color: "#9CA3AF" }}
+            >
+              <EyeOff size={12} />
+              Không cần nhắc lại từ này
+            </button>
           </div>
         </div>
 
-        {/* RIGHT — desktop */}
+        {/* RIGHT — desktop, sticky so ratings stay at top regardless of content length */}
         <div className="hidden sm:flex flex-col w-[140px] lg:w-[160px] flex-shrink-0 border-l border-[--line]">
-          <div className="flex flex-col flex-1 p-3 gap-2 justify-center">
+          <div className="sticky top-4 flex flex-col p-3 gap-2">
             <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[--ink-soft] text-center mb-1">
               Nhớ chưa?
             </p>
@@ -273,6 +312,17 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
             <p className="text-[9px] text-center text-[--ink-soft] opacity-30 mt-1 tracking-widest">
               1 · 2 · 3 · 4
             </p>
+            <div className="border-t border-[--line] mt-2 pt-2">
+              <button
+                onClick={() => handleRate(0)}
+                disabled={isRating}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-medium cursor-pointer disabled:opacity-50 transition-all hover:bg-gray-50"
+                style={{ color: "#9CA3AF" }}
+              >
+                <EyeOff size={11} />
+                Bỏ qua mãi
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -280,22 +330,39 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
   );
 }
 
-function AILoadingSkeleton() {
+function AILoadingSkeleton({ message }) {
   return (
-    <div className="space-y-2.5 animate-pulse">
-      {[90, 75, 85].map((w, i) => (
-        <div key={i} className="flex gap-2.5 items-start">
-          <div className="w-5 h-5 rounded-full bg-[--line] flex-shrink-0 mt-0.5" />
-          <div className="flex-1 space-y-1.5">
-            <div className="h-3 bg-[--line] rounded-full" style={{ width: `${w}%` }} />
-            <div className="h-3 bg-[--line] rounded-full" style={{ width: `${w - 20}%` }} />
+    <div className="py-1">
+      {/* Loading message */}
+      <p className="text-sm font-semibold mb-5" style={{ color: "#6C5CE7" }}>
+        {message}
+      </p>
+
+      {/* Shimmer skeleton — 2 meanings */}
+      <div className="animate-pulse space-y-5">
+        {[
+          { w1: "75%", w2: "60%", w3: "88%", w4: "70%", w5: "55%" },
+          { w1: "82%", w2: "55%", w3: "78%", w4: "65%", w5: "80%" },
+        ].map((ws, i) => (
+          <div key={i} className="space-y-2.5">
+            {/* POS badge */}
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-gray-200" />
+              <div className="h-4 w-16 rounded-full bg-gray-200" />
+            </div>
+            {/* EN definition */}
+            <div className="h-4 rounded-full bg-gray-200" style={{ width: ws.w1 }} />
+            <div className="h-4 rounded-full bg-gray-100" style={{ width: ws.w2 }} />
+            {/* VI definition */}
+            <div className="h-3 rounded-full bg-gray-100" style={{ width: ws.w3 }} />
+            {/* Examples */}
+            <div className="pl-1 space-y-1.5 pt-1">
+              <div className="h-3 rounded-full bg-gray-100" style={{ width: ws.w4 }} />
+              <div className="h-3 rounded-full bg-gray-100" style={{ width: ws.w5 }} />
+              <div className="h-3 rounded-full bg-gray-100" style={{ width: ws.w1 }} />
+            </div>
           </div>
-        </div>
-      ))}
-      <div className="mt-4 pt-3 border-t border-[--line] space-y-1.5">
-        <div className="h-3 bg-[--line] rounded-full w-full" />
-        <div className="h-3 bg-[--line] rounded-full w-5/6" />
-        <div className="h-3 bg-[--line] rounded-full w-4/6" />
+        ))}
       </div>
     </div>
   );

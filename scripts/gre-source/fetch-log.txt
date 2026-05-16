@@ -1,0 +1,3111 @@
+📚 Total unique words to fetch: 3097
+   C1: 2757
+   C2: 340
+   (skipped 4955 Oxford 5000 words)
+
+🚀 Fetching 3097 words...
+
+  [1/3097] aboveboard... ✅ C1
+  [2/3097] abysmal... ✅ C1
+  [3/3097] acme... ✅ C1
+  [4/3097] affable... ✅ C1
+  [5/3097] affluent... ✅ C1
+  [6/3097] altruism... ✅ C1
+  [7/3097] amiable... ✅ C1
+  [8/3097] amply... ✅ C1
+  [9/3097] amuck... ❌ not found
+  [10/3097] analogous... ✅ C1
+  [11/3097] animosity... ✅ C1
+  [12/3097] antedate... ✅ C1
+  [13/3097] antiquated... ✅ C1
+  [14/3097] apex... ✅ C1
+  [15/3097] aphorism... ✅ C1
+  [16/3097] aphoristic... ❌ not found
+  [17/3097] appreciable... ✅ C1
+  [18/3097] apprehension... ✅ C1
+  [19/3097] archaic... ✅ C1
+  [20/3097] ascendancy... ✅ C1
+  [21/3097] ascribe... ✅ C1
+  [22/3097] assail... ✅ C1
+  [23/3097] assuage... ✅ C1
+  [24/3097] augment... ✅ C1
+  [25/3097] autonomously... ✅ C1
+  [26/3097] avarice... ✅ C1
+  [27/3097] avert... ✅ C1
+  [28/3097] avid... ✅ C1
+  [29/3097] badger... ✅ C1
+  [30/3097] balk... ✅ C1
+  [31/3097] banish... ✅ C1
+  [32/3097] beatific... ✅ C1
+  [33/3097] becoming... ✅ C1
+  [34/3097] begrudge... ✅ C1
+  [35/3097] behoove... ✅ C1
+  [36/3097] belittle... ✅ C1
+  [37/3097] bellicose... ✅ C1
+  [38/3097] benign... ✅ C1
+  [39/3097] besiege... ✅ C1
+  [40/3097] besmirch... ✅ C1
+  [41/3097] bleak... ✅ C1
+  [42/3097] boon... ✅ C1
+  [43/3097] boorish... ✅ C1
+  [44/3097] brusquely... ❌ not found
+  [45/3097] buttress... ✅ C1
+  [46/3097] cadaverous... ✅ C1
+  [47/3097] candid... ✅ C1
+  [48/3097] candidness... ❌ not found
+  [49/3097] cardinal... ✅ C1
+  [50/3097] carping... ✅ C1
+  [51/3097] catalyst... ✅ C1
+  [52/3097] cavalier... ✅ C1
+  [53/3097] censor... ✅ C1
+  [54/3097] cerebral... ✅ C1
+  [55/3097] chauvinist... ✅ C1
+  [56/3097] checkered... ✅ C1
+  [57/3097] chivalrous... ✅ C1
+  [58/3097] clemency... ✅ C1
+  [59/3097] coalesce... ✅ C1
+  [60/3097] cogent... ✅ C1
+  [61/3097] cohesive... ✅ C1
+  [62/3097] collusion... ✅ C1
+  [63/3097] colossal... ✅ C1
+  [64/3097] commendable... ✅ C1
+  [65/3097] complacent... ✅ C1
+  [66/3097] complementary... ✅ C1
+  [67/3097] conducive... ✅ C1
+  [68/3097] conniving... ✅ C1
+  [69/3097] consecrate... ✅ C1
+  [70/3097] consummate... ✅ C1
+  [71/3097] contemptuous... ✅ C1
+  [72/3097] contrite... ✅ C1
+  [73/3097] conundrum... ✅ C1
+  [74/3097] convivial... ✅ C1
+  [75/3097] convoluted... ✅ C1
+  [76/3097] cornucopia... ✅ C1
+  [77/3097] corroborate... ✅ C1
+  [78/3097] cosmopolitan... ✅ C1
+  [79/3097] credence... ✅ C1
+  [80/3097] creditable... ✅ C1
+  [81/3097] credulity... ✅ C1
+  [82/3097] cumbersome... ✅ C1
+  [83/3097] dearth... ✅ C1
+  [84/3097] debase... ✅ C1
+  [85/3097] debunk... ✅ C1
+  [86/3097] decimation... ✅ C1
+  [87/3097] degrade... ✅ C1
+  [88/3097] demean... ✅ C1
+  [89/3097] demure... ✅ C1
+  [90/3097] deride... ✅ C1
+  [91/3097] derisive... ✅ C1
+  [92/3097] derogative... ❌ not found
+  [93/3097] desecrate... ✅ C1
+  [94/3097] destitute... ✅ C1
+  [95/3097] deter... ✅ C1
+  [96/3097] detrimental... ✅ C1
+  [97/3097] devolve... ✅ C1
+  [98/3097] diabolical... ✅ C1
+  [99/3097] dilapidated... ✅ C1
+  [100/3097] diligent... ✅ C1
+  [101/3097] discord... ✅ C1
+  [102/3097] discreet... ✅ C1
+  [103/3097] discriminate... ✅ C1
+  [104/3097] disenfranchise... ✅ C1
+  [105/3097] disheartened... ✅ C1
+  [106/3097] disparate... ✅ C1
+  [107/3097] dispatch... ✅ C1
+  [108/3097] docile... ✅ C1
+  [109/3097] dupe... ✅ C1
+  [110/3097] eccentric... ✅ C1
+  [111/3097] egotist... ✅ C1
+  [112/3097] eke... ✅ C1
+  [113/3097] elude... ✅ C1
+  [114/3097] elusive... ✅ C1
+  [115/3097] embellish... ✅ C1
+  [116/3097] embroiled... ✅ C1
+  [117/3097] empathetic... ✅ C1
+  [118/3097] emulate... ✅ C1
+  [119/3097] endemic... ✅ C1
+  [120/3097] enmity... ✅ C1
+  [121/3097] entice... ✅ C1
+  [122/3097] enumerate... ✅ C1
+  [123/3097] err... ✅ C1
+  [124/3097] errant... ✅ C1
+  [125/3097] erratic... ✅ C1
+  [126/3097] euphoria... ✅ C1
+  [127/3097] evasive... ✅ C1
+  [128/3097] evenhanded... ✅ C1
+  [129/3097] exasperate... ✅ C1
+  [130/3097] excruciating... ✅ C1
+  [131/3097] exemplify... ✅ C1
+  [132/3097] exhort... ✅ C1
+  [133/3097] extenuating... ✅ C1
+  [134/3097] facetious... ✅ C1
+  [135/3097] fawn... ✅ C1
+  [136/3097] ferret... ✅ C1
+  [137/3097] fete... ✅ C1
+  [138/3097] fickle... ✅ C1
+  [139/3097] finagle... ✅ C1
+  [140/3097] fledgling... ❌ not found
+  [141/3097] fleece... ❌ not found
+  [142/3097] flounder... ❌ not found
+  [143/3097] flush... ❌ not found
+  [144/3097] foible... ❌ not found
+  [145/3097] foolhardy... ❌ not found
+  [146/3097] forthright... ❌ not found
+  [147/3097] futile... ❌ not found
+  [148/3097] genial... ❌ not found
+  [149/3097] genteel... ❌ not found
+  [150/3097] glean... ❌ not found
+  [151/3097] glib... ❌ not found
+  [152/3097] goad... ❌ not found
+  [153/3097] grovel... ❌ not found
+  [154/3097] guffaw... ❌ not found
+  [155/3097] hamper... ❌ not found
+  [156/3097] hamstrung... ❌ not found
+  [157/3097] heyday... ❌ not found
+  [158/3097] hodgepodge... ❌ not found
+  [159/3097] hound... ❌ not found
+  [160/3097] humdrum... ❌ not found
+  [161/3097] illicit... ❌ not found
+  [162/3097] immaterial... ❌ not found
+  [163/3097] impeccable... ❌ not found
+  [164/3097] impede... ❌ not found
+  [165/3097] impending... ❌ not found
+  [166/3097] impermeable... ❌ not found
+  [167/3097] implicate... ❌ not found
+  [168/3097] imponderable... ❌ not found
+  [169/3097] impregnable... ❌ not found
+  [170/3097] inadvertent... ✅ C1
+  [171/3097] inarticulate... ✅ C1
+  [172/3097] incense... ✅ C1
+  [173/3097] incessant... ✅ C1
+  [174/3097] inclement... ✅ C1
+  [175/3097] incumbent... ✅ C1
+  [176/3097] indict... ✅ C1
+  [177/3097] indignant... ✅ C1
+  [178/3097] industrious... ✅ C1
+  [179/3097] inflammable... ✅ C1
+  [180/3097] ingenuity... ✅ C1
+  [181/3097] inkling... ✅ C1
+  [182/3097] insipid... ✅ C1
+  [183/3097] insolvent... ✅ C1
+  [184/3097] intermittent... ✅ C1
+  [185/3097] inundate... ✅ C1
+  [186/3097] irascible... ✅ C1
+  [187/3097] irk... ✅ C1
+  [188/3097] irresolute... ✅ C1
+  [189/3097] jargon... ✅ C1
+  [190/3097] jocular... ✅ C1
+  [191/3097] junta... ✅ C1
+  [192/3097] laborious... ✅ C1
+  [193/3097] leery... ✅ C1
+  [194/3097] lethargic... ✅ C1
+  [195/3097] lucid... ✅ C1
+  [196/3097] macabre... ✅ C1
+  [197/3097] malady... ✅ C1
+  [198/3097] malevolent... ✅ C1
+  [199/3097] malleable... ✅ C1
+  [200/3097] malodorous... ✅ C1
+  [201/3097] maxim... ✅ C1
+  [202/3097] meander... ✅ C1
+  [203/3097] melancholy... ✅ C1
+  [204/3097] melee... ✅ C1
+  [205/3097] mesmerize... ✅ C1
+  [206/3097] misanthrope... ✅ C1
+  [207/3097] miscreant... ✅ C1
+  [208/3097] miser... ✅ C1
+  [209/3097] misogynist... ✅ C1
+  [210/3097] moot... ✅ C1
+  [211/3097] morose... ✅ C1
+  [212/3097] morph... ✅ C1
+  [213/3097] muted... ✅ C1
+  [214/3097] obdurate... ✅ C1
+  [215/3097] obliging... ✅ C1
+  [216/3097] obstinate... ✅ C1
+  [217/3097] ornate... ✅ C1
+  [218/3097] paradoxical... ✅ C1
+  [219/3097] pastoral... ✅ C1
+  [220/3097] patronize... ✅ C1
+  [221/3097] paucity... ✅ C1
+  [222/3097] peevish... ✅ C1
+  [223/3097] perennial... ✅ C1
+  [224/3097] perpetuate... ✅ C1
+  [225/3097] perquisiteperquisiteright... ❌ not found
+  [226/3097] pertinent... ✅ C1
+  [227/3097] perturb... ✅ C1
+  [228/3097] peruse... ✅ C1
+  [229/3097] pine... ✅ C1
+  [230/3097] pinnacle... ✅ C1
+  [231/3097] piquant... ✅ C1
+  [232/3097] pithy... ✅ C1
+  [233/3097] pittance... ✅ C1
+  [234/3097] placid... ✅ C1
+  [235/3097] plodding... ✅ C1
+  [236/3097] ploy... ✅ C1
+  [237/3097] powwow... ✅ C1
+  [238/3097] precarious... ✅ C1
+  [239/3097] preempt... ✅ C1
+  [240/3097] preemptive... ✅ C1
+  [241/3097] presumption... ✅ C1
+  [242/3097] presumptuous... ✅ C1
+  [243/3097] pristine... ✅ C1
+  [244/3097] profuse... ✅ C1
+  [245/3097] profusion... ✅ C1
+  [246/3097] proponent... ✅ C1
+  [247/3097] provisional... ✅ C1
+  [248/3097] pugnacious... ✅ C1
+  [249/3097] qualm... ✅ C1
+  [250/3097] quandary... ✅ C1
+  [251/3097] quip... ✅ C1
+  [252/3097] raffish... ✅ C1
+  [253/3097] raft... ✅ C1
+  [254/3097] rakish... ✅ C1
+  [255/3097] rankle... ✅ C1
+  [256/3097] rash... ✅ C1
+  [257/3097] redress... ✅ C1
+  [258/3097] relegate... ✅ C1
+  [259/3097] remiss... ✅ C1
+  [260/3097] renege... ✅ C1
+  [261/3097] replete... ✅ C1
+  [262/3097] reprobate... ✅ C1
+  [263/3097] respite... ✅ C1
+  [264/3097] retiring... ✅ C1
+  [265/3097] retract... ✅ C1
+  [266/3097] rile... ✅ C1
+  [267/3097] sanctimonious... ✅ C1
+  [268/3097] sanguine... ✅ C1
+  [269/3097] savvy... ✅ C1
+  [270/3097] scintillating... ✅ C1
+  [271/3097] screed... ✅ C1
+  [272/3097] sentimental... ✅ C1
+  [273/3097] serendipity... ✅ C1
+  [274/3097] serene... ✅ C1
+  [275/3097] slapdash... ✅ C1
+  [276/3097] smattering... ✅ C1
+  [277/3097] smug... ✅ C1
+  [278/3097] snide... ✅ C1
+  [279/3097] snub... ✅ C1
+  [280/3097] sordid... ✅ C1
+  [281/3097] spendthrift... ✅ C1
+  [282/3097] spurn... ✅ C1
+  [283/3097] squander... ✅ C1
+  [284/3097] staid... ✅ C1
+  [285/3097] steadfast... ✅ C1
+  [286/3097] stipend... ✅ C1
+  [287/3097] stolid... ✅ C1
+  [288/3097] stymie... ✅ C1
+  [289/3097] surly... ✅ C1
+  [290/3097] tact... ✅ C1
+  [291/3097] tarnish... ✅ C1
+  [292/3097] tawdry... ✅ C1
+  [293/3097] taxing... ✅ C1
+  [294/3097] telling... ✅ C1
+  [295/3097] telltale... ✅ C1
+  [296/3097] thoroughgoing... ✅ C1
+  [297/3097] thrifty... ✅ C1
+  [298/3097] thwart... ✅ C1
+  [299/3097] tirade... ✅ C1
+  [300/3097] tout... ✅ C1
+  [301/3097] transitory... ✅ C1
+  [302/3097] travail... ✅ C1
+  [303/3097] tribulation... ✅ C1
+  [304/3097] tumult... ✅ C1
+  [305/3097] uncanny... ✅ C1
+  [306/3097] uncompromising... ✅ C1
+  [307/3097] unconscionable... ✅ C1
+  [308/3097] underwrite... ✅ C1
+  [309/3097] unnerve... ✅ C1
+  [310/3097] unruly... ✅ C1
+  [311/3097] unseemly... ✅ C1
+  [312/3097] urbane... ✅ C1
+  [313/3097] vacuous... ✅ C1
+  [314/3097] vanquish... ✅ C1
+  [315/3097] variance... ✅ C1
+  [316/3097] veneer... ✅ C1
+  [317/3097] vicarious... ✅ C1
+  [318/3097] vie... ✅ C1
+  [319/3097] vindictive... ✅ C1
+  [320/3097] virago... ✅ C1
+  [321/3097] voracious... ✅ C1
+  [322/3097] wanton... ✅ C1
+  [323/3097] wax... ✅ C1
+  [324/3097] whimsical... ✅ C1
+  [325/3097] zenith... ✅ C1
+  [326/3097] aberrant... ✅ C1
+  [327/3097] aberration... ✅ C1
+  [328/3097] abstain... ✅ C1
+  [329/3097] abstruse... ✅ C1
+  [330/3097] accolade... ✅ C1
+  [331/3097] acerbic... ✅ C1
+  [332/3097] acrimony... ✅ C1
+  [333/3097] adamant... ✅ C1
+  [334/3097] admonish... ✅ C1
+  [335/3097] admonitory... ✅ C1
+  [336/3097] aesthete... ✅ C1
+  [337/3097] amalgam... ✅ C1
+  [338/3097] ambiguous... ✅ C1
+  [339/3097] ambivalent... ✅ C1
+  [340/3097] ameliorate... ✅ C1
+  [341/3097] amenable... ✅ C1
+  [342/3097] amorphous... ✅ C1
+  [343/3097] anomalous... ✅ C1
+  [344/3097] anomaly... ✅ C1
+  [345/3097] antipathy... ✅ C1
+  [346/3097] antithetical... ✅ C1
+  [347/3097] apathetic... ✅ C1
+  [348/3097] apathy... ✅ C1
+  [349/3097] apocryphal... ✅ C1
+  [350/3097] appease... ✅ C1
+  [351/3097] arcane... ✅ C1
+  [352/3097] arduous... ✅ C1
+  [353/3097] artful... ✅ C1
+  [354/3097] ascetic... ✅ C1
+  [355/3097] askance... ✅ C1
+  [356/3097] audacious... ✅ C1
+  [357/3097] audacity... ✅ C1
+  [358/3097] auspicious... ✅ C1
+  [359/3097] austere... ✅ C1
+  [360/3097] avaricious... ✅ C1
+  [361/3097] banal... ✅ C1
+  [362/3097] banality... ✅ C1
+  [363/3097] belie... ✅ C1
+  [364/3097] belligerent... ✅ C1
+  [365/3097] blatant... ✅ C1
+  [366/3097] bolster... ✅ C1
+  [367/3097] brazen... ✅ C1
+  [368/3097] bucolic... ✅ C1
+  [369/3097] bumbling... ✅ C1
+  [370/3097] burgeon... ✅ C1
+  [371/3097] calumny... ✅ C1
+  [372/3097] capricious... ✅ C1
+  [373/3097] castigate... ✅ C1
+  [374/3097] censure... ✅ C1
+  [375/3097] chastise... ✅ C1
+  [376/3097] chortle... ✅ C1
+  [377/3097] circumscribe... ✅ C1
+  [378/3097] circumvent... ✅ C1
+  [379/3097] commensurate... ✅ C1
+  [380/3097] confound... ✅ C1
+  [381/3097] conspicuous... ❌ not found
+  [382/3097] constituent... ❌ not found
+  [383/3097] construe... ❌ not found
+  [384/3097] contingent... ❌ not found
+  [385/3097] contrition... ❌ not found
+  [386/3097] contrive... ❌ not found
+  [387/3097] copious... ❌ not found
+  [388/3097] craven... ❌ not found
+  [389/3097] cryptic... ❌ not found
+  [390/3097] culminate... ❌ not found
+  [391/3097] culpability... ❌ not found
+  [392/3097] decorous... ❌ not found
+  [393/3097] decorum... ❌ not found
+  [394/3097] deferential... ❌ not found
+  [395/3097] deleterious... ❌ not found
+  [396/3097] delineate... ❌ not found
+  [397/3097] demur... ❌ not found
+  [398/3097] denigrate... ❌ not found
+  [399/3097] denote... ❌ not found
+  [400/3097] derivative... ❌ not found
+  [401/3097] dictatorial... ❌ not found
+  [402/3097] didactic... ❌ not found
+  [403/3097] diffident... ❌ not found
+  [404/3097] dilatory... ❌ not found
+  [405/3097] dilettante... ❌ not found
+  [406/3097] disaffected... ❌ not found
+  [407/3097] discrete... ❌ not found
+  [408/3097] disinterested... ❌ not found
+  [409/3097] dispassionate... ❌ not found
+  [410/3097] disseminate... ❌ not found
+  [411/3097] dogmatic... ❌ not found
+  [412/3097] duress... ✅ C1
+  [413/3097] eclectic... ✅ C1
+  [414/3097] economical... ✅ C1
+  [415/3097] edifying... ✅ C1
+  [416/3097] efficacious... ✅ C1
+  [417/3097] egregious... ✅ C1
+  [418/3097] elicit... ✅ C1
+  [419/3097] elucidate... ✅ C1
+  [420/3097] eminent... ✅ C1
+  [421/3097] enervate... ✅ C1
+  [422/3097] engender... ✅ C1
+  [423/3097] entrenched... ✅ C1
+  [424/3097] ephemeral... ✅ C1
+  [425/3097] equivocal... ✅ C1
+  [426/3097] eradicate... ✅ C1
+  [427/3097] erudite... ✅ C1
+  [428/3097] eschew... ✅ C1
+  [429/3097] esoteric... ✅ C1
+  [430/3097] espouse... ✅ C1
+  [431/3097] exacerbate... ✅ C1
+  [432/3097] exacting... ✅ C1
+  [433/3097] exalt... ✅ C1
+  [434/3097] exonerate... ✅ C1
+  [435/3097] expound... ✅ C1
+  [436/3097] extant... ✅ C1
+  [437/3097] fallacious... ✅ C1
+  [438/3097] fastidious... ✅ C1
+  [439/3097] flux... ✅ C1
+  [440/3097] foment... ✅ C1
+  [441/3097] forlorn... ✅ C1
+  [442/3097] fortuitous... ✅ C1
+  [443/3097] frivolous... ✅ C1
+  [444/3097] frugal... ✅ C1
+  [445/3097] frustrate... ✅ C1
+  [446/3097] furtive... ✅ C1
+  [447/3097] gainsay... ✅ C1
+  [448/3097] gall... ✅ C1
+  [449/3097] galvanize... ✅ C1
+  [450/3097] garrulous... ✅ C1
+  [451/3097] gauche... ✅ C1
+  [452/3097] germane... ✅ C1
+  [453/3097] glut... ✅ C1
+  [454/3097] gossamer... ❌ not found
+  [455/3097] gregarious... ❌ not found
+  [456/3097] guileless... ❌ not found
+  [457/3097] hackneyed... ❌ not found
+  [458/3097] haphazard... ❌ not found
+  [459/3097] harangue... ❌ not found
+  [460/3097] harried... ❌ not found
+  [461/3097] haughty... ❌ not found
+  [462/3097] hegemony... ❌ not found
+  [463/3097] heretic... ❌ not found
+  [464/3097] iconoclast... ❌ not found
+  [465/3097] iconoclastic... ❌ not found
+  [466/3097] idiosyncrasy... ❌ not found
+  [467/3097] ignoble... ❌ not found
+  [468/3097] ignominious... ❌ not found
+  [469/3097] immutable... ❌ not found
+  [470/3097] impartial... ❌ not found
+  [471/3097] imperil... ❌ not found
+  [472/3097] impertinent... ❌ not found
+  [473/3097] implacable... ❌ not found
+  [474/3097] implausible... ❌ not found
+  [475/3097] imprudent... ❌ not found
+  [476/3097] impudent... ❌ not found
+  [477/3097] incisive... ❌ not found
+  [478/3097] incongruous... ❌ not found
+  [479/3097] incorrigible... ❌ not found
+  [480/3097] indecorous... ❌ not found
+  [481/3097] indifference... ❌ not found
+  [482/3097] inexorableinexorablearmy... ❌ not found
+  [483/3097] ingenuous... ❌ not found
+  [484/3097] ingratiate... ✅ C1
+  [485/3097] inimical... ✅ C1
+  [486/3097] innocuous... ✅ C1
+  [487/3097] inscrutable... ✅ C1
+  [488/3097] insidious... ✅ C1
+  [489/3097] insolent... ✅ C1
+  [490/3097] intransigent... ✅ C1
+  [491/3097] intrepid... ✅ C1
+  [492/3097] inveterate... ✅ C1
+  [493/3097] irrevocable... ✅ C1
+  [494/3097] itinerant... ✅ C1
+  [495/3097] jingoism... ✅ C1
+  [496/3097] jovial... ✅ C1
+  [497/3097] jubilant... ✅ C1
+  [498/3097] juxtapose... ✅ C1
+  [499/3097] laconic... ✅ C1
+  [500/3097] lambast... ✅ C1
+  [501/3097] languid... ✅ C1
+  [502/3097] largess... ✅ C1
+  [503/3097] laudable... ✅ C1
+  [504/3097] lionize... ✅ C1
+  [505/3097] magnanimous... ✅ C1
+  [506/3097] maladroit... ✅ C1
+  [507/3097] maverick... ✅ C1
+  [508/3097] mawkish... ✅ C1
+  [509/3097] mendacity... ✅ C1
+  [510/3097] mercurial... ✅ C1
+  [511/3097] meticulous... ✅ C1
+  [512/3097] misconstrue... ✅ C1
+  [513/3097] mitigate... ✅ C1
+  [514/3097] mollify... ✅ C1
+  [515/3097] mundane... ✅ C1
+  [516/3097] munificent... ✅ C1
+  [517/3097] myopic... ✅ C1
+  [518/3097] myriad... ✅ C1
+  [519/3097] negligible... ✅ C1
+  [520/3097] nonplussed... ✅ C1
+  [521/3097] nuance... ✅ C1
+  [522/3097] obscure... ✅ C1
+  [523/3097] obsequious... ✅ C1
+  [524/3097] opaque... ✅ C1
+  [525/3097] opulence... ✅ C1
+  [526/3097] ostentatious... ✅ C1
+  [527/3097] ostracize... ✅ C1
+  [528/3097] panache... ✅ C1
+  [529/3097] parochial... ✅ C1
+  [530/3097] parsimonious... ✅ C1
+  [531/3097] pedantic... ✅ C1
+  [532/3097] pedestrian... ✅ C1
+  [533/3097] pejorative... ✅ C1
+  [534/3097] perfidy... ✅ C1
+  [535/3097] pernicious... ✅ C1
+  [536/3097] petulant... ✅ C1
+  [537/3097] placate... ✅ C1
+  [538/3097] platitude... ✅ C1
+  [539/3097] poignant... ✅ C1
+  [540/3097] polemic... ✅ C1
+  [541/3097] posit... ✅ C1
+  [542/3097] pragmatic... ✅ C1
+  [543/3097] precipitous... ✅ C1
+  [544/3097] preclude... ✅ C1
+  [545/3097] precocious... ✅ C1
+  [546/3097] predilection... ✅ C1
+  [547/3097] prescience... ✅ C1
+  [548/3097] prevaricate... ✅ C1
+  [549/3097] prodigal... ❌ not found
+  [550/3097] prodigious... ❌ not found
+  [551/3097] profligate... ❌ not found
+  [552/3097] prolific... ❌ not found
+  [553/3097] propitious... ❌ not found
+  [554/3097] pundit... ❌ not found
+  [555/3097] querulous... ❌ not found
+  [556/3097] quotidian... ❌ not found
+  [557/3097] ravenous... ❌ not found
+  [558/3097] rebuke... ❌ not found
+  [559/3097] reconcile... ❌ not found
+  [560/3097] recondite... ❌ not found
+  [561/3097] refractory... ❌ not found
+  [562/3097] refute... ❌ not found
+  [563/3097] reproach... ❌ not found
+  [564/3097] repudiate... ❌ not found
+  [565/3097] rescind... ❌ not found
+  [566/3097] restive... ❌ not found
+  [567/3097] resurgent... ❌ not found
+  [568/3097] reticent... ❌ not found
+  [569/3097] reverent... ❌ not found
+  [570/3097] rudimentary... ❌ not found
+  [571/3097] rustic... ❌ not found
+  [572/3097] scrupulous... ❌ not found
+  [573/3097] soporific... ❌ not found
+  [574/3097] specious... ❌ not found
+  [575/3097] sporadic... ❌ not found
+  [576/3097] spurious... ❌ not found
+  [577/3097] staunch... ❌ not found
+  [578/3097] stringent... ❌ not found
+  [579/3097] subsume... ✅ C1
+  [580/3097] subversive... ✅ C1
+  [581/3097] subvert... ✅ C1
+  [582/3097] sullen... ✅ C1
+  [583/3097] superfluous... ✅ C1
+  [584/3097] supplant... ✅ C1
+  [585/3097] sycophant... ✅ C1
+  [586/3097] taciturn... ✅ C1
+  [587/3097] tantamount... ✅ C1
+  [588/3097] temperance... ✅ C1
+  [589/3097] tempered... ✅ C1
+  [590/3097] tenacious... ✅ C1
+  [591/3097] timorous... ✅ C1
+  [592/3097] torpor... ✅ C1
+  [593/3097] tortuous... ✅ C1
+  [594/3097] tractable... ✅ C1
+  [595/3097] transient... ✅ C1
+  [596/3097] travesty... ✅ C1
+  [597/3097] treacherous... ✅ C1
+  [598/3097] trite... ✅ C1
+  [599/3097] truncate... ✅ C1
+  [600/3097] underscore... ✅ C1
+  [601/3097] unequivocal... ✅ C1
+  [602/3097] unscrupulous... ✅ C1
+  [603/3097] upbraid... ✅ C1
+  [604/3097] vacillate... ✅ C1
+  [605/3097] vehement... ✅ C1
+  [606/3097] venality... ❌ not found
+  [607/3097] venerate... ✅ C1
+  [608/3097] veracious... ✅ C1
+  [609/3097] vilify... ✅ C1
+  [610/3097] vindicate... ✅ C1
+  [611/3097] vociferous... ✅ C1
+  [612/3097] volubility... ✅ C1
+  [613/3097] wanting... ✅ C1
+  [614/3097] winsome... ✅ C1
+  [615/3097] abase... ✅ C1
+  [616/3097] abash... ✅ C1
+  [617/3097] abate... ✅ C1
+  [618/3097] abbreviate... ✅ C1
+  [619/3097] abdicate... ✅ C1
+  [620/3097] abet... ✅ C1
+  [621/3097] abeyance... ❌ not found
+  [622/3097] abhor... ❌ not found
+  [623/3097] abiding... ❌ not found
+  [624/3097] abject... ❌ not found
+  [625/3097] abjure... ❌ not found
+  [626/3097] abnegate... ❌ not found
+  [627/3097] abominate... ❌ not found
+  [628/3097] abrade... ❌ not found
+  [629/3097] abridge... ❌ not found
+  [630/3097] abrogate... ❌ not found
+  [631/3097] abscission... ❌ not found
+  [632/3097] abscond... ❌ not found
+  [633/3097] absolve... ❌ not found
+  [634/3097] abstemious... ❌ not found
+  [635/3097] abundant... ❌ not found
+  [636/3097] abut... ❌ not found
+  [637/3097] accede... ❌ not found
+  [638/3097] accessory... ❌ not found
+  [639/3097] accidental... ❌ not found
+  [640/3097] acclimate... ❌ not found
+  [641/3097] accost... ❌ not found
+  [642/3097] accrete... ❌ not found
+  [643/3097] achromatic... ❌ not found
+  [644/3097] acquiesce... ❌ not found
+  [645/3097] acrid... ❌ not found
+  [646/3097] acrimonious... ❌ not found
+  [647/3097] acumen... ❌ not found
+  [648/3097] addendum... ❌ not found
+  [649/3097] addict... ❌ not found
+  [650/3097] adjourn... ❌ not found
+  [651/3097] adjunct... ✅ C1
+  [652/3097] ad-lib... ✅ C1
+  [653/3097] adore... ✅ C1
+  [654/3097] adulate... ✅ C1
+  [655/3097] adulterate... ✅ C1
+  [656/3097] adumbrate... ✅ C1
+  [657/3097] adventitious... ✅ C1
+  [658/3097] adversary... ✅ C1
+  [659/3097] advert... ✅ C1
+  [660/3097] affidavit... ✅ C1
+  [661/3097] affinity... ✅ C1
+  [662/3097] aggrandize... ✅ C1
+  [663/3097] aggravate... ✅ C1
+  [664/3097] aggregate... ✅ C1
+  [665/3097] aggrieve... ❌ not found
+  [666/3097] agitate... ✅ C1
+  [667/3097] agog... ✅ C1
+  [668/3097] agonize... ✅ C1
+  [669/3097] agrarian... ✅ C1
+  [670/3097] airtight... ✅ C1
+  [671/3097] alacrity... ✅ C2
+  [672/3097] albino... ✅ C1
+  [673/3097] alchemy... ✅ C1
+  [674/3097] alibi... ✅ C1
+  [675/3097] alienate... ✅ C1
+  [676/3097] allay... ✅ C1
+  [677/3097] allegiance... ✅ C1
+  [678/3097] alleviate... ✅ C1
+  [679/3097] alliterate... ✅ C1
+  [680/3097] allude... ✅ C1
+  [681/3097] allure... ✅ C1
+  [682/3097] aloft... ✅ C1
+  [683/3097] aloof... ✅ C1
+  [684/3097] alphabetical... ✅ C1
+  [685/3097] amalgamate... ✅ C1
+  [686/3097] amble... ✅ C1
+  [687/3097] ambrosial... ❌ not found
+  [688/3097] amenity... ✅ C1
+  [689/3097] amicable... ✅ C1
+  [690/3097] amity... ✅ C1
+  [691/3097] amulet... ✅ C1
+  [692/3097] analgesic... ✅ C1
+  [693/3097] anarchist... ✅ C1
+  [694/3097] anathema... ✅ C2
+  [695/3097] ancillary... ✅ C1
+  [696/3097] anecdote... ✅ C1
+  [697/3097] anemic... ✅ C2
+  [698/3097] anesthetic... ✅ C1
+  [699/3097] animate... ✅ C1
+  [700/3097] animus... ✅ C1
+  [701/3097] annals... ✅ C1
+  [702/3097] annul... ✅ C1
+  [703/3097] antagonize... ✅ C1
+  [704/3097] antediluvian... ✅ C1
+  [705/3097] anterior... ✅ C1
+  [706/3097] anthology... ✅ C1
+  [707/3097] antic... ✅ C2
+  [708/3097] antidote... ✅ C1
+  [709/3097] apocalyptic... ✅ C1
+  [710/3097] apophasis... ❌ not found
+  [711/3097] apoplectic... ✅ C1
+  [712/3097] apostasy... ✅ C1
+  [713/3097] apostrophe... ✅ C1
+  [714/3097] apothecary... ✅ C1
+  [715/3097] appall... ✅ C1
+  [716/3097] apparel... ✅ C1
+  [717/3097] appellation... ✅ C1
+  [718/3097] applause... ✅ C1
+  [719/3097] apposite... ✅ C1
+  [720/3097] apprise... ✅ C1
+  [721/3097] approbation... ✅ C1
+  [722/3097] apron... ✅ C1
+  [723/3097] apropos... ✅ C1
+  [724/3097] apt... ✅ C1
+  [725/3097] aquatic... ✅ C1
+  [726/3097] arbor... ✅ C1
+  [727/3097] arboreal... ✅ C1
+  [728/3097] archetype... ✅ C1
+  [729/3097] archipelago... ✅ C1
+  [730/3097] ardor... ✅ C1
+  [731/3097] argot... ✅ C1
+  [732/3097] arresting... ✅ C1
+  [733/3097] arrhythmic... ✅ C1
+  [734/3097] arrogance... ✅ C1
+  [735/3097] artifacts... ✅ C1
+  [736/3097] ascendant... ✅ C1
+  [737/3097] askew... ✅ C1
+  [738/3097] asperity... ✅ C2
+  [739/3097] aspersion... ✅ C1
+  [740/3097] aspirant... ✅ C1
+  [741/3097] assent... ✅ C1
+  [742/3097] assertive... ✅ C1
+  [743/3097] assiduous... ✅ C1
+  [744/3097] astounding... ✅ C1
+  [745/3097] astringent... ✅ C1
+  [746/3097] astrology... ✅ C1
+  [747/3097] astute... ✅ C1
+  [748/3097] asunder... ✅ C1
+  [749/3097] asymmetrical... ❌ not found
+  [750/3097] atone... ❌ not found
+  [751/3097] atrocious... ❌ not found
+  [752/3097] attenuate... ❌ not found
+  [753/3097] audition... ❌ not found
+  [754/3097] augur... ❌ not found
+  [755/3097] autocracy... ❌ not found
+  [756/3097] aver... ❌ not found
+  [757/3097] aversion... ❌ not found
+  [758/3097] avulse... ❌ not found
+  [759/3097] awash... ❌ not found
+  [760/3097] awe... ❌ not found
+  [761/3097] awl... ❌ not found
+  [762/3097] awning... ❌ not found
+  [763/3097] awry... ❌ not found
+  [764/3097] axiomatic... ❌ not found
+  [765/3097] babble... ❌ not found
+  [766/3097] backhanded... ❌ not found
+  [767/3097] badinage... ❌ not found
+  [768/3097] bait... ❌ not found
+  [769/3097] bale... ❌ not found
+  [770/3097] baleful... ❌ not found
+  [771/3097] balky... ❌ not found
+  [772/3097] ballad... ❌ not found
+  [773/3097] ballast... ❌ not found
+  [774/3097] balm... ❌ not found
+  [775/3097] bane... ❌ not found
+  [776/3097] banister... ❌ not found
+  [777/3097] banter... ❌ not found
+  [778/3097] barb... ❌ not found
+  [779/3097] barbarous... ✅ C1
+  [780/3097] barefaced... ✅ C1
+  [781/3097] baroque... ✅ C1
+  [782/3097] barrage... ✅ C1
+  [783/3097] barren... ✅ C1
+  [784/3097] barricade... ✅ C1
+  [785/3097] barter... ✅ C1
+  [786/3097] baseboard... ✅ C1
+  [787/3097] batch... ✅ C1
+  [788/3097] bathetic... ✅ C1
+  [789/3097] bawdy... ✅ C1
+  [790/3097] bedeck... ✅ C1
+  [791/3097] belabor... ✅ C1
+  [792/3097] beleaguer... ✅ C1
+  [793/3097] bellwether... ✅ C1
+  [794/3097] beneficent... ✅ C1
+  [795/3097] berate... ✅ C1
+  [796/3097] beseech... ✅ C1
+  [797/3097] bibliography... ✅ C1
+  [798/3097] bifurcate... ✅ C1
+  [799/3097] bigot... ✅ C1
+  [800/3097] bland... ✅ C1
+  [801/3097] blandishment... ✅ C1
+  [802/3097] blasé... ✅ C1
+  [803/3097] blazon... ✅ C1
+  [804/3097] blemish... ✅ C1
+  [805/3097] blight... ✅ C1
+  [806/3097] bliss... ✅ C1
+  [807/3097] blithe... ✅ C1
+  [808/3097] blueprint... ✅ C1
+  [809/3097] blunder... ✅ C1
+  [810/3097] blunt... ✅ C1
+  [811/3097] blur... ✅ C1
+  [812/3097] blurb... ✅ C1
+  [813/3097] blurt... ✅ C1
+  [814/3097] bluster... ✅ C1
+  [815/3097] bodyguard... ✅ C1
+  [816/3097] boggle... ✅ C1
+  [817/3097] boisterous... ✅ C1
+  [818/3097] bombast... ✅ C1
+  [819/3097] bonhomie... ✅ C1
+  [820/3097] boo... ✅ C1
+  [821/3097] boor... ✅ C1
+  [822/3097] bootless... ✅ C1
+  [823/3097] bouquet... ✅ C1
+  [824/3097] boycott... ✅ C1
+  [825/3097] bracing... ✅ C1
+  [826/3097] bracket... ✅ C1
+  [827/3097] braid... ✅ C1
+  [828/3097] brake... ✅ C1
+  [829/3097] brash... ✅ C1
+  [830/3097] brassy... ✅ C1
+  [831/3097] brattish... ✅ C1
+  [832/3097] bravado... ✅ C1
+  [833/3097] bravura... ✅ C1
+  [834/3097] breezeway... ✅ C1
+  [835/3097] brevity... ✅ C1
+  [836/3097] bribe... ✅ C1
+  [837/3097] bridle... ✅ C2
+  [838/3097] brisk... ✅ C1
+  [839/3097] bristle... ✅ C2
+  [840/3097] brittle... ✅ C1
+  [841/3097] broach... ✅ C1
+  [842/3097] bromide... ✅ C2
+  [843/3097] brook... ✅ C2
+  [844/3097] browbeat... ✅ C2
+  [845/3097] bruit... ✅ C1
+  [846/3097] budge... ✅ C1
+  [847/3097] buffoon... ✅ C1
+  [848/3097] bulge... ✅ C1
+  [849/3097] bully... ✅ C1
+  [850/3097] bumptious... ✅ C1
+  [851/3097] bungle... ✅ C1
+  [852/3097] buoy... ✅ C1
+  [853/3097] buoyant... ✅ C1
+  [854/3097] burlesque... ✅ C1
+  [855/3097] burnish... ✅ C1
+  [856/3097] byline... ✅ C1
+  [857/3097] byzantine... ✅ C2
+  [858/3097] cache... ✅ C1
+  [859/3097] cacophony... ✅ C1
+  [860/3097] cadge... ✅ C1
+  [861/3097] cajole... ✅ C1
+  [862/3097] calcify... ✅ C1
+  [863/3097] calibrate... ✅ C1
+  [864/3097] calligraphy... ✅ C1
+  [865/3097] callous... ✅ C1
+  [866/3097] callow... ✅ C2
+  [867/3097] callus... ✅ C1
+  [868/3097] calorie... ✅ C1
+  [869/3097] calumniate... ✅ C1
+  [870/3097] camaraderie... ✅ C1
+  [871/3097] cameo... ✅ C1
+  [872/3097] camouflage... ✅ C1
+  [873/3097] canard... ✅ C2
+  [874/3097] candor... ✅ C1
+  [875/3097] canon... ✅ C1
+  [876/3097] canopy... ✅ C1
+  [877/3097] canvass... ❌ not found
+  [878/3097] canyon... ✅ C1
+  [879/3097] capitulate... ✅ C2
+  [880/3097] caprice... ✅ C1
+  [881/3097] captivate... ✅ C1
+  [882/3097] caret... ✅ C1
+  [883/3097] careworn... ✅ C1
+  [884/3097] caricature... ✅ C1
+  [885/3097] carnal... ✅ C1
+  [886/3097] carouse... ✅ C1
+  [887/3097] carp... ✅ C1
+  [888/3097] cartographer... ✅ C1
+  [889/3097] catalyze... ✅ C1
+  [890/3097] catastrophe... ✅ C1
+  [891/3097] categorical... ✅ C1
+  [892/3097] catholic... ✅ C2
+  [893/3097] caustic... ✅ C1
+  [894/3097] caveat... ✅ C1
+  [895/3097] cavern... ✅ C1
+  [896/3097] cavil... ✅ C1
+  [897/3097] cavort... ✅ C1
+  [898/3097] cede... ✅ C2
+  [899/3097] cement... ✅ C1
+  [900/3097] censorious... ✅ C1
+  [901/3097] census... ✅ C1
+  [902/3097] cessation... ✅ C1
+  [903/3097] chaff... ✅ C1
+  [904/3097] chagrin... ✅ C2
+  [905/3097] chameleon... ✅ C1
+  [906/3097] charade... ✅ C1
+  [907/3097] charlatan... ✅ C2
+  [908/3097] chary... ✅ C2
+  [909/3097] chasm... ✅ C1
+  [910/3097] chauvinistic... ✅ C1
+  [911/3097] cherubic... ✅ C1
+  [912/3097] chevron... ✅ C1
+  [913/3097] chiaroscuro... ✅ C1
+  [914/3097] chicanery... ✅ C1
+  [915/3097] chide... ✅ C1
+  [916/3097] choleric... ✅ C2
+  [917/3097] chord... ✅ C1
+  [918/3097] choreography... ✅ C1
+  [919/3097] chorus... ✅ C1
+  [920/3097] chromatic... ✅ C1
+  [921/3097] chuckle... ✅ C1
+  [922/3097] churl... ✅ C1
+  [923/3097] cineast... ✅ C1
+  [924/3097] cipher... ✅ C1
+  [925/3097] circuitous... ✅ C1
+  [926/3097] circular... ✅ C1
+  [927/3097] circumference... ✅ C1
+  [928/3097] circumlocution... ✅ C1
+  [929/3097] circumspect... ✅ C1
+  [930/3097] cistern... ✅ C1
+  [931/3097] civility... ✅ C1
+  [932/3097] clandestine... ✅ C1
+  [933/3097] clarion... ✅ C1
+  [934/3097] clasp... ✅ C1
+  [935/3097] cleft... ✅ C1
+  [936/3097] clement... ✅ C1
+  [937/3097] cliche... ✅ C1
+  [938/3097] clique... ✅ C1
+  [939/3097] clog... ✅ C1
+  [940/3097] clot... ✅ C1
+  [941/3097] cloture... ✅ C1
+  [942/3097] cloudburst... ✅ C1
+  [943/3097] clout... ✅ C1
+  [944/3097] cloying... ✅ C1
+  [945/3097] clumsy... ✅ C1
+  [946/3097] coagulant... ✅ C1
+  [947/3097] coax... ✅ C1
+  [948/3097] coda... ✅ C1
+  [949/3097] coerce... ✅ C1
+  [950/3097] coeval... ✅ C1
+  [951/3097] cognizant... ✅ C1
+  [952/3097] colander... ✅ C1
+  [953/3097] collude... ✅ C1
+  [954/3097] colonnade... ✅ C1
+  [955/3097] coltish... ✅ C1
+  [956/3097] coma... ✅ C1
+  [957/3097] combustible... ✅ C1
+  [958/3097] comely... ✅ C1
+  [959/3097] comity... ✅ C1
+  [960/3097] commencement... ✅ C1
+  [961/3097] commend... ✅ C1
+  [962/3097] commingle... ✅ C1
+  [963/3097] committed... ✅ C1
+  [964/3097] commodious... ✅ C1
+  [965/3097] commonsensical... ❌ not found
+  [966/3097] commotion... ✅ C1
+  [967/3097] compendium... ✅ C1
+  [968/3097] complacency... ✅ C1
+  [969/3097] complaisance... ❌ not found
+  [970/3097] compliant... ✅ C1
+  [971/3097] compliment... ✅ C1
+  [972/3097] composed... ✅ C1
+  [973/3097] compress... ✅ C1
+  [974/3097] compunction... ✅ C1
+  [975/3097] concatenate... ✅ C1
+  [976/3097] concave... ✅ C1
+  [977/3097] concerted... ✅ C1
+  [978/3097] conciliate... ✅ C2
+  [979/3097] concise... ✅ C1
+  [980/3097] concord... ✅ C1
+  [981/3097] concur... ✅ C1
+  [982/3097] condescending... ✅ C1
+  [983/3097] condign... ✅ C1
+  [984/3097] condole... ✅ C1
+  [985/3097] condone... ✅ C1
+  [986/3097] conductor... ✅ C1
+  [987/3097] confluence... ✅ C1
+  [988/3097] congeal... ✅ C1
+  [989/3097] congenial... ✅ C1
+  [990/3097] congruent... ✅ C1
+  [991/3097] conjecture... ✅ C1
+  [992/3097] connive... ✅ C1
+  [993/3097] connoisseur... ✅ C1
+  [994/3097] conscientious... ✅ C1
+  [995/3097] conservatory... ✅ C1
+  [996/3097] console... ✅ C1
+  [997/3097] consonant... ✅ C1
+  [998/3097] constrain... ✅ C1
+  [999/3097] constringe... ❌ not found
+  [1000/3097] contagious... ✅ C1
+  [1001/3097] contaminate... ✅ C1
+  [1002/3097] contentious... ✅ C2
+  [1003/3097] contiguous... ✅ C1
+  [1004/3097] contort... ✅ C1
+  [1005/3097] contravene... ✅ C1
+  [1006/3097] contumacious... ✅ C1
+  [1007/3097] convalesce... ✅ C1
+  [1008/3097] convergent... ✅ C1
+  [1009/3097] conversant... ✅ C1
+  [1010/3097] convex... ✅ C1
+  [1011/3097] convoke... ✅ C1
+  [1012/3097] convulsion... ✅ C1
+  [1013/3097] coop... ✅ C1
+  [1014/3097] coquette... ✅ C1
+  [1015/3097] cord... ✅ C1
+  [1016/3097] cordon... ✅ C1
+  [1017/3097] corona... ✅ C1
+  [1018/3097] coronation... ✅ C1
+  [1019/3097] corporeal... ✅ C1
+  [1020/3097] corrosive... ✅ C1
+  [1021/3097] corrugated... ✅ C1
+  [1022/3097] cosset... ✅ C1
+  [1023/3097] countenance... ✅ C1
+  [1024/3097] counterfeit... ✅ C1
+  [1025/3097] countermand... ✅ C2
+  [1026/3097] coven... ✅ C1
+  [1027/3097] covert... ✅ C1
+  [1028/3097] covetous... ✅ C1
+  [1029/3097] cowardice... ✅ C1
+  [1030/3097] cower... ✅ C1
+  [1031/3097] cozen... ✅ C1
+  [1032/3097] cramped... ✅ C1
+  [1033/3097] crass... ✅ C1
+  [1034/3097] crave... ✅ C1
+  [1035/3097] crease... ✅ C1
+  [1036/3097] credulous... ✅ C1
+  [1037/3097] creek... ✅ C1
+  [1038/3097] crescendo... ✅ C1
+  [1039/3097] crest... ✅ C1
+  [1040/3097] crestfallen... ✅ C2
+  [1041/3097] cronyism... ✅ C1
+  [1042/3097] crook... ✅ C1
+  [1043/3097] croon... ✅ C1
+  [1044/3097] crouch... ✅ C1
+  [1045/3097] crumple... ✅ C1
+  [1046/3097] crutch... ✅ C1
+  [1047/3097] crux... ✅ C1
+  [1048/3097] cuisine... ✅ C1
+  [1049/3097] culpable... ✅ C1
+  [1050/3097] cunning... ✅ C1
+  [1051/3097] curator... ✅ C1
+  [1052/3097] curmudgeon... ✅ C2
+  [1053/3097] cursory... ✅ C1
+  [1054/3097] curt... ✅ C1
+  [1055/3097] curtail... ✅ C1
+  [1056/3097] cynic... ✅ C1
+  [1057/3097] dabble... ✅ C1
+  [1058/3097] daft... ✅ C1
+  [1059/3097] daguerreotype... ✅ C1
+  [1060/3097] dais... ✅ C1
+  [1061/3097] dally... ✅ C1
+  [1062/3097] damper... ✅ C1
+  [1063/3097] dandy... ✅ C1
+  [1064/3097] dank... ✅ C1
+  [1065/3097] dapper... ✅ C1
+  [1066/3097] dappled... ✅ C1
+  [1067/3097] daredevil... ✅ C1
+  [1068/3097] dart... ✅ C1
+  [1069/3097] daunt... ✅ C1
+  [1070/3097] dawdle... ✅ C1
+  [1071/3097] deadpan... ✅ C1
+  [1072/3097] debacle... ✅ C1
+  [1073/3097] debark... ✅ C1
+  [1074/3097] debilitate... ✅ C1
+  [1075/3097] decant... ✅ C1
+  [1076/3097] decibel... ✅ C1
+  [1077/3097] decipher... ✅ C1
+  [1078/3097] decode... ✅ C1
+  [1079/3097] decrepit... ✅ C1
+  [1080/3097] defer... ✅ C1
+  [1081/3097] deference... ✅ C1
+  [1082/3097] defile... ✅ C1
+  [1083/3097] defoliant... ✅ C1
+  [1084/3097] deforest... ✅ C1
+  [1085/3097] deft... ✅ C1
+  [1086/3097] defuse... ✅ C1
+  [1087/3097] dehydrate... ✅ C1
+  [1088/3097] deify... ✅ C1
+  [1089/3097] deject... ✅ C1
+  [1090/3097] delicacy... ✅ C1
+  [1091/3097] delirium... ✅ C1
+  [1092/3097] delusion... ✅ C1
+  [1093/3097] deluge... ✅ C1
+  [1094/3097] delve... ✅ C1
+  [1095/3097] demagogue... ✅ C1
+  [1096/3097] demanding... ✅ C1
+  [1097/3097] demolition... ✅ C1
+  [1098/3097] demoralize... ✅ C1
+  [1099/3097] demotic... ✅ C1
+  [1100/3097] denouement... ✅ C2
+  [1101/3097] dent... ✅ C1
+  [1102/3097] denude... ✅ C1
+  [1103/3097] deplete... ✅ C1
+  [1104/3097] deplore... ✅ C1
+  [1105/3097] deportation... ✅ C1
+  [1106/3097] depose... ✅ C1
+  [1107/3097] depravity... ✅ C1
+  [1108/3097] deprecate... ✅ C1
+  [1109/3097] depreciate... ✅ C1
+  [1110/3097] depressant... ✅ C1
+  [1111/3097] deprivation... ✅ C1
+  [1112/3097] deracinate... ✅ C1
+  [1113/3097] derelict... ✅ C2
+  [1114/3097] descendant... ✅ C1
+  [1115/3097] desiccate... ✅ C1
+  [1116/3097] despicable... ✅ C1
+  [1117/3097] despise... ✅ C1
+  [1118/3097] despotic... ✅ C1
+  [1119/3097] dessert... ✅ C1
+  [1120/3097] desultory... ✅ C1
+  [1121/3097] detach... ✅ C1
+  [1122/3097] deterioration... ✅ C1
+  [1123/3097] detour... ✅ C1
+  [1124/3097] detoxification... ✅ C1
+  [1125/3097] detract... ✅ C1
+  [1126/3097] detritus... ✅ C1
+  [1127/3097] devoted... ✅ C1
+  [1128/3097] devout... ✅ C1
+  [1129/3097] dew... ✅ C1
+  [1130/3097] dexterous... ✅ C1
+  [1131/3097] diabolic... ✅ C1
+  [1132/3097] diaphanous... ✅ C1
+  [1133/3097] diatribe... ✅ C2
+  [1134/3097] diehard... ✅ C1
+  [1135/3097] diffuse... ✅ C1
+  [1136/3097] digit... ✅ C1
+  [1137/3097] digress... ✅ C1
+  [1138/3097] dilapidate... ✅ C1
+  [1139/3097] dilate... ✅ C1
+  [1140/3097] dilute... ✅ C1
+  [1141/3097] din... ✅ C1
+  [1142/3097] dingy... ✅ C1
+  [1143/3097] diocesan... ✅ C1
+  [1144/3097] dire... ✅ C1
+  [1145/3097] dirge... ✅ C1
+  [1146/3097] disabuse... ✅ C2
+  [1147/3097] disarm... ✅ C1
+  [1148/3097] disarray... ✅ C1
+  [1149/3097] disavow... ✅ C1
+  [1150/3097] discern... ✅ C1
+  [1151/3097] disciple... ✅ C1
+  [1152/3097] discombobulate... ✅ C1
+  [1153/3097] discomfit... ✅ C1
+  [1154/3097] discommode... ✅ C1
+  [1155/3097] discompose... ✅ C1
+  [1156/3097] disconcert... ✅ C1
+  [1157/3097] discredit... ✅ C1
+  [1158/3097] discrepancy... ✅ C1
+  [1159/3097] discretionary... ✅ C1
+  [1160/3097] discursive... ✅ C2
+  [1161/3097] disdain... ✅ C1
+  [1162/3097] disengage... ✅ C1
+  [1163/3097] disgorge... ✅ C1
+  [1164/3097] disgruntle... ✅ C1
+  [1165/3097] disguise... ✅ C1
+  [1166/3097] disinclination... ✅ C1
+  [1167/3097] disinfect... ✅ C1
+  [1168/3097] disjointed... ✅ C1
+  [1169/3097] disinter... ✅ C1
+  [1170/3097] disjunctive... ✅ C1
+  [1171/3097] dismantle... ✅ C1
+  [1172/3097] dismay... ✅ C1
+  [1173/3097] disparage... ✅ C1
+  [1174/3097] disregard... ✅ C1
+  [1175/3097] dissect... ✅ C1
+  [1176/3097] dissemble... ✅ C2
+  [1177/3097] dissension... ✅ C1
+  [1178/3097] dissent... ✅ C1
+  [1179/3097] dissipate... ✅ C2
+  [1180/3097] dissolute... ✅ C1
+  [1181/3097] dissonance... ✅ C1
+  [1182/3097] dissuade... ✅ C1
+  [1183/3097] distain... ❌ not found
+  [1184/3097] distal... ✅ C1
+  [1185/3097] distend... ✅ C1
+  [1186/3097] distill... ✅ C1
+  [1187/3097] distraught... ✅ C1
+  [1188/3097] ditty... ✅ C1
+  [1189/3097] diurnal... ✅ C1
+  [1190/3097] diverge... ✅ C1
+  [1191/3097] divestiture... ✅ C1
+  [1192/3097] divulge... ✅ C1
+  [1193/3097] dodder... ✅ C1
+  [1194/3097] dodge... ✅ C1
+  [1195/3097] doff... ✅ C1
+  [1196/3097] dogged... ✅ C1
+  [1197/3097] doggerel... ✅ C1
+  [1198/3097] dogma... ✅ C1
+  [1199/3097] doldrums... ✅ C1
+  [1200/3097] dolorous... ✅ C2
+  [1201/3097] dolt... ✅ C1
+  [1202/3097] domicile... ✅ C1
+  [1203/3097] domination... ✅ C1
+  [1204/3097] don... ✅ C1
+  [1205/3097] doodle... ✅ C1
+  [1206/3097] dormant... ✅ C1
+  [1207/3097] dour... ✅ C1
+  [1208/3097] douse... ✅ C1
+  [1209/3097] downplay... ✅ C1
+  [1210/3097] downpour... ✅ C1
+  [1211/3097] doyen... ✅ C1
+  [1212/3097] doze... ✅ C1
+  [1213/3097] draconian... ✅ C1
+  [1214/3097] drawl... ✅ C1
+  [1215/3097] dreary... ✅ C1
+  [1216/3097] drench... ✅ C1
+  [1217/3097] drivel... ✅ C1
+  [1218/3097] drizzle... ✅ C1
+  [1219/3097] droll... ❌ not found
+  [1220/3097] drone... ❌ not found
+  [1221/3097] drudgery... ❌ not found
+  [1222/3097] dubious... ❌ not found
+  [1223/3097] ductile... ❌ not found
+  [1224/3097] dulcet... ❌ not found
+  [1225/3097] dullard... ❌ not found
+  [1226/3097] dune... ❌ not found
+  [1227/3097] duplicity... ❌ not found
+  [1228/3097] dwindle... ❌ not found
+  [1229/3097] dyspeptic... ❌ not found
+  [1230/3097] dyslexia... ❌ not found
+  [1231/3097] eaglet... ❌ not found
+  [1232/3097] earnest... ❌ not found
+  [1233/3097] earplug... ❌ not found
+  [1234/3097] earshot... ❌ not found
+  [1235/3097] earsplitting... ❌ not found
+  [1236/3097] easel... ❌ not found
+  [1237/3097] eavesdrop... ❌ not found
+  [1238/3097] ebullient... ❌ not found
+  [1239/3097] eclat... ❌ not found
+  [1240/3097] eclipse... ❌ not found
+  [1241/3097] ecstasy... ❌ not found
+  [1242/3097] ecumenical... ❌ not found
+  [1243/3097] eddy... ❌ not found
+  [1244/3097] edible... ❌ not found
+  [1245/3097] edifice... ❌ not found
+  [1246/3097] efface... ❌ not found
+  [1247/3097] effervesce... ❌ not found
+  [1248/3097] effete... ❌ not found
+  [1249/3097] effluvium... ✅ C1
+  [1250/3097] effrontery... ✅ C2
+  [1251/3097] effulgence... ❌ not found
+  [1252/3097] effusive... ✅ C1
+  [1253/3097] egalitarian... ✅ C1
+  [1254/3097] egoism... ✅ C1
+  [1255/3097] elastic... ✅ C1
+  [1256/3097] elate... ✅ C1
+  [1257/3097] eleemosynary... ✅ C1
+  [1258/3097] elegy... ✅ C1
+  [1259/3097] elephantine... ✅ C1
+  [1260/3097] ellipsis... ✅ C1
+  [1261/3097] elliptical... ✅ C1
+  [1262/3097] emaciate... ❌ not found
+  [1263/3097] emancipate... ✅ C1
+  [1264/3097] embargo... ✅ C1
+  [1265/3097] embarrass... ✅ C1
+  [1266/3097] embezzle... ✅ C1
+  [1267/3097] embolden... ✅ C1
+  [1268/3097] emboss... ✅ C1
+  [1269/3097] embroider... ✅ C1
+  [1270/3097] emigrate... ✅ C1
+  [1271/3097] eminence... ✅ C1
+  [1272/3097] emollient... ✅ C1
+  [1273/3097] enamel... ✅ C1
+  [1274/3097] encomium... ✅ C1
+  [1275/3097] encumber... ✅ C2
+  [1276/3097] enfranchise... ✅ C1
+  [1277/3097] engross... ✅ C1
+  [1278/3097] enigma... ✅ C1
+  [1279/3097] enlighten... ✅ C1
+  [1280/3097] ennoble... ✅ C1
+  [1281/3097] ennui... ✅ C1
+  [1282/3097] ensemble... ❌ not found
+  [1283/3097] ensconce... ❌ not found
+  [1284/3097] entangle... ❌ not found
+  [1285/3097] entrap... ❌ not found
+  [1286/3097] entreat... ❌ not found
+  [1287/3097] enunciate... ❌ not found
+  [1288/3097] epaulet... ❌ not found
+  [1289/3097] epic... ❌ not found
+  [1290/3097] epicure... ❌ not found
+  [1291/3097] epidermis... ❌ not found
+  [1292/3097] epigram... ❌ not found
+  [1293/3097] epilogue... ❌ not found
+  [1294/3097] epistemology... ❌ not found
+  [1295/3097] epitaph... ❌ not found
+  [1296/3097] epithet... ❌ not found
+  [1297/3097] epitome... ❌ not found
+  [1298/3097] equable... ❌ not found
+  [1299/3097] equity... ❌ not found
+  [1300/3097] equivocate... ❌ not found
+  [1301/3097] erode... ❌ not found
+  [1302/3097] esteem... ❌ not found
+  [1303/3097] estimable... ❌ not found
+  [1304/3097] estrange... ❌ not found
+  [1305/3097] etch... ❌ not found
+  [1306/3097] ethereal... ❌ not found
+  [1307/3097] ethics... ❌ not found
+  [1308/3097] eulogize... ❌ not found
+  [1309/3097] euphemism... ❌ not found
+  [1310/3097] euphonious... ❌ not found
+  [1311/3097] evanescent... ❌ not found
+  [1312/3097] evasion... ❌ not found
+  [1313/3097] everlasting... ✅ C1
+  [1314/3097] evict... ✅ C1
+  [1315/3097] evince... ✅ C1
+  [1316/3097] ewe... ✅ C1
+  [1317/3097] excavate... ✅ C1
+  [1318/3097] excerpt... ✅ C1
+  [1319/3097] excoriate... ✅ C2
+  [1320/3097] excrete... ✅ C1
+  [1321/3097] excruciate... ✅ C1
+  [1322/3097] exculpate... ✅ C1
+  [1323/3097] excursive... ✅ C1
+  [1324/3097] execrate... ✅ C2
+  [1325/3097] exemplary... ✅ C1
+  [1326/3097] exempt... ✅ C1
+  [1327/3097] exhaust... ✅ C1
+  [1328/3097] exhilarate... ✅ C1
+  [1329/3097] exigent... ✅ C1
+  [1330/3097] exodus... ✅ C1
+  [1331/3097] exorbitant... ✅ C2
+  [1332/3097] expansive... ✅ C2
+  [1333/3097] expedite... ✅ C1
+  [1334/3097] expiate... ✅ C1
+  [1335/3097] exponent... ✅ C1
+  [1336/3097] expurgate... ✅ C2
+  [1337/3097] exquisite... ✅ C1
+  [1338/3097] extemporize... ✅ C1
+  [1339/3097] extenuate... ✅ C1
+  [1340/3097] extinct... ✅ C1
+  [1341/3097] extinguish... ✅ C1
+  [1342/3097] extol... ✅ C1
+  [1343/3097] extort... ✅ C1
+  [1344/3097] extraction... ✅ C1
+  [1345/3097] extraneous... ✅ C1
+  [1346/3097] extravagant... ✅ C1
+  [1347/3097] extricate... ✅ C1
+  [1348/3097] exuberant... ✅ C1
+  [1349/3097] exude... ✅ C1
+  [1350/3097] exult... ✅ C1
+  [1351/3097] fable... ✅ C1
+  [1352/3097] fabricate... ✅ C1
+  [1353/3097] facile... ✅ C2
+  [1354/3097] fallacy... ✅ C1
+  [1355/3097] fallow... ✅ C1
+  [1356/3097] fail-safe... ✅ C1
+  [1357/3097] falsehood... ✅ C1
+  [1358/3097] falter... ✅ C1
+  [1359/3097] fanatic... ✅ C1
+  [1360/3097] farce... ✅ C1
+  [1361/3097] fascinate... ✅ C1
+  [1362/3097] fateful... ✅ C1
+  [1363/3097] fathom... ✅ C1
+  [1364/3097] fatigue... ✅ C1
+  [1365/3097] fatuous... ✅ C1
+  [1366/3097] faultfinder... ❌ not found
+  [1367/3097] favorable... ✅ C1
+  [1368/3097] faze... ✅ C1
+  [1369/3097] feckless... ✅ C2
+  [1370/3097] fecund... ✅ C2
+  [1371/3097] feeble... ✅ C1
+  [1372/3097] feign... ✅ C1
+  [1373/3097] fender... ✅ C1
+  [1374/3097] feral... ✅ C1
+  [1375/3097] ferrous... ✅ C1
+  [1376/3097] fertilize... ✅ C1
+  [1377/3097] fervid... ✅ C1
+  [1378/3097] fervor... ✅ C1
+  [1379/3097] fester... ✅ C1
+  [1380/3097] fetid... ✅ C1
+  [1381/3097] fetter... ✅ C1
+  [1382/3097] fiasco... ✅ C1
+  [1383/3097] fictitious... ✅ C1
+  [1384/3097] fidelity... ✅ C1
+  [1385/3097] fidget... ✅ C1
+  [1386/3097] figurative... ✅ C1
+  [1387/3097] figurehead... ✅ C1
+  [1388/3097] figurine... ✅ C1
+  [1389/3097] filibuster... ✅ C1
+  [1390/3097] filigree... ✅ C1
+  [1391/3097] filing... ✅ C1
+  [1392/3097] filly... ✅ C1
+  [1393/3097] finale... ✅ C1
+  [1394/3097] finch... ✅ C1
+  [1395/3097] finesse... ✅ C1
+  [1396/3097] finicky... ✅ C1
+  [1397/3097] flaccid... ✅ C1
+  [1398/3097] flamboyant... ✅ C1
+  [1399/3097] flatter... ✅ C1
+  [1400/3097] flax... ✅ C1
+  [1401/3097] fledge... ✅ C1
+  [1402/3097] flinch... ✅ C1
+  [1403/3097] flippancy... ✅ C1
+  [1404/3097] flirt... ✅ C1
+  [1405/3097] flit... ✅ C1
+  [1406/3097] flock... ✅ C1
+  [1407/3097] florid... ✅ C1
+  [1408/3097] flout... ✅ C1
+  [1409/3097] fluctuate... ✅ C1
+  [1410/3097] fluent... ✅ C1
+  [1411/3097] fluke... ✅ C1
+  [1412/3097] fluster... ✅ C1
+  [1413/3097] fluvial... ✅ C1
+  [1414/3097] foil... ✅ C1
+  [1415/3097] foliage... ✅ C1
+  [1416/3097] foolproof... ✅ C1
+  [1417/3097] footloose... ✅ C1
+  [1418/3097] forebear... ✅ C1
+  [1419/3097] forbearance... ✅ C1
+  [1420/3097] ford... ✅ C1
+  [1421/3097] forestall... ✅ C1
+  [1422/3097] foreword... ✅ C1
+  [1423/3097] forger... ✅ C1
+  [1424/3097] formidable... ✅ C1
+  [1425/3097] fortify... ✅ C1
+  [1426/3097] fracas... ✅ C1
+  [1427/3097] fracture... ✅ C1
+  [1428/3097] frail... ✅ C1
+  [1429/3097] fraudulent... ✅ C1
+  [1430/3097] fraught... ✅ C1
+  [1431/3097] freelancer... ✅ C1
+  [1432/3097] frenzy... ✅ C1
+  [1433/3097] fresco... ✅ C1
+  [1434/3097] fret... ✅ C1
+  [1435/3097] friable... ✅ C1
+  [1436/3097] friction... ✅ C1
+  [1437/3097] frieze... ✅ C1
+  [1438/3097] frigid... ✅ C1
+  [1439/3097] fringe... ✅ C1
+  [1440/3097] frond... ✅ C1
+  [1441/3097] frothy... ✅ C1
+  [1442/3097] frowsy... ✅ C1
+  [1443/3097] full-bodied... ✅ C1
+  [1444/3097] fulminate... ✅ C1
+  [1445/3097] fumble... ✅ C1
+  [1446/3097] fungi... ✅ C1
+  [1447/3097] furnace... ✅ C1
+  [1448/3097] furor... ✅ C1
+  [1449/3097] fury... ✅ C1
+  [1450/3097] fussy... ✅ C1
+  [1451/3097] fusty... ✅ C1
+  [1452/3097] gadfly... ✅ C1
+  [1453/3097] gadget... ✅ C1
+  [1454/3097] gaffe... ✅ C2
+  [1455/3097] gait... ✅ C1
+  [1456/3097] galaxy... ✅ C1
+  [1457/3097] gallant... ✅ C1
+  [1458/3097] galley... ✅ C1
+  [1459/3097] gamble... ✅ C1
+  [1460/3097] gambol... ✅ C1
+  [1461/3097] gangly... ✅ C1
+  [1462/3097] gangway... ✅ C1
+  [1463/3097] garble... ✅ C1
+  [1464/3097] gargantuan... ✅ C1
+  [1465/3097] garish... ✅ C1
+  [1466/3097] garment... ✅ C1
+  [1467/3097] gash... ✅ C1
+  [1468/3097] gasification... ❌ not found
+  [1469/3097] gaudy... ✅ C1
+  [1470/3097] gauge... ✅ C1
+  [1471/3097] gerrymander... ✅ C2
+  [1472/3097] geyser... ✅ C1
+  [1473/3097] gibe... ❌ not found
+  [1474/3097] giddy... ❌ not found
+  [1475/3097] gild... ❌ not found
+  [1476/3097] girder... ❌ not found
+  [1477/3097] gist... ❌ not found
+  [1478/3097] glacier... ❌ not found
+  [1479/3097] glade... ❌ not found
+  [1480/3097] gladiator... ❌ not found
+  [1481/3097] glaze... ❌ not found
+  [1482/3097] glisten... ❌ not found
+  [1483/3097] glitch... ❌ not found
+  [1484/3097] gloat... ❌ not found
+  [1485/3097] gloomy... ❌ not found
+  [1486/3097] gloss... ❌ not found
+  [1487/3097] glossary... ❌ not found
+  [1488/3097] glossy... ❌ not found
+  [1489/3097] glutinous... ❌ not found
+  [1490/3097] glutton... ❌ not found
+  [1491/3097] gobble... ❌ not found
+  [1492/3097] goggle... ❌ not found
+  [1493/3097] goldbrick... ❌ not found
+  [1494/3097] gorge... ❌ not found
+  [1495/3097] gourmand... ❌ not found
+  [1496/3097] gourmet... ❌ not found
+  [1497/3097] grandeur... ❌ not found
+  [1498/3097] grandiloquent... ❌ not found
+  [1499/3097] grandiose... ❌ not found
+  [1500/3097] grandstand... ❌ not found
+  [1501/3097] grate... ❌ not found
+  [1502/3097] gratify... ❌ not found
+  [1503/3097] gratuitous... ✅ C1
+  [1504/3097] gravel... ✅ C1
+  [1505/3097] grieve... ✅ C1
+  [1506/3097] grimace... ✅ C1
+  [1507/3097] gripe... ✅ C1
+  [1508/3097] grisly... ✅ C1
+  [1509/3097] groove... ✅ C1
+  [1510/3097] grotesque... ✅ C1
+  [1511/3097] grotto... ✅ C1
+  [1512/3097] grove... ✅ C1
+  [1513/3097] grueling... ✅ C1
+  [1514/3097] guile... ✅ C1
+  [1515/3097] gullible... ✅ C1
+  [1516/3097] gully... ✅ C1
+  [1517/3097] gum... ✅ C1
+  [1518/3097] gush... ✅ C1
+  [1519/3097] gust... ✅ C1
+  [1520/3097] guzzle... ✅ C1
+  [1521/3097] habitable... ✅ C1
+  [1522/3097] hack... ✅ C1
+  [1523/3097] halcyon... ✅ C2
+  [1524/3097] hale... ✅ C1
+  [1525/3097] half-baked... ✅ C1
+  [1526/3097] hallmark... ✅ C1
+  [1527/3097] hallow... ✅ C1
+  [1528/3097] hallucination... ✅ C1
+  [1529/3097] ham-handed... ✅ C1
+  [1530/3097] hammer... ✅ C1
+  [1531/3097] hamstring... ✅ C1
+  [1532/3097] hangdog... ✅ C1
+  [1533/3097] hankering... ✅ C1
+  [1534/3097] harass... ✅ C1
+  [1535/3097] harbinger... ✅ C1
+  [1536/3097] harbor... ✅ C1
+  [1537/3097] hard-bitten... ✅ C1
+  [1538/3097] hardy... ✅ C1
+  [1539/3097] harmonious... ✅ C1
+  [1540/3097] harness... ✅ C1
+  [1541/3097] harp... ✅ C1
+  [1542/3097] harrow... ✅ C1
+  [1543/3097] harry... ✅ C1
+  [1544/3097] hasten... ✅ C1
+  [1545/3097] hasty... ✅ C1
+  [1546/3097] hatch... ✅ C1
+  [1547/3097] hauteur... ✅ C2
+  [1548/3097] haven... ✅ C1
+  [1549/3097] havoc... ✅ C1
+  [1550/3097] headlong... ✅ C1
+  [1551/3097] hearken... ✅ C1
+  [1552/3097] hearten... ✅ C1
+  [1553/3097] heartrending... ✅ C1
+  [1554/3097] hedonism... ✅ C1
+  [1555/3097] heinous... ✅ C1
+  [1556/3097] heirloom... ✅ C1
+  [1557/3097] hem... ✅ C1
+  [1558/3097] hew... ✅ C1
+  [1559/3097] herald... ✅ C1
+  [1560/3097] herbicide... ✅ C1
+  [1561/3097] heresy... ✅ C1
+  [1562/3097] heretical... ✅ C1
+  [1563/3097] hermetic... ✅ C1
+  [1564/3097] hermit... ✅ C1
+  [1565/3097] herpetologist... ❌ not found
+  [1566/3097] hesitance... ✅ C1
+  [1567/3097] heterodox... ✅ C1
+  [1568/3097] hidebound... ✅ C1
+  [1569/3097] hideous... ✅ C1
+  [1570/3097] hie... ✅ C1
+  [1571/3097] hieroglyph... ✅ C1
+  [1572/3097] hike... ✅ C1
+  [1573/3097] histrionic... ✅ C2
+  [1574/3097] hive... ✅ C1
+  [1575/3097] hoard... ✅ C1
+  [1576/3097] hoary... ✅ C2
+  [1577/3097] hoax... ✅ C1
+  [1578/3097] homage... ✅ C1
+  [1579/3097] homely... ✅ C1
+  [1580/3097] homily... ✅ C1
+  [1581/3097] homogenize... ✅ C1
+  [1582/3097] hone... ✅ C1
+  [1583/3097] honorarium... ✅ C1
+  [1584/3097] hoodwink... ✅ C2
+  [1585/3097] hortative... ❌ not found
+  [1586/3097] horticulture... ✅ C1
+  [1587/3097] hovel... ✅ C1
+  [1588/3097] hub... ✅ C1
+  [1589/3097] hubris... ✅ C2
+  [1590/3097] humility... ✅ C1
+  [1591/3097] humor... ✅ C1
+  [1592/3097] husbandry... ✅ C1
+  [1593/3097] husk... ✅ C1
+  [1594/3097] husky... ✅ C1
+  [1595/3097] hybrid... ✅ C1
+  [1596/3097] hymn... ✅ C1
+  [1597/3097] hyperbole... ✅ C1
+  [1598/3097] hypnotic... ✅ C1
+  [1599/3097] hypocritical... ✅ C1
+  [1600/3097] ichthyologist... ❌ not found
+  [1601/3097] idolatrize... ❌ not found
+  [1602/3097] idyll... ✅ C1
+  [1603/3097] ignite... ✅ C1
+  [1604/3097] ignominy... ✅ C1
+  [1605/3097] illiteracy... ✅ C1
+  [1606/3097] illuminati... ❌ not found
+  [1607/3097] illumination... ✅ C1
+  [1608/3097] illusory... ✅ C1
+  [1609/3097] imbibe... ✅ C2
+  [1610/3097] imbroglio... ✅ C2
+  [1611/3097] imitation... ✅ C1
+  [1612/3097] immaculate... ✅ C1
+  [1613/3097] immanent... ✅ C1
+  [1614/3097] immature... ✅ C1
+  [1615/3097] immemorial... ✅ C1
+  [1616/3097] immure... ✅ C2
+  [1617/3097] imp... ✅ C1
+  [1618/3097] impassive... ✅ C1
+  [1619/3097] impecunious... ✅ C2
+  [1620/3097] impend... ✅ C1
+  [1621/3097] impenetrable... ✅ C1
+  [1622/3097] impenitent... ✅ C1
+  [1623/3097] imperative... ✅ C1
+  [1624/3097] imperial... ✅ C1
+  [1625/3097] imperious... ✅ C2
+  [1626/3097] impertinence... ✅ C1
+  [1627/3097] imperturbable... ✅ C1
+  [1628/3097] impervious... ✅ C2
+  [1629/3097] impetuous... ✅ C2
+  [1630/3097] impiety... ✅ C1
+  [1631/3097] implode... ✅ C1
+  [1632/3097] imposing... ✅ C1
+  [1633/3097] importune... ✅ C1
+  [1634/3097] impostor... ✅ C1
+  [1635/3097] impotent... ✅ C1
+  [1636/3097] imprecise... ✅ C1
+  [1637/3097] impresario... ✅ C1
+  [1638/3097] impromptu... ✅ C1
+  [1639/3097] improvise... ✅ C1
+  [1640/3097] impugn... ✅ C2
+  [1641/3097] impuissance... ❌ not found
+  [1642/3097] inalienable... ✅ C1
+  [1643/3097] inane... ✅ C1
+  [1644/3097] inanimate... ✅ C1
+  [1645/3097] inaugurate... ✅ C1
+  [1646/3097] incandescent... ✅ C1
+  [1647/3097] incantation... ✅ C1
+  [1648/3097] incarnate... ✅ C1
+  [1649/3097] incendiary... ✅ C1
+  [1650/3097] inception... ✅ C1
+  [1651/3097] inchoate... ✅ C2
+  [1652/3097] incinerate... ✅ C1
+  [1653/3097] incipient... ✅ C1
+  [1654/3097] incite... ✅ C1
+  [1655/3097] incogitant... ❌ not found
+  [1656/3097] incongruent... ✅ C1
+  [1657/3097] inconsequential... ✅ C1
+  [1658/3097] incontrovertible... ✅ C2
+  [1659/3097] incriminate... ✅ C1
+  [1660/3097] incubator... ✅ C1
+  [1661/3097] inculpate... ✅ C1
+  [1662/3097] incursion... ✅ C1
+  [1663/3097] indelible... ✅ C1
+  [1664/3097] indemnity... ✅ C1
+  [1665/3097] indifferent... ✅ C1
+  [1666/3097] indigent... ✅ C2
+  [1667/3097] indispensable... ✅ C1
+  [1668/3097] indoctrinate... ✅ C1
+  [1669/3097] indolent... ✅ C1
+  [1670/3097] inducement... ✅ C1
+  [1671/3097] indulgent... ✅ C1
+  [1672/3097] indurate... ✅ C1
+  [1673/3097] industriousness... ❌ not found
+  [1674/3097] ineffable... ✅ C2
+  [1675/3097] ineluctable... ✅ C2
+  [1676/3097] inept... ✅ C1
+  [1677/3097] inert... ✅ C1
+  [1678/3097] inexorable... ✅ C1
+  [1679/3097] infamy... ✅ C1
+  [1680/3097] infatuate... ✅ C1
+  [1681/3097] inferno... ✅ C1
+  [1682/3097] infiltrate... ✅ C1
+  [1683/3097] infinite... ✅ C1
+  [1684/3097] infirm... ✅ C1
+  [1685/3097] inflame... ✅ C1
+  [1686/3097] infelicitous... ✅ C2
+  [1687/3097] influx... ✅ C1
+  [1688/3097] infuse... ✅ C1
+  [1689/3097] infuriate... ✅ C1
+  [1690/3097] ingenious... ✅ C1
+  [1691/3097] ingest... ✅ C1
+  [1692/3097] ingrained... ✅ C1
+  [1693/3097] ingrate... ✅ C1
+  [1694/3097] ingratiating... ✅ C1
+  [1695/3097] inimitable... ✅ C2
+  [1696/3097] iniquity... ✅ C1
+  [1697/3097] inquisitive... ✅ C1
+  [1698/3097] insensible... ✅ C1
+  [1699/3097] insensitive... ✅ C1
+  [1700/3097] insentient... ✅ C1
+  [1701/3097] insouciant... ✅ C1
+  [1702/3097] instate... ✅ C1
+  [1703/3097] instigate... ✅ C1
+  [1704/3097] instill... ✅ C1
+  [1705/3097] instrumentalist... ✅ C1
+  [1706/3097] insubordinate... ✅ C1
+  [1707/3097] insular... ✅ C1
+  [1708/3097] insulate... ✅ C1
+  [1709/3097] insurgent... ✅ C1
+  [1710/3097] intangible... ✅ C1
+  [1711/3097] intelligible... ✅ C1
+  [1712/3097] intemperate... ✅ C1
+  [1713/3097] inter... ✅ C1
+  [1714/3097] intercessor... ✅ C1
+  [1715/3097] interdict... ✅ C1
+  [1716/3097] interlock... ✅ C1
+  [1717/3097] interminable... ✅ C1
+  [1718/3097] interregnum... ✅ C1
+  [1719/3097] interrogate... ✅ C1
+  [1720/3097] intimidate... ✅ C1
+  [1721/3097] intoxicant... ✅ C1
+  [1722/3097] intrigue... ✅ C1
+  [1723/3097] intrinsic... ✅ C1
+  [1724/3097] intuitive... ✅ C1
+  [1725/3097] inure... ✅ C2
+  [1726/3097] invective... ✅ C2
+  [1727/3097] inveigh... ✅ C1
+  [1728/3097] inveigle... ✅ C1
+  [1729/3097] inventory... ✅ C1
+  [1730/3097] invidious... ✅ C2
+  [1731/3097] invigorate... ✅ C1
+  [1732/3097] invincible... ✅ C1
+  [1733/3097] irate... ✅ C1
+  [1734/3097] iridescence... ❌ not found
+  [1735/3097] ironclad... ✅ C1
+  [1736/3097] irradicable... ❌ not found
+  [1737/3097] irreducible... ✅ C1
+  [1738/3097] irrigate... ✅ C1
+  [1739/3097] irritate... ✅ C1
+  [1740/3097] isthmus... ✅ C1
+  [1741/3097] itinerary... ✅ C1
+  [1742/3097] jabber... ✅ C1
+  [1743/3097] jaded... ✅ C1
+  [1744/3097] jape... ✅ C1
+  [1745/3097] jarring... ✅ C1
+  [1746/3097] jaundice... ✅ C2
+  [1747/3097] jaunty... ✅ C1
+  [1748/3097] jejune... ✅ C2
+  [1749/3097] jest... ✅ C1
+  [1750/3097] jeopardy... ✅ C1
+  [1751/3097] jettison... ✅ C1
+  [1752/3097] jibe... ✅ C1
+  [1753/3097] jingoist... ❌ not found
+  [1754/3097] jitter... ✅ C1
+  [1755/3097] jocund... ✅ C1
+  [1756/3097] jog... ✅ C1
+  [1757/3097] jolt... ✅ C1
+  [1758/3097] jot... ✅ C1
+  [1759/3097] judicious... ✅ C1
+  [1760/3097] juggernaut... ✅ C2
+  [1761/3097] kangaroo... ✅ C1
+  [1762/3097] ken... ✅ C1
+  [1763/3097] kindle... ✅ C1
+  [1764/3097] kindred... ✅ C1
+  [1765/3097] knack... ✅ C1
+  [1766/3097] knave... ✅ C1
+  [1767/3097] knead... ✅ C1
+  [1768/3097] knit... ✅ C1
+  [1769/3097] knotty... ✅ C1
+  [1770/3097] kudos... ✅ C1
+  [1771/3097] labile... ✅ C1
+  [1772/3097] labored... ✅ C1
+  [1773/3097] labyrinth... ✅ C1
+  [1774/3097] lacerate... ✅ C2
+  [1775/3097] lackluster... ✅ C1
+  [1776/3097] lachrymose... ✅ C2
+  [1777/3097] lambaste... ✅ C1
+  [1778/3097] lament... ✅ C1
+  [1779/3097] lamentable... ✅ C1
+  [1780/3097] laminate... ✅ C1
+  [1781/3097] lampoon... ✅ C2
+  [1782/3097] landfill... ✅ C1
+  [1783/3097] languish... ✅ C2
+  [1784/3097] languor... ✅ C1
+  [1785/3097] lank... ✅ C1
+  [1786/3097] lapse... ✅ C1
+  [1787/3097] larder... ✅ C1
+  [1788/3097] largesse... ✅ C1
+  [1789/3097] lariat... ✅ C1
+  [1790/3097] lash... ✅ C1
+  [1791/3097] lassitude... ✅ C1
+  [1792/3097] latent... ✅ C1
+  [1793/3097] lathe... ✅ C1
+  [1794/3097] latitude... ✅ C1
+  [1795/3097] laudatory... ✅ C1
+  [1796/3097] lavish... ✅ C1
+  [1797/3097] leaven... ✅ C1
+  [1798/3097] leer... ✅ C1
+  [1799/3097] legion... ✅ C1
+  [1800/3097] lenient... ❌ not found
+  [1801/3097] levee... ❌ not found
+  [1802/3097] levelheaded... ❌ not found
+  [1803/3097] levity... ❌ not found
+  [1804/3097] lexicographer... ❌ not found
+  [1805/3097] liability... ❌ not found
+  [1806/3097] liberalist... ❌ not found
+  [1807/3097] libertine... ❌ not found
+  [1808/3097] libretto... ❌ not found
+  [1809/3097] licentious... ❌ not found
+  [1810/3097] lien... ❌ not found
+  [1811/3097] liken... ❌ not found
+  [1812/3097] limber... ❌ not found
+  [1813/3097] limerick... ❌ not found
+  [1814/3097] limousine... ❌ not found
+  [1815/3097] limp... ❌ not found
+  [1816/3097] limpid... ❌ not found
+  [1817/3097] linen... ❌ not found
+  [1818/3097] linoleum... ❌ not found
+  [1819/3097] lint... ❌ not found
+  [1820/3097] lissome... ❌ not found
+  [1821/3097] lithe... ❌ not found
+  [1822/3097] loath... ❌ not found
+  [1823/3097] loathe... ❌ not found
+  [1824/3097] locomotive... ❌ not found
+  [1825/3097] lode... ❌ not found
+  [1826/3097] lofty... ❌ not found
+  [1827/3097] loll... ❌ not found
+  [1828/3097] lopsided... ❌ not found
+  [1829/3097] loquacious... ❌ not found
+  [1830/3097] loutish... ✅ C1
+  [1831/3097] lubricate... ✅ C1
+  [1832/3097] lucubration... ✅ C1
+  [1833/3097] lug... ✅ C1
+  [1834/3097] lugubrious... ✅ C2
+  [1835/3097] lull... ✅ C1
+  [1836/3097] lullaby... ✅ C1
+  [1837/3097] lumber... ✅ C1
+  [1838/3097] lumen... ✅ C1
+  [1839/3097] luminary... ✅ C1
+  [1840/3097] lurch... ✅ C1
+  [1841/3097] lurk... ✅ C1
+  [1842/3097] lush... ✅ C1
+  [1843/3097] lustrous... ✅ C1
+  [1844/3097] macerate... ✅ C1
+  [1845/3097] maculate... ✅ C1
+  [1846/3097] maelstrom... ✅ C1
+  [1847/3097] malaise... ✅ C1
+  [1848/3097] malcontent... ✅ C1
+  [1849/3097] malicious... ✅ C1
+  [1850/3097] malign... ✅ C1
+  [1851/3097] malinger... ✅ C1
+  [1852/3097] malodor... ✅ C1
+  [1853/3097] mangle... ✅ C1
+  [1854/3097] mangy... ✅ C1
+  [1855/3097] mania... ✅ C1
+  [1856/3097] mannered... ✅ C1
+  [1857/3097] manumit... ✅ C1
+  [1858/3097] mar... ✅ C1
+  [1859/3097] marsh... ✅ C1
+  [1860/3097] marsupial... ✅ C1
+  [1861/3097] martinet... ✅ C2
+  [1862/3097] marvel... ✅ C1
+  [1863/3097] masquerade... ✅ C1
+  [1864/3097] mash... ✅ C1
+  [1865/3097] masticate... ✅ C1
+  [1866/3097] mastery... ✅ C1
+  [1867/3097] matriculate... ✅ C1
+  [1868/3097] mattress... ✅ C1
+  [1869/3097] maudlin... ✅ C2
+  [1870/3097] maven... ✅ C1
+  [1871/3097] meager... ✅ C1
+  [1872/3097] measly... ✅ C1
+  [1873/3097] measured... ✅ C1
+  [1874/3097] meddle... ✅ C1
+  [1875/3097] mediate... ✅ C1
+  [1876/3097] mediocre... ✅ C1
+  [1877/3097] medley... ✅ C1
+  [1878/3097] meek... ✅ C1
+  [1879/3097] meliorism... ✅ C1
+  [1880/3097] mellifluous... ✅ C2
+  [1881/3097] melodrama... ✅ C1
+  [1882/3097] membrane... ✅ C1
+  [1883/3097] menace... ✅ C1
+  [1884/3097] mendacious... ✅ C1
+  [1885/3097] mercenary... ✅ C1
+  [1886/3097] merited... ✅ C1
+  [1887/3097] mesh... ✅ C1
+  [1888/3097] mesmerism... ✅ C1
+  [1889/3097] metaphorm... ❌ not found
+  [1890/3097] metaphysics... ✅ C1
+  [1891/3097] metamorphose... ✅ C1
+  [1892/3097] meteoric... ✅ C2
+  [1893/3097] meteorology... ✅ C1
+  [1894/3097] methodical... ✅ C1
+  [1895/3097] metrical... ✅ C1
+  [1896/3097] mettle... ✅ C1
+  [1897/3097] miff... ✅ C1
+  [1898/3097] migratory... ✅ C1
+  [1899/3097] mime... ✅ C1
+  [1900/3097] mimicry... ✅ C1
+  [1901/3097] minaret... ✅ C1
+  [1902/3097] minatory... ✅ C1
+  [1903/3097] mince... ✅ C1
+  [1904/3097] mingle... ✅ C1
+  [1905/3097] minion... ✅ C1
+  [1906/3097] mint... ✅ C1
+  [1907/3097] minuscule... ✅ C1
+  [1908/3097] minutia... ✅ C1
+  [1909/3097] mirage... ✅ C1
+  [1910/3097] mire... ✅ C1
+  [1911/3097] mirth... ✅ C1
+  [1912/3097] misbehave... ✅ C1
+  [1913/3097] mischievous... ✅ C1
+  [1914/3097] misdemeanor... ✅ C1
+  [1915/3097] misfortune... ✅ C1
+  [1916/3097] misgiving... ✅ C1
+  [1917/3097] mishap... ✅ C1
+  [1918/3097] misrepresent... ✅ C1
+  [1919/3097] mite... ✅ C1
+  [1920/3097] mnemonics... ✅ C1
+  [1921/3097] mockery... ✅ C1
+  [1922/3097] modicum... ✅ C2
+  [1923/3097] molar... ✅ C1
+  [1924/3097] molding... ✅ C1
+  [1925/3097] mollycoddle... ✅ C1
+  [1926/3097] molt... ✅ C1
+  [1927/3097] momentous... ✅ C1
+  [1928/3097] mongrel... ✅ C1
+  [1929/3097] monochromatic... ✅ C1
+  [1930/3097] monocle... ✅ C1
+  [1931/3097] monologue... ✅ C1
+  [1932/3097] monotonous... ✅ C1
+  [1933/3097] montage... ✅ C1
+  [1934/3097] moratorium... ✅ C1
+  [1935/3097] morbid... ✅ C1
+  [1936/3097] mordant... ✅ C2
+  [1937/3097] moribund... ✅ C2
+  [1938/3097] mortar... ✅ C1
+  [1939/3097] mosaic... ✅ C1
+  [1940/3097] moth-eaten... ✅ C1
+  [1941/3097] motile... ✅ C1
+  [1942/3097] motley... ✅ C1
+  [1943/3097] mottle... ✅ C1
+  [1944/3097] motto... ✅ C1
+  [1945/3097] mournful... ✅ C1
+  [1946/3097] muddy... ✅ C1
+  [1947/3097] muffler... ✅ C1
+  [1948/3097] mulish... ✅ C1
+  [1949/3097] mumble... ✅ C1
+  [1950/3097] mural... ✅ C1
+  [1951/3097] murky... ✅ C1
+  [1952/3097] murmur... ✅ C1
+  [1953/3097] musket... ✅ C1
+  [1954/3097] mutate... ✅ C1
+  [1955/3097] mute... ✅ C1
+  [1956/3097] mutter... ✅ C1
+  [1957/3097] nadir... ✅ C2
+  [1958/3097] naive... ✅ C1
+  [1959/3097] narcissism... ✅ C1
+  [1960/3097] nascent... ✅ C1
+  [1961/3097] natty... ✅ C1
+  [1962/3097] nauseate... ✅ C1
+  [1963/3097] nautical... ✅ C1
+  [1964/3097] naysaying... ✅ C1
+  [1965/3097] nebulous... ✅ C1
+  [1966/3097] needy... ✅ C1
+  [1967/3097] nefarious... ✅ C1
+  [1968/3097] negation... ✅ C1
+  [1969/3097] negligence... ✅ C1
+  [1970/3097] neologism... ✅ C1
+  [1971/3097] neophyte... ✅ C1
+  [1972/3097] nepotism... ✅ C1
+  [1973/3097] nettle... ✅ C1
+  [1974/3097] neutralize... ✅ C1
+  [1975/3097] nicety... ✅ C1
+  [1976/3097] nexus... ✅ C1
+  [1977/3097] nibble... ✅ C1
+  [1978/3097] nil... ✅ C1
+  [1979/3097] nip... ✅ C1
+  [1980/3097] nitpick... ✅ C1
+  [1981/3097] nocturnal... ✅ C1
+  [1982/3097] noisome... ✅ C2
+  [1983/3097] nomad... ✅ C1
+  [1984/3097] nominal... ✅ C1
+  [1985/3097] nonchalant... ✅ C2
+  [1986/3097] nondescript... ✅ C1
+  [1987/3097] nonentity... ✅ C1
+  [1988/3097] nonplus... ✅ C1
+  [1989/3097] notch... ✅ C1
+  [1990/3097] noxious... ✅ C1
+  [1991/3097] nucleate... ✅ C1
+  [1992/3097] nudge... ✅ C1
+  [1993/3097] nugatory... ✅ C1
+  [1994/3097] nurture... ✅ C1
+  [1995/3097] oasis... ✅ C1
+  [1996/3097] oath... ✅ C1
+  [1997/3097] obedient... ✅ C1
+  [1998/3097] obeisance... ✅ C1
+  [1999/3097] obfuscate... ✅ C1
+  [2000/3097] obituary... ✅ C1
+  [2001/3097] obligatory... ✅ C1
+  [2002/3097] oblique... ✅ C2
+  [2003/3097] obliterate... ✅ C1
+  [2004/3097] oblivious... ✅ C1
+  [2005/3097] obloquy... ✅ C1
+  [2006/3097] observatory... ✅ C1
+  [2007/3097] obstreperous... ✅ C2
+  [2008/3097] obstruct... ✅ C1
+  [2009/3097] obtuse... ✅ C2
+  [2010/3097] obviate... ✅ C1
+  [2011/3097] occult... ✅ C1
+  [2012/3097] ode... ✅ C1
+  [2013/3097] odium... ✅ C1
+  [2014/3097] offbeat... ✅ C1
+  [2015/3097] offhand... ✅ C1
+  [2016/3097] officious... ✅ C2
+  [2017/3097] offish... ❌ not found
+  [2018/3097] off-key... ✅ C1
+  [2019/3097] olfaction... ✅ C1
+  [2020/3097] ominous... ✅ C1
+  [2021/3097] omniscient... ✅ C1
+  [2022/3097] onerous... ✅ C1
+  [2023/3097] opine... ✅ C1
+  [2024/3097] opportune... ✅ C1
+  [2025/3097] opprobrious... ✅ C1
+  [2026/3097] oracle... ✅ C1
+  [2027/3097] oration... ✅ C1
+  [2028/3097] orient... ✅ C1
+  [2029/3097] ornithology... ✅ C1
+  [2030/3097] orthodox... ✅ C1
+  [2031/3097] oscillate... ✅ C1
+  [2032/3097] ossify... ✅ C2
+  [2033/3097] oust... ✅ C1
+  [2034/3097] outgoing... ✅ C1
+  [2035/3097] outlandish... ✅ C1
+  [2036/3097] outmaneuver... ✅ C1
+  [2037/3097] outset... ✅ C1
+  [2038/3097] outwit... ✅ C1
+  [2039/3097] overbearing... ✅ C1
+  [2040/3097] overlap... ✅ C1
+  [2041/3097] overt... ✅ C1
+  [2042/3097] overture... ✅ C1
+  [2043/3097] oxymoron... ✅ C1
+  [2044/3097] pachyderm... ✅ C1
+  [2045/3097] pacify... ✅ C1
+  [2046/3097] padding... ✅ C1
+  [2047/3097] paean... ✅ C1
+  [2048/3097] painstaking... ✅ C1
+  [2049/3097] palatable... ✅ C2
+  [2050/3097] palatial... ✅ C1
+  [2051/3097] palette... ✅ C1
+  [2052/3097] pall... ✅ C1
+  [2053/3097] palliate... ✅ C1
+  [2054/3097] pallid... ✅ C1
+  [2055/3097] palmy... ✅ C1
+  [2056/3097] palpable... ✅ C1
+  [2057/3097] palter... ✅ C1
+  [2058/3097] paltry... ✅ C1
+  [2059/3097] pancreas... ✅ C1
+  [2060/3097] pandemic... ✅ C1
+  [2061/3097] pandemonium... ✅ C1
+  [2062/3097] panegyric... ✅ C2
+  [2063/3097] panoramic... ✅ C1
+  [2064/3097] pantry... ✅ C1
+  [2065/3097] parable... ✅ C1
+  [2066/3097] paradigm... ✅ C1
+  [2067/3097] paradise... ✅ C1
+  [2068/3097] paradox... ✅ C1
+  [2069/3097] paragon... ✅ C2
+  [2070/3097] paramount... ✅ C1
+  [2071/3097] paranoia... ✅ C1
+  [2072/3097] paraphrase... ✅ C1
+  [2073/3097] parasite... ✅ C1
+  [2074/3097] parch... ✅ C1
+  [2075/3097] parenthesis... ✅ C1
+  [2076/3097] pariah... ✅ C2
+  [2077/3097] parity... ✅ C1
+  [2078/3097] parlance... ✅ C1
+  [2079/3097] parody... ✅ C1
+  [2080/3097] paroxysm... ✅ C1
+  [2081/3097] parquetry... ✅ C1
+  [2082/3097] parrot... ✅ C1
+  [2083/3097] parry... ✅ C1
+  [2084/3097] parse... ✅ C1
+  [2085/3097] parsimony... ✅ C1
+  [2086/3097] particularize... ✅ C1
+  [2087/3097] partisan... ✅ C1
+  [2088/3097] pastiche... ✅ C1
+  [2089/3097] partition... ✅ C1
+  [2090/3097] pathology... ✅ C1
+  [2091/3097] patina... ✅ C1
+  [2092/3097] patrician... ✅ C1
+  [2093/3097] patriot... ✅ C1
+  [2094/3097] paunchy... ✅ C1
+  [2095/3097] pebble... ✅ C1
+  [2096/3097] peccadillo... ✅ C1
+  [2097/3097] peck... ✅ C1
+  [2098/3097] pedagogue... ✅ C1
+  [2099/3097] pedant... ✅ C1
+  [2100/3097] pedestal... ✅ C1
+  [2101/3097] predestine... ✅ C1
+  [2102/3097] pediatrics... ✅ C1
+  [2103/3097] peep... ✅ C1
+  [2104/3097] peeve... ✅ C1
+  [2105/3097] pelf... ✅ C1
+  [2106/3097] pellucid... ✅ C2
+  [2107/3097] penchant... ✅ C1
+  [2108/3097] penitent... ✅ C1
+  [2109/3097] pensive... ✅ C1
+  [2110/3097] penury... ✅ C1
+  [2111/3097] perambulate... ✅ C1
+  [2112/3097] perceptible... ✅ C1
+  [2113/3097] peremptory... ✅ C2
+  [2114/3097] perfervid... ✅ C1
+  [2115/3097] perforate... ✅ C1
+  [2116/3097] perfunctory... ✅ C2
+  [2117/3097] perimeter... ✅ C1
+  [2118/3097] periodical... ✅ C1
+  [2119/3097] peripatetic... ✅ C2
+  [2120/3097] peripheral... ✅ C1
+  [2121/3097] perish... ✅ C1
+  [2122/3097] perjury... ✅ C1
+  [2123/3097] permanence... ✅ C1
+  [2124/3097] permeable... ✅ C1
+  [2125/3097] peroration... ✅ C1
+  [2126/3097] perpetual... ✅ C1
+  [2127/3097] persecute... ✅ C1
+  [2128/3097] persevere... ✅ C1
+  [2129/3097] persiflage... ✅ C1
+  [2130/3097] persistence... ✅ C1
+  [2131/3097] personable... ✅ C1
+  [2132/3097] perspicacious... ❌ not found
+  [2133/3097] perspicuity... ❌ not found
+  [2134/3097] pertain... ❌ not found
+  [2135/3097] pertinacious... ❌ not found
+  [2136/3097] pervade... ❌ not found
+  [2137/3097] pessimism... ❌ not found
+  [2138/3097] pesticide... ❌ not found
+  [2139/3097] pestle... ❌ not found
+  [2140/3097] petrify... ❌ not found
+  [2141/3097] petrograph... ❌ not found
+  [2142/3097] petty... ❌ not found
+  [2143/3097] phenomenal... ❌ not found
+  [2144/3097] philanthropic... ❌ not found
+  [2145/3097] philatelist... ❌ not found
+  [2146/3097] philistine... ❌ not found
+  [2147/3097] phlegmatic... ❌ not found
+  [2148/3097] piddling... ❌ not found
+  [2149/3097] piebald... ❌ not found
+  [2150/3097] pigment... ❌ not found
+  [2151/3097] pilfer... ❌ not found
+  [2152/3097] pillar... ❌ not found
+  [2153/3097] pillory... ❌ not found
+  [2154/3097] pinpoint... ❌ not found
+  [2155/3097] pique... ❌ not found
+  [2156/3097] pitiless... ❌ not found
+  [2157/3097] pixel... ❌ not found
+  [2158/3097] placebo... ❌ not found
+  [2159/3097] plagiarize... ❌ not found
+  [2160/3097] plangent... ❌ not found
+  [2161/3097] plantation... ❌ not found
+  [2162/3097] plasticity... ✅ C1
+  [2163/3097] plateau... ✅ C1
+  [2164/3097] plausible... ✅ C1
+  [2165/3097] pleat... ✅ C1
+  [2166/3097] plentitude... ✅ C1
+  [2167/3097] plethora... ✅ C1
+  [2168/3097] pliable... ✅ C1
+  [2169/3097] pliant... ✅ C1
+  [2170/3097] plight... ✅ C1
+  [2171/3097] pluck... ✅ C1
+  [2172/3097] plumb... ✅ C1
+  [2173/3097] plummet... ✅ C1
+  [2174/3097] plump... ✅ C1
+  [2175/3097] plutocracy... ✅ C1
+  [2176/3097] podiatrist... ✅ C1
+  [2177/3097] polarize... ✅ C1
+  [2178/3097] polished... ✅ C1
+  [2179/3097] politic... ✅ C1
+  [2180/3097] pollster... ✅ C1
+  [2181/3097] pompous... ✅ C1
+  [2182/3097] ponderable... ✅ C1
+  [2183/3097] ponderous... ✅ C2
+  [2184/3097] pontificate... ✅ C2
+  [2185/3097] porcelain... ✅ C1
+  [2186/3097] pore... ✅ C1
+  [2187/3097] porous... ✅ C1
+  [2188/3097] portentous... ✅ C2
+  [2189/3097] poseur... ✅ C1
+  [2190/3097] postulate... ✅ C1
+  [2191/3097] posture... ✅ C1
+  [2192/3097] potable... ✅ C1
+  [2193/3097] potboiler... ✅ C1
+  [2194/3097] potentate... ✅ C1
+  [2195/3097] potentiate... ✅ C1
+  [2196/3097] pout... ✅ C1
+  [2197/3097] prairie... ✅ C1
+  [2198/3097] prate... ✅ C1
+  [2199/3097] precipice... ✅ C1
+  [2200/3097] precipitate... ✅ C2
+  [2201/3097] precipitation... ✅ C1
+  [2202/3097] precursor... ✅ C1
+  [2203/3097] preeminent... ✅ C1
+  [2204/3097] preen... ✅ C1
+  [2205/3097] preface... ✅ C1
+  [2206/3097] premeditate... ✅ C1
+  [2207/3097] preoccupation... ✅ C1
+  [2208/3097] preponderant... ✅ C1
+  [2209/3097] prepossessing... ✅ C1
+  [2210/3097] preposterous... ✅ C1
+  [2211/3097] presage... ✅ C1
+  [2212/3097] preservative... ✅ C1
+  [2213/3097] prestige... ✅ C1
+  [2214/3097] pretense... ✅ C1
+  [2215/3097] preternatural... ✅ C1
+  [2216/3097] prevalent... ✅ C1
+  [2217/3097] primordial... ✅ C1
+  [2218/3097] primp... ✅ C1
+  [2219/3097] privation... ✅ C1
+  [2220/3097] probity... ✅ C2
+  [2221/3097] proclivity... ✅ C1
+  [2222/3097] procrastinate... ✅ C1
+  [2223/3097] procure... ✅ C1
+  [2224/3097] prod... ✅ C1
+  [2225/3097] profane... ✅ C1
+  [2226/3097] proffer... ✅ C1
+  [2227/3097] proficient... ✅ C1
+  [2228/3097] profundity... ✅ C1
+  [2229/3097] prohibitive... ✅ C1
+  [2230/3097] proliferate... ✅ C1
+  [2231/3097] prolix... ✅ C1
+  [2232/3097] prologue... ✅ C1
+  [2233/3097] prolong... ✅ C1
+  [2234/3097] proofread... ✅ C1
+  [2235/3097] promulgate... ✅ C2
+  [2236/3097] propagate... ✅ C1
+  [2237/3097] propensity... ✅ C1
+  [2238/3097] prophetic... ✅ C1
+  [2239/3097] propitiate... ✅ C2
+  [2240/3097] propriety... ✅ C1
+  [2241/3097] prosaic... ✅ C2
+  [2242/3097] proscribe... ✅ C2
+  [2243/3097] proselytize... ✅ C2
+  [2244/3097] prosperous... ✅ C1
+  [2245/3097] prostrate... ✅ C1
+  [2246/3097] protean... ✅ C2
+  [2247/3097] protract... ✅ C1
+  [2248/3097] protrude... ✅ C1
+  [2249/3097] protuberant... ✅ C1
+  [2250/3097] provident... ✅ C2
+  [2251/3097] providential... ✅ C1
+  [2252/3097] provisory... ✅ C1
+  [2253/3097] prowess... ✅ C1
+  [2254/3097] prowl... ✅ C1
+  [2255/3097] prude... ✅ C1
+  [2256/3097] prudent... ✅ C1
+  [2257/3097] prudish... ✅ C1
+  [2258/3097] prune... ✅ C1
+  [2259/3097] pry... ✅ C1
+  [2260/3097] pseudonym... ✅ C1
+  [2261/3097] pucker... ✅ C1
+  [2262/3097] puckish... ✅ C1
+  [2263/3097] puerile... ✅ C2
+  [2264/3097] puissance... ✅ C1
+  [2265/3097] pulchritude... ✅ C1
+  [2266/3097] pulverize... ✅ C1
+  [2267/3097] pun... ✅ C1
+  [2268/3097] punch line... ❌ not found
+  [2269/3097] punctilious... ✅ C2
+  [2270/3097] pungent... ✅ C1
+  [2271/3097] puny... ✅ C1
+  [2272/3097] purity... ✅ C1
+  [2273/3097] purlieu... ✅ C1
+  [2274/3097] purloin... ✅ C1
+  [2275/3097] purvey... ✅ C1
+  [2276/3097] pusillanimous... ✅ C1
+  [2277/3097] quack... ✅ C1
+  [2278/3097] quaff... ✅ C1
+  [2279/3097] quail... ✅ C2
+  [2280/3097] quarantine... ✅ C1
+  [2281/3097] quarry... ✅ C1
+  [2282/3097] quash... ✅ C1
+  [2283/3097] quaver... ✅ C1
+  [2284/3097] quell... ✅ C1
+  [2285/3097] quench... ✅ C1
+  [2286/3097] quibble... ✅ C1
+  [2287/3097] quiescent... ✅ C1
+  [2288/3097] quixotic... ✅ C2
+  [2289/3097] rabble... ✅ C1
+  [2290/3097] rabid... ✅ C1
+  [2291/3097] raconteur... ✅ C2
+  [2292/3097] racy... ❌ not found
+  [2293/3097] raffle... ❌ not found
+  [2294/3097] rafter... ❌ not found
+  [2295/3097] ragged... ❌ not found
+  [2296/3097] ramble... ❌ not found
+  [2297/3097] rambunctious... ❌ not found
+  [2298/3097] rampart... ❌ not found
+  [2299/3097] ramshackle... ❌ not found
+  [2300/3097] rancor... ❌ not found
+  [2301/3097] randomize... ❌ not found
+  [2302/3097] ranger... ❌ not found
+  [2303/3097] rant... ❌ not found
+  [2304/3097] rapacious... ❌ not found
+  [2305/3097] rapport... ❌ not found
+  [2306/3097] rapprochement... ❌ not found
+  [2307/3097] rapscallion... ❌ not found
+  [2308/3097] rapt... ❌ not found
+  [2309/3097] raisin... ❌ not found
+  [2310/3097] rarefy... ❌ not found
+  [2311/3097] raspy... ❌ not found
+  [2312/3097] ratify... ❌ not found
+  [2313/3097] ratiocination... ❌ not found
+  [2314/3097] ration... ❌ not found
+  [2315/3097] rationlize... ❌ not found
+  [2316/3097] ravel... ❌ not found
+  [2317/3097] rave... ❌ not found
+  [2318/3097] ravish... ❌ not found
+  [2319/3097] raze... ❌ not found
+  [2320/3097] reactant... ❌ not found
+  [2321/3097] reactionary... ❌ not found
+  [2322/3097] ream... ✅ C1
+  [2323/3097] reap... ✅ C1
+  [2324/3097] rebuff... ✅ C1
+  [2325/3097] recalcitrant... ✅ C1
+  [2326/3097] recant... ✅ C1
+  [2327/3097] recessive... ✅ C1
+  [2328/3097] recidivism... ✅ C1
+  [2329/3097] reciprocate... ✅ C1
+  [2330/3097] reckless... ✅ C1
+  [2331/3097] recluse... ✅ C1
+  [2332/3097] recoil... ✅ C1
+  [2333/3097] reconnoiter... ✅ C1
+  [2334/3097] reconstitute... ✅ C1
+  [2335/3097] reconvene... ✅ C1
+  [2336/3097] rectitude... ✅ C1
+  [2337/3097] recumbent... ✅ C1
+  [2338/3097] recuperate... ✅ C1
+  [2339/3097] redistribution... ✅ C1
+  [2340/3097] redolent... ✅ C1
+  [2341/3097] redoubtable... ✅ C2
+  [2342/3097] redundant... ✅ C1
+  [2343/3097] reel... ✅ C1
+  [2344/3097] refine... ✅ C1
+  [2345/3097] refulgent... ✅ C1
+  [2346/3097] regenerate... ✅ C1
+  [2347/3097] regimen... ✅ C1
+  [2348/3097] regress... ✅ C1
+  [2349/3097] rehabilitate... ✅ C1
+  [2350/3097] rehearsal... ✅ C1
+  [2351/3097] rein... ✅ C1
+  [2352/3097] reiterate... ✅ C1
+  [2353/3097] rejoice... ✅ C1
+  [2354/3097] relapse... ✅ C1
+  [2355/3097] relent... ✅ C1
+  [2356/3097] relinquish... ✅ C1
+  [2357/3097] relish... ✅ C1
+  [2358/3097] remodel... ✅ C1
+  [2359/3097] remonstrance... ✅ C1
+  [2360/3097] remorse... ✅ C1
+  [2361/3097] remunerate... ✅ C1
+  [2362/3097] rend... ✅ C1
+  [2363/3097] renegade... ✅ C1
+  [2364/3097] renounce... ✅ C1
+  [2365/3097] renovate... ✅ C1
+  [2366/3097] repartee... ✅ C1
+  [2367/3097] repatriate... ✅ C1
+  [2368/3097] repeal... ✅ C1
+  [2369/3097] repel... ✅ C1
+  [2370/3097] repertoire... ✅ C1
+  [2371/3097] repine... ❌ not found
+  [2372/3097] reportage... ❌ not found
+  [2373/3097] repose... ❌ not found
+  [2374/3097] reprehend... ❌ not found
+  [2375/3097] repress... ❌ not found
+  [2376/3097] reprieve... ❌ not found
+  [2377/3097] reproof... ❌ not found
+  [2378/3097] reprove... ❌ not found
+  [2379/3097] reptile... ❌ not found
+  [2380/3097] repugnant... ❌ not found
+  [2381/3097] repulse... ❌ not found
+  [2382/3097] repute... ❌ not found
+  [2383/3097] requite... ❌ not found
+  [2384/3097] requisite... ❌ not found
+  [2385/3097] reserved... ❌ not found
+  [2386/3097] resilience... ❌ not found
+  [2387/3097] resin... ❌ not found
+  [2388/3097] resolute... ❌ not found
+  [2389/3097] resonant... ❌ not found
+  [2390/3097] resourceful... ❌ not found
+  [2391/3097] respire... ❌ not found
+  [2392/3097] resplendent... ❌ not found
+  [2393/3097] responsive... ❌ not found
+  [2394/3097] restless... ❌ not found
+  [2395/3097] restrain... ❌ not found
+  [2396/3097] resurgence... ❌ not found
+  [2397/3097] resuscitate... ❌ not found
+  [2398/3097] retainer... ❌ not found
+  [2399/3097] retaliate... ❌ not found
+  [2400/3097] retard... ❌ not found
+  [2401/3097] retinue... ✅ C1
+  [2402/3097] retort... ✅ C1
+  [2403/3097] retouch... ✅ C1
+  [2404/3097] retrench... ✅ C1
+  [2405/3097] retribution... ✅ C1
+  [2406/3097] retrograde... ✅ C1
+  [2407/3097] retrospective... ✅ C1
+  [2408/3097] revelry... ✅ C1
+  [2409/3097] revere... ✅ C1
+  [2410/3097] revoke... ✅ C1
+  [2411/3097] revolt... ✅ C1
+  [2412/3097] ribald... ✅ C2
+  [2413/3097] rickety... ✅ C1
+  [2414/3097] rider... ✅ C1
+  [2415/3097] ridicule... ✅ C1
+  [2416/3097] rife... ✅ C1
+  [2417/3097] rift... ✅ C1
+  [2418/3097] ripen... ✅ C1
+  [2419/3097] rite... ✅ C1
+  [2420/3097] rive... ✅ C1
+  [2421/3097] riveting... ✅ C1
+  [2422/3097] rivulet... ✅ C1
+  [2423/3097] rodent... ✅ C1
+  [2424/3097] roil... ✅ C1
+  [2425/3097] roister... ✅ C1
+  [2426/3097] rookie... ✅ C1
+  [2427/3097] roster... ✅ C1
+  [2428/3097] rostrum... ✅ C1
+  [2429/3097] rouse... ✅ C1
+  [2430/3097] royalty... ✅ C1
+  [2431/3097] rubicund... ✅ C1
+  [2432/3097] rue... ✅ C1
+  [2433/3097] ruffle... ✅ C1
+  [2434/3097] ruminate... ✅ C1
+  [2435/3097] rumple... ✅ C1
+  [2436/3097] runic... ❌ not found
+  [2437/3097] rupture... ✅ C1
+  [2438/3097] ruse... ✅ C1
+  [2439/3097] rustle... ✅ C1
+  [2440/3097] sabbatical... ❌ not found
+  [2441/3097] sabotage... ❌ not found
+  [2442/3097] saccharine... ❌ not found
+  [2443/3097] sacrilege... ❌ not found
+  [2444/3097] saddle... ❌ not found
+  [2445/3097] safeguard... ❌ not found
+  [2446/3097] sage... ❌ not found
+  [2447/3097] salient... ❌ not found
+  [2448/3097] salmon... ❌ not found
+  [2449/3097] salubrious... ❌ not found
+  [2450/3097] salutary... ❌ not found
+  [2451/3097] salutation... ❌ not found
+  [2452/3097] salvage... ❌ not found
+  [2453/3097] salve... ❌ not found
+  [2454/3097] sanctify... ❌ not found
+  [2455/3097] sanctuary... ❌ not found
+  [2456/3097] sanitation... ❌ not found
+  [2457/3097] sap... ❌ not found
+  [2458/3097] sapient... ❌ not found
+  [2459/3097] sarcasm... ❌ not found
+  [2460/3097] sartorial... ❌ not found
+  [2461/3097] sate... ❌ not found
+  [2462/3097] satiate... ❌ not found
+  [2463/3097] satire... ❌ not found
+  [2464/3097] satirize... ❌ not found
+  [2465/3097] saturate... ❌ not found
+  [2466/3097] saturnine... ❌ not found
+  [2467/3097] saunter... ❌ not found
+  [2468/3097] savanna... ❌ not found
+  [2469/3097] savant... ❌ not found
+  [2470/3097] savory... ✅ C1
+  [2471/3097] sawdust... ✅ C1
+  [2472/3097] scabbard... ✅ C1
+  [2473/3097] scads... ✅ C1
+  [2474/3097] scalpel... ✅ C1
+  [2475/3097] scant... ✅ C1
+  [2476/3097] scathing... ✅ C1
+  [2477/3097] schism... ✅ C1
+  [2478/3097] scintillate... ✅ C1
+  [2479/3097] scion... ✅ C1
+  [2480/3097] scission... ✅ C1
+  [2481/3097] scissor... ✅ C1
+  [2482/3097] scoff... ✅ C1
+  [2483/3097] scooter... ✅ C1
+  [2484/3097] scorch... ✅ C1
+  [2485/3097] scorn... ✅ C1
+  [2486/3097] scotch... ✅ C1
+  [2487/3097] scour... ✅ C1
+  [2488/3097] scowl... ✅ C1
+  [2489/3097] scrappy... ✅ C1
+  [2490/3097] scrap... ✅ C1
+  [2491/3097] scrawl... ✅ C1
+  [2492/3097] scribble... ✅ C1
+  [2493/3097] scrutinize... ✅ C1
+  [2494/3097] scuff... ✅ C1
+  [2495/3097] sculpt... ✅ C1
+  [2496/3097] scurrilous... ✅ C1
+  [2497/3097] scurvy... ✅ C1
+  [2498/3097] scythe... ✅ C1
+  [2499/3097] seascape... ✅ C1
+  [2500/3097] seamy... ✅ C1
+  [2501/3097] secluded... ✅ C1
+  [2502/3097] secrete... ❌ not found
+  [2503/3097] sedate... ✅ C1
+  [2504/3097] sedentary... ✅ C1
+  [2505/3097] seduce... ✅ C1
+  [2506/3097] sedulous... ✅ C2
+  [2507/3097] seemly... ✅ C1
+  [2508/3097] self-abasement... ✅ C1
+  [2509/3097] self-absorbed... ✅ C1
+  [2510/3097] seine... ✅ C1
+  [2511/3097] seminal... ✅ C1
+  [2512/3097] seminary... ✅ C1
+  [2513/3097] sentinel... ✅ C1
+  [2514/3097] sepulchral... ✅ C1
+  [2515/3097] septic... ✅ C1
+  [2516/3097] sequela... ✅ C1
+  [2517/3097] sequester... ✅ C1
+  [2518/3097] seraph... ✅ C1
+  [2519/3097] sere... ✅ C1
+  [2520/3097] serfdom... ✅ C1
+  [2521/3097] sermon... ✅ C1
+  [2522/3097] serpentine... ✅ C1
+  [2523/3097] serrate... ✅ C1
+  [2524/3097] serried... ✅ C1
+  [2525/3097] servile... ✅ C1
+  [2526/3097] shackle... ✅ C1
+  [2527/3097] shale... ✅ C1
+  [2528/3097] sham... ✅ C1
+  [2529/3097] shard... ✅ C1
+  [2530/3097] shiftless... ✅ C1
+  [2531/3097] shipshape... ✅ C1
+  [2532/3097] shirk... ✅ C1
+  [2533/3097] shoal... ✅ C1
+  [2534/3097] shopworn... ✅ C1
+  [2535/3097] shred... ✅ C1
+  [2536/3097] shrewd... ✅ C1
+  [2537/3097] shrine... ✅ C1
+  [2538/3097] shun... ✅ C1
+  [2539/3097] sidereal... ✅ C1
+  [2540/3097] sidestep... ✅ C1
+  [2541/3097] simper... ✅ C1
+  [2542/3097] simpleton... ✅ C1
+  [2543/3097] sinecure... ✅ C2
+  [2544/3097] sinew... ✅ C1
+  [2545/3097] singe... ✅ C1
+  [2546/3097] sinuous... ✅ C1
+  [2547/3097] sip... ✅ C1
+  [2548/3097] siren... ✅ C1
+  [2549/3097] skeleton... ✅ C1
+  [2550/3097] skeptic... ✅ C1
+  [2551/3097] skimp... ✅ C1
+  [2552/3097] skirmish... ✅ C1
+  [2553/3097] skit... ✅ C1
+  [2554/3097] slack... ✅ C1
+  [2555/3097] slab... ✅ C1
+  [2556/3097] slake... ✅ C1
+  [2557/3097] slant... ✅ C1
+  [2558/3097] slate... ✅ C1
+  [2559/3097] slew... ✅ C1
+  [2560/3097] sling... ✅ C1
+  [2561/3097] slippery... ✅ C1
+  [2562/3097] slipshod... ✅ C1
+  [2563/3097] sloppy... ✅ C1
+  [2564/3097] sloth... ✅ C1
+  [2565/3097] slouch... ✅ C1
+  [2566/3097] slovenly... ✅ C1
+  [2567/3097] sluggard... ✅ C1
+  [2568/3097] sluggish... ✅ C1
+  [2569/3097] slumber... ✅ C1
+  [2570/3097] slur... ✅ C1
+  [2571/3097] sly... ✅ C1
+  [2572/3097] smarmy... ✅ C1
+  [2573/3097] smirk... ✅ C1
+  [2574/3097] smother... ✅ C1
+  [2575/3097] smuggle... ✅ C1
+  [2576/3097] snare... ✅ C1
+  [2577/3097] snarl... ✅ C1
+  [2578/3097] sneer... ✅ C1
+  [2579/3097] snobbish... ✅ C1
+  [2580/3097] sober... ✅ C1
+  [2581/3097] sodden... ✅ C1
+  [2582/3097] solace... ✅ C1
+  [2583/3097] solder... ✅ C1
+  [2584/3097] solemnity... ✅ C1
+  [2585/3097] solicitous... ✅ C2
+  [2586/3097] solidify... ❌ not found
+  [2587/3097] soliloquy... ❌ not found
+  [2588/3097] solitude... ❌ not found
+  [2589/3097] solvent... ❌ not found
+  [2590/3097] somatic... ❌ not found
+  [2591/3097] somber... ❌ not found
+  [2592/3097] somnolence... ❌ not found
+  [2593/3097] sonata... ❌ not found
+  [2594/3097] sonnet... ❌ not found
+  [2595/3097] soothe... ❌ not found
+  [2596/3097] sop... ❌ not found
+  [2597/3097] sophism... ❌ not found
+  [2598/3097] sophistication... ❌ not found
+  [2599/3097] sparse... ❌ not found
+  [2600/3097] spartan... ❌ not found
+  [2601/3097] spat... ❌ not found
+  [2602/3097] spate... ❌ not found
+  [2603/3097] speck... ❌ not found
+  [2604/3097] spelunker... ❌ not found
+  [2605/3097] spent... ❌ not found
+  [2606/3097] spindly... ❌ not found
+  [2607/3097] spiny... ❌ not found
+  [2608/3097] spire... ❌ not found
+  [2609/3097] spleen... ❌ not found
+  [2610/3097] splice... ❌ not found
+  [2611/3097] splint... ❌ not found
+  [2612/3097] spoke... ❌ not found
+  [2613/3097] spontaneous... ❌ not found
+  [2614/3097] spoof... ❌ not found
+  [2615/3097] sprain... ❌ not found
+  [2616/3097] sprightly... ✅ C1
+  [2617/3097] spur... ✅ C1
+  [2618/3097] squabble... ✅ C1
+  [2619/3097] squalid... ✅ C1
+  [2620/3097] squall... ✅ C1
+  [2621/3097] squat... ✅ C1
+  [2622/3097] squint... ✅ C1
+  [2623/3097] squelch... ✅ C2
+  [2624/3097] stalwart... ✅ C2
+  [2625/3097] stamina... ✅ C1
+  [2626/3097] stammer... ✅ C1
+  [2627/3097] stanza... ✅ C1
+  [2628/3097] startle... ✅ C1
+  [2629/3097] static... ✅ C1
+  [2630/3097] stature... ✅ C1
+  [2631/3097] stealth... ✅ C1
+  [2632/3097] stench... ✅ C1
+  [2633/3097] stencil... ✅ C1
+  [2634/3097] stentorian... ✅ C1
+  [2635/3097] sterile... ✅ C1
+  [2636/3097] stickler... ✅ C1
+  [2637/3097] stifle... ✅ C1
+  [2638/3097] stigma... ✅ C1
+  [2639/3097] stint... ✅ C1
+  [2640/3097] stingy... ✅ C1
+  [2641/3097] stipple... ❌ not found
+  [2642/3097] stipulate... ❌ not found
+  [2643/3097] stitch... ❌ not found
+  [2644/3097] stockade... ❌ not found
+  [2645/3097] stodgy... ❌ not found
+  [2646/3097] stoke... ❌ not found
+  [2647/3097] stoic... ❌ not found
+  [2648/3097] stonewall... ❌ not found
+  [2649/3097] stouthearted... ❌ not found
+  [2650/3097] stowaway... ❌ not found
+  [2651/3097] stratagem... ❌ not found
+  [2652/3097] strait... ❌ not found
+  [2653/3097] stratify... ❌ not found
+  [2654/3097] stray... ❌ not found
+  [2655/3097] striate... ❌ not found
+  [2656/3097] stricture... ❌ not found
+  [2657/3097] stride... ❌ not found
+  [2658/3097] strident... ❌ not found
+  [2659/3097] strut... ❌ not found
+  [2660/3097] stultify... ❌ not found
+  [2661/3097] stupor... ❌ not found
+  [2662/3097] stunt... ❌ not found
+  [2663/3097] sturdy... ❌ not found
+  [2664/3097] stygian... ❌ not found
+  [2665/3097] stylus... ❌ not found
+  [2666/3097] subdue... ❌ not found
+  [2667/3097] subjugate... ❌ not found
+  [2668/3097] sublime... ❌ not found
+  [2669/3097] subliminal... ❌ not found
+  [2670/3097] submerge... ❌ not found
+  [2671/3097] submissive... ❌ not found
+  [2672/3097] subordinate... ✅ C1
+  [2673/3097] subpoena... ✅ C1
+  [2674/3097] subservient... ✅ C1
+  [2675/3097] subside... ✅ C1
+  [2676/3097] subsidiary... ✅ C1
+  [2677/3097] substantiate... ✅ C1
+  [2678/3097] substantive... ✅ C1
+  [2679/3097] subterfuge... ✅ C2
+  [2680/3097] subtlety... ✅ C1
+  [2681/3097] succinct... ✅ C1
+  [2682/3097] succor... ✅ C1
+  [2683/3097] suffocate... ✅ C1
+  [2684/3097] suffuse... ✅ C1
+  [2685/3097] sulk... ✅ C1
+  [2686/3097] summon... ✅ C1
+  [2687/3097] sumptuous... ✅ C1
+  [2688/3097] sunder... ✅ C1
+  [2689/3097] supercilious... ✅ C2
+  [2690/3097] superficial... ✅ C1
+  [2691/3097] superimpose... ✅ C1
+  [2692/3097] supine... ✅ C1
+  [2693/3097] supple... ✅ C1
+  [2694/3097] supplicate... ✅ C1
+  [2695/3097] supposition... ✅ C1
+  [2696/3097] surcharge... ✅ C1
+  [2697/3097] surfeit... ❌ not found
+  [2698/3097] surreptitious... ❌ not found
+  [2699/3097] susceptibility... ❌ not found
+  [2700/3097] suture... ❌ not found
+  [2701/3097] svelte... ❌ not found
+  [2702/3097] swagger... ❌ not found
+  [2703/3097] sweltering... ❌ not found
+  [2704/3097] swerve... ❌ not found
+  [2705/3097] swill... ❌ not found
+  [2706/3097] swindle... ❌ not found
+  [2707/3097] sybarite... ❌ not found
+  [2708/3097] syllabus... ❌ not found
+  [2709/3097] syllogism... ❌ not found
+  [2710/3097] symbiosis... ❌ not found
+  [2711/3097] symmetry... ❌ not found
+  [2712/3097] symphony... ❌ not found
+  [2713/3097] synchronous... ❌ not found
+  [2714/3097] synergic... ❌ not found
+  [2715/3097] synonymous... ❌ not found
+  [2716/3097] synopsis... ❌ not found
+  [2717/3097] tacit... ❌ not found
+  [2718/3097] tactile... ❌ not found
+  [2719/3097] tactless... ❌ not found
+  [2720/3097] tadpole... ❌ not found
+  [2721/3097] talisman... ❌ not found
+  [2722/3097] taint... ❌ not found
+  [2723/3097] talon... ❌ not found
+  [2724/3097] tambourine... ❌ not found
+  [2725/3097] tamper... ❌ not found
+  [2726/3097] tangent... ❌ not found
+  [2727/3097] tangible... ❌ not found
+  [2728/3097] tangy... ✅ C1
+  [2729/3097] tantalize... ✅ C1
+  [2730/3097] tantrum... ✅ C1
+  [2731/3097] taper... ✅ C1
+  [2732/3097] tardy... ✅ C1
+  [2733/3097] tarpaulin... ✅ C1
+  [2734/3097] tasty... ✅ C1
+  [2735/3097] tatty... ❌ not found
+  [2736/3097] taunt... ✅ C1
+  [2737/3097] taut... ✅ C1
+  [2738/3097] taxonomy... ✅ C1
+  [2739/3097] tedious... ✅ C1
+  [2740/3097] teeter... ✅ C1
+  [2741/3097] teetotalism... ❌ not found
+  [2742/3097] temerity... ✅ C2
+  [2743/3097] temporize... ✅ C1
+  [2744/3097] temperate... ✅ C1
+  [2745/3097] tempestuous... ✅ C2
+  [2746/3097] tenable... ✅ C1
+  [2747/3097] tendentious... ✅ C2
+  [2748/3097] tenuous... ✅ C1
+  [2749/3097] tepid... ✅ C1
+  [2750/3097] terminology... ✅ C1
+  [2751/3097] terminus... ✅ C1
+  [2752/3097] terse... ✅ C1
+  [2753/3097] testator... ✅ C1
+  [2754/3097] testy... ✅ C1
+  [2755/3097] tether... ✅ C1
+  [2756/3097] theocracy... ✅ C1
+  [2757/3097] therapeutic... ✅ C1
+  [2758/3097] thorny... ✅ C1
+  [2759/3097] threadbare... ✅ C1
+  [2760/3097] throng... ✅ C1
+  [2761/3097] ticklish... ✅ C1
+  [2762/3097] tiff... ✅ C1
+  [2763/3097] tightfisted... ✅ C1
+  [2764/3097] timeworn... ✅ C1
+  [2765/3097] timid... ✅ C1
+  [2766/3097] tinge... ✅ C1
+  [2767/3097] tinker... ✅ C1
+  [2768/3097] tint... ✅ C1
+  [2769/3097] toady... ✅ C1
+  [2770/3097] tonic... ✅ C1
+  [2771/3097] tong... ✅ C1
+  [2772/3097] tonsorial... ✅ C1
+  [2773/3097] topsy-turvy... ✅ C1
+  [2774/3097] topsoil... ✅ C1
+  [2775/3097] tornado... ✅ C1
+  [2776/3097] torque... ✅ C1
+  [2777/3097] torpid... ✅ C1
+  [2778/3097] torrid... ✅ C1
+  [2779/3097] torrential... ✅ C1
+  [2780/3097] tourniquet... ✅ C1
+  [2781/3097] tranquility... ✅ C1
+  [2782/3097] transcend... ✅ C1
+  [2783/3097] transfigure... ✅ C1
+  [2784/3097] transgress... ✅ C1
+  [2785/3097] translucent... ✅ C1
+  [2786/3097] traverse... ✅ C1
+  [2787/3097] treasurer... ✅ C1
+  [2788/3097] trenchant... ✅ C2
+  [2789/3097] trepidation... ❌ not found
+  [2790/3097] trespass... ❌ not found
+  [2791/3097] trickle... ❌ not found
+  [2792/3097] trivial... ❌ not found
+  [2793/3097] troupe... ❌ not found
+  [2794/3097] truant... ❌ not found
+  [2795/3097] truce... ❌ not found
+  [2796/3097] truculent... ❌ not found
+  [2797/3097] trudge... ❌ not found
+  [2798/3097] trumpet... ❌ not found
+  [2799/3097] twig... ❌ not found
+  [2800/3097] truss... ❌ not found
+  [2801/3097] tugboat... ❌ not found
+  [2802/3097] turbid... ❌ not found
+  [2803/3097] turbulent... ❌ not found
+  [2804/3097] turgid... ❌ not found
+  [2805/3097] turmoil... ❌ not found
+  [2806/3097] turncoat... ❌ not found
+  [2807/3097] turpitude... ❌ not found
+  [2808/3097] turquoise... ❌ not found
+  [2809/3097] turret... ❌ not found
+  [2810/3097] typo... ❌ not found
+  [2811/3097] tyro... ❌ not found
+  [2812/3097] ubiquitous... ❌ not found
+  [2813/3097] unassailable... ❌ not found
+  [2814/3097] uncouch... ❌ not found
+  [2815/3097] unctuous... ❌ not found
+  [2816/3097] undergird... ❌ not found
+  [2817/3097] underdog... ❌ not found
+  [2818/3097] understudy... ❌ not found
+  [2819/3097] understate... ✅ C1
+  [2820/3097] understated... ✅ C1
+  [2821/3097] unexceptionable... ✅ C1
+  [2822/3097] unflappable... ✅ C2
+  [2823/3097] ungainly... ✅ C1
+  [2824/3097] unimpeachable... ✅ C2
+  [2825/3097] unkempt... ✅ C1
+  [2826/3097] unlettered... ✅ C1
+  [2827/3097] unpretentious... ✅ C1
+  [2828/3097] unproductive... ✅ C1
+  [2829/3097] unrequited... ✅ C1
+  [2830/3097] untenable... ✅ C2
+  [2831/3097] untold... ✅ C1
+  [2832/3097] untoward... ✅ C2
+  [2833/3097] unwitting... ✅ C1
+  [2834/3097] unwonted... ✅ C1
+  [2835/3097] usurp... ✅ C1
+  [2836/3097] usury... ✅ C1
+  [2837/3097] utter... ✅ C1
+  [2838/3097] vaccinate... ✅ C1
+  [2839/3097] vagary... ✅ C1
+  [2840/3097] valediction... ✅ C1
+  [2841/3097] valiant... ✅ C1
+  [2842/3097] vapid... ✅ C1
+  [2843/3097] vaporize... ✅ C1
+  [2844/3097] variegation... ❌ not found
+  [2845/3097] varnish... ✅ C1
+  [2846/3097] vault... ✅ C1
+  [2847/3097] vaunt... ✅ C1
+  [2848/3097] veer... ✅ C1
+  [2849/3097] venal... ✅ C1
+  [2850/3097] vendor... ✅ C1
+  [2851/3097] venial... ✅ C2
+  [2852/3097] venom... ✅ C1
+  [2853/3097] verbatim... ✅ C1
+  [2854/3097] verbose... ✅ C1
+  [2855/3097] verdant... ✅ C1
+  [2856/3097] veritable... ✅ C2
+  [2857/3097] verisimilar... ❌ not found
+  [2858/3097] vernacular... ✅ C1
+  [2859/3097] versatile... ✅ C1
+  [2860/3097] vertigo... ✅ C1
+  [2861/3097] verve... ✅ C1
+  [2862/3097] vestige... ✅ C1
+  [2863/3097] vestigial... ✅ C1
+  [2864/3097] veto... ✅ C1
+  [2865/3097] vex... ✅ C1
+  [2866/3097] vicissitude... ✅ C2
+  [2867/3097] victimize... ✅ C1
+  [2868/3097] vigilant... ✅ C1
+  [2869/3097] vignette... ✅ C1
+  [2870/3097] vigorous... ✅ C1
+  [2871/3097] vim... ✅ C1
+  [2872/3097] virtuoso... ✅ C1
+  [2873/3097] virtuous... ✅ C1
+  [2874/3097] virulent... ✅ C1
+  [2875/3097] viscid... ✅ C1
+  [2876/3097] viscous... ✅ C1
+  [2877/3097] visionary... ✅ C1
+  [2878/3097] vitality... ✅ C1
+  [2879/3097] vitiate... ✅ C1
+  [2880/3097] vitrify... ✅ C1
+  [2881/3097] vitriolic... ✅ C2
+  [2882/3097] vituperate... ✅ C2
+  [2883/3097] vivacious... ✅ C1
+  [2884/3097] volatile... ✅ C1
+  [2885/3097] volition... ✅ C1
+  [2886/3097] voluble... ✅ C1
+  [2887/3097] voluminous... ✅ C1
+  [2888/3097] voluptuous... ✅ C1
+  [2889/3097] votary... ✅ C1
+  [2890/3097] vouch... ✅ C1
+  [2891/3097] vulgar... ✅ C1
+  [2892/3097] waddle... ✅ C1
+  [2893/3097] waffle... ✅ C1
+  [2894/3097] waft... ✅ C1
+  [2895/3097] wag... ✅ C1
+  [2896/3097] wan... ✅ C1
+  [2897/3097] wanderlust... ✅ C1
+  [2898/3097] wane... ✅ C1
+  [2899/3097] wardrobe... ✅ C1
+  [2900/3097] warmonger... ✅ C1
+  [2901/3097] warp... ✅ C1
+  [2902/3097] wary... ✅ C1
+  [2903/3097] wastrel... ✅ C1
+  [2904/3097] watershed... ✅ C1
+  [2905/3097] waylay... ✅ C1
+  [2906/3097] welter... ✅ C1
+  [2907/3097] wheedle... ✅ C1
+  [2908/3097] whet... ✅ C1
+  [2909/3097] whiff... ✅ C1
+  [2910/3097] wholesome... ✅ C1
+  [2911/3097] wickedness... ✅ C1
+  [2912/3097] wince... ✅ C1
+  [2913/3097] windbag... ✅ C1
+  [2914/3097] windy... ✅ C1
+  [2915/3097] wither... ✅ C1
+  [2916/3097] withhold... ✅ C1
+  [2917/3097] wizen... ✅ C1
+  [2918/3097] wobble... ✅ C1
+  [2919/3097] worldly... ✅ C1
+  [2920/3097] wrangler... ✅ C1
+  [2921/3097] wretched... ✅ C1
+  [2922/3097] wry... ❌ not found
+  [2923/3097] xenophobe... ❌ not found
+  [2924/3097] yoke... ❌ not found
+  [2925/3097] yokel... ❌ not found
+  [2926/3097] zeal... ❌ not found
+  [2927/3097] zealot... ❌ not found
+  [2928/3097] zesty... ❌ not found
+  [2929/3097] adjudicate... ❌ not found
+  [2930/3097] anachronism... ❌ not found
+  [2931/3097] anodyne... ❌ not found
+  [2932/3097] aplomb... ❌ not found
+  [2933/3097] apogee... ❌ not found
+  [2934/3097] apostate... ❌ not found
+  [2935/3097] apothegm... ❌ not found
+  [2936/3097] apotheosis... ❌ not found
+  [2937/3097] approbatory... ❌ not found
+  [2938/3097] appurtenant... ❌ not found
+  [2939/3097] arch... ❌ not found
+  [2940/3097] arrant... ❌ not found
+  [2941/3097] arriviste... ❌ not found
+  [2942/3097] arrogate... ❌ not found
+  [2943/3097] artifice... ❌ not found
+  [2944/3097] artless... ❌ not found
+  [2945/3097] artlessness... ❌ not found
+  [2946/3097] assiduously... ❌ not found
+  [2947/3097] atavism... ❌ not found
+  [2948/3097] autocratic... ❌ not found
+  [2949/3097] bastardization... ❌ not found
+  [2950/3097] bemoan... ❌ not found
+  [2951/3097] benighted... ✅ C2
+  [2952/3097] bereft... ✅ C2
+  [2953/3097] besotted... ✅ C2
+  [2954/3097] bilious... ✅ C2
+  [2955/3097] blinkered... ✅ C2
+  [2956/3097] bowdlerize... ✅ C2
+  [2957/3097] broadside... ✅ C2
+  [2958/3097] cataclysm... ✅ C2
+  [2959/3097] celerity... ✅ C2
+  [2960/3097] chauvinism... ✅ C2
+  [2961/3097] chimera... ✅ C2
+  [2962/3097] churlish... ✅ C2
+  [2963/3097] complaisant... ✅ C2
+  [2964/3097] complicit... ✅ C2
+  [2965/3097] concomitant... ✅ C2
+  [2966/3097] conflagration... ✅ C2
+  [2967/3097] conflate... ✅ C2
+  [2968/3097] corollary... ✅ C2
+  [2969/3097] cosseted... ✅ C2
+  [2970/3097] coterminous... ✅ C2
+  [2971/3097] crystallize... ✅ C2
+  [2972/3097] cupidity... ✅ C2
+  [2973/3097] debonair... ✅ C2
+  [2974/3097] decry... ✅ C2
+  [2975/3097] defray... ✅ C2
+  [2976/3097] deign... ✅ C2
+  [2977/3097] demonstrative... ✅ C2
+  [2978/3097] desiccated... ✅ C2
+  [2979/3097] desideratum... ✅ C2
+  [2980/3097] despot... ✅ C2
+  [2981/3097] diminutive... ✅ C2
+  [2982/3097] disingenuous... ✅ C2
+  [2983/3097] dispensation... ✅ C2
+  [2984/3097] dissolution... ✅ C2
+  [2985/3097] doleful... ✅ C2
+  [2986/3097] doughty... ✅ C2
+  [2987/3097] dovetail... ❌ not found
+  [2988/3097] effervescent... ✅ C2
+  [2989/3097] elegiac... ✅ C2
+  [2990/3097] embryonic... ✅ C2
+  [2991/3097] empiricism... ✅ C2
+  [2992/3097] enamor... ✅ C2
+  [2993/3097] enjoin... ✅ C2
+  [2994/3097] enormity... ✅ C2
+  [2995/3097] enthrall... ✅ C2
+  [2996/3097] epiphany... ✅ C2
+  [2997/3097] eponym... ✅ C2
+  [2998/3097] equitable... ✅ C2
+  [2999/3097] ersatz... ✅ C2
+  [3000/3097] exegesis... ✅ C2
+  [3001/3097] exemplar... ✅ C2
+  [3002/3097] exiguity... ❌ not found
+  [3003/3097] expunge... ✅ C2
+  [3004/3097] extrapolate... ✅ C2
+  [3005/3097] factious... ✅ C2
+  [3006/3097] factitious... ✅ C2
+  [3007/3097] fell... ✅ C2
+  [3008/3097] firebrand... ✅ C2
+  [3009/3097] flippant... ✅ C2
+  [3010/3097] flummox... ✅ C2
+  [3011/3097] fractious... ✅ C2
+  [3012/3097] gambit... ✅ C2
+  [3013/3097] graft... ✅ C2
+  [3014/3097] gumption... ✅ C2
+  [3015/3097] hagiographic... ❌ not found
+  [3016/3097] hector... ✅ C2
+  [3017/3097] hedge... ✅ C2
+  [3018/3097] hobble... ✅ C2
+  [3019/3097] illustrious... ✅ C2
+  [3020/3097] importuned... ✅ C2
+  [3021/3097] improvident... ✅ C2
+  [3022/3097] impute... ✅ C2
+  [3023/3097] inanity... ✅ C2
+  [3024/3097] inequity... ✅ C2
+  [3025/3097] insouciance... ✅ C2
+  [3026/3097] insufferable... ✅ C2
+  [3027/3097] internecine... ✅ C2
+  [3028/3097] intimation... ✅ C2
+  [3029/3097] inviolable... ✅ C2
+  [3030/3097] inviolate... ✅ C2
+  [3031/3097] irrefutable... ✅ C2
+  [3032/3097] kowtow... ✅ C2
+  [3033/3097] lascivious... ✅ C2
+  [3034/3097] litany... ✅ C2
+  [3035/3097] machinate... ✅ C2
+  [3036/3097] magisterial... ✅ C2
+  [3037/3097] malapropism... ✅ C2
+  [3038/3097] malfeasance... ✅ C2
+  [3039/3097] malingerer... ✅ C2
+  [3040/3097] maunder... ✅ C2
+  [3041/3097] mendicant... ✅ C2
+  [3042/3097] mettlesome... ✅ C2
+  [3043/3097] misattribute... ✅ C2
+  [3044/3097] mulct... ✅ C2
+  [3045/3097] nettlesome... ✅ C2
+  [3046/3097] objurgate... ✅ C2
+  [3047/3097] overweening... ✅ C2
+  [3048/3097] palaver... ✅ C2
+  [3049/3097] palimpsest... ✅ C2
+  [3050/3097] panacea... ✅ C2
+  [3051/3097] parvenu... ✅ C2
+  [3052/3097] pecuniary... ✅ C2
+  [3053/3097] penurious... ✅ C2
+  [3054/3097] percipient... ✅ C2
+  [3055/3097] phantasmagorical... ❌ not found
+  [3056/3097] picayune... ✅ C2
+  [3057/3097] pith... ✅ C2
+  [3058/3097] plucky... ✅ C2
+  [3059/3097] pollyannaish... ❌ not found
+  [3060/3097] presentiment... ✅ C2
+  [3061/3097] primacy... ✅ C2
+  [3062/3097] prognostication... ✅ C2
+  [3063/3097] prolixity... ❌ not found
+  [3064/3097] puissant... ✅ C2
+  [3065/3097] pyrrhic... ✅ C2
+  [3066/3097] quisling... ✅ C2
+  [3067/3097] raillery... ✅ C2
+  [3068/3097] rarefied... ✅ C2
+  [3069/3097] recapitulation... ✅ C2
+  [3070/3097] recrimination... ✅ C2
+  [3071/3097] recrudesce... ✅ C2
+  [3072/3097] remonstrate... ✅ C2
+  [3073/3097] reprisal... ✅ C2
+  [3074/3097] sagacious... ✅ C2
+  [3075/3097] sangfroid... ✅ C2
+  [3076/3097] sardonic... ✅ C2
+  [3077/3097] schadenfreude... ✅ C2
+  [3078/3097] effacing... ✅ C2
+  [3079/3097] semblance... ✅ C2
+  [3080/3097] sententious... ✅ C2
+  [3081/3097] simulacrum... ✅ C2
+  [3082/3097] solecism... ✅ C2
+  [3083/3097] solicitude... ✅ C2
+  [3084/3097] splenetic... ✅ C2
+  [3085/3097] transmute... ✅ C2
+  [3086/3097] truculence... ❌ not found
+  [3087/3097] umbrage... ✅ C2
+  [3088/3097] unforthcoming... ✅ C2
+  [3089/3097] unprepossessing... ✅ C2
+  [3090/3097] unpropitious... ✅ C2
+  [3091/3097] unstinting... ✅ C2
+  [3092/3097] untrammeled... ✅ C2
+  [3093/3097] unviable... ✅ C2
+  [3094/3097] vaunted... ✅ C2
+  [3095/3097] verisimilitude... ✅ C2
+  [3096/3097] vitriol... ✅ C2
+  [3097/3097] zeitgeist... ✅ C2
+
+✅ Done!
+   Fetched: 2478 words
+   Failed:  619 words (not in dictionary)
+   Output:  ./scripts/gre-words.json
+
+Next step: node scripts/generate-gre-sql.js

@@ -1,9 +1,107 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Mail, Target, BookOpen, Loader2, Check, Bell, Send } from "lucide-react";
+import { ArrowLeft, User, Mail, Target, BookOpen, Loader2, Check, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
+
+const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "00" : "30";
+  const value = `${String(h).padStart(2, "0")}:${m}`;
+  const period = h < 12 ? "SA" : "CH";
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const label = `${displayH}:${m} ${period}`;
+  return { value, label };
+});
+
+function TimeDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const listRef = useRef(null);
+
+  const selected = TIME_SLOTS.find(s => s.value === value) || TIME_SLOTS[0];
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (open && listRef.current) {
+      const idx = TIME_SLOTS.findIndex(s => s.value === value);
+      const item = listRef.current.children[idx];
+      if (item) item.scrollIntoView({ block: "center" });
+    }
+  }, [open, value]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 16px", borderRadius: "16px", border: "2px solid",
+          borderColor: open ? "#6C5CE7" : "#E8DFF5",
+          background: "#F8F4FF", cursor: "pointer", fontWeight: 700,
+          fontSize: "15px", color: "#2D1B4E", transition: "border-color 0.15s",
+        }}
+      >
+        <span>🕐 {selected.label}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6C5CE7" strokeWidth="2.5"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
+          background: "#fff", borderRadius: "16px", border: "2px solid #E8DFF5",
+          boxShadow: "0 8px 24px rgba(108,92,231,0.15)", zIndex: 50,
+          overflow: "hidden",
+        }}>
+          <div ref={listRef} style={{ maxHeight: "220px", overflowY: "auto", padding: "6px" }}>
+            {TIME_SLOTS.map(slot => {
+              const isSelected = slot.value === value;
+              return (
+                <button
+                  key={slot.value}
+                  type="button"
+                  onClick={() => { onChange(slot.value); setOpen(false); }}
+                  style={{
+                    width: "100%", textAlign: "left", padding: "8px 14px",
+                    borderRadius: "10px", border: "none", cursor: "pointer",
+                    fontWeight: isSelected ? 700 : 500, fontSize: "14px",
+                    background: isSelected ? "#EDE9FF" : "transparent",
+                    color: isSelected ? "#6C5CE7" : "#2D1B4E",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#F5F0FF"; }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
+                >
+                  {isSelected && <span style={{ marginRight: 8 }}>✓</span>}
+                  {slot.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function snapToHalfHour(time) {
+  const [h, m] = time.split(":").map(Number);
+  const snapped = m < 15 ? 0 : m < 45 ? 30 : 0;
+  const snappedH = m >= 45 ? (h + 1) % 24 : h;
+  return `${String(snappedH).padStart(2, "0")}:${snapped === 0 ? "00" : "30"}`;
+}
 
 const LEVEL_LABELS = {
   A1: 'Beginner',
@@ -36,7 +134,6 @@ export default function ProfilePage() {
   const [customDays, setCustomDays] = useState([1, 2, 3, 4, 5]);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
-  const [isSendingTest, setIsSendingTest] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -62,7 +159,7 @@ export default function ProfilePage() {
       if (emailPrefData.preferences) {
         const p = emailPrefData.preferences;
         setEmailEnabled(p.enabled ?? false);
-        setSendTime(p.send_time || "08:00");
+        setSendTime(snapToHalfHour(p.send_time || "08:00"));
         setFrequency(p.frequency || "daily");
         setCustomDays(p.custom_days || [1, 2, 3, 4, 5]);
       }
@@ -131,23 +228,6 @@ export default function ProfilePage() {
       setError(e.message);
     } finally {
       setIsSavingEmail(false);
-    }
-  };
-
-  const handleSendTest = async () => {
-    setIsSendingTest(true);
-    try {
-      const res = await fetch("/api/email/test", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        alert(`✅ ${data.message}\nTừ: "${data.word}"`);
-      } else {
-        setError(data.error || "Failed to send test email");
-      }
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsSendingTest(false);
     }
   };
 
@@ -357,12 +437,7 @@ export default function ProfilePage() {
               {/* Send time */}
               <div>
                 <label className="font-bold text-sm mb-2 block">Giờ nhận email</label>
-                <input
-                  type="time"
-                  value={sendTime}
-                  onChange={e => setSendTime(e.target.value)}
-                  className="px-4 py-2.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] transition-all font-semibold"
-                />
+                <TimeDropdown value={sendTime} onChange={setSendTime} />
               </div>
 
               {/* Frequency */}
@@ -415,16 +490,6 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Test email button */}
-              <button
-                type="button"
-                onClick={handleSendTest}
-                disabled={isSendingTest}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[--electric] text-[--electric] font-semibold text-sm hover:bg-[--lavender] hover:-translate-y-0.5 hover:shadow-sm disabled:opacity-50"
-              >
-                {isSendingTest ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                Gửi email test
-              </button>
             </div>
           )}
 

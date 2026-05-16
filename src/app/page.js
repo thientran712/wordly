@@ -103,6 +103,12 @@ export default function Home() {
       const data = await res.json();
       
       if (data.success) {
+        if (rating === 0) {
+          showToast("🙈 Đã ẩn — sẽ không nhắc lại từ này");
+          setTimeout(() => fetchNextWord(currentWord.id), 800);
+          return;
+        }
+
         const messages = {
           1: "🔄 We'll review this soon",
           2: "💪 Keep practicing!",
@@ -110,12 +116,12 @@ export default function Home() {
           4: `🚀 Mastered! Next in ${data.progress?.next_review_in_days || 7} days`,
         };
         showToast(messages[rating]);
-        
+
         if (rating >= 3) {
           setLearnedCount(prev => prev + 1);
           triggerConfetti();
         }
-        
+
         setReviewCount(prev => prev + 1);
         setTimeout(() => fetchNextWord(currentWord.id), 800);
       }

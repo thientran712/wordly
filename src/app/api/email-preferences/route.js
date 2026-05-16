@@ -35,7 +35,7 @@ export async function PUT(request) {
     .from("email_preferences")
     .upsert({
       user_id: user.id,
-      enabled: true,  // Auto-enable khi user save settings
+      enabled: body.enabled ?? true,
       send_time: body.send_time,
       frequency: body.frequency,
       custom_days: body.custom_days || [],
