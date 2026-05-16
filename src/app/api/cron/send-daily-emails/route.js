@@ -64,38 +64,12 @@ export async function GET(request) {
         continue;
       }
       
-      // Calculate timezone-aware current time
-      const userNow = new Date(now.toLocaleString("en-US", { timeZone: userInfo.timezone }));
-      const currentHour = userNow.getHours();
-      const currentMinute = userNow.getMinutes();
-      const currentDay = userNow.getDay();
-      
-      const [sendHour, sendMinute] = pref.send_time.split(":").map(Number);
-      const rawDiff = Math.abs(
-        (currentHour * 60 + currentMinute) - (sendHour * 60 + sendMinute)
-      );
-      const minutesDiff = Math.min(rawDiff, 1440 - rawDiff);
-
-      if (minutesDiff > 15) {
-        skipped.push({ email: userInfo.email, reason: "wrong time" });
-        continue;
-      }
-      
-      // Check frequency
-      if (pref.frequency === "weekdays" && (currentDay === 0 || currentDay === 6)) {
-        skipped.push({ email: userInfo.email, reason: "weekend" });
-        continue;
-      }
-      if (pref.frequency === "custom" && !pref.custom_days?.includes(currentDay)) {
-        skipped.push({ email: userInfo.email, reason: "not scheduled day" });
-        continue;
-      }
-      
-      // Anti-duplicate check
+      // Anti-duplicate: chỉ gửi 1 lần/ngày (theo UTC)
       const lastSent = pref.last_sent_at ? new Date(pref.last_sent_at) : null;
       if (lastSent) {
-        const lastSentLocal = new Date(lastSent.toLocaleString("en-US", { timeZone: userInfo.timezone }));
-        if (lastSentLocal.toDateString() === userNow.toDateString()) {
+        const todayUTC = now.toISOString().slice(0, 10);
+        const lastSentUTC = lastSent.toISOString().slice(0, 10);
+        if (lastSentUTC === todayUTC) {
           skipped.push({ email: userInfo.email, reason: "already sent today" });
           continue;
         }
