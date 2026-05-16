@@ -34,15 +34,6 @@ async function processUser(supabase, pref, userInfo, now) {
       return { skipped: { email: userInfo.email, reason: "not scheduled day" } };
     }
 
-    // Anti-duplicate: 1 lần/ngày theo timezone user
-    const lastSent = pref.last_sent_at ? new Date(pref.last_sent_at) : null;
-    if (lastSent) {
-      const lastSentLocal = new Date(lastSent.toLocaleString("en-US", { timeZone: userInfo.timezone }));
-      if (lastSentLocal.toDateString() === userNow.toDateString()) {
-        return { skipped: { email: userInfo.email, reason: "already sent today" } };
-      }
-    }
-
     const selectedWord = await selectBestWordForUser(supabase, pref.user_id);
     if (!selectedWord) {
       return { error: { email: userInfo.email, error: "No word available" } };
