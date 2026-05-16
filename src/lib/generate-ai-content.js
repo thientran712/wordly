@@ -1,4 +1,3 @@
-import { getOpenAIClient } from "@/lib/openai";
 
 const GOAL_CONTEXT = {
   toeic:    "professional and business environments, office settings, workplace communication",
@@ -87,6 +86,7 @@ export async function getOrGenerateWordContent(adminSupabase, { word_id, word, p
   const prompt = buildPrompt(word, pos || "", word_level || "", sl, learning_goal || "daily");
 
   try {
+    const { getOpenAIClient } = await import("@/lib/openai");
     const completion = await getOpenAIClient().chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
