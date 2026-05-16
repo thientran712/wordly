@@ -433,8 +433,62 @@ export default function ProfilePage() {
           </div>
 
           {emailEnabled && (
-            <div className="pt-4 border-t-2 border-[--line]">
-              <p className="text-xs text-[--ink-soft]">📬 Email sẽ được gửi lúc <strong>7:00 tối</strong> mỗi ngày.</p>
+            <div className="space-y-4 pt-4 border-t-2 border-[--line]">
+              {/* Send time */}
+              <div>
+                <label className="font-bold text-sm mb-2 block">Giờ nhận email</label>
+                <TimeDropdown value={sendTime} onChange={setSendTime} />
+              </div>
+
+              {/* Frequency */}
+              <div>
+                <label className="font-bold text-sm mb-2 block">Tần suất</label>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { value: 'daily', label: '📅 Mỗi ngày' },
+                    { value: 'weekdays', label: '💼 Thứ 2–6' },
+                    { value: 'custom', label: '⚙️ Tuỳ chỉnh' },
+                  ].map(f => (
+                    <button
+                      type="button"
+                      key={f.value}
+                      onClick={() => setFrequency(f.value)}
+                      className="px-4 py-2 rounded-xl border-2 font-semibold text-sm hover:-translate-y-0.5 hover:shadow-sm"
+                      style={{
+                        background: frequency === f.value ? '#DCC9FF' : '#F8F4FF',
+                        borderColor: frequency === f.value ? '#6C5CE7' : '#E8DFF5',
+                        color: frequency === f.value ? '#6C5CE7' : '#5D4B7B',
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom days */}
+              {frequency === 'custom' && (
+                <div>
+                  <label className="font-bold text-sm mb-2 block">Chọn ngày</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day, i) => (
+                      <button
+                        type="button"
+                        key={i}
+                        onClick={() => toggleCustomDay(i)}
+                        className="w-10 h-10 rounded-xl border-2 font-bold text-xs hover:-translate-y-0.5 hover:shadow-sm"
+                        style={{
+                          background: customDays.includes(i) ? '#B8F3D2' : '#F8F4FF',
+                          borderColor: customDays.includes(i) ? '#00C896' : '#E8DFF5',
+                          color: customDays.includes(i) ? '#00754C' : '#5D4B7B',
+                        }}
+                      >
+                        {day}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

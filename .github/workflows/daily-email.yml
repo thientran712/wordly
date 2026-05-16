@@ -2,7 +2,7 @@ name: Send Daily Word Emails
 
 on:
   schedule:
-    - cron: '0 12 * * *'  # 7pm Vietnam time (UTC+7 = 12:00 UTC)
+    - cron: '*/30 * * * *'  # Every 30 min — route filters by each user's preferred time
   workflow_dispatch:       # Allow manual trigger from GitHub UI
 
 jobs:
