@@ -25,7 +25,16 @@ export async function middleware(request) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  // Stale/invalid token — clear cookies and redirect to login
+  if (authError?.code === "refresh_token_not_found" || authError?.message?.includes("Refresh Token")) {
+    const res = NextResponse.redirect(new URL("/login", request.url));
+    request.cookies.getAll().forEach(cookie => {
+      if (cookie.name.startsWith("sb-")) res.cookies.delete(cookie.name);
+    });
+    return res;
+  }
 
   const path = request.nextUrl.pathname;
   const isAuthPage = path === "/login" || path === "/signup" || 
