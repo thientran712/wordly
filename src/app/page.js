@@ -20,6 +20,8 @@ export default function Home() {
   const [streak, setStreak] = useState(0);
   const [totalDays, setTotalDays] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
+  const [skillLevel, setSkillLevel] = useState("B1");
+  const [learningGoal, setLearningGoal] = useState("daily");
 
   useEffect(() => {
     async function init() {
@@ -29,7 +31,7 @@ export default function Home() {
 
         const [profileResult, progressData, streakData] = await Promise.all([
           user
-            ? supabase.from("profiles").select("name").eq("id", user.id).single()
+            ? supabase.from("profiles").select("name, skill_level, learning_goal").eq("id", user.id).single()
             : Promise.resolve({ data: null }),
           fetch("/api/progress").then(r => r.json()).catch(() => ({})),
           fetch("/api/stats/streak").then(r => r.json()).catch(() => ({})),
@@ -37,7 +39,10 @@ export default function Home() {
         ]);
 
         if (user && profileResult?.data) {
-          setUserName(profileResult.data.name || user.email?.split("@")[0] || "");
+          const p = profileResult.data;
+          setUserName(p.name || user.email?.split("@")[0] || "");
+          if (p.skill_level) setSkillLevel(p.skill_level);
+          if (p.learning_goal) setLearningGoal(p.learning_goal);
         }
 
         if (streakData) {
@@ -240,7 +245,7 @@ export default function Home() {
           </div>
         </div>
 
-        <WordCard 
+        <WordCard
           word={currentWord}
           progress={currentProgress}
           source={currentSource}
@@ -248,6 +253,8 @@ export default function Home() {
           isBookmarked={isCurrentBookmarked}
           onBookmark={toggleBookmark}
           onRate={handleRate}
+          skillLevel={skillLevel}
+          learningGoal={learningGoal}
         />
 
       </main>

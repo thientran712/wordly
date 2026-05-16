@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Volume2, RotateCcw, Frown, Smile, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Volume2, RotateCcw, Frown, Smile, Zap, Sparkles } from "lucide-react";
 
 const RATINGS = [
   { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "#E5405E", bg: "#FFF0F3", border: "#FFCCD6", hoverShadow: "rgba(229,64,94,0.25)" },
@@ -10,10 +10,38 @@ const RATINGS = [
   { rating: 4, label: "Easy",  icon: Zap,       desc: "~7d",  color: "#6C5CE7", bg: "#F5F3FF", border: "#C4B5FD", hoverShadow: "rgba(108,92,231,0.25)" },
 ];
 
-export default function WordCard({ word, currentIndex, isBookmarked, onBookmark, onRate, progress, source }) {
+const CONTEXT_ICONS = { love: "💕", life: "🌿", work: "💼" };
+
+export default function WordCard({ word, currentIndex, isBookmarked, onBookmark, onRate, progress, source, skillLevel, learningGoal }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRating, setIsRating] = useState(false);
   const [hovered, setHovered] = useState(null);
+  const [aiContent, setAiContent] = useState(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+
+  // Fetch AI content whenever the word changes
+  useEffect(() => {
+    if (!word?.id) return;
+    setAiContent(null);
+    setIsLoadingAI(true);
+
+    fetch("/api/ai/word-content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        word_id: word.id,
+        word: word.word,
+        pos: word.pos,
+        word_level: word.level,
+        skill_level: skillLevel || "B1",
+        learning_goal: learningGoal || "daily",
+      }),
+    })
+      .then(r => r.json())
+      .then(data => { if (data.content) setAiContent(data.content); })
+      .catch(() => {})
+      .finally(() => setIsLoadingAI(false));
+  }, [word?.id]);
 
   const speakWord = () => {
     if ("speechSynthesis" in window) {
@@ -75,7 +103,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
             {word.word}
           </h1>
 
-          {/* Phonetic + badges */}
+          {/* Phonetic + badges + audio */}
           <div className="flex flex-wrap items-center gap-2.5 mb-6">
             {word.phonetic && !word.phonetic.endsWith(".mp3") && (
               <span className="font-serif italic text-lg text-[--ink-soft]">{word.phonetic}</span>
@@ -93,13 +121,17 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                 {word.level}
               </span>
             )}
-            {/* Audio on mobile */}
             <button
               onClick={speakWord}
-              className="sm:hidden w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-95 transition-transform"
-              style={{ background: "linear-gradient(135deg,#6C5CE7,#FF5C8A)", boxShadow: "0 4px 12px rgba(108,92,231,0.35)" }}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white hover:scale-110 hover:shadow-lg"
+              style={{
+                background: "linear-gradient(135deg,#6C5CE7,#FF5C8A)",
+                boxShadow: isPlaying ? "0 0 0 3px rgba(108,92,231,0.35)" : "0 2px 8px rgba(108,92,231,0.3)",
+                opacity: isPlaying ? 0.75 : 1,
+              }}
+              title="Nghe phát âm"
             >
-              <Volume2 size={15} />
+              <Volume2 size={14} />
             </button>
           </div>
 
@@ -127,13 +159,57 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                 <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--grass]">✨ Also</span>
                 {word.synonyms.slice(0, 6).map((s, i) => (
                   <span key={i}
-                    className="px-2.5 py-1 rounded-full text-sm font-semibold transition-all duration-150 cursor-default hover:scale-105"
+                    className="px-2.5 py-1 rounded-full text-sm font-semibold cursor-default hover:scale-105"
                     style={{ background: "#F0FDF4", color: "#059669", border: "1.5px solid #A7F3D0" }}>
                     {s}
                   </span>
                 ))}
               </div>
             </>
+          )}
+
+          {/* ── AI Content ── */}
+          {(isLoadingAI || aiContent) && (
+            <div className="mt-5 pt-5 border-t border-[--line]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5"
+                style={{ color: "#6C5CE7" }}>
+                <Sparkles size={11} />
+                AI Examples
+              </p>
+
+              {isLoadingAI ? (
+                <AILoadingSkeleton />
+              ) : (
+                <>
+                  {/* 3 examples */}
+                  <div className="space-y-2.5 mb-4">
+                    {aiContent.examples.map((ex, i) => (
+                      <div key={i} className="flex gap-2.5 items-start">
+                        <span className="text-base leading-none mt-0.5 flex-shrink-0">
+                          {CONTEXT_ICONS[ex.context] || "•"}
+                        </span>
+                        <p className="text-sm lg:text-base leading-relaxed text-[--ink-soft] italic">
+                          "{ex.sentence}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Paragraph */}
+                  {aiContent.paragraph && (
+                    <>
+                      <div className="h-px bg-[--line] mb-3" />
+                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--ink-soft] mb-2">
+                        📝 In a story
+                      </p>
+                      <p className="text-sm lg:text-base leading-relaxed text-[--ink]">
+                        {aiContent.paragraph}
+                      </p>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
           )}
 
           {/* Mobile rating */}
@@ -145,7 +221,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                   key={r.rating}
                   onClick={() => handleRate(r.rating)}
                   disabled={isRating}
-                  className="py-3 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95 transition-all duration-150"
+                  className="py-3 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95"
                   style={{
                     background: r.bg,
                     borderColor: hovered === `m${r.rating}` ? r.color : r.border,
@@ -167,25 +243,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
 
         {/* RIGHT — desktop */}
         <div className="hidden sm:flex flex-col w-[140px] lg:w-[160px] flex-shrink-0 border-l border-[--line]">
-
-          {/* Listen */}
-          <button
-            onClick={speakWord}
-            onMouseEnter={() => setHovered("listen")}
-            onMouseLeave={() => setHovered(null)}
-            className="flex flex-col items-center justify-center gap-2 py-6 text-white font-bold text-sm cursor-pointer border-b border-[--line] transition-all duration-150"
-            style={{
-              background: "linear-gradient(160deg,#6C5CE7,#FF5C8A)",
-              opacity: hovered === "listen" ? 0.88 : 1,
-              transform: hovered === "listen" ? "scale(1.02)" : "scale(1)",
-            }}
-          >
-            <Volume2 size={22} strokeWidth={2} className={isPlaying ? "opacity-60" : ""} />
-            <span>{isPlaying ? "Playing…" : "Listen"}</span>
-          </button>
-
-          {/* Ratings */}
-          <div className="flex flex-col flex-1 p-3 gap-2">
+          <div className="flex flex-col flex-1 p-3 gap-2 justify-center">
             <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[--ink-soft] text-center mb-1">
               Nhớ chưa?
             </p>
@@ -196,7 +254,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                 disabled={isRating}
                 onMouseEnter={() => setHovered(r.rating)}
                 onMouseLeave={() => setHovered(null)}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border-2 font-semibold text-sm cursor-pointer disabled:opacity-50 transition-all duration-150"
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border-2 font-semibold text-sm cursor-pointer disabled:opacity-50"
                 style={{
                   background: r.bg,
                   borderColor: hovered === r.rating ? r.color : r.border,
@@ -217,6 +275,27 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AILoadingSkeleton() {
+  return (
+    <div className="space-y-2.5 animate-pulse">
+      {[90, 75, 85].map((w, i) => (
+        <div key={i} className="flex gap-2.5 items-start">
+          <div className="w-5 h-5 rounded-full bg-[--line] flex-shrink-0 mt-0.5" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3 bg-[--line] rounded-full" style={{ width: `${w}%` }} />
+            <div className="h-3 bg-[--line] rounded-full" style={{ width: `${w - 20}%` }} />
+          </div>
+        </div>
+      ))}
+      <div className="mt-4 pt-3 border-t border-[--line] space-y-1.5">
+        <div className="h-3 bg-[--line] rounded-full w-full" />
+        <div className="h-3 bg-[--line] rounded-full w-5/6" />
+        <div className="h-3 bg-[--line] rounded-full w-4/6" />
       </div>
     </div>
   );
