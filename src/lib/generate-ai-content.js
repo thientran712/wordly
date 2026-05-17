@@ -85,7 +85,7 @@ export async function getOrGenerateWordContent(adminSupabase, { word_id, word, p
 
   const prompt = buildPrompt(word, pos || "", word_level || "", sl, learning_goal || "daily");
 
-  try {
+  const callGroq = async () => {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -100,8 +100,27 @@ export async function getOrGenerateWordContent(adminSupabase, { word_id, word, p
         response_format: { type: "json_object" },
       }),
     });
-
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get("retry-after") || "5", 10);
+      await new Promise(r => setTimeout(r, retryAfter * 1000));
+      throw Object.assign(new Error(`Groq API error: 429`), { retryable: true });
+    }
     if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+    return res;
+  };
+
+  try {
+    let res;
+    try {
+      res = await callGroq();
+    } catch (e) {
+      if (e.retryable) {
+        console.warn("[generate-ai-content] 429 hit, retrying once...");
+        res = await callGroq();
+      } else {
+        throw e;
+      }
+    }
     const data = await res.json();
     const parsed = JSON.parse(data.choices[0].message.content);
     if (!Array.isArray(parsed.meanings) || parsed.meanings.length === 0) throw new Error("Invalid shape");

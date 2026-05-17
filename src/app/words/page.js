@@ -226,9 +226,12 @@ function WordRow({ word, onClick, onSpeak }) {
   const state = STATE_CONFIG[word.user_state] || STATE_CONFIG.learning;
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="w-full text-left px-4 py-3.5 bg-white rounded-2xl border-2 border-[--line] hover:border-[--electric] hover:scale-[1.01] hover:shadow-md flex items-center gap-3"
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") onClick(); }}
+      className="w-full text-left px-4 py-3.5 bg-white rounded-2xl border-2 border-[--line] hover:border-[--electric] hover:scale-[1.01] hover:shadow-md flex items-center gap-3 cursor-pointer"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -268,7 +271,7 @@ function WordRow({ word, onClick, onSpeak }) {
           </span>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 

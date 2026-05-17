@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, BookOpen, UserCog, User } from "lucide-react";
+import { LogOut, BookOpen, UserCog, User, Mail, NotebookPen } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
 export default function Header({ streak, totalDays, userName }) {
@@ -83,7 +83,7 @@ export default function Header({ streak, totalDays, userName }) {
           )}
         </div>
 
-        {/* My Words — icon + label on sm+, icon only on xs */}
+        {/* My Words */}
         <button
           onClick={() => router.push("/words")}
           title="My Words"
@@ -93,14 +93,14 @@ export default function Header({ streak, totalDays, userName }) {
           <span className="hidden sm:inline">My Words</span>
         </button>
 
-        {/* Profile — icon + label on sm+ */}
+        {/* Journal */}
         <button
-          onClick={() => router.push("/profile")}
-          title="Profile"
+          onClick={() => router.push("/journal")}
+          title="Journal"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[--whisper] border border-[--line] text-[--ink-soft] hover:bg-[--lavender] hover:border-[--electric] hover:text-[--electric] hover:-translate-y-0.5 hover:shadow-sm text-xs font-semibold"
         >
-          <UserCog size={15} />
-          <span className="hidden sm:inline">Profile</span>
+          <NotebookPen size={15} />
+          <span className="hidden sm:inline">Journal</span>
         </button>
 
         {/* User avatar — sign out + mobile nav */}
@@ -130,7 +130,6 @@ export default function Header({ streak, totalDays, userName }) {
                     <p className="font-bold text-sm truncate">{userName}</p>
                   </div>
                 )}
-                {/* Mobile nav */}
                 <button
                   onClick={() => { setIsMenuOpen(false); router.push("/words"); }}
                   className="sm:hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
@@ -138,12 +137,25 @@ export default function Header({ streak, totalDays, userName }) {
                   <BookOpen size={15} /> My Words
                 </button>
                 <button
-                  onClick={() => { setIsMenuOpen(false); router.push("/profile"); }}
+                  onClick={() => { setIsMenuOpen(false); router.push("/journal"); }}
                   className="sm:hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
                 >
-                  <UserCog size={15} /> Profile
+                  <NotebookPen size={15} /> Journal
                 </button>
                 <div className="sm:hidden h-px bg-[--line] my-1" />
+                <button
+                  onClick={() => { setIsMenuOpen(false); router.push("/profile"); }}
+                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                >
+                  <UserCog size={15} /> Profile Settings
+                </button>
+                <button
+                  onClick={() => { setIsMenuOpen(false); router.push("/profile/email"); }}
+                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                >
+                  <Mail size={15} /> Email Settings
+                </button>
+                <div className="h-px bg-[--line] my-1" />
                 <button
                   onClick={handleLogout}
                   className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--hot-pink] transition-colors flex items-center gap-2"
