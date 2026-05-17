@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import WordCard from "@/components/WordCard";
 import { greetings } from "@/data/vocabulary";
 import { createClient } from "@/lib/supabase-client";
+import { useRouter } from "next/navigation";
+import { NotebookPen, Plus, GraduationCap, Loader2 } from "lucide-react";
 
 export default function Home() {
+  const router = useRouter();
   const [currentWord, setCurrentWord] = useState(null);
   const [currentProgress, setCurrentProgress] = useState(null);
   const [currentSource, setCurrentSource] = useState("new");
@@ -23,20 +26,45 @@ export default function Home() {
   const [skillLevel, setSkillLevel] = useState("B1");
   const [learningGoal, setLearningGoal] = useState("daily");
 
+  // Journal quick-add
+  const [journalWord, setJournalWord] = useState("");
+  const [journalMeaning, setJournalMeaning] = useState("");
+  const [journalExpanded, setJournalExpanded] = useState(false);
+  const [isAddingJournal, setIsAddingJournal] = useState(false);
+  const [journalDueCount, setJournalDueCount] = useState(0);
+  const journalWordRef = useRef(null);
+  const journalFormRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (journalFormRef.current && !journalFormRef.current.contains(e.target)) {
+        setJournalExpanded(false);
+        setJournalWord("");
+        setJournalMeaning("");
+      }
+    }
+    if (journalExpanded) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [journalExpanded]);
+
   useEffect(() => {
     async function init() {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        const [profileResult, progressData, streakData] = await Promise.all([
+        const [profileResult, progressData, streakData, reviewData] = await Promise.all([
           user
             ? supabase.from("profiles").select("name, skill_level, learning_goal").eq("id", user.id).single()
             : Promise.resolve({ data: null }),
           fetch("/api/progress").then(r => r.json()).catch(() => ({})),
           fetch("/api/stats/streak").then(r => r.json()).catch(() => ({})),
+          fetch("/api/journal/review").then(r => r.json()).catch(() => ({})),
           fetchNextWord(),
         ]);
+        if (reviewData?.due_count) setJournalDueCount(reviewData.due_count);
 
         if (user && profileResult?.data) {
           const p = profileResult.data;
@@ -179,6 +207,28 @@ export default function Home() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const handleAddJournal = async (e) => {
+    e.preventDefault();
+    if (!journalWord.trim()) return;
+    setIsAddingJournal(true);
+    try {
+      const res = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word: journalWord, meaning_vi: journalMeaning }),
+      });
+      if (res.ok) {
+        setJournalWord("");
+        setJournalMeaning("");
+        setJournalExpanded(false);
+        setJournalDueCount(c => c + 1);
+        showToast(`📝 Đã lưu "${journalWord.trim()}"`);
+      }
+    } finally {
+      setIsAddingJournal(false);
+    }
+  };
+
   useEffect(() => {
     const handler = (e) => {
       const ratingMap = { '1': 1, '2': 2, '3': 3, '4': 4 };
@@ -250,6 +300,70 @@ export default function Home() {
             <span><b className="text-[--electric]">{learnedCount}</b> tổng</span>
           </div>
         </div>
+
+        {/* Journal quick-add bar */}
+        <form
+          ref={journalFormRef}
+          onSubmit={handleAddJournal}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-[--line] px-3 py-2 mb-3 flex flex-col gap-2"
+          style={{ boxShadow: "0 2px 12px rgba(108,92,231,0.06)" }}
+        >
+          <div className="flex items-center gap-2">
+            <NotebookPen size={14} className="text-[--electric] flex-shrink-0" />
+            <input
+              ref={journalWordRef}
+              type="text"
+              value={journalWord}
+              onChange={e => setJournalWord(e.target.value)}
+              onFocus={() => setJournalExpanded(true)}
+              placeholder="Ghi từ mới vào journal..."
+              autoComplete="off"
+              className="flex-1 text-sm font-semibold bg-transparent outline-none placeholder:text-[--ink-soft] placeholder:font-normal text-[--ink]"
+            />
+            {journalExpanded ? (
+              <button
+                type="submit"
+                disabled={isAddingJournal || !journalWord.trim()}
+                className="w-7 h-7 rounded-xl flex items-center justify-center text-white flex-shrink-0 disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg,#6C5CE7,#a29bfe)" }}
+              >
+                {isAddingJournal ? <Loader2 size={12} className="animate-spin" /> : <Plus size={13} />}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.push("/journal/review")}
+                disabled={journalDueCount === 0}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold text-xs flex-shrink-0 disabled:opacity-40 hover:-translate-y-0.5 transition-all"
+                style={{ background: "linear-gradient(135deg,#6C5CE7,#a29bfe)", color: "white" }}
+              >
+                <GraduationCap size={12} />
+                Ôn {journalDueCount > 0 && <span>{journalDueCount}</span>}
+              </button>
+            )}
+          </div>
+
+          {journalExpanded && (
+            <div className="flex items-center gap-2 animate-fade-in">
+              <div className="w-3.5 flex-shrink-0" />
+              <input
+                type="text"
+                value={journalMeaning}
+                onChange={e => setJournalMeaning(e.target.value)}
+                placeholder="Nghĩa tiếng Việt (tuỳ chọn)"
+                autoComplete="off"
+                className="flex-1 text-sm bg-transparent outline-none placeholder:text-[--ink-soft] text-[--ink]"
+              />
+              <button
+                type="button"
+                onClick={() => { setJournalExpanded(false); setJournalWord(""); setJournalMeaning(""); }}
+                className="text-xs text-[--ink-soft] hover:text-[--ink] flex-shrink-0"
+              >
+                Huỷ
+              </button>
+            </div>
+          )}
+        </form>
 
         <WordCard
           word={currentWord}
