@@ -17,12 +17,22 @@ async function processUser(supabase, pref, userInfo, now) {
     const currentMinute = userNow.getMinutes();
     const currentDay = userNow.getDay();
 
-    // Time window check (±15 min, handles midnight wrap)
+    // Already sent today? (in user's timezone)
+    if (pref.last_sent_at) {
+      const lastSentUserTime = new Date(new Date(pref.last_sent_at).toLocaleString("en-US", { timeZone: userInfo.timezone }));
+      const lastSentDay = lastSentUserTime.toDateString();
+      const todayDay = userNow.toDateString();
+      if (lastSentDay === todayDay) {
+        return { skipped: { email: userInfo.email, reason: "already sent today" } };
+      }
+    }
+
+    // Time window check (±90 min — handles GitHub Actions delay up to ~3h)
     const [sendHour, sendMinute] = pref.send_time.split(":").map(Number);
     const rawDiff = Math.abs((currentHour * 60 + currentMinute) - (sendHour * 60 + sendMinute));
     const minutesDiff = Math.min(rawDiff, 1440 - rawDiff);
 
-    if (minutesDiff > 15) {
+    if (minutesDiff > 90) {
       return { skipped: { email: userInfo.email, reason: "wrong time" } };
     }
 
