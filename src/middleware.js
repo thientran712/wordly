@@ -41,7 +41,7 @@ export async function middleware(request) {
                      path === "/forgot-password" || path === "/reset-password";
   const isApi = path.startsWith("/api/");
   const isPublicApi = path.startsWith("/api/words");
-  const isCronApi = path.startsWith("/api/cron");
+  const isCronApi = path.startsWith("/api/cron") || path.startsWith("/api/admin");
   const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback");
   const isOnboardingPage = path === "/onboarding";
