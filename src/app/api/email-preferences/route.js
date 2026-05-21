@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase-server";
+import { inngest } from "@/inngest/client";
 
 export async function GET() {
   const supabase = await createClient();
@@ -45,6 +46,11 @@ export async function PUT(request) {
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  // Trigger Inngest to (re)schedule — cancelOn cancels any existing sleep for this user
+  if (body.enabled !== false) {
+    await inngest.send({ name: "email/schedule.updated", data: { user_id: user.id } });
   }
 
   return Response.json({ preferences: data[0] });
