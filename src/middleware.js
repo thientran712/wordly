@@ -42,13 +42,14 @@ export async function middleware(request) {
   const isApi = path.startsWith("/api/");
   const isPublicApi = path.startsWith("/api/words");
   const isCronApi = path.startsWith("/api/cron");
+  const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback");
   const isOnboardingPage = path === "/onboarding";
   const isLandingPage = path === "/";
   // Public routes - no auth check
   const isPublicPage = isLandingPage;
 
-  if (isCronApi || isAuthCallback) {
+  if (isCronApi || isAuthCallback || isInngestApi) {
     return response;
   }
 
