@@ -16,6 +16,10 @@ const fraunces = Fraunces({
 export const metadata = {
   title: "Wordly · Học tiếng Anh mỗi ngày",
   description: "Mỗi ngày một từ mới — Học tiếng Anh thú vị và hiệu quả",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({ children }) {
