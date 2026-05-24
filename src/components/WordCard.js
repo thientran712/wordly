@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { Volume2, RotateCcw, Frown, Smile, Zap, EyeOff } from "lucide-react";
 
 const RATINGS = [
-  { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "#E5405E", bg: "#FFF0F3", border: "#FFCCD6", hoverShadow: "rgba(229,64,94,0.25)" },
-  { rating: 2, label: "Hard",  icon: Frown,     desc: "<1d",  color: "#E06030", bg: "#FFF3EE", border: "#FECDB8", hoverShadow: "rgba(224,96,48,0.25)" },
-  { rating: 3, label: "Good",  icon: Smile,     desc: "~3d",  color: "#059669", bg: "#F0FDF8", border: "#A7F3D0", hoverShadow: "rgba(5,150,105,0.25)" },
-  { rating: 4, label: "Easy",  icon: Zap,       desc: "~7d",  color: "#6C5CE7", bg: "#F5F3FF", border: "#C4B5FD", hoverShadow: "rgba(108,92,231,0.25)" },
+  { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "var(--error)",        bg: "var(--error-soft)",   border: "var(--error-border)",   hoverShadow: "rgba(229,64,94,0.25)" },
+  { rating: 2, label: "Hard",  icon: Frown,     desc: "<1d",  color: "var(--coral)",        bg: "var(--coral-soft)",   border: "var(--coral-border)",   hoverShadow: "rgba(224,96,48,0.25)" },
+  { rating: 3, label: "Good",  icon: Smile,     desc: "~3d",  color: "var(--grass-text)",   bg: "var(--grass-soft)",   border: "var(--grass-border)",   hoverShadow: "rgba(5,150,105,0.25)" },
+  { rating: 4, label: "Easy",  icon: Zap,       desc: "~7d",  color: "var(--electric)",     bg: "var(--whisper)",      border: "var(--electric-border)", hoverShadow: "rgba(108,92,231,0.25)" },
 ];
 
 const CONTEXT_ICONS = { love: "💕", life: "🌿", work: "💼" };
@@ -96,7 +96,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
       className="bg-white rounded-3xl border overflow-clip mb-3 animate-fade-in"
       style={{
         boxShadow: isEmailToday ? "0 8px 32px rgba(108,92,231,0.15)" : "0 8px 32px rgba(45,27,78,0.08)",
-        borderColor: isEmailToday ? "#C4B5FD" : "var(--line)",
+        borderColor: isEmailToday ? "var(--electric-border)" : "var(--line)",
       }}
       key={currentIndex}
     >
@@ -106,14 +106,14 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
           className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold text-xs"
           style={{
             background: isEmailToday
-              ? "linear-gradient(135deg,#EDE9FE,#DCC9FF)"
+              ? "linear-gradient(135deg,var(--whisper),var(--lavender))"
               : isReview
-              ? "linear-gradient(135deg,#FFE9A8,#FFD0E2)"
-              : "linear-gradient(135deg,#DCC9FF,#FFC1D8)",
+              ? "linear-gradient(135deg,var(--butter),var(--pink))"
+              : "linear-gradient(135deg,var(--lavender),var(--pink))",
           }}
         >
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-            style={{ background: isEmailToday ? "#6C5CE7" : "#FF5C8A" }} />
+            style={{ background: isEmailToday ? "var(--electric)" : "var(--hot-pink)" }} />
           {isEmailToday
             ? "📧 Từ vựng email hôm nay"
             : isReview
@@ -150,7 +150,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
           <div className="flex flex-wrap items-center gap-2.5 mb-6">
             {word.level && (
               <span className="px-3 py-1 rounded-full font-bold text-xs uppercase tracking-wider"
-                style={{ background: "#F5F3FF", color: "#6C5CE7", border: "1.5px solid #C4B5FD" }}>
+                style={{ background: "var(--whisper)", color: "var(--electric)", border: "1.5px solid var(--electric-border)" }}>
                 {word.level}
               </span>
             )}
@@ -158,7 +158,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
               onClick={speakWord}
               className="w-8 h-8 rounded-full flex items-center justify-center text-white hover:scale-110 hover:shadow-lg"
               style={{
-                background: "linear-gradient(135deg,#6C5CE7,#FF5C8A)",
+                background: "linear-gradient(135deg,var(--electric),var(--hot-pink))",
                 boxShadow: isPlaying ? "0 0 0 3px rgba(108,92,231,0.35)" : "0 2px 8px rgba(108,92,231,0.3)",
                 opacity: isPlaying ? 0.75 : 1,
               }}
@@ -183,7 +183,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                 {aiContent.meanings.map((m, i) => (
                   <div key={i}
                     className="rounded-2xl px-4 py-3.5 border border-[--line]"
-                    style={{ background: i === 0 ? "#FAFBFF" : "#FEFEFE" }}
+                    style={{ background: i === 0 ? "var(--whisper)" : "white" }}
                   >
                     {/* POS badge + phonetic + number */}
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -191,7 +191,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                         {i + 1}
                       </span>
                       <span className="px-2 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider"
-                        style={{ background: "#ECFDF5", color: "#059669", border: "1.5px solid #A7F3D0" }}>
+                        style={{ background: "var(--grass-soft)", color: "var(--grass-text)", border: "1.5px solid var(--grass-border)" }}>
                         {m.pos}
                       </span>
                       {m.phonetic_ipa && (
@@ -203,11 +203,11 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                     </div>
                     {m.memory_vi && (
                       <div className="rounded-xl px-3 py-2.5 mb-2"
-                        style={{ background: "linear-gradient(135deg,#FFFBEB,#FFF3E0)", border: "1.5px solid #FDE68A" }}>
-                        <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#D97706" }}>
+                        style={{ background: "var(--sunshine-soft)", border: "1.5px solid var(--sunshine-border)" }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--sunshine-text)" }}>
                           💡 Mẹo nhớ
                         </p>
-                        <p className="text-sm leading-relaxed" style={{ color: "#92400E" }}>
+                        <p className="text-sm leading-relaxed" style={{ color: "var(--sunshine-dark)" }}>
                           {m.memory_vi}
                         </p>
                       </div>
@@ -263,7 +263,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                   aiContent.synonyms.map((s, i) => (
                     <span key={i}
                       className="px-2.5 py-1 rounded-full text-sm font-semibold cursor-default hover:scale-105 transition-transform"
-                      style={{ background: "#F0FDF4", color: "#059669", border: "1.5px solid #A7F3D0" }}>
+                      style={{ background: "var(--grass-soft)", color: "var(--grass-text)", border: "1.5px solid var(--grass-border)" }}>
                       {s}
                     </span>
                   ))
@@ -303,8 +303,8 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
             <button
               onClick={() => handleRate(0)}
               disabled={isRating}
-              className="mt-3 w-full py-2.5 rounded-xl border border-gray-200 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 hover:bg-gray-50 active:scale-95"
-              style={{ color: "#9CA3AF" }}
+              className="mt-3 w-full py-2.5 rounded-xl border border-[--line] text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 hover:bg-[--whisper] active:scale-95"
+              style={{ color: "var(--ink-ghost)" }}
             >
               <EyeOff size={12} />
               Không cần nhắc lại từ này
@@ -348,8 +348,8 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
               <button
                 onClick={() => handleRate(0)}
                 disabled={isRating}
-                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-medium cursor-pointer disabled:opacity-50 transition-all hover:bg-gray-50"
-                style={{ color: "#9CA3AF" }}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-medium cursor-pointer disabled:opacity-50 transition-all hover:bg-[--whisper]"
+                style={{ color: "var(--ink-ghost)" }}
               >
                 <EyeOff size={11} />
                 Bỏ qua mãi
@@ -366,7 +366,7 @@ function AILoadingSkeleton({ message }) {
   return (
     <div className="py-1">
       {/* Loading message */}
-      <p className="text-sm font-semibold mb-5" style={{ color: "#6C5CE7" }}>
+      <p className="text-sm font-semibold mb-5" style={{ color: "var(--electric)" }}>
         {message}
       </p>
 
@@ -379,19 +379,19 @@ function AILoadingSkeleton({ message }) {
           <div key={i} className="space-y-2.5">
             {/* POS badge */}
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-gray-200" />
-              <div className="h-4 w-16 rounded-full bg-gray-200" />
+              <div className="w-4 h-4 rounded-full bg-[--line]" />
+              <div className="h-4 w-16 rounded-full bg-[--line]" />
             </div>
             {/* EN definition */}
-            <div className="h-4 rounded-full bg-gray-200" style={{ width: ws.w1 }} />
-            <div className="h-4 rounded-full bg-gray-100" style={{ width: ws.w2 }} />
+            <div className="h-4 rounded-full bg-[--line]" style={{ width: ws.w1 }} />
+            <div className="h-4 rounded-full bg-[--whisper]" style={{ width: ws.w2 }} />
             {/* VI definition */}
-            <div className="h-3 rounded-full bg-gray-100" style={{ width: ws.w3 }} />
+            <div className="h-3 rounded-full bg-[--whisper]" style={{ width: ws.w3 }} />
             {/* Examples */}
             <div className="pl-1 space-y-1.5 pt-1">
-              <div className="h-3 rounded-full bg-gray-100" style={{ width: ws.w4 }} />
-              <div className="h-3 rounded-full bg-gray-100" style={{ width: ws.w5 }} />
-              <div className="h-3 rounded-full bg-gray-100" style={{ width: ws.w1 }} />
+              <div className="h-3 rounded-full bg-[--whisper]" style={{ width: ws.w4 }} />
+              <div className="h-3 rounded-full bg-[--whisper]" style={{ width: ws.w5 }} />
+              <div className="h-3 rounded-full bg-[--whisper]" style={{ width: ws.w1 }} />
             </div>
           </div>
         ))}

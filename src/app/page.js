@@ -325,7 +325,7 @@ export default function Home() {
                 type="submit"
                 disabled={isAddingJournal || !journalWord.trim()}
                 className="w-7 h-7 rounded-xl flex items-center justify-center text-white flex-shrink-0 disabled:opacity-40"
-                style={{ background: "linear-gradient(135deg,#6C5CE7,#a29bfe)" }}
+                style={{ background: "linear-gradient(135deg,var(--electric),var(--electric-muted))" }}
               >
                 {isAddingJournal ? <Loader2 size={12} className="animate-spin" /> : <Plus size={13} />}
               </button>
@@ -335,7 +335,7 @@ export default function Home() {
                 onClick={() => router.push("/journal/review")}
                 disabled={journalDueCount === 0}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold text-xs flex-shrink-0 disabled:opacity-40 hover:-translate-y-0.5 transition-all"
-                style={{ background: "linear-gradient(135deg,#6C5CE7,#a29bfe)", color: "white" }}
+                style={{ background: "linear-gradient(135deg,var(--electric),var(--electric-muted))", color: "white" }}
               >
                 <GraduationCap size={12} />
                 Ôn {journalDueCount > 0 && <span>{journalDueCount}</span>}

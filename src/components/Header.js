@@ -26,7 +26,7 @@ export default function Header({ streak, totalDays, userName }) {
       >
         <div
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-lg shadow-[0_2px_8px_rgba(255,92,138,0.3)] flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #FF5C8A, #6C5CE7)", transform: "rotate(-5deg)" }}
+          style={{ background: "linear-gradient(135deg, var(--hot-pink), var(--electric))", transform: "rotate(-5deg)" }}
         >
           🌈
         </div>
@@ -42,7 +42,7 @@ export default function Header({ streak, totalDays, userName }) {
           <button
             onClick={() => { setIsStreakOpen(!isStreakOpen); setIsMenuOpen(false); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs hover:-translate-y-0.5 hover:shadow-md"
-            style={{ background: "linear-gradient(135deg, #FFE9A8, #FFB627)", color: "#8B5500" }}
+            style={{ background: "linear-gradient(135deg, var(--butter), var(--sunshine))", color: "#8B5500" }}
             title="Xem thống kê streak"
           >
             🔥 <span>{streak}</span>
@@ -63,12 +63,12 @@ export default function Header({ streak, totalDays, userName }) {
                   <p className="text-[10px] text-[--ink-soft] uppercase tracking-wider mb-2">Thống kê học tập</p>
                   <div className="flex items-center gap-3">
                     <div className="text-center flex-1">
-                      <div className="text-2xl font-black" style={{ color: "#D97706" }}>{streak}</div>
+                      <div className="text-2xl font-black" style={{ color: "var(--sunshine-text)" }}>{streak}</div>
                       <div className="text-[10px] font-semibold text-[--ink-soft] mt-0.5">🔥 Liên tiếp</div>
                     </div>
                     <div className="w-px h-10 bg-[--line]" />
                     <div className="text-center flex-1">
-                      <div className="text-2xl font-black" style={{ color: "#6C5CE7" }}>{totalDays}</div>
+                      <div className="text-2xl font-black" style={{ color: "var(--electric)" }}>{totalDays}</div>
                       <div className="text-[10px] font-semibold text-[--ink-soft] mt-0.5">📅 Tổng ngày</div>
                     </div>
                   </div>
@@ -108,7 +108,7 @@ export default function Header({ streak, totalDays, userName }) {
           <button
             onClick={() => { setIsMenuOpen(!isMenuOpen); setIsStreakOpen(false); }}
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white cursor-pointer flex-shrink-0 hover:scale-110 hover:shadow-[0_4px_16px_rgba(108,92,231,0.4)]"
-            style={{ background: "linear-gradient(135deg, #6C5CE7, #FF5C8A)" }}
+            style={{ background: "linear-gradient(135deg, var(--electric), var(--hot-pink))" }}
             title={userName || "Account"}
           >
             <User size={16} />

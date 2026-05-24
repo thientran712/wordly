@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* ── Brand palette ── */
   --color-cream: #FFF8F0;
   --color-pink: #FFC1D8;
   --color-hot-pink: #FF5C8A;
@@ -15,11 +16,32 @@
   --color-electric: #6C5CE7;
   --color-ink: #2D1B4E;
   --color-ink-soft: #5D4B7B;
+  --color-ink-ghost: #9CA3AF;
   --color-line: #E8DFF5;
   --color-whisper: #F8F4FF;
+  /* ── Electric tints ── */
+  --color-electric-muted: #a29bfe;
+  --color-electric-border: #C4B5FD;
+  /* ── Semantic: error ── */
+  --color-error: #E5405E;
+  --color-error-soft: #FFF0F3;
+  --color-error-border: #FFCCD6;
+  /* ── Semantic: warning ── */
+  --color-coral-soft: #FFF3EE;
+  --color-coral-border: #FECDB8;
+  /* ── Semantic: success ── */
+  --color-grass-text: #059669;
+  --color-grass-soft: #F0FDF4;
+  --color-grass-border: #A7F3D0;
+  /* ── Semantic: tip / memory ── */
+  --color-sunshine-text: #D97706;
+  --color-sunshine-dark: #92400E;
+  --color-sunshine-soft: #FFFBEB;
+  --color-sunshine-border: #FDE68A;
 }
 
 :root {
+  /* ── Brand palette ── */
   --cream: #FFF8F0;
   --pink: #FFC1D8;
   --hot-pink: #FF5C8A;
@@ -34,8 +56,28 @@
   --electric: #6C5CE7;
   --ink: #2D1B4E;
   --ink-soft: #5D4B7B;
+  --ink-ghost: #9CA3AF;
   --line: #E8DFF5;
   --whisper: #F8F4FF;
+  /* ── Electric tints ── */
+  --electric-muted: #a29bfe;
+  --electric-border: #C4B5FD;
+  /* ── Semantic: error ── */
+  --error: #E5405E;
+  --error-soft: #FFF0F3;
+  --error-border: #FFCCD6;
+  /* ── Semantic: warning ── */
+  --coral-soft: #FFF3EE;
+  --coral-border: #FECDB8;
+  /* ── Semantic: success ── */
+  --grass-text: #059669;
+  --grass-soft: #F0FDF4;
+  --grass-border: #A7F3D0;
+  /* ── Semantic: tip / memory ── */
+  --sunshine-text: #D97706;
+  --sunshine-dark: #92400E;
+  --sunshine-soft: #FFFBEB;
+  --sunshine-border: #FDE68A;
 }
 
 body {
