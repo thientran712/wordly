@@ -16,8 +16,9 @@ export async function GET(request) {
   const word_id = searchParams.get("word_id");
   const skill_level = searchParams.get("skill_level");
 
-  if (!word_id || !skill_level) {
-    return Response.json({ error: "Missing params" }, { status: 400 });
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!word_id || !UUID_REGEX.test(word_id) || !skill_level) {
+    return Response.json({ error: "Missing or invalid params" }, { status: 400 });
   }
 
   const { data } = await supabase
@@ -37,7 +38,10 @@ export async function POST(request) {
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { word_id, word, pos, word_level, skill_level, learning_goal } = await request.json();
-  if (!word_id || !word) return Response.json({ error: "Missing required fields" }, { status: 400 });
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!word_id || !UUID_REGEX.test(word_id) || !word) {
+    return Response.json({ error: "Missing or invalid required fields" }, { status: 400 });
+  }
 
   const admin = createAdminClient();
 

@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { sendDailyWordEmail } from "@/lib/send-email";
 import { selectBestWordForUser } from "@/lib/select-word-for-email";
 import { getOrGenerateWordContent } from "@/lib/generate-ai-content";
+import { validateCronSecret } from "@/lib/validate-cron-secret";
 
 export const maxDuration = 60;
 
@@ -112,7 +113,7 @@ async function processUser(supabase, pref, userInfo, now) {
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!validateCronSecret(authHeader)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

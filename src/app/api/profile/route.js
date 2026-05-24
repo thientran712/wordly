@@ -76,7 +76,7 @@ export async function PUT(request) {
 
   if (error) {
     console.error("[profile PUT] Supabase error:", error);
-    return Response.json({ error: error.message, code: error.code }, { status: 500 });
+    return Response.json({ error: "Failed to update profile" }, { status: 500 });
   }
 
   return Response.json({ success: true, profile: data });
