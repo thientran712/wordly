@@ -1,8 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import { config } from "dotenv";
+
+config({ path: new URL("../.env.local", import.meta.url).pathname });
 
 const supabase = createClient(
-  "https://blattojsgqyhoxkglind.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsYXR0b2pzZ3F5aG94a2dsaW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODM0NzgxNCwiZXhwIjoyMDkzOTIzODE0fQ.T5M7raR5QrlszXMJ8aGokWyYvpWhn7iAZbtU8mPPL3w"
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 async function getAudioUrl(word) {
