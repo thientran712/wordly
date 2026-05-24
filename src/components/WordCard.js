@@ -55,12 +55,29 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
   }, [word?.id]);
 
   const speakWord = () => {
-    if ("speechSynthesis" in window) {
-      setIsPlaying(true);
+    if (!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const speak = () => {
+      const voices = speechSynthesis.getVoices();
+      const preferred =
+        voices.find(v => v.name === "Google US English") ||
+        voices.find(v => v.lang === "en-US" && !v.localService) ||
+        voices.find(v => v.lang === "en-US") ||
+        null;
       const u = new SpeechSynthesisUtterance(word.word);
-      u.lang = "en-US"; u.rate = 0.85;
+      u.lang = "en-US";
+      u.rate = 0.85;
+      if (preferred) u.voice = preferred;
+      u.onstart = () => setIsPlaying(true);
       u.onend = () => setIsPlaying(false);
+      u.onerror = () => setIsPlaying(false);
       speechSynthesis.speak(u);
+    };
+    // Voices có thể chưa load xong khi component mount lần đầu
+    if (speechSynthesis.getVoices().length > 0) {
+      speak();
+    } else {
+      speechSynthesis.onvoiceschanged = () => { speak(); speechSynthesis.onvoiceschanged = null; };
     }
   };
 
