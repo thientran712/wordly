@@ -53,12 +53,20 @@ export async function middleware(request) {
     return response;
   }
 
-  // Trang chủ (/) là trang học - ai cũng truy cập được
+  // Trang chủ (/) — phải login + đã onboarded
   if (isPublicPage) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    // Logged-in user → tiếp tục vào trang chủ
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarded_at")
+      .eq("id", user.id)
+      .single();
+    if (!profile?.onboarded_at) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+    return response;
   }
 
   if (!user && !isAuthPage && !isPublicApi && !isApi && !isPublicPage) {
