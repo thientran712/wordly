@@ -74,8 +74,32 @@ async function processUser(supabase, pref, userInfo, now) {
     if (result.success) {
       await supabase
         .from("email_preferences")
-        .update({ last_sent_at: new Date().toISOString() })
+        .update({ last_sent_at: new Date().toISOString(), last_sent_word_id: selectedWord.word.id })
         .eq("user_id", pref.user_id);
+
+      const { data: existingProgress } = await supabase
+        .from("user_progress")
+        .select("word_id")
+        .eq("user_id", pref.user_id)
+        .eq("word_id", selectedWord.word.id)
+        .single();
+
+      if (!existingProgress) {
+        await supabase.from("user_progress").insert({
+          user_id: pref.user_id,
+          word_id: selectedWord.word.id,
+          state: "new",
+          stability: null,
+          difficulty: null,
+          due_at: null,
+          scheduled_days: 0,
+          elapsed_days: 0,
+          lapses: 0,
+          review_count: 0,
+          last_reviewed_at: null,
+          is_bookmarked: false,
+        });
+      }
 
       return { sent: { email: userInfo.email, word: selectedWord.word.word, source: selectedWord.source } };
     } else {

@@ -72,21 +72,36 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
   };
 
   const isReview = source === "review";
+  const isEmailToday = source === "email_today";
 
   return (
     <div
-      className="bg-white rounded-3xl border border-[--line] overflow-clip mb-3 animate-fade-in"
-      style={{ boxShadow: "0 8px 32px rgba(45,27,78,0.08)" }}
+      className="bg-white rounded-3xl border overflow-clip mb-3 animate-fade-in"
+      style={{
+        boxShadow: isEmailToday ? "0 8px 32px rgba(108,92,231,0.15)" : "0 8px 32px rgba(45,27,78,0.08)",
+        borderColor: isEmailToday ? "#C4B5FD" : "var(--line)",
+      }}
       key={currentIndex}
     >
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-6 lg:px-8 pt-5 pb-4 border-b border-[--line]">
         <span
           className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold text-xs"
-          style={{ background: isReview ? "linear-gradient(135deg,#FFE9A8,#FFD0E2)" : "linear-gradient(135deg,#DCC9FF,#FFC1D8)" }}
+          style={{
+            background: isEmailToday
+              ? "linear-gradient(135deg,#EDE9FE,#DCC9FF)"
+              : isReview
+              ? "linear-gradient(135deg,#FFE9A8,#FFD0E2)"
+              : "linear-gradient(135deg,#DCC9FF,#FFC1D8)",
+          }}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-[--hot-pink] flex-shrink-0" />
-          {isReview ? `🔄 Review · ${formatStability(progress?.stability)}` : "✨ New word"}
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+            style={{ background: isEmailToday ? "#6C5CE7" : "#FF5C8A" }} />
+          {isEmailToday
+            ? "📧 Từ vựng email hôm nay"
+            : isReview
+            ? `🔄 Review · ${formatStability(progress?.stability)}`
+            : "✨ New word"}
         </span>
         <button
           onClick={onBookmark}

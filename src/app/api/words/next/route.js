@@ -31,6 +31,38 @@ export async function GET(request) {
   const skillLevel = profile?.skill_level || 'B1';
   const targetLevels = getTargetLevels(skillLevel);
 
+  // Priority 0: Từ email hôm nay chưa được rate
+  const { data: emailPref } = await supabase
+    .from("email_preferences")
+    .select("last_sent_word_id, last_sent_at")
+    .eq("user_id", user.id)
+    .eq("enabled", true)
+    .single();
+
+  if (emailPref?.last_sent_word_id && emailPref?.last_sent_at) {
+    const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+    const sentStr = new Date(emailPref.last_sent_at).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+    const isToday = todayStr === sentStr;
+    const notExcluded = !exclude || exclude !== emailPref.last_sent_word_id;
+
+    if (isToday && notExcluded) {
+      const { data: emailWordProgress } = await supabase
+        .from("user_progress")
+        .select("state")
+        .eq("user_id", user.id)
+        .eq("word_id", emailPref.last_sent_word_id)
+        .single();
+
+      if (!emailWordProgress || emailWordProgress.state === "new") {
+        const { data: emailWord } = await supabase
+          .from("words").select("*").eq("id", emailPref.last_sent_word_id).single();
+        if (emailWord) {
+          return Response.json({ word: emailWord, source: "email_today", progress: null });
+        }
+      }
+    }
+  }
+
   // Priority 1: Từ đến hạn ôn tập (bất kể level — đã học thì phải ôn)
   let reviewQuery = supabase
     .from("user_progress")

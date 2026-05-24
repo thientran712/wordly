@@ -1,5 +1,3 @@
-import { dbToCard, predictRetrievability } from "@/lib/fsrs";
-
 const LEVEL_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 function getTargetLevels(skillLevel) {
@@ -9,7 +7,6 @@ function getTargetLevels(skillLevel) {
 }
 
 export async function selectBestWordForUser(supabase, userId) {
-  const now = new Date().toISOString();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -20,27 +17,7 @@ export async function selectBestWordForUser(supabase, userId) {
   const skillLevel = profile?.skill_level || "B1";
   const targetLevels = getTargetLevels(skillLevel);
 
-  // PRIORITY 1: Từ overdue (đã qua due_at)
-  const { data: overdueWords } = await supabase
-    .from("user_progress")
-    .select("word_id, stability, difficulty, state, due_at, last_reviewed_at, words!inner(*)")
-    .eq("user_id", userId)
-    .lte("due_at", now)
-    .in("state", ["learning", "review", "relearning"])
-    .order("due_at", { ascending: true })
-    .limit(5);
-
-  if (overdueWords?.length > 0) {
-    let bestPick = overdueWords[0];
-    let lowestR = 1.0;
-    for (const item of overdueWords) {
-      const r = predictRetrievability(dbToCard({ ...item, due_at: item.due_at, last_reviewed_at: item.last_reviewed_at }));
-      if (r < lowestR) { lowestR = r; bestPick = item; }
-    }
-    return { word: bestPick.words, source: "review_urgent", skillLevel };
-  }
-
-  // PRIORITY 2: Từ mới theo level user
+  // PRIORITY 1: Từ mới theo level user (email chỉ gửi từ mới)
   const { data: learnedIds } = await supabase
     .from("user_progress")
     .select("word_id")

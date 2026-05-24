@@ -113,10 +113,37 @@ export const scheduleDailyEmail = inngest.createFunction(
       });
 
       if (result.success) {
+        const sentAt = new Date().toISOString();
         await supabase
           .from("email_preferences")
-          .update({ last_sent_at: new Date().toISOString() })
+          .update({ last_sent_at: sentAt, last_sent_word_id: selectedWord.word.id })
           .eq("user_id", user_id);
+
+        // Pre-add vào user_progress (state=new) nếu chưa từng học
+        const { data: existing } = await supabase
+          .from("user_progress")
+          .select("word_id")
+          .eq("user_id", user_id)
+          .eq("word_id", selectedWord.word.id)
+          .single();
+
+        if (!existing) {
+          await supabase.from("user_progress").insert({
+            user_id,
+            word_id: selectedWord.word.id,
+            state: "new",
+            stability: null,
+            difficulty: null,
+            due_at: null,
+            scheduled_days: 0,
+            elapsed_days: 0,
+            lapses: 0,
+            review_count: 0,
+            last_reviewed_at: null,
+            is_bookmarked: false,
+          });
+        }
+
         return { sent: true, word: selectedWord.word.word };
       }
       return { error: result.error };
