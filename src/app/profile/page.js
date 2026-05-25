@@ -6,13 +6,23 @@ import { ArrowLeft, User, Mail, Target, BookOpen, Loader2, Check, KeyRound, Eye,
 import { createClient } from "@/lib/supabase-client";
 
 const LEVEL_LABELS = {
-  A1: 'Beginner',
-  A2: 'Elementary',
-  B1: 'Intermediate',
-  B2: 'Upper-Intermediate',
-  C1: 'Advanced',
-  C2: 'Proficient',
+  A1: "Beginner", A2: "Elementary", B1: "Intermediate",
+  B2: "Upper-Intermediate", C1: "Advanced", C2: "Proficient",
 };
+
+const cardStyle = {
+  background: "#1A1A1A",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+};
+
+const inputStyle = {
+  background: "rgba(255,255,255,0.06)",
+  border: "1.5px solid rgba(255,255,255,0.1)",
+  color: "var(--ink)",
+};
+const inputFocus = (e) => { e.target.style.borderColor = "rgba(34,197,94,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(34,197,94,0.1)"; };
+const inputBlur  = (e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; e.target.style.boxShadow = "none"; };
 
 function ChangePasswordModal({ onClose }) {
   const [newPassword, setNewPassword] = useState("");
@@ -25,44 +35,35 @@ function ChangePasswordModal({ onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (newPassword.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự");
-      return;
-    }
-    if (newPassword !== confirm) {
-      setError("Mật khẩu xác nhận không khớp");
-      return;
-    }
+    if (newPassword.length < 6) { setError("Mật khẩu phải có ít nhất 6 ký tự"); return; }
+    if (newPassword !== confirm) { setError("Mật khẩu xác nhận không khớp"); return; }
     setIsLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess(true);
-      setTimeout(onClose, 1800);
-    }
+    if (error) setError(error.message);
+    else { setSuccess(true); setTimeout(onClose, 1800); }
     setIsLoading(false);
   };
 
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center px-4"
-      style={{ background: "rgba(45,27,78,0.4)", backdropFilter: "blur(4px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="bg-white rounded-3xl p-7 w-full max-w-sm animate-fade-in"
-        style={{ boxShadow: "0 24px 64px rgba(45,27,78,0.22)" }}
+        className="rounded-3xl p-7 w-full max-w-sm animate-fade-in"
+        style={{ background: "#1A1A1A", border: "1px solid rgba(34,197,94,0.2)", boxShadow: "0 24px 64px rgba(0,0,0,0.7)" }}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-serif text-xl font-bold flex items-center gap-2">
-            <KeyRound size={18} className="text-[--electric]" />
+          <h2 className="font-serif text-xl font-bold flex items-center gap-2" style={{ color: "var(--ink)" }}>
+            <KeyRound size={18} style={{ color: "var(--electric)" }} />
             Đổi mật khẩu
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-[--ink-soft] hover:bg-[--whisper] hover:text-[--ink]"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+            style={{ color: "var(--ink-soft)" }}
           >
             <X size={16} />
           </button>
@@ -71,71 +72,61 @@ function ChangePasswordModal({ onClose }) {
         {success ? (
           <div className="text-center py-4">
             <div
-              className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-white"
-              style={{ background: "linear-gradient(135deg, #00C896, #B8F3D2)" }}
+              className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center"
+              style={{ background: "var(--electric)" }}
             >
-              <Check size={28} />
+              <Check size={28} color="#0A0A0A" />
             </div>
-            <p className="font-bold text-[--grass]">Mật khẩu đã được cập nhật!</p>
+            <p className="font-bold" style={{ color: "var(--electric)" }}>Mật khẩu đã được cập nhật!</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="font-bold text-sm mb-2 block">Mật khẩu mới</label>
+              <label className="font-bold text-sm mb-2 block" style={{ color: "var(--ink)" }}>Mật khẩu mới</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Tối thiểu 6 ký tự"
-                  required
-                  autoFocus
-                  className="w-full px-4 py-3 pr-11 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-white focus:ring-4 focus:ring-purple-100 transition-all"
+                  value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Tối thiểu 6 ký tự" required autoFocus
+                  className="w-full px-4 py-3 pr-11 rounded-2xl text-sm focus:outline-none transition-all"
+                  style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}
                 />
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[--ink-soft] hover:text-[--electric] p-1"
+                  type="button" onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-80 transition-opacity"
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
-
             <div>
-              <label className="font-bold text-sm mb-2 block">Xác nhận mật khẩu</label>
+              <label className="font-bold text-sm mb-2 block" style={{ color: "var(--ink)" }}>Xác nhận mật khẩu</label>
               <input
                 type={showPassword ? "text" : "password"}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Nhập lại mật khẩu"
-                required
-                className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-white focus:ring-4 focus:ring-purple-100 transition-all"
+                value={confirm} onChange={e => setConfirm(e.target.value)}
+                placeholder="Nhập lại mật khẩu" required
+                className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none transition-all"
+                style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}
               />
             </div>
-
             {error && (
-              <div className="p-3 rounded-xl bg-[#FFE8E8] border-2 border-[#FFB4A8] text-sm text-[#B83426]">
+              <div className="p-3 rounded-xl text-sm" style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", color: "#F87171" }}>
                 {error}
               </div>
             )}
-
             <div className="flex gap-3 pt-1">
               <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 py-3 rounded-2xl border-2 border-[--line] font-semibold text-sm text-[--ink-soft] hover:bg-[--whisper]"
+                type="button" onClick={onClose}
+                className="flex-1 py-3 rounded-2xl font-semibold text-sm hover:bg-white/5 transition-colors"
+                style={{ border: "1.5px solid rgba(255,255,255,0.1)", color: "var(--ink-soft)" }}
               >
                 Huỷ
               </button>
               <button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 py-3 text-white border-none rounded-2xl font-bold text-sm cursor-pointer hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{
-                  background: "linear-gradient(135deg, #6C5CE7, #a29bfe)",
-                  boxShadow: "0 8px 20px rgba(108,92,231,0.2)",
-                }}
+                type="submit" disabled={isLoading}
+                className="flex-1 py-3 rounded-2xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
+                style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 16px rgba(34,197,94,0.3)" }}
               >
                 {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                 {isLoading ? "Đang lưu..." : "Lưu"}
@@ -158,13 +149,10 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-
   const [name, setName] = useState("");
   const [skillLevel, setSkillLevel] = useState("");
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  useEffect(() => { fetchProfile(); }, []);
 
   const fetchProfile = async () => {
     try {
@@ -185,9 +173,7 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    setError(null);
-    setSuccess(false);
+    setIsSaving(true); setError(null); setSuccess(false);
     try {
       const res = await fetch("/api/profile", {
         method: "PUT",
@@ -212,14 +198,11 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <>
-        <div className="bg-blobs">
-          <div className="blob blob-1"></div>
-          <div className="blob blob-2"></div>
-        </div>
+        <div className="bg-blobs"><div className="blob blob-1"></div><div className="blob blob-2"></div></div>
         <main className="relative z-10 min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <div className="text-6xl mb-4 animate-bounce-soft">👤</div>
-            <p className="text-xl font-semibold gradient-text-purple-pink">Loading profile...</p>
+            <div className="text-6xl mb-4">👤</div>
+            <p className="text-xl font-semibold" style={{ color: "var(--electric)" }}>Loading profile...</p>
           </div>
         </main>
       </>
@@ -229,67 +212,69 @@ export default function ProfilePage() {
   return (
     <>
       <div className="bg-blobs">
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
-        <div className="blob blob-3"></div>
-        <div className="blob blob-4"></div>
+        <div className="blob blob-1"></div><div className="blob blob-2"></div>
+        <div className="blob blob-3"></div><div className="blob blob-4"></div>
       </div>
 
-      {showPasswordModal && (
-        <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />
-      )}
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
 
       <main className="relative z-10 max-w-xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
         {error && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] w-[90vw] max-w-xl bg-[#FFE8E8] border-2 border-[#FFB4A8] text-[#B83426] px-5 py-4 rounded-2xl shadow-xl text-sm font-semibold">
+          <div
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] w-[90vw] max-w-xl px-5 py-4 rounded-2xl shadow-xl text-sm font-semibold"
+            style={{ background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)", color: "#F87171" }}
+          >
             ⚠️ {error}
             <button type="button" onClick={() => setError(null)} className="ml-3 underline opacity-70">Dismiss</button>
           </div>
         )}
 
+        {/* Page header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/60 hover:-translate-y-0.5 hover:shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:-translate-y-0.5 transition-all"
+            style={{ color: "var(--ink-soft)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
             <ArrowLeft size={18} />
             <span className="font-semibold">Back</span>
           </button>
-          <h1 className="font-serif text-3xl font-bold tracking-tight">👤 Profile</h1>
-          <div className="w-20"></div>
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>👤 Profile</h1>
+          <div className="w-20" />
         </div>
 
-        {/* Account */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-white mb-6" style={{ boxShadow: '0 8px 24px rgba(108, 92, 231, 0.08)' }}>
-          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2">
-            <Mail size={20} className="text-[--electric]" />
+        {/* Account card */}
+        <div className="rounded-3xl p-6 sm:p-8 mb-5" style={cardStyle}>
+          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+            <Mail size={20} style={{ color: "var(--electric)" }} />
             Account
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-[--ink-soft] uppercase tracking-wider">Email</label>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="font-semibold">{email}</p>
+              <label className="text-xs font-bold uppercase tracking-wider block mb-1" style={{ color: "var(--ink-soft)" }}>Email</label>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold" style={{ color: "var(--ink)" }}>{email}</p>
                 <span
                   className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
                   style={{
-                    background: authProvider === 'google' ? '#E8F4FE' : '#F0EDFC',
-                    color: authProvider === 'google' ? '#1A73E8' : '#5B3FBC',
+                    background: "rgba(34,197,94,0.1)",
+                    color: "var(--electric)",
+                    border: "1px solid rgba(34,197,94,0.25)",
                   }}
                 >
                   {authProvider}
                 </span>
               </div>
             </div>
-            {authProvider === 'email' && (
+            {authProvider === "email" && (
               <button
                 type="button"
                 onClick={() => setShowPasswordModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 font-semibold text-sm hover:-translate-y-0.5 hover:shadow-sm transition-all"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-sm hover:-translate-y-0.5 transition-all"
                 style={{
-                  borderColor: '#E8DFF5',
-                  background: '#F8F4FF',
-                  color: '#6C5CE7',
+                  background: "rgba(34,197,94,0.08)",
+                  border: "1.5px solid rgba(34,197,94,0.2)",
+                  color: "var(--electric)",
                 }}
               >
                 <KeyRound size={15} />
@@ -299,32 +284,31 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Personal Info */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-white mb-6" style={{ boxShadow: '0 8px 24px rgba(108, 92, 231, 0.08)' }}>
-          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2">
-            <User size={20} className="text-[--hot-pink]" />
+        {/* Personal info card */}
+        <div className="rounded-3xl p-6 sm:p-8 mb-5" style={cardStyle}>
+          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+            <User size={20} style={{ color: "var(--electric)" }} />
             Personal Info
           </h2>
           <div>
-            <label className="font-bold text-sm mb-2 block">Your name</label>
+            <label className="font-bold text-sm mb-2 block" style={{ color: "var(--ink)" }}>Your name</label>
             <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-white focus:ring-4 focus:ring-purple-100 transition-all"
+              type="text" value={name} onChange={e => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none transition-all"
+              style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}
             />
           </div>
         </div>
 
-        {/* Learning Preferences */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-white mb-6" style={{ boxShadow: '0 8px 24px rgba(108, 92, 231, 0.08)' }}>
-          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2">
-            <Target size={20} className="text-[--grass]" />
+        {/* Learning preferences card */}
+        <div className="rounded-3xl p-6 sm:p-8 mb-6" style={cardStyle}>
+          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+            <Target size={20} style={{ color: "var(--electric)" }} />
             Learning Preferences
           </h2>
           <div>
-            <label className="font-bold text-sm mb-2 flex items-center gap-1.5">
-              <BookOpen size={14} />
+            <label className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--ink)" }}>
+              <BookOpen size={14} style={{ color: "var(--electric)" }} />
               English Level
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -332,16 +316,16 @@ export default function ProfilePage() {
                 const selected = skillLevel === value;
                 return (
                   <button
-                    type="button"
-                    key={value}
+                    type="button" key={value}
                     onClick={() => setSkillLevel(value)}
                     title={label}
-                    className="py-2 px-2 rounded-xl border-2 font-bold text-sm cursor-pointer hover:-translate-y-0.5 hover:shadow-sm"
+                    className="py-2 px-2 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-all"
                     style={{
-                      background: selected ? '#DCC9FF' : '#F8F4FF',
-                      borderColor: selected ? '#6C5CE7' : '#E8DFF5',
-                      color: selected ? '#6C5CE7' : '#5D4B7B',
-                      transform: selected ? 'scale(1.05)' : 'scale(1)',
+                      background: selected ? "var(--electric)" : "rgba(255,255,255,0.05)",
+                      border: selected ? "none" : "1.5px solid rgba(255,255,255,0.1)",
+                      color: selected ? "#0A0A0A" : "var(--ink-soft)",
+                      transform: selected ? "scale(1.05)" : "scale(1)",
+                      boxShadow: selected ? "0 4px 12px rgba(34,197,94,0.3)" : "none",
                     }}
                   >
                     {value}
@@ -352,25 +336,20 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Save */}
+        {/* Save button */}
         <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full py-4 text-white border-none rounded-2xl font-bold text-sm cursor-pointer hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+          onClick={handleSave} disabled={isSaving}
+          className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
           style={{
-            background: success
-              ? 'linear-gradient(135deg, #00C896, #B8F3D2)'
-              : 'linear-gradient(135deg, #FF5C8A, #6C5CE7)',
-            boxShadow: '0 12px 32px rgba(255, 92, 138, 0.18)',
+            background: success ? "rgba(34,197,94,0.15)" : "var(--electric)",
+            color: success ? "var(--electric)" : "#0A0A0A",
+            border: success ? "1.5px solid rgba(34,197,94,0.4)" : "none",
+            boxShadow: success ? "none" : "0 8px 24px rgba(34,197,94,0.3)",
           }}
         >
-          {isSaving ? (
-            <><Loader2 size={18} className="animate-spin" /> Saving...</>
-          ) : success ? (
-            <><Check size={18} /> Saved!</>
-          ) : (
-            "💾 Save Changes"
-          )}
+          {isSaving ? <><Loader2 size={18} className="animate-spin" /> Saving...</> :
+           success ? <><Check size={18} /> Saved!</> :
+           "💾 Save Changes"}
         </button>
       </main>
     </>
