@@ -55,6 +55,21 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
   }, [word?.id]);
 
   const speakWord = () => {
+    if (word.audio_url) {
+      const audio = new Audio(word.audio_url);
+      audio.onplay = () => setIsPlaying(true);
+      audio.onended = () => setIsPlaying(false);
+      audio.onerror = () => {
+        setIsPlaying(false);
+        speakWithTTS();
+      };
+      audio.play().catch(() => { setIsPlaying(false); speakWithTTS(); });
+      return;
+    }
+    speakWithTTS();
+  };
+
+  const speakWithTTS = () => {
     if (!("speechSynthesis" in window)) return;
     speechSynthesis.cancel();
     const speak = () => {
@@ -66,14 +81,13 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
         null;
       const u = new SpeechSynthesisUtterance(word.word);
       u.lang = "en-US";
-      u.rate = 0.85;
+      u.rate = 0.9;
       if (preferred) u.voice = preferred;
       u.onstart = () => setIsPlaying(true);
       u.onend = () => setIsPlaying(false);
       u.onerror = () => setIsPlaying(false);
       speechSynthesis.speak(u);
     };
-    // Voices có thể chưa load xong khi component mount lần đầu
     if (speechSynthesis.getVoices().length > 0) {
       speak();
     } else {
