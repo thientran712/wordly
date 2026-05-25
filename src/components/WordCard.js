@@ -104,7 +104,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
   const isEmailToday = source === "email_today";
 
   const sourceBadge = isEmailToday
-    ? { label: "📧 Email word", color: "var(--electric)", bg: "rgba(139,127,255,0.15)", border: "var(--electric-border)" }
+    ? { label: "📧 Email word", color: "var(--electric)", bg: "rgba(34,197,94,0.12)", border: "var(--electric-border)" }
     : isReview
     ? { label: `🔄 Review · ${formatStability(progress?.stability)}`, color: "var(--sunshine-text)", bg: "rgba(252,211,77,0.12)", border: "rgba(252,211,77,0.25)" }
     : { label: "✨ New word", color: "var(--grass-text)", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.25)" };
@@ -275,7 +275,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
       {/* ── Sticky rating bar ── */}
       <div
         className="sticky bottom-0 w-full border-t backdrop-blur-xl"
-        style={{ background: "rgba(11,11,22,0.92)", borderColor: "var(--line)" }}
+        style={{ background: "rgba(10,10,10,0.95)", borderColor: "var(--line)" }}
       >
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3">
           <div className="grid grid-cols-4 gap-2 mb-2">

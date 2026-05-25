@@ -18,7 +18,7 @@ export default function Header({ streak, totalDays, userName, reviewCount = 0 })
   };
 
   return (
-    <header className="flex items-center px-4 sm:px-5 py-3 backdrop-blur-xl border-b mb-5 relative z-50 sticky top-0" style={{ background: "rgba(11,11,22,0.9)", borderColor: "var(--line)" }}>
+    <header className="flex items-center px-6 sm:px-10 py-3 backdrop-blur-xl border-b mb-5 relative z-50 sticky top-0" style={{ background: "rgba(10,10,10,0.92)", borderColor: "var(--line)" }}>
       {/* Logo */}
       <div
         className="flex items-center gap-2 cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
@@ -26,7 +26,7 @@ export default function Header({ streak, totalDays, userName, reviewCount = 0 })
       >
         <div
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-lg shadow-[0_2px_8px_rgba(255,92,138,0.3)] flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #FF5C8A, #6C5CE7)", transform: "rotate(-5deg)" }}
+          style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)", transform: "rotate(-5deg)" }}
         >
           🌈
         </div>

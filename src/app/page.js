@@ -209,7 +209,7 @@ export default function Home() {
           <div className="blob blob-4"></div>
         </div>
         <main className="relative z-10">
-          <div className="h-14 backdrop-blur-xl border-b mb-5 animate-pulse" style={{ background: "rgba(11,11,22,0.9)", borderColor: "var(--line)" }} />
+          <div className="h-14 backdrop-blur-xl border-b mb-5 animate-pulse" style={{ background: "rgba(10,10,10,0.92)", borderColor: "var(--line)" }} />
           <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 animate-pulse">
             <div className="h-3 rounded-full w-20 mb-8" style={{ background: "var(--surface-elevated)" }} />
             <div className="h-16 rounded-2xl w-64 mb-4" style={{ background: "var(--surface-elevated)" }} />
