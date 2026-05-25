@@ -79,25 +79,16 @@ export default function AuthForm({ mode = "login" }) {
   };
 
   return (
-    <>
-      <div className="bg-blobs">
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
-        <div className="blob blob-3"></div>
-        <div className="blob blob-4"></div>
-      </div>
-      
-      <main className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div 
-          className="bg-white rounded-[32px] p-8 sm:p-10 w-full max-w-md border-[3px] border-white animate-fade-in"
-          style={{ boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
-        >
+    <div
+      className="bg-white rounded-[32px] p-8 sm:p-10 w-full max-w-md border-[3px] border-white animate-fade-in"
+      style={{ boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
+    >
           <div className="text-center mb-8">
-            <div 
-              className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center text-3xl text-white shadow-[0_12px_32px_rgba(255,92,138,0.18)]"
-              style={{ background: 'linear-gradient(135deg, #FF5C8A, #6C5CE7)', transform: 'rotate(-5deg)' }}
+            <div
+              className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center shadow-[0_12px_32px_rgba(255,92,138,0.18)] overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, var(--hot-pink), var(--electric))', transform: 'rotate(-5deg)' }}
             >
-              R
+              <img src="/favicon.png" alt="Wordly" className="w-10 h-10 object-contain" />
             </div>
             <h1 className="font-serif text-3xl font-bold gradient-text-purple-pink tracking-tight">
               Wordly
@@ -206,8 +197,8 @@ export default function AuthForm({ mode = "login" }) {
               type="submit"
               disabled={isLoading}
               className="w-full py-4 text-white border-none rounded-2xl font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
-              style={{ 
-                background: 'linear-gradient(135deg, #FF5C8A, #6C5CE7)',
+              style={{
+                background: 'linear-gradient(135deg, var(--hot-pink), var(--electric))',
                 boxShadow: '0 12px 32px rgba(255, 92, 138, 0.18)'
               }}
             >
@@ -241,8 +232,6 @@ export default function AuthForm({ mode = "login" }) {
               </>
             )}
           </p>
-        </div>
-      </main>
-    </>
+    </div>
   );
 }

@@ -3,10 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import WordCard from "@/components/WordCard";
-import { greetings } from "@/data/vocabulary";
+import JournalFAB from "@/components/JournalFAB";
 import { createClient } from "@/lib/supabase-client";
-import { useRouter } from "next/navigation";
-import { NotebookPen, Plus, GraduationCap, Loader2 } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
@@ -16,38 +14,14 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [learnedCount, setLearnedCount] = useState(0);
   const [bookmarkedWordIds, setBookmarkedWordIds] = useState(new Set());
-  const [greetingEmoji, setGreetingEmoji] = useState('👋');
   const [toast, setToast] = useState(null);
-  const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("");
   const [streak, setStreak] = useState(0);
   const [totalDays, setTotalDays] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
   const [skillLevel, setSkillLevel] = useState("B1");
   const [learningGoal, setLearningGoal] = useState("daily");
-
-  // Journal quick-add
-  const [journalWord, setJournalWord] = useState("");
-  const [journalMeaning, setJournalMeaning] = useState("");
-  const [journalExpanded, setJournalExpanded] = useState(false);
-  const [isAddingJournal, setIsAddingJournal] = useState(false);
   const [journalDueCount, setJournalDueCount] = useState(0);
-  const journalWordRef = useRef(null);
-  const journalFormRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (journalFormRef.current && !journalFormRef.current.contains(e.target)) {
-        setJournalExpanded(false);
-        setJournalWord("");
-        setJournalMeaning("");
-      }
-    }
-    if (journalExpanded) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [journalExpanded]);
 
   useEffect(() => {
     async function init() {
@@ -73,6 +47,7 @@ export default function Home() {
           if (p.learning_goal) setLearningGoal(p.learning_goal);
         }
 
+
         if (streakData) {
           setStreak(streakData.streak || 0);
           setTotalDays(streakData.total_days || 0);
@@ -93,11 +68,9 @@ export default function Home() {
         console.error("Init error:", e);
       } finally {
         setIsLoading(false);
-        setMounted(true);
       }
     }
     init();
-    setGreetingEmoji(greetings[Math.floor(Math.random() * greetings.length)]);
   }, []);
 
   const fetchNextWord = async (excludeId = null) => {
@@ -207,28 +180,6 @@ export default function Home() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleAddJournal = async (e) => {
-    e.preventDefault();
-    if (!journalWord.trim()) return;
-    setIsAddingJournal(true);
-    try {
-      const res = await fetch("/api/journal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word: journalWord, meaning_vi: journalMeaning }),
-      });
-      if (res.ok) {
-        setJournalWord("");
-        setJournalMeaning("");
-        setJournalExpanded(false);
-        setJournalDueCount(c => c + 1);
-        showToast(`📝 Đã lưu "${journalWord.trim()}"`);
-      }
-    } finally {
-      setIsAddingJournal(false);
-    }
-  };
-
   useEffect(() => {
     const handler = (e) => {
       const ratingMap = { '1': 1, '2': 2, '3': 3, '4': 4 };
@@ -241,13 +192,6 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handler);
   }, [currentWord]);
 
-  const getDateString = () => {
-    if (!mounted) return '';
-    return new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', day: 'numeric', month: 'long' 
-    });
-  };
-
   if (isLoading || !currentWord) {
     return (
       <>
@@ -257,12 +201,16 @@ export default function Home() {
           <div className="blob blob-3"></div>
           <div className="blob blob-4"></div>
         </div>
-        <main className="relative z-10 min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-5xl sm:text-6xl mb-4 animate-bounce-soft">🌈</div>
-            <p className="text-base sm:text-xl font-semibold gradient-text-purple-pink">
-              Loading your next word...
-            </p>
+        <main className="relative z-10 w-full max-w-2xl sm:max-w-3xl lg:max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-6">
+          <div className="h-14 bg-white/60 backdrop-blur-xl rounded-2xl border border-[--line] mb-5 animate-pulse" />
+          <div className="bg-white rounded-3xl border border-[--line] animate-pulse p-8" style={{ minHeight: 420 }}>
+            <div className="h-3 bg-[--line] rounded-full w-20 mb-8" />
+            <div className="h-14 bg-[--line] rounded-2xl w-56 mb-4" />
+            <div className="space-y-2.5">
+              <div className="h-3 bg-[--whisper] rounded-full w-full" />
+              <div className="h-3 bg-[--whisper] rounded-full w-4/5" />
+              <div className="h-3 bg-[--whisper] rounded-full w-3/5" />
+            </div>
           </div>
         </main>
       </>
@@ -280,90 +228,13 @@ export default function Home() {
         <div className="blob blob-4"></div>
       </div>
 
-      <main className="relative z-10 w-full max-w-2xl sm:max-w-3xl lg:max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-6 pb-10">
+      <main className="relative z-10 w-full max-w-2xl sm:max-w-3xl lg:max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-6 pb-24">
         <Header
           streak={streak}
           totalDays={totalDays}
           userName={userName}
+          reviewCount={reviewCount}
         />
-
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <span className="text-lg">{greetingEmoji}</span>
-          <div>
-            <span className="font-bold text-sm sm:text-base">
-              {userName ? `Hi ${userName}` : "Hi there"}
-            </span>
-            <span className="text-[--ink-soft] text-xs ml-2">{getDateString()}</span>
-          </div>
-          <div className="ml-auto flex items-center gap-3 text-xs font-semibold text-[--ink-soft]">
-            <span><b className="text-[--grass]">{reviewCount}</b> hôm nay</span>
-            <span><b className="text-[--electric]">{learnedCount}</b> tổng</span>
-          </div>
-        </div>
-
-        {/* Journal quick-add bar */}
-        <form
-          ref={journalFormRef}
-          onSubmit={handleAddJournal}
-          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-[--line] px-3 py-2 mb-3 flex flex-col gap-2"
-          style={{ boxShadow: "0 2px 12px rgba(108,92,231,0.06)" }}
-        >
-          <div className="flex items-center gap-2">
-            <NotebookPen size={14} className="text-[--electric] flex-shrink-0" />
-            <input
-              ref={journalWordRef}
-              type="text"
-              value={journalWord}
-              onChange={e => setJournalWord(e.target.value)}
-              onFocus={() => setJournalExpanded(true)}
-              placeholder="Ghi từ mới vào journal..."
-              autoComplete="off"
-              className="flex-1 text-sm font-semibold bg-transparent outline-none placeholder:text-[--ink-soft] placeholder:font-normal text-[--ink]"
-            />
-            {journalExpanded ? (
-              <button
-                type="submit"
-                disabled={isAddingJournal || !journalWord.trim()}
-                className="w-7 h-7 rounded-xl flex items-center justify-center text-white flex-shrink-0 disabled:opacity-40"
-                style={{ background: "linear-gradient(135deg,var(--electric),var(--electric-muted))" }}
-              >
-                {isAddingJournal ? <Loader2 size={12} className="animate-spin" /> : <Plus size={13} />}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => router.push("/journal/review")}
-                disabled={journalDueCount === 0}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold text-xs flex-shrink-0 disabled:opacity-40 hover:-translate-y-0.5 transition-all"
-                style={{ background: "linear-gradient(135deg,var(--electric),var(--electric-muted))", color: "white" }}
-              >
-                <GraduationCap size={12} />
-                Ôn {journalDueCount > 0 && <span>{journalDueCount}</span>}
-              </button>
-            )}
-          </div>
-
-          {journalExpanded && (
-            <div className="flex items-center gap-2 animate-fade-in">
-              <div className="w-3.5 flex-shrink-0" />
-              <input
-                type="text"
-                value={journalMeaning}
-                onChange={e => setJournalMeaning(e.target.value)}
-                placeholder="Nghĩa tiếng Việt (tuỳ chọn)"
-                autoComplete="off"
-                className="flex-1 text-sm bg-transparent outline-none placeholder:text-[--ink-soft] text-[--ink]"
-              />
-              <button
-                type="button"
-                onClick={() => { setJournalExpanded(false); setJournalWord(""); setJournalMeaning(""); }}
-                className="text-xs text-[--ink-soft] hover:text-[--ink] flex-shrink-0"
-              >
-                Huỷ
-              </button>
-            </div>
-          )}
-        </form>
 
         <WordCard
           word={currentWord}
@@ -376,11 +247,18 @@ export default function Home() {
           skillLevel={skillLevel}
           learningGoal={learningGoal}
         />
-
       </main>
 
+      <JournalFAB
+        dueCount={journalDueCount}
+        onAdded={() => {
+          setJournalDueCount(c => c + 1);
+          showToast("📝 Đã lưu vào Journal");
+        }}
+      />
+
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-full font-semibold text-xs sm:text-sm z-[200] shadow-[0_20px_48px_rgba(45,27,78,0.12)] border-2 border-[--mint] text-[--grass] flex items-center gap-2 animate-fade-in max-w-[90vw] text-center">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-white px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-full font-semibold text-xs sm:text-sm z-[200] shadow-[0_20px_48px_rgba(45,27,78,0.12)] border-2 border-[--mint] text-[--grass] flex items-center gap-2 animate-fade-in max-w-[90vw] text-center">
           {toast}
         </div>
       )}

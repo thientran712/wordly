@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, BookOpen, UserCog, User, Mail, NotebookPen } from "lucide-react";
+import { LogOut, BookOpen, UserCog, User, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
-export default function Header({ streak, totalDays, userName }) {
+export default function Header({ streak, totalDays, userName, reviewCount = 0 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isStreakOpen, setIsStreakOpen] = useState(false);
   const router = useRouter();
@@ -71,6 +71,11 @@ export default function Header({ streak, totalDays, userName }) {
                       <div className="text-2xl font-black" style={{ color: "var(--electric)" }}>{totalDays}</div>
                       <div className="text-[10px] font-semibold text-[--ink-soft] mt-0.5">📅 Tổng ngày</div>
                     </div>
+                    <div className="w-px h-10 bg-[--line]" />
+                    <div className="text-center flex-1">
+                      <div className="text-2xl font-black" style={{ color: "var(--grass)" }}>{reviewCount}</div>
+                      <div className="text-[10px] font-semibold text-[--ink-soft] mt-0.5">⭐ Hôm nay</div>
+                    </div>
                   </div>
                 </div>
                 <p className="px-4 pt-2 text-[10px] text-[--ink-soft] leading-relaxed">
@@ -91,16 +96,6 @@ export default function Header({ streak, totalDays, userName }) {
         >
           <BookOpen size={15} />
           <span className="hidden sm:inline">My Words</span>
-        </button>
-
-        {/* Journal */}
-        <button
-          onClick={() => router.push("/journal")}
-          title="Journal"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[--whisper] border border-[--line] text-[--ink-soft] hover:bg-[--lavender] hover:border-[--electric] hover:text-[--electric] hover:-translate-y-0.5 hover:shadow-sm text-xs font-semibold"
-        >
-          <NotebookPen size={15} />
-          <span className="hidden sm:inline">Journal</span>
         </button>
 
         {/* User avatar — sign out + mobile nav */}
@@ -135,12 +130,6 @@ export default function Header({ streak, totalDays, userName }) {
                   className="sm:hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
                 >
                   <BookOpen size={15} /> My Words
-                </button>
-                <button
-                  onClick={() => { setIsMenuOpen(false); router.push("/journal"); }}
-                  className="sm:hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
-                >
-                  <NotebookPen size={15} /> Journal
                 </button>
                 <div className="sm:hidden h-px bg-[--line] my-1" />
                 <button

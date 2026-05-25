@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Search, Volume2 } from "lucide-react";
 
 const STATE_CONFIG = {
-  learning:   { label: "Learning",   bg: "#FFF1F8", border: "#FFD0E2", color: "#FF5C8A", emoji: "🌱" },
-  review:     { label: "Review",     bg: "#F0EDFC", border: "#DCC9FF", color: "#6C5CE7", emoji: "🌿" },
-  relearning: { label: "Relearning", bg: "#FFE9A8", border: "#FFD75A", color: "#8B5500", emoji: "🔁" },
+  learning:   { label: "Learning",   bg: "var(--error-soft)",  border: "var(--error-border)",   color: "var(--hot-pink)",      emoji: "🌱" },
+  review:     { label: "Review",     bg: "var(--whisper)",      border: "var(--lavender)",        color: "var(--electric)",      emoji: "🌿" },
+  relearning: { label: "Relearning", bg: "var(--butter)",       border: "var(--sunshine)",        color: "var(--sunshine-text)", emoji: "🔁" },
 };
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -106,7 +106,7 @@ export default function WordsPage() {
               onClick={() => { setTab(t.value); resetFilters(); }}
               className="px-5 py-2.5 rounded-full font-bold text-sm hover:-translate-y-0.5"
               style={{
-                background: tab === t.value ? "#FF5C8A" : "white",
+                background: tab === t.value ? "var(--hot-pink)" : "white",
                 color: tab === t.value ? "white" : "var(--ink-soft)",
                 boxShadow: tab === t.value ? "0 4px 12px rgba(255,92,138,0.25)" : "none",
                 border: tab === t.value ? "none" : "2px solid var(--line)",
@@ -139,7 +139,7 @@ export default function WordsPage() {
             onClick={() => setLevel("")}
             className="px-3 py-1.5 rounded-full text-xs font-bold hover:-translate-y-0.5 hover:shadow-sm"
             style={{
-              background: level === "" ? "#2D1B4E" : "white",
+              background: level === "" ? "var(--ink)" : "white",
               color: level === "" ? "white" : "var(--ink-soft)",
               border: level === "" ? "none" : "2px solid var(--line)",
             }}
@@ -152,9 +152,9 @@ export default function WordsPage() {
               onClick={() => setLevel(level === l ? "" : l)}
               className="px-3 py-1.5 rounded-full text-xs font-bold hover:-translate-y-0.5 hover:shadow-sm"
               style={{
-                background: level === l ? "#DCC9FF" : "white",
-                color: level === l ? "#5B3FBC" : "var(--ink-soft)",
-                border: level === l ? "2px solid #6C5CE7" : "2px solid var(--line)",
+                background: level === l ? "var(--lavender)" : "white",
+                color: level === l ? "var(--electric)" : "var(--ink-soft)",
+                border: level === l ? "2px solid var(--electric)" : "2px solid var(--line)",
               }}
             >
               {l}
@@ -254,7 +254,7 @@ function WordRow({ word, onClick, onSpeak }) {
           </span>
           {word.level && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-              style={{ background: "#DCC9FF", color: "#5B3FBC" }}>
+              style={{ background: "var(--lavender)", color: "var(--electric)" }}>
               {word.level}
             </span>
           )}
@@ -316,7 +316,7 @@ function WordDetailModal({ word, onClose }) {
             </span>
             {word.level && (
               <span className="px-3 py-1 rounded-full text-xs font-bold uppercase"
-                style={{ background: "#DCC9FF", color: "#5B3FBC" }}>
+                style={{ background: "var(--lavender)", color: "var(--electric)" }}>
                 {word.level}
               </span>
             )}
