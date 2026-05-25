@@ -202,15 +202,15 @@ export default function Home() {
           <div className="blob blob-3"></div>
           <div className="blob blob-4"></div>
         </div>
-        <main className="relative z-10 w-full max-w-2xl sm:max-w-3xl lg:max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-6">
-          <div className="h-14 bg-white/60 backdrop-blur-xl rounded-2xl border border-[--line] mb-5 animate-pulse" />
-          <div className="bg-white rounded-3xl border border-[--line] animate-pulse p-8" style={{ minHeight: 420 }}>
-            <div className="h-3 bg-[--line] rounded-full w-20 mb-8" />
-            <div className="h-14 bg-[--line] rounded-2xl w-56 mb-4" />
+        <main className="relative z-10">
+          <div className="h-14 backdrop-blur-xl border-b mb-5 animate-pulse" style={{ background: "rgba(11,11,22,0.9)", borderColor: "var(--line)" }} />
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 animate-pulse">
+            <div className="h-3 rounded-full w-20 mb-8" style={{ background: "var(--surface-elevated)" }} />
+            <div className="h-16 rounded-2xl w-64 mb-4" style={{ background: "var(--surface-elevated)" }} />
             <div className="space-y-2.5">
-              <div className="h-3 bg-[--whisper] rounded-full w-full" />
-              <div className="h-3 bg-[--whisper] rounded-full w-4/5" />
-              <div className="h-3 bg-[--whisper] rounded-full w-3/5" />
+              <div className="h-3 rounded-full w-full" style={{ background: "var(--surface)" }} />
+              <div className="h-3 rounded-full w-4/5" style={{ background: "var(--surface)" }} />
+              <div className="h-3 rounded-full w-3/5" style={{ background: "var(--surface)" }} />
             </div>
           </div>
         </main>
@@ -229,14 +229,8 @@ export default function Home() {
         <div className="blob blob-4"></div>
       </div>
 
-      <main className="relative z-10 w-full max-w-2xl sm:max-w-3xl lg:max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-6 pb-24">
-        <Header
-          streak={streak}
-          totalDays={totalDays}
-          userName={userName}
-          reviewCount={reviewCount}
-        />
-
+      <main className="relative z-10">
+        <Header streak={streak} totalDays={totalDays} userName={userName} reviewCount={reviewCount} />
         <WordCard
           word={currentWord}
           progress={currentProgress}
@@ -259,7 +253,7 @@ export default function Home() {
       />
 
       {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-white px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-full font-semibold text-xs sm:text-sm z-[200] shadow-[0_20px_48px_rgba(45,27,78,0.12)] border-2 border-[--mint] text-[--grass] flex items-center gap-2 animate-fade-in max-w-[90vw] text-center">
+        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-full font-semibold text-xs sm:text-sm z-[200] flex items-center gap-2 animate-fade-in max-w-[90vw] text-center border" style={{ background: "var(--surface-elevated)", borderColor: "var(--grass-border)", color: "var(--grass-text)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
           {toast}
         </div>
       )}

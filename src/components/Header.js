@@ -18,7 +18,7 @@ export default function Header({ streak, totalDays, userName, reviewCount = 0 })
   };
 
   return (
-    <header className="flex justify-between items-center px-4 sm:px-5 py-3 bg-white/80 backdrop-blur-xl rounded-2xl border border-[--line] shadow-[0_4px_16px_rgba(108,92,231,0.07)] mb-5 relative z-50">
+    <header className="flex justify-between items-center px-4 sm:px-5 py-3 backdrop-blur-xl border-b mb-5 relative z-50 sticky top-0" style={{ background: "rgba(11,11,22,0.9)", borderColor: "var(--line)" }}>
       {/* Logo */}
       <div
         className="flex items-center gap-2 cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
@@ -55,8 +55,8 @@ export default function Header({ streak, totalDays, userName, reviewCount = 0 })
               <div
                 className="absolute left-0 top-12 z-50 rounded-2xl py-3 min-w-[220px] animate-fade-in"
                 style={{
-                  background: "white",
-                  boxShadow: "0 24px 64px rgba(45,27,78,0.22), 0 0 0 1.5px rgba(255,182,39,0.35)",
+                  background: "var(--surface-elevated)",
+                  boxShadow: "0 24px 64px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(252,211,77,0.2)",
                 }}
               >
                 <div className="px-4 py-2 border-b border-[--line]">
@@ -92,7 +92,7 @@ export default function Header({ streak, totalDays, userName, reviewCount = 0 })
         <button
           onClick={() => router.push("/words")}
           title="My Words"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[--whisper] border border-[--line] text-[--ink-soft] hover:bg-[--lavender] hover:border-[--electric] hover:text-[--electric] hover:-translate-y-0.5 hover:shadow-sm text-xs font-semibold"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold hover:-translate-y-0.5 hover:shadow-sm transition-all" style={{ background: "var(--surface)", borderColor: "var(--line)", color: "var(--ink-soft)" }}
         >
           <BookOpen size={15} />
           <span className="hidden sm:inline">My Words</span>
@@ -115,8 +115,8 @@ export default function Header({ streak, totalDays, userName, reviewCount = 0 })
               <div
                 className="absolute right-0 top-12 z-50 rounded-2xl py-1.5 min-w-[200px]"
                 style={{
-                  background: "white",
-                  boxShadow: "0 24px 64px rgba(45,27,78,0.22), 0 0 0 1.5px rgba(108,92,231,0.18)",
+                  background: "var(--surface-elevated)",
+                  boxShadow: "0 24px 64px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(139,127,255,0.2)",
                 }}
               >
                 {userName && (
@@ -127,27 +127,27 @@ export default function Header({ streak, totalDays, userName, reviewCount = 0 })
                 )}
                 <button
                   onClick={() => { setIsMenuOpen(false); router.push("/words"); }}
-                  className="sm:hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                  className="sm:hidden w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--surface] hover:text-[--electric] transition-colors flex items-center gap-2"
                 >
                   <BookOpen size={15} /> My Words
                 </button>
                 <div className="sm:hidden h-px bg-[--line] my-1" />
                 <button
                   onClick={() => { setIsMenuOpen(false); router.push("/profile"); }}
-                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--surface] hover:text-[--electric] transition-colors flex items-center gap-2"
                 >
                   <UserCog size={15} /> Profile Settings
                 </button>
                 <button
                   onClick={() => { setIsMenuOpen(false); router.push("/profile/email"); }}
-                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--electric] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--surface] hover:text-[--electric] transition-colors flex items-center gap-2"
                 >
                   <Mail size={15} /> Email Settings
                 </button>
                 <div className="h-px bg-[--line] my-1" />
                 <button
                   onClick={handleLogout}
-                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--whisper] hover:text-[--hot-pink] transition-colors flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left text-sm font-semibold text-[--ink-soft] hover:bg-[--surface] hover:text-[--hot-pink] transition-colors flex items-center gap-2"
                 >
                   <LogOut size={15} /> Sign out
                 </button>
