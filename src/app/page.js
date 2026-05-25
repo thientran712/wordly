@@ -23,6 +23,7 @@ export default function Home() {
   const [skillLevel, setSkillLevel] = useState("B1");
   const [learningGoal, setLearningGoal] = useState("daily");
   const [journalDueCount, setJournalDueCount] = useState(0);
+  const [isWordExiting, setIsWordExiting] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -74,14 +75,17 @@ export default function Home() {
     init();
   }, []);
 
-  const fetchNextWord = async (excludeId = null) => {
+  const fetchNextWord = async (excludeId = null, withAnimation = false) => {
+    if (withAnimation) setIsWordExiting(true);
     try {
-      const url = excludeId 
+      const url = excludeId
         ? `/api/words/next?exclude=${excludeId}`
         : "/api/words/next";
-      const res = await fetch(url);
-      const data = await res.json();
-      
+      const fetchPromise = fetch(url).then(r => r.json());
+      const data = withAnimation
+        ? await Promise.all([fetchPromise, new Promise(r => setTimeout(r, 220))]).then(([d]) => d)
+        : await fetchPromise;
+
       if (data.word) {
         setCurrentWord(data.word);
         setCurrentProgress(data.progress);
@@ -89,6 +93,8 @@ export default function Home() {
       }
     } catch (e) {
       console.error("Fetch next word error:", e);
+    } finally {
+      if (withAnimation) setIsWordExiting(false);
     }
   };
 
@@ -107,7 +113,7 @@ export default function Home() {
       if (data.success) {
         if (rating === 0) {
           showToast("🙈 Đã ẩn — sẽ không nhắc lại từ này");
-          setTimeout(() => fetchNextWord(currentWord.id), 800);
+          setTimeout(() => fetchNextWord(currentWord.id, true), 350);
           return;
         }
 
@@ -125,7 +131,7 @@ export default function Home() {
         }
 
         setReviewCount(prev => prev + 1);
-        setTimeout(() => fetchNextWord(currentWord.id), 800);
+        setTimeout(() => fetchNextWord(currentWord.id, true), 350);
       }
     } catch (e) {
       console.error("Rate error:", e);
@@ -241,6 +247,7 @@ export default function Home() {
           onRate={handleRate}
           skillLevel={skillLevel}
           learningGoal={learningGoal}
+          isExiting={isWordExiting}
         />
       </main>
 

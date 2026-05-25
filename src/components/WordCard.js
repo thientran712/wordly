@@ -7,7 +7,7 @@ const RATINGS = [
   { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "var(--error)",      bg: "var(--error-soft)",   border: "var(--error-border)",   hoverBg: "rgba(248,113,113,0.2)" },
   { rating: 2, label: "Hard",  icon: Frown,     desc: "<1d",  color: "var(--coral)",       bg: "var(--coral-soft)",   border: "var(--coral-border)",   hoverBg: "rgba(255,107,71,0.2)" },
   { rating: 3, label: "Good",  icon: Smile,     desc: "~3d",  color: "var(--grass-text)",  bg: "var(--grass-soft)",   border: "var(--grass-border)",   hoverBg: "rgba(52,211,153,0.2)" },
-  { rating: 4, label: "Easy",  icon: Zap,       desc: "~7d",  color: "var(--electric)",    bg: "var(--electric-border)", border: "var(--electric-border)", hoverBg: "rgba(139,127,255,0.2)" },
+  { rating: 4, label: "Easy",  icon: Zap,       desc: "~7d",  color: "var(--electric)",    bg: "var(--electric-border)", border: "var(--electric-border)", hoverBg: "rgba(34,197,94,0.2)" },
 ];
 
 const CONTEXT_ICONS = { love: "💕", life: "🌿", work: "💼" };
@@ -20,13 +20,21 @@ const LOADING_MESSAGES = [
   "💡 Đang tạo ví dụ thực tế...",
 ];
 
-export default function WordCard({ word, currentIndex, isBookmarked, onBookmark, onRate, progress, source, skillLevel, learningGoal }) {
+export default function WordCard({ word, currentIndex, isBookmarked, onBookmark, onRate, progress, source, skillLevel, learningGoal, isExiting }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRating, setIsRating] = useState(false);
   const [hovered, setHovered] = useState(null);
   const [aiContent, setAiContent] = useState(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
+  const [enterAnim, setEnterAnim] = useState(false);
+
+  useEffect(() => {
+    if (!word?.id) return;
+    setEnterAnim(true);
+    const t = setTimeout(() => setEnterAnim(false), 350);
+    return () => clearTimeout(t);
+  }, [word?.id]);
 
   useEffect(() => {
     if (!word?.id) return;
@@ -102,7 +110,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
     : { label: "✨ New word", color: "var(--grass-text)", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.25)" };
 
   return (
-    <div className="flex flex-col" style={{ minHeight: "calc(100vh - 72px)" }} key={currentIndex}>
+    <div className={`flex flex-col ${isExiting ? 'word-exit' : enterAnim ? 'word-enter' : ''}`} style={{ minHeight: "calc(100vh - 72px)" }}>
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-4">

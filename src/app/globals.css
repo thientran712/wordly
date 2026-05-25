@@ -53,15 +53,15 @@
   --sky: #0A2040;
   --ocean: #22D3EE;
   --lavender: #2D2450;
-  --electric: #8B7FFF;
+  --electric: #22C55E;
   --ink: #ECECFF;
   --ink-soft: #6868A0;
   --ink-ghost: #3E3E5E;
   --line: rgba(255,255,255,0.08);
   --whisper: #131320;
   /* ── Electric tints ── */
-  --electric-muted: #6C5CE7;
-  --electric-border: rgba(139,127,255,0.3);
+  --electric-muted: #16A34A;
+  --electric-border: rgba(34,197,94,0.25);
   /* ── Surface ── */
   --surface: #131320;
   --surface-elevated: #1C1C30;
@@ -236,6 +236,18 @@ html {
     opacity: 0;
   }
 }
+
+/* Word slot-machine transition */
+@keyframes word-exit-up {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-56px); }
+}
+@keyframes word-enter-up {
+  from { opacity: 0; transform: translateY(56px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.word-exit  { animation: word-exit-up  0.22s ease-in  forwards; pointer-events: none; }
+.word-enter { animation: word-enter-up 0.30s ease-out forwards; }
 
 /* Safe area for iPhone notch */
 @supports (padding: max(0px)) {

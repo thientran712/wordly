@@ -125,7 +125,7 @@ export default function WordsPage() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder={tab === "learned" ? "Tìm trong từ đã học..." : "Tìm trong yêu thích..."}
-            className="w-full pl-12 pr-5 py-3 bg-white border-2 border-white rounded-2xl text-sm font-medium focus:outline-none focus:border-[--electric] focus:ring-4 focus:ring-purple-100 transition-all"
+            className="w-full pl-12 pr-5 py-3 bg-white border-2 border-white rounded-2xl text-sm font-medium focus:outline-none focus:border-[--electric] focus:ring-4 focus:ring-green-100 transition-all"
             style={{ boxShadow: "0 4px 16px rgba(108,92,231,0.07)" }}
           />
           {query && (
