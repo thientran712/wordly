@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
-import JournalFAB from "@/components/JournalFAB";
 import InlineTranslate from "@/components/InlineTranslate";
 import TranslateHistory from "@/components/TranslateHistory";
 import GuestBanner from "@/components/GuestBanner";
@@ -174,9 +173,14 @@ export default function Home() {
       <div className="bg-blobs"><div className="blob blob-1" /><div className="blob blob-2" /><div className="blob blob-3" /><div className="blob blob-4" /></div>
 
       <main className="relative z-10">
-        <Header userName={userName} isGuest={isGuest} />
+        <Header
+          userName={userName}
+          isGuest={isGuest}
+          dueCount={journalDueCount}
+          onJournalAdded={() => { setJournalDueCount(c => c + 1); showToast("📝 Đã lưu vào Journal"); }}
+        />
 
-        <div className="max-w-2xl mx-auto px-3 sm:px-5 pb-28 space-y-3 pt-1">
+        <div className="max-w-2xl mx-auto px-3 sm:px-5 pb-12 space-y-3 pt-1">
 
           {/* ── Guest banner ── */}
           {isGuest && <GuestBanner />}
@@ -187,9 +191,12 @@ export default function Home() {
               className={`rounded-2xl overflow-hidden ${isWordExiting ? "word-exit" : ""}`}
               style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "0 2px 12px rgba(0,0,0,0.1)" }}
             >
-              <button
-                className="w-full flex items-center gap-2 px-3 py-3 sm:px-4 text-left"
+              <div
+                role="button"
+                tabIndex={0}
+                className="w-full flex items-center gap-2 px-3 py-3 sm:px-4 text-left cursor-pointer"
                 onClick={() => setWordExpanded(v => !v)}
+                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") setWordExpanded(v => !v); }}
                 style={{ background: "transparent" }}
               >
                 <span
@@ -245,7 +252,7 @@ export default function Home() {
                   className="flex-shrink-0 transition-transform duration-200"
                   style={{ color: "var(--ink-soft)", transform: wordExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                 />
-              </button>
+              </div>
 
               {wordExpanded && (
                 <div className="border-t px-3 sm:px-4 py-3 animate-fade-in" style={{ borderColor: "var(--divider)" }}>
@@ -302,17 +309,9 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Journal FAB — logged-in only */}
-      {!isGuest && (
-        <JournalFAB
-          dueCount={journalDueCount}
-          onAdded={() => { setJournalDueCount(c => c + 1); showToast("📝 Đã lưu vào Journal"); }}
-        />
-      )}
-
       {toast && (
         <div
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full font-semibold text-sm z-[200] animate-fade-in border whitespace-nowrap"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full font-semibold text-sm z-[200] animate-fade-in border whitespace-nowrap"
           style={{ background: "var(--surface-elevated)", borderColor: "var(--green-subtle-border)", color: "var(--electric)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}
         >
           {toast}

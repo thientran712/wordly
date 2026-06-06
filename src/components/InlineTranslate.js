@@ -385,11 +385,14 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
               {suggestions.map((word, i) => {
                 const isExact = word === input.trim().toLowerCase();
                 return (
-                  <button
+                  <div
                     key={word}
+                    role="button"
+                    tabIndex={0}
                     onMouseDown={e => e.preventDefault()}
                     onClick={() => pickSuggestion(word)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium active:scale-[0.98] transition-all"
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") pickSuggestion(word); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium active:scale-[0.98] transition-all cursor-pointer"
                     style={{
                       borderTop: i > 0 ? "1px solid var(--divider)" : "none",
                       background: "transparent",
@@ -409,7 +412,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
                     >
                       <Volume2 size={13} />
                     </button>
-                  </button>
+                  </div>
                 );
               })}
             </div>
