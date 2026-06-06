@@ -124,10 +124,25 @@ export const sendSlotEmail = inngest.createFunction(
     const sendResult = await step.run("send-email", async () => {
       const supabase = createAdminClient();
 
+      // Idempotency: check if this slot already sent today
+      const { data: slotNow } = await supabase
+        .from("email_slots").select("last_sent_at").eq("id", slot_id).single();
+      if (slotNow?.last_sent_at) {
+        const sentDate = new Date(slotNow.last_sent_at);
+        const todayUTC = new Date().toDateString();
+        if (sentDate.toDateString() === todayUTC) {
+          return { skipped: "already sent today for this slot" };
+        }
+      }
+
       const selectedWord = await selectBestWordForUser(supabase, user_id);
       if (!selectedWord) return { error: "No word available" };
 
-      // Mark BEFORE sending to prevent race condition when multiple slots fire simultaneously
+      // Mark slot sent + word emailed BEFORE sending to prevent race condition and retries
+      await supabase
+        .from("email_slots")
+        .update({ last_sent_at: new Date().toISOString() })
+        .eq("id", slot_id);
       await markWordEmailed(supabase, selectedWord);
 
       const isUserWord = selectedWord.source === "journal" || selectedWord.source === "translate_history";
@@ -155,11 +170,6 @@ export const sendSlotEmail = inngest.createFunction(
       });
 
       if (result.success) {
-        // Update slot last_sent_at
-        await supabase
-          .from("email_slots")
-          .update({ last_sent_at: new Date().toISOString() })
-          .eq("id", slot_id);
 
         if (!isUserWord) {
           await supabase
