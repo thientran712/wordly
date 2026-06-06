@@ -127,6 +127,9 @@ export const sendSlotEmail = inngest.createFunction(
       const selectedWord = await selectBestWordForUser(supabase, user_id);
       if (!selectedWord) return { error: "No word available" };
 
+      // Mark BEFORE sending to prevent race condition when multiple slots fire simultaneously
+      await markWordEmailed(supabase, selectedWord);
+
       const isUserWord = selectedWord.source === "journal" || selectedWord.source === "translate_history";
 
       let aiContent = null;
@@ -157,9 +160,6 @@ export const sendSlotEmail = inngest.createFunction(
           .from("email_slots")
           .update({ last_sent_at: new Date().toISOString() })
           .eq("id", slot_id);
-
-        // Mark word as emailed (updates last_emailed_at on journal/translate_history)
-        await markWordEmailed(supabase, selectedWord);
 
         if (!isUserWord) {
           await supabase

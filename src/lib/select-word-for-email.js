@@ -28,7 +28,7 @@ async function pickFromJournal(supabase, userId) {
 
   if (!entries?.length) return null;
 
-  // Never emailed first, then oldest-emailed (> 7 days ago)
+  // Exclude words emailed TODAY (daysSince = 0) to avoid duplicate across slots
   const candidates = entries.filter(e =>
     !e.last_emailed_at || daysSince(e.last_emailed_at) >= RESEND_AFTER_DAYS
   );
