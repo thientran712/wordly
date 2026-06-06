@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { inngest } from "@/inngest/client";
 
 export async function GET() {
   const supabase = await createClient();
@@ -41,6 +42,10 @@ export async function POST(request) {
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  // Schedule the new slot immediately
+  await inngest.send({ name: "email/slot.scheduled", data: { user_id: user.id, slot_id: data.id } });
+
   return Response.json({ slot: data });
 }
 
@@ -64,6 +69,17 @@ export async function PUT(request) {
     .eq("user_id", user.id);
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  // If time changed or toggled on, cancel old sleep and reschedule
+  if (send_time !== undefined || enabled === true) {
+    await inngest.send([
+      { name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } },
+      { name: "email/slot.scheduled", data: { user_id: user.id, slot_id: id } },
+    ]);
+  } else if (enabled === false) {
+    await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } });
+  }
+
   return Response.json({ success: true });
 }
 

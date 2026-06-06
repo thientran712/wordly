@@ -9,7 +9,12 @@ function getTargetLevels(skillLevel) {
 
 function daysSince(isoString) {
   if (!isoString) return Infinity;
-  return (Date.now() - new Date(isoString).getTime()) / 86400000;
+  // Compare calendar dates only (not hours), so "sent today" = 0 days ago
+  const sent = new Date(isoString);
+  const sentDate = new Date(sent.getFullYear(), sent.getMonth(), sent.getDate());
+  const today = new Date();
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return (todayDate - sentDate) / 86400000;
 }
 
 // ── PRIORITY 1: Journal words user đã note ──────────────────────────────────
