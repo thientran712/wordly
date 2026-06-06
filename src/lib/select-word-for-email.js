@@ -1,5 +1,5 @@
 const LEVEL_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"];
-const RESEND_AFTER_DAYS = 7;
+const RESEND_AFTER_DAYS = 1;
 
 function getTargetLevels(skillLevel) {
   const idx = LEVEL_ORDER.indexOf(skillLevel);
