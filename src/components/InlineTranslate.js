@@ -46,6 +46,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   const [wordDetail, setWordDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const debounceRef = useRef(null);
   const suggestRef = useRef(null);
@@ -156,6 +157,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     }
   }, []);
 
+  // Suggestions debounce
   useEffect(() => {
     if (suggestRef.current) clearTimeout(suggestRef.current);
     if (isEN && input.trim().length >= 2) {
@@ -163,12 +165,15 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     } else {
       setSuggestions([]); setShowSuggestions(false);
     }
+    return () => clearTimeout(suggestRef.current);
+  }, [input, isEN, fetchSuggestions]);
 
+  // Translation debounce — separate effect so cleanup doesn't cancel translate
+  useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => translate(input, direction), 280);
-
-    return () => { clearTimeout(debounceRef.current); clearTimeout(suggestRef.current); };
-  }, [input, direction, translate, fetchSuggestions, isEN]);
+    return () => clearTimeout(debounceRef.current);
+  }, [input, direction, translate]);
 
   const isSingleWord = (text) => /^\s*[a-zA-Z'-]+\s*$/.test(text);
 
@@ -176,10 +181,9 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     suppressSuggestRef.current = true;
     setShowSuggestions(false);
     setSuggestions([]);
-    setInput(word);
     setWordDetail(null);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    translate(word, direction);
+    setSaved(false);
+    setInput(word); // triggers useEffect → translate via debounce
     if (isEN && isSingleWord(word)) loadWordDetail(word);
     inputRef.current?.focus();
   };
@@ -227,8 +231,35 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
 
   const [srcLang, tgtLang] = isEN ? ["English", "Tiếng Việt"] : ["Tiếng Việt", "English"];
 
+  const dismissKeyboard = () => inputRef.current?.blur();
+
   return (
     <div className="w-full">
+
+      {/* ── Mobile keyboard toolbar — fixed above keyboard when focused ── */}
+      {isFocused && (
+        <div
+          className="sm:hidden fixed left-0 right-0 z-[200] flex items-center justify-between px-4 py-2 border-t"
+          style={{
+            bottom: 0,
+            background: "var(--card-bg)",
+            borderColor: "var(--divider)",
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+          }}
+        >
+          <span className="text-xs font-medium" style={{ color: "var(--ink-soft)" }}>
+            {isTranslating ? "Đang dịch..." : translated ? "✓ Đã dịch" : isEN ? "Nhập từ hoặc câu..." : "Nhập tiếng Việt..."}
+          </span>
+          <button
+            onMouseDown={e => e.preventDefault()}
+            onClick={dismissKeyboard}
+            className="no-min-h px-4 py-1.5 rounded-xl text-sm font-bold active:scale-95 transition-all"
+            style={{ background: "var(--electric)", color: "#0A0A0A" }}
+          >
+            Xong
+          </button>
+        </div>
+      )}
 
       {/* ── Language bar ── */}
       <div
@@ -266,10 +297,24 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
             ref={inputRef}
             value={input}
             onChange={handleInputChange}
-            onFocus={() => { if (suggestions.length > 0 && !suppressSuggestRef.current) setShowSuggestions(true); }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 180)}
+            onFocus={() => {
+              setIsFocused(true);
+              if (suggestions.length > 0 && !suppressSuggestRef.current) setShowSuggestions(true);
+            }}
+            onBlur={() => {
+              setIsFocused(false);
+              setTimeout(() => setShowSuggestions(false), 180);
+            }}
+            onKeyDown={e => {
+              // On mobile, Enter key dismisses keyboard instead of inserting newline
+              if (e.key === "Enter" && window.innerWidth < 640) {
+                e.preventDefault();
+                inputRef.current?.blur();
+              }
+            }}
             placeholder={isEN ? "Enter text or a word..." : "Nhập văn bản..."}
             rows={3}
+            enterKeyHint="done"
             className="w-full resize-none text-base focus:outline-none px-4 pt-3 pb-2"
             style={{
               background: "transparent",
