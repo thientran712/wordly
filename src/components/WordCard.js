@@ -5,7 +5,7 @@ import { Volume2, RotateCcw, Frown, Smile, Zap, EyeOff, Bookmark, BookmarkCheck 
 
 const RATINGS = [
   { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "#F87171",        bg: "rgba(248,113,113,0.06)",  border: "rgba(248,113,113,0.2)",       hoverBg: "rgba(248,113,113,0.12)" },
-  { rating: 2, label: "Hard",  icon: Frown,     desc: "<1d",  color: "var(--ink-soft)", bg: "rgba(255,255,255,0.04)",  border: "rgba(255,255,255,0.1)",       hoverBg: "rgba(255,255,255,0.08)" },
+  { rating: 2, label: "Hard",  icon: Frown,     desc: "<1d",  color: "var(--ink-soft)", bg: "var(--hover-bg)",         border: "var(--input-border)",         hoverBg: "var(--input-bg)" },
   { rating: 3, label: "Good",  icon: Smile,     desc: "~3d",  color: "var(--electric)", bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.25)",        hoverBg: "rgba(34,197,94,0.15)" },
   { rating: 4, label: "Easy",  icon: Zap,       desc: "~7d",  color: "#0A0A0A",         bg: "var(--electric)",         border: "var(--electric)",             hoverBg: "var(--electric-muted)" },
 ];
@@ -290,7 +290,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
       {/* ── Sticky rating bar ── */}
       <div
         className="sticky bottom-0 w-full border-t backdrop-blur-xl"
-        style={{ background: "rgba(10,10,10,0.95)", borderColor: "rgba(255,255,255,0.08)" }}
+        style={{ background: "var(--overlay-bg)", borderColor: "var(--divider)" }}
       >
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3">
           <div className="grid grid-cols-4 gap-2 mb-2">

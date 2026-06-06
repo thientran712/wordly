@@ -10,9 +10,13 @@ export default function DailyWordEmail({
   userName = "there",
   word = {},
   aiContent = null,
+  source = "new",
   appUrl = "https://wordly.app"
 }) {
-  const previewText = `✨ Từ hôm nay: ${word.word || ""}`;
+  const isUserWord = source === "journal" || source === "translate_history";
+  const previewText = isUserWord
+    ? `🔁 Ôn lại: ${word.word || ""}`
+    : `✨ Từ hôm nay: ${word.word || ""}`;
   const meanings = aiContent?.meanings || [];
   const synonyms = aiContent?.synonyms?.filter(Boolean) || [];
 
@@ -42,7 +46,9 @@ export default function DailyWordEmail({
 
           {/* Word card */}
           <Section style={wordCard}>
-            <Text style={newBadge}>✨ Từ mới hôm nay</Text>
+            <Text style={newBadge}>
+              {source === "journal" ? "📓 Từ bạn đã note" : source === "translate_history" ? "🔁 Từ bạn đã dịch" : "✨ Từ mới hôm nay"}
+            </Text>
             <Heading style={wordMain}>{word.word}</Heading>
 
             <Section style={badgeRow}>
@@ -54,8 +60,15 @@ export default function DailyWordEmail({
             </Section>
           </Section>
 
-          {/* Meanings */}
-          {meanings.length > 0 ? (
+          {/* User word: just show meaning_vi */}
+          {isUserWord && word.meaning_vi && (
+            <Section style={meaningBlock}>
+              <Text style={defVi}>🇻🇳 {word.meaning_vi}</Text>
+            </Section>
+          )}
+
+          {/* System word meanings from AI */}
+          {!isUserWord && meanings.length > 0 ? (
             <>
               <Text style={sectionLabel}>📖 {meanings.length} NGHĨA PHỔ BIẾN</Text>
               {meanings.map((m, i) => (
@@ -102,13 +115,15 @@ export default function DailyWordEmail({
             </Section>
           ) : null}
 
-          {/* Synonyms */}
-          <Section style={synonymsBlock}>
-            <Text style={sectionLabel}>✨ TỪ ĐỒNG NGHĨA</Text>
-            <Text style={synonymsText}>
-              {synonyms.length > 0 ? synonyms.join(" · ") : "Không có từ đồng nghĩa"}
-            </Text>
-          </Section>
+          {/* Synonyms — system words only */}
+          {!isUserWord && (
+            <Section style={synonymsBlock}>
+              <Text style={sectionLabel}>✨ TỪ ĐỒNG NGHĨA</Text>
+              <Text style={synonymsText}>
+                {synonyms.length > 0 ? synonyms.join(" · ") : "Không có từ đồng nghĩa"}
+              </Text>
+            </Section>
+          )}
 
           {/* CTA */}
           <Section style={ctaSection}>

@@ -7,12 +7,12 @@ import { createClient } from "@/lib/supabase-client";
 import { Mail, Lock, User, Loader2 } from "lucide-react";
 
 const inputStyle = {
-  background: "rgba(255,255,255,0.06)",
-  border: "1.5px solid rgba(255,255,255,0.1)",
+  background: "var(--input-bg)",
+  border: "1.5px solid var(--input-border)",
   color: "var(--ink)",
 };
 const inputFocus = (e) => { e.target.style.borderColor = "rgba(34,197,94,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(34,197,94,0.1)"; };
-const inputBlur  = (e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; e.target.style.boxShadow = "none"; };
+const inputBlur  = (e) => { e.target.style.borderColor = "var(--input-border)"; e.target.style.boxShadow = "none"; };
 
 export default function AuthForm({ mode = "login" }) {
   const [email, setEmail] = useState("");
@@ -65,9 +65,9 @@ export default function AuthForm({ mode = "login" }) {
     <div
       className="rounded-[28px] p-8 sm:p-10 w-full max-w-md animate-fade-in"
       style={{
-        background: "#111111",
-        border: "1px solid rgba(34,197,94,0.2)",
-        boxShadow: "0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(34,197,94,0.08)",
+        background: "var(--card-bg)",
+        border: "1px solid var(--green-subtle-border)",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.3), 0 0 0 1px var(--green-subtle-border)",
       }}
     >
       {/* Logo */}
@@ -96,8 +96,8 @@ export default function AuthForm({ mode = "login" }) {
         disabled={isGoogleLoading}
         className="w-full py-3 px-4 rounded-2xl font-semibold text-sm flex items-center justify-center gap-3 mb-4 disabled:opacity-60 hover:-translate-y-0.5 transition-all"
         style={{
-          background: "rgba(255,255,255,0.06)",
-          border: "1.5px solid rgba(255,255,255,0.12)",
+          background: "var(--input-bg)",
+          border: "1.5px solid var(--input-border)",
           color: "var(--ink)",
         }}
       >

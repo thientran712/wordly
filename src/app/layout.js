@@ -22,10 +22,27 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="vi" className={`${jakarta.variable} ${fraunces.variable}`}>
-      <body style={{ fontFamily: "var(--font-jakarta)" }}>{children}</body>
+    <html lang="vi" className={`${jakarta.variable} ${fraunces.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('wordly-theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body style={{ fontFamily: "var(--font-jakarta)" }} suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

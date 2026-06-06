@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendDailyWordEmail } from "@/lib/send-email";
-import { selectBestWordForUser } from "@/lib/select-word-for-email";
+import { selectBestWordForUser, markWordEmailed } from "@/lib/select-word-for-email";
 import { getOrGenerateWordContent } from "@/lib/generate-ai-content";
 import { validateCronSecret } from "@/lib/validate-cron-secret";
 
@@ -50,56 +50,61 @@ async function processUser(supabase, pref, userInfo, now) {
       return { error: { email: userInfo.email, error: "No word available" } };
     }
 
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("learning_goal")
-      .eq("id", pref.user_id)
-      .single();
+    const isUserWord = selectedWord.source === "journal" || selectedWord.source === "translate_history";
 
-    const aiContent = await getOrGenerateWordContent(supabase, {
-      word_id: selectedWord.word.id,
-      word: selectedWord.word.word,
-      pos: selectedWord.word.pos,
-      word_level: selectedWord.word.level,
-      skill_level: selectedWord.skillLevel,
-      learning_goal: profileData?.learning_goal || "daily",
-    });
+    // Only generate AI content for system words (journal/history words are already user's own)
+    let aiContent = null;
+    if (!isUserWord) {
+      const { data: profileData } = await supabase
+        .from("profiles").select("learning_goal").eq("id", pref.user_id).single();
+      aiContent = await getOrGenerateWordContent(supabase, {
+        word_id: selectedWord.word.id,
+        word: selectedWord.word.word,
+        pos: selectedWord.word.pos,
+        word_level: selectedWord.word.level,
+        skill_level: selectedWord.skillLevel,
+        learning_goal: profileData?.learning_goal || "daily",
+      });
+    }
 
     const result = await sendDailyWordEmail({
       to: userInfo.email,
       userName: userInfo.name,
       word: selectedWord.word,
       aiContent: aiContent || null,
+      source: selectedWord.source,
     });
 
     if (result.success) {
+      // Update email preferences
       await supabase
         .from("email_preferences")
-        .update({ last_sent_at: new Date().toISOString(), last_sent_word_id: selectedWord.word.id })
+        .update({ last_sent_at: new Date().toISOString() })
         .eq("user_id", pref.user_id);
 
-      const { data: existingProgress } = await supabase
-        .from("user_progress")
-        .select("word_id")
-        .eq("user_id", pref.user_id)
-        .eq("word_id", selectedWord.word.id)
-        .single();
+      // Track email sent on the word source
+      await markWordEmailed(supabase, selectedWord);
 
-      if (!existingProgress) {
-        await supabase.from("user_progress").insert({
-          user_id: pref.user_id,
-          word_id: selectedWord.word.id,
-          state: "new",
-          stability: null,
-          difficulty: null,
-          due_at: null,
-          scheduled_days: 0,
-          elapsed_days: 0,
-          lapses: 0,
-          review_count: 0,
-          last_reviewed_at: null,
-          is_bookmarked: false,
-        });
+      // For system words: track in user_progress
+      if (!isUserWord) {
+        await supabase
+          .from("email_preferences")
+          .update({ last_sent_word_id: selectedWord.word.id })
+          .eq("user_id", pref.user_id);
+
+        const { data: existingProgress } = await supabase
+          .from("user_progress").select("word_id")
+          .eq("user_id", pref.user_id).eq("word_id", selectedWord.word.id).single();
+
+        if (!existingProgress) {
+          await supabase.from("user_progress").insert({
+            user_id: pref.user_id,
+            word_id: selectedWord.word.id,
+            state: "new", stability: null, difficulty: null, due_at: null,
+            scheduled_days: 0, elapsed_days: 0, lapses: 0, review_count: 0,
+            last_reviewed_at: null, is_bookmarked: false,
+          });
+        }
       }
 
       return { sent: { email: userInfo.email, word: selectedWord.word.word, source: selectedWord.source } };

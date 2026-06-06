@@ -9,16 +9,16 @@ export async function GET() {
   // Get all distinct review dates from review_logs
   const { data, error } = await supabase
     .from("review_logs")
-    .select("created_at")
+    .select("reviewed_at")
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("reviewed_at", { ascending: false });
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   // Extract distinct calendar dates (UTC date string YYYY-MM-DD)
   const dateSet = new Set();
   for (const row of data || []) {
-    dateSet.add(row.created_at.slice(0, 10));
+    dateSet.add((row.reviewed_at || "").slice(0, 10));
   }
   const sortedDates = [...dateSet].sort((a, b) => b.localeCompare(a)); // desc
 

@@ -44,8 +44,8 @@ function TimeDropdown({ value, onChange }) {
           width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "10px 16px", borderRadius: "14px", cursor: "pointer",
           fontWeight: 700, fontSize: "15px",
-          background: "rgba(255,255,255,0.06)",
-          border: `1.5px solid ${open ? "rgba(34,197,94,0.5)" : "rgba(255,255,255,0.1)"}`,
+          background: "var(--input-bg)",
+          border: `1.5px solid ${open ? "rgba(34,197,94,0.5)" : "var(--input-border)"}`,
           color: "var(--ink)",
           transition: "border-color 0.15s",
         }}
@@ -61,9 +61,9 @@ function TimeDropdown({ value, onChange }) {
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 50,
-          background: "#1A1A1A", borderRadius: "14px",
-          border: "1.5px solid rgba(34,197,94,0.2)",
-          boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
+          background: "var(--card-bg)", borderRadius: "14px",
+          border: "1.5px solid var(--green-subtle-border)",
+          boxShadow: "0 16px 40px rgba(0,0,0,0.3)",
           overflow: "hidden",
         }}>
           <div ref={listRef} style={{ maxHeight: "220px", overflowY: "auto", padding: "6px" }}>
@@ -77,7 +77,7 @@ function TimeDropdown({ value, onChange }) {
                     width: "100%", textAlign: "left", padding: "8px 14px",
                     borderRadius: "10px", border: "none", cursor: "pointer",
                     fontWeight: isSel ? 700 : 500, fontSize: "14px",
-                    background: isSel ? "rgba(34,197,94,0.15)" : "transparent",
+                    background: isSel ? "var(--green-subtle)" : "transparent",
                     color: isSel ? "var(--electric)" : "var(--ink-soft)",
                     transition: "background 0.1s",
                   }}
@@ -162,7 +162,7 @@ export default function EmailSettingsPage() {
     );
   }
 
-  const cardStyle = { background: "#1A1A1A", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3)" };
+  const cardStyle = { background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "0 4px 24px rgba(0,0,0,0.15)" };
 
   return (
     <>
@@ -213,7 +213,7 @@ export default function EmailSettingsPage() {
               type="button"
               onClick={() => setEmailEnabled(prev => !prev)}
               className="relative w-12 h-6 rounded-full transition-all"
-              style={{ background: emailEnabled ? "var(--electric)" : "rgba(255,255,255,0.12)" }}
+              style={{ background: emailEnabled ? "var(--electric)" : "var(--input-border)" }}
             >
               <span
                 className="absolute top-0.5 w-5 h-5 rounded-full shadow transition-all"
@@ -247,8 +247,8 @@ export default function EmailSettingsPage() {
                       onClick={() => setFrequency(f.value)}
                       className="px-4 py-2 rounded-xl font-semibold text-sm hover:-translate-y-0.5 transition-all"
                       style={{
-                        background: frequency === f.value ? "var(--electric)" : "rgba(255,255,255,0.05)",
-                        border: frequency === f.value ? "none" : "1.5px solid rgba(255,255,255,0.1)",
+                        background: frequency === f.value ? "var(--electric)" : "var(--hover-bg)",
+                        border: frequency === f.value ? "none" : "1.5px solid var(--input-border)",
                         color: frequency === f.value ? "#0A0A0A" : "var(--ink-soft)",
                         boxShadow: frequency === f.value ? "0 4px 12px rgba(34,197,94,0.25)" : "none",
                       }}
@@ -270,8 +270,8 @@ export default function EmailSettingsPage() {
                         onClick={() => toggleCustomDay(i)}
                         className="w-10 h-10 rounded-xl font-bold text-xs hover:-translate-y-0.5 transition-all"
                         style={{
-                          background: customDays.includes(i) ? "var(--electric)" : "rgba(255,255,255,0.05)",
-                          border: customDays.includes(i) ? "none" : "1.5px solid rgba(255,255,255,0.1)",
+                          background: customDays.includes(i) ? "var(--electric)" : "var(--hover-bg)",
+                          border: customDays.includes(i) ? "none" : "1.5px solid var(--input-border)",
                           color: customDays.includes(i) ? "#0A0A0A" : "var(--ink-soft)",
                           boxShadow: customDays.includes(i) ? "0 4px 12px rgba(34,197,94,0.25)" : "none",
                         }}

@@ -9,17 +9,11 @@ export async function middleware(request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+        getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => 
-            request.cookies.set(name, value)
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
     }
@@ -27,7 +21,6 @@ export async function middleware(request) {
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  // Stale/invalid token — clear cookies and redirect to login
   if (authError?.code === "refresh_token_not_found" || authError?.message?.includes("Refresh Token")) {
     const res = NextResponse.redirect(new URL("/login", request.url));
     request.cookies.getAll().forEach(cookie => {
@@ -37,69 +30,58 @@ export async function middleware(request) {
   }
 
   const path = request.nextUrl.pathname;
-  const isAuthPage = path === "/login" || path === "/signup" || 
-                     path === "/forgot-password" || path === "/reset-password";
+  const isAuthPage = ["/login", "/signup", "/forgot-password", "/reset-password"].includes(path);
   const isApi = path.startsWith("/api/");
-  const isPublicApi = path.startsWith("/api/words");
+  const isPublicApi = path.startsWith("/api/words") || path.startsWith("/api/translate");
   const isCronApi = path.startsWith("/api/cron") || path.startsWith("/api/admin");
   const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback");
   const isOnboardingPage = path === "/onboarding";
-  const isLandingPage = path === "/";
-  // Public routes - no auth check
-  const isPublicPage = isLandingPage;
+  // Public pages: homepage (guest can use translate), auth pages
+  const isPublicPage = path === "/" || isAuthPage;
 
-  if (isCronApi || isAuthCallback || isInngestApi) {
-    return response;
-  }
+  if (isCronApi || isAuthCallback || isInngestApi) return response;
 
-  // Trang chủ (/) — phải login + đã onboarded
-  if (isPublicPage) {
-    if (!user) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarded_at")
-      .eq("id", user.id)
-      .single();
-    if (!profile?.onboarded_at) {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
+  // Homepage — guests allowed, but logged-in users must be onboarded
+  if (path === "/") {
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles").select("onboarded_at").eq("id", user.id).single();
+      if (!profile?.onboarded_at) {
+        return NextResponse.redirect(new URL("/onboarding", request.url));
+      }
     }
     return response;
   }
 
-  if (!user && !isAuthPage && !isPublicApi && !isApi && !isPublicPage) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // Auth pages — redirect logged-in users to home
+  if (user && isAuthPage) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
+  // Protected API routes — 401 for guests
   if (!user && isApi && !isPublicApi) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (user && (path === "/login" || path === "/signup" || path === "/forgot-password")) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // Protected pages — redirect guests to login
+  if (!user && !isAuthPage && !isPublicPage && !isApi) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (user && !isAuthPage && !isPublicApi && !isApi && !isOnboardingPage && !isPublicPage) {
+  // Logged-in users on protected pages must be onboarded
+  if (user && !isAuthPage && !isApi && !isOnboardingPage && !isPublicPage) {
     const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarded_at")
-      .eq("id", user.id)
-      .single();
-
+      .from("profiles").select("onboarded_at").eq("id", user.id).single();
     if (!profile?.onboarded_at) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
   }
 
+  // Onboarding page — redirect already-onboarded users
   if (user && isOnboardingPage) {
     const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarded_at")
-      .eq("id", user.id)
-      .single();
-
+      .from("profiles").select("onboarded_at").eq("id", user.id).single();
     if (profile?.onboarded_at) {
       return NextResponse.redirect(new URL("/", request.url));
     }

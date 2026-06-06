@@ -11,18 +11,18 @@ const LEVEL_LABELS = {
 };
 
 const cardStyle = {
-  background: "#1A1A1A",
-  border: "1px solid rgba(255,255,255,0.08)",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+  background: "var(--card-bg)",
+  border: "1px solid var(--card-border)",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
 };
 
 const inputStyle = {
-  background: "rgba(255,255,255,0.06)",
-  border: "1.5px solid rgba(255,255,255,0.1)",
+  background: "var(--input-bg)",
+  border: "1.5px solid var(--input-border)",
   color: "var(--ink)",
 };
 const inputFocus = (e) => { e.target.style.borderColor = "rgba(34,197,94,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(34,197,94,0.1)"; };
-const inputBlur  = (e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; e.target.style.boxShadow = "none"; };
+const inputBlur  = (e) => { e.target.style.borderColor = "var(--input-border)"; e.target.style.boxShadow = "none"; };
 
 function ChangePasswordModal({ onClose }) {
   const [newPassword, setNewPassword] = useState("");
@@ -53,7 +53,7 @@ function ChangePasswordModal({ onClose }) {
     >
       <div
         className="rounded-3xl p-7 w-full max-w-sm animate-fade-in"
-        style={{ background: "#1A1A1A", border: "1px solid rgba(34,197,94,0.2)", boxShadow: "0 24px 64px rgba(0,0,0,0.7)" }}
+        style={{ background: "var(--card-bg)", border: "1px solid var(--green-subtle-border)", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-serif text-xl font-bold flex items-center gap-2" style={{ color: "var(--ink)" }}>
@@ -321,8 +321,8 @@ export default function ProfilePage() {
                     title={label}
                     className="py-2 px-2 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-all"
                     style={{
-                      background: selected ? "var(--electric)" : "rgba(255,255,255,0.05)",
-                      border: selected ? "none" : "1.5px solid rgba(255,255,255,0.1)",
+                      background: selected ? "var(--electric)" : "var(--hover-bg)",
+                      border: selected ? "none" : "1.5px solid var(--input-border)",
                       color: selected ? "#0A0A0A" : "var(--ink-soft)",
                       transform: selected ? "scale(1.05)" : "scale(1)",
                       boxShadow: selected ? "0 4px 12px rgba(34,197,94,0.3)" : "none",
