@@ -10,15 +10,16 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendDailyWordEmail({ to, userName, word, aiContent = null }) {
+export async function sendDailyWordEmail({ to, userName, word, aiContent = null, source = "new" }) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL
     || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   const html = await render(
-    DailyWordEmail({ userName, word, aiContent, appUrl })
+    DailyWordEmail({ userName, word, aiContent, source, appUrl })
   );
 
-  const subject = `🌈 Từ vựng hôm nay: ${word.word}`;
+  const subjectPrefix = source === "journal" ? "📓 Ôn lại" : source === "translate_history" ? "🔁 Ôn lại" : "✨ Từ mới";
+  const subject = `🌈 ${subjectPrefix}: ${word.word}`;
 
   try {
 

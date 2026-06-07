@@ -134,14 +134,13 @@ export const sendSlotEmail = inngest.createFunction(
     const sendResult = await step.run("send-email", async () => {
       const supabase = createAdminClient();
 
-      // Idempotency: check if this slot already sent today
+      // Idempotency: skip if sent within last 60 minutes (blocks retries and duplicates)
       const { data: slotNow } = await supabase
         .from("email_slots").select("last_sent_at").eq("id", slot_id).single();
       if (slotNow?.last_sent_at) {
-        const sentDate = new Date(slotNow.last_sent_at);
-        const todayUTC = new Date().toDateString();
-        if (sentDate.toDateString() === todayUTC) {
-          return { skipped: "already sent today for this slot" };
+        const minutesSinceSent = (Date.now() - new Date(slotNow.last_sent_at).getTime()) / 60000;
+        if (minutesSinceSent < 60) {
+          return { skipped: `already sent ${Math.round(minutesSinceSent)}min ago` };
         }
       }
 
