@@ -1,11 +1,11 @@
-import { getAllWordsCached } from "@/lib/words-cache";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export async function GET() {
-  const data = await getAllWordsCached();
-
+  const admin = createAdminClient();
+  const { data: words } = await admin.from("words").select("*");
   // Group by level, then interleave
   const byLevel = { A1: [], A2: [], B1: [], B2: [], C1: [], C2: [] };
-  for (const word of data) {
+  for (const word of (words || [])) {
     const level = word.level || 'B1';
     if (byLevel[level]) byLevel[level].push(word);
     else byLevel.B1.push(word);
