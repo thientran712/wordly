@@ -172,13 +172,27 @@ export const sendSlotEmail = inngest.createFunction(
     const sendResult = await step.run("send-email", async () => {
       const supabase = createAdminClient();
 
-      // Idempotency: skip if sent within last 60 minutes (blocks retries and duplicates)
+      // Idempotency: skip if this slot already sent today (calendar date in user's timezone)
+      // This blocks Inngest retries AND duplicate runs, while allowing multiple
+      // different slots on the same day to each fire exactly once.
       const { data: slotNow } = await supabase
         .from("email_slots").select("last_sent_at").eq("id", slot_id).single();
       if (slotNow?.last_sent_at) {
-        const minutesSinceSent = (Date.now() - new Date(slotNow.last_sent_at).getTime()) / 60000;
-        if (minutesSinceSent < 60) {
-          return { skipped: `already sent ${Math.round(minutesSinceSent)}min ago` };
+        const sentAt = new Date(slotNow.last_sent_at);
+        const tzParts2 = new Intl.DateTimeFormat("en-US", {
+          timeZone: ctx.timezone,
+          year: "numeric", month: "2-digit", day: "2-digit",
+        }).formatToParts(sentAt);
+        const sentDate = `${tzParts2.find(p => p.type === "year")?.value}-${tzParts2.find(p => p.type === "month")?.value}-${tzParts2.find(p => p.type === "day")?.value}`;
+
+        const nowParts = new Intl.DateTimeFormat("en-US", {
+          timeZone: ctx.timezone,
+          year: "numeric", month: "2-digit", day: "2-digit",
+        }).formatToParts(new Date());
+        const todayDate = `${nowParts.find(p => p.type === "year")?.value}-${nowParts.find(p => p.type === "month")?.value}-${nowParts.find(p => p.type === "day")?.value}`;
+
+        if (sentDate === todayDate) {
+          return { skipped: `already sent today at ${sentAt.toISOString()}` };
         }
       }
 
