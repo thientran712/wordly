@@ -14,15 +14,6 @@ function safeTimezone(tz) {
   }
 }
 
-// Returns YYYY-MM-DD for the given date in the given timezone.
-function dateStrInTz(date, timezone) {
-  const p = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(date);
-  const g = (t) => p.find(x => x.type === t)?.value;
-  return `${g("year")}-${g("month")}-${g("day")}`;
-}
-
 // Returns the next UTC Date when sendTime (HH:MM) occurs in the given timezone.
 function getNextSendDate(sendTime, timezone) {
   const [sendHour, sendMinute] = sendTime.split(":").map(Number);
@@ -207,39 +198,10 @@ export const sendSlotEmail = inngest.createFunction(
       return { skipped: "not scheduled day" };
     }
 
-    // ── Step 3: atomically claim this slot for today (idempotency guard) ──────
-    // Anchor todayStr to nextSendDate (not new Date()) so midnight latency can't
-    // cause a mismatch between the intended send date and what gets written to DB.
-    const todayStr = dateStrInTz(nextSendDate, current.timezone);
-    const claimResult = await step.run("claim-slot", async () => {
-      const supabase = createAdminClient();
-      const { data: claimedSlot } = await supabase
-        .from("email_slots")
-        .update({ last_sent_date: todayStr, last_sent_at: new Date().toISOString() })
-        .eq("id", slot_id)
-        .or(`last_sent_date.is.null,last_sent_date.neq.${todayStr}`)
-        .select("id")
-        .maybeSingle();
-      return { claimed: !!claimedSlot };
-    });
-
-    if (!claimResult.claimed) {
-      await step.sendEvent("reschedule-tomorrow", {
-        name: "email/slot.scheduled",
-        data: { user_id, slot_id, triggeredAt: Date.now() },
-      });
-      return { skipped: `slot already sent today (${todayStr})` };
-    }
-
-    // ── Step 4: atomically claim a word from journal / translate history ────────
+    // ── Step 3: claim a word from journal / translate history ────────────────
     const wordResult = await step.run("claim-word", async () => {
       const supabase = createAdminClient();
-      const selectedWord = await claimBestWordForUser(supabase, user_id);
-      if (!selectedWord) {
-        await supabase.from("email_slots").update({ last_sent_date: null }).eq("id", slot_id);
-        return null;
-      }
-      return selectedWord;
+      return await claimBestWordForUser(supabase, user_id);
     });
 
     if (!wordResult) {
@@ -257,7 +219,7 @@ export const sendSlotEmail = inngest.createFunction(
       return { error: "No word available" };
     }
 
-    // ── Step 5: send the email ────────────────────────────────────────────────
+    // ── Step 4: send the email ────────────────────────────────────────────────
     const sendResult = await step.run("send-email", async () => {
       const result = await sendDailyWordEmail({
         to: current.email,
@@ -269,25 +231,16 @@ export const sendSlotEmail = inngest.createFunction(
       return { success: result.success, error: result.error || null, id: result.id || null };
     });
 
-    // ── Step 6: log outcome ───────────────────────────────────────────────────
+    // ── Step 5: log outcome ───────────────────────────────────────────────────
     await step.run("track-and-log", async () => {
       const supabase = createAdminClient();
-
-      if (sendResult.success) {
-        await supabase.from("email_log").insert({
-          user_id, slot_id, status: "sent",
-          word: wordResult.word.word, source: wordResult.source,
-          recipient: current.email,
-        });
-      } else {
-        // Send failed → release slot claim so Inngest retry can re-fire today
-        await supabase.from("email_slots").update({ last_sent_date: null }).eq("id", slot_id);
-        await supabase.from("email_log").insert({
-          user_id, slot_id, status: "failed", error: sendResult.error,
-          word: wordResult.word.word, source: wordResult.source,
-          recipient: current.email,
-        });
-      }
+      await supabase.from("email_log").insert({
+        user_id, slot_id,
+        status: sendResult.success ? "sent" : "failed",
+        word: wordResult.word.word, source: wordResult.source,
+        recipient: current.email,
+        error: sendResult.success ? null : sendResult.error,
+      });
     });
 
     if (!sendResult.success) {
