@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { selectBestWordForUser } from "@/lib/select-word-for-email";
+import { claimBestWordForUser } from "@/lib/select-word-for-email";
 
 export async function GET() {
   const supabase = await createClient();
@@ -19,7 +19,7 @@ export async function GET() {
       .eq("user_id", user.id),
   ]);
 
-  const selected = await selectBestWordForUser(admin, user.id);
+  const selected = await claimBestWordForUser(admin, user.id);
 
   return Response.json({
     user_id: user.id,

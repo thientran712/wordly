@@ -19,27 +19,9 @@ function normalizeTime(time) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-// Today's date string (YYYY-MM-DD) in a given timezone — matches the backend's
-// last_sent_date format so we can tell "đã gửi hôm nay" vs "kế tiếp".
-function todayStrInTz(timezone) {
-  try {
-    const p = new Intl.DateTimeFormat("en-CA", {
-      timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
-    }).format(new Date());
-    return p; // en-CA gives YYYY-MM-DD
-  } catch {
-    return new Intl.DateTimeFormat("en-CA").format(new Date());
-  }
-}
-
 // Human label for when a slot's next email arrives.
 function nextSendLabel(slot, timezone) {
   if (!slot.enabled) return null;
-  const today = todayStrInTz(timezone);
-  if (slot.last_sent_date === today) {
-    return { sent: true, text: `✓ Đã gửi hôm nay · kế tiếp mai ${slot.send_time}` };
-  }
-  // Not sent today yet — is send_time still ahead of now in user's tz?
   try {
     const nowParts = new Intl.DateTimeFormat("en-US", {
       timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false,
@@ -49,10 +31,10 @@ function nextSendLabel(slot, timezone) {
     const [sh, sm] = slot.send_time.split(":").map(Number);
     const ahead = sh * 60 + sm > nh * 60 + nm;
     return ahead
-      ? { sent: false, text: `⏰ Email kế tiếp: hôm nay ${slot.send_time}` }
-      : { sent: false, text: `⏰ Email kế tiếp: mai ${slot.send_time}` };
+      ? { text: `⏰ Email kế tiếp: hôm nay ${slot.send_time}` }
+      : { text: `⏰ Email kế tiếp: mai ${slot.send_time}` };
   } catch {
-    return { sent: false, text: `⏰ Gửi lúc ${slot.send_time}` };
+    return { text: `⏰ Gửi lúc ${slot.send_time}` };
   }
 }
 
@@ -525,7 +507,7 @@ export default function EmailSettingsPage() {
                     {/* Next-send hint */}
                     {next && (
                       <p className="text-[11px] font-semibold mt-2 ml-7"
-                        style={{ color: next.sent ? "var(--electric)" : "var(--ink-soft)" }}>
+                        style={{ color: "var(--ink-soft)" }}>
                         {next.text}
                       </p>
                     )}

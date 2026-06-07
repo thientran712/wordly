@@ -1,11 +1,4 @@
-const LEVEL_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const RESEND_AFTER_DAYS = 1;
-
-function getTargetLevels(skillLevel) {
-  const idx = LEVEL_ORDER.indexOf(skillLevel);
-  if (idx === -1) return LEVEL_ORDER.slice(2);
-  return LEVEL_ORDER.slice(idx);
-}
 
 function daysSince(isoString) {
   if (!isoString) return Infinity;
@@ -138,106 +131,17 @@ async function claimFromTranslateHistory(supabase, userId) {
   return null;
 }
 
-// ── PRIORITY 3: System words by level ───────────────────────────────────────
-async function pickFromSystemWords(supabase, userId, skillLevel) {
-  const targetLevels = getTargetLevels(skillLevel);
-
-  const { data: learnedIds } = await supabase
-    .from("user_progress")
-    .select("word_id")
-    .eq("user_id", userId);
-  const learnedSet = new Set((learnedIds || []).map(r => r.word_id));
-
-  const levelFetches = await Promise.all(
-    targetLevels.map(lvl =>
-      supabase.from("words").select("*").eq("level", lvl).limit(80)
-    )
-  );
-  const pool = levelFetches
-    .flatMap(({ data }) => data || [])
-    .filter(w => !learnedSet.has(w.id));
-
-  if (pool.length > 0) {
-    return { word: pool[Math.floor(Math.random() * pool.length)], source: "new", skillLevel };
-  }
-
-  const { data: allCandidates } = await supabase
-    .from("words").select("*").order("level", { ascending: false }).limit(500);
-  const anyNew = (allCandidates || []).filter(w => !learnedSet.has(w.id));
-  if (anyNew.length > 0) {
-    const top = anyNew.slice(0, Math.min(30, anyNew.length));
-    return { word: top[Math.floor(Math.random() * top.length)], source: "new_expanded", skillLevel };
-  }
-
-  const { data: fallback } = await supabase.from("words").select("*").limit(20);
-  return fallback?.length
-    ? { word: fallback[Math.floor(Math.random() * fallback.length)], source: "fallback", skillLevel }
-    : null;
-}
-
-// ── Main export: atomically claims a word so no two slots pick the same one ──
-// Replaces the old select-then-mark flow. The journal/translate claim is atomic
-// (the DB UPDATE itself reserves the word), so concurrent slots never collide.
+// ── Main export: claims a word from user's own content only ──────────────────
+// Returns null if user has no journal entries or translate history to send.
 export async function claimBestWordForUser(supabase, userId) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("skill_level")
-    .eq("id", userId)
-    .single();
-  const skillLevel = profile?.skill_level || "B1";
-
   // Priority 1: journal (atomic claim)
   const fromJournal = await claimFromJournal(supabase, userId);
-  if (fromJournal) return { ...fromJournal, skillLevel, _alreadyMarked: true };
+  if (fromJournal) return { ...fromJournal, _alreadyMarked: true };
 
   // Priority 2: translate history (atomic claim)
   const fromHistory = await claimFromTranslateHistory(supabase, userId);
-  if (fromHistory) return { ...fromHistory, skillLevel, _alreadyMarked: true };
+  if (fromHistory) return { ...fromHistory, _alreadyMarked: true };
 
-  // Priority 3: system words (random, no dedup needed across slots)
-  const sys = await pickFromSystemWords(supabase, userId, skillLevel);
-  return sys ? { ...sys, _alreadyMarked: false } : null;
+  return null;
 }
 
-// Kept for backward compat — non-atomic select (used by debug endpoint).
-export async function selectBestWordForUser(supabase, userId) {
-  const { data: profile } = await supabase
-    .from("profiles").select("skill_level").eq("id", userId).single();
-  const skillLevel = profile?.skill_level || "B1";
-
-  const { data: journal } = await supabase
-    .from("journal_entries")
-    .select("id, word, meaning_vi, last_emailed_at")
-    .eq("user_id", userId)
-    .order("last_emailed_at", { ascending: true, nullsFirst: true });
-  const jCand = (journal || []).filter(e => !e.last_emailed_at || daysSince(e.last_emailed_at) >= RESEND_AFTER_DAYS);
-  if (jCand.length) {
-    const p = jCand[0];
-    return { word: { id: `journal_${p.id}`, word: p.word, meaning_vi: p.meaning_vi || "", _journal_id: p.id, _type: "journal" }, source: "journal", journalId: p.id, skillLevel };
-  }
-  return pickFromSystemWords(supabase, userId, skillLevel);
-}
-
-// Call this after email is sent — only needed for non-atomic paths (system words
-// don't need marking). For atomic journal/translate claims the word is already
-// marked during the claim, so this becomes a no-op (guarded by _alreadyMarked).
-export async function markWordEmailed(supabase, selected) {
-  if (selected._alreadyMarked) return; // already claimed atomically
-  const now = new Date().toISOString();
-
-  if (selected.journalId) {
-    const { data: cur } = await supabase
-      .from("journal_entries").select("email_count").eq("id", selected.journalId).single();
-    await supabase
-      .from("journal_entries")
-      .update({ last_emailed_at: now, email_count: (cur?.email_count || 0) + 1 })
-      .eq("id", selected.journalId);
-  } else if (selected.translateId) {
-    const { data: cur } = await supabase
-      .from("translate_history").select("email_count").eq("id", selected.translateId).single();
-    await supabase
-      .from("translate_history")
-      .update({ last_emailed_at: now, email_count: (cur?.email_count || 0) + 1 })
-      .eq("id", selected.translateId);
-  }
-}
