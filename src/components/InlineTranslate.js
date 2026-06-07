@@ -53,7 +53,21 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   const inputRef = useRef(null);
   const suppressSuggestRef = useRef(false);
 
+  const CHAR_LIMIT = 10000;
+  const isOverLimit = input.length > CHAR_LIMIT;
+
+  // Auto-resize textarea to fit content
+  const autoResize = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, []);
+
   const isEN = direction === "EN→VI";
+
+  // Auto-resize whenever input changes
+  useEffect(() => { autoResize(); }, [input, autoResize]);
 
   // ── Load entry picked from history ──
   useEffect(() => {
@@ -168,12 +182,14 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     return () => clearTimeout(suggestRef.current);
   }, [input, isEN, fetchSuggestions]);
 
-  // Translation debounce — separate effect so cleanup doesn't cancel translate
+  // Translation debounce — skip if over limit
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => translate(input, direction), 280);
+    if (!isOverLimit) {
+      debounceRef.current = setTimeout(() => translate(input, direction), 280);
+    }
     return () => clearTimeout(debounceRef.current);
-  }, [input, direction, translate]);
+  }, [input, direction, translate, isOverLimit]);
 
   const isSingleWord = (text) => /^\s*[a-zA-Z'-]+\s*$/.test(text);
 
@@ -306,25 +322,32 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
               setTimeout(() => setShowSuggestions(false), 180);
             }}
             onKeyDown={e => {
-              // On mobile, Enter key dismisses keyboard instead of inserting newline
               if (e.key === "Enter" && window.innerWidth < 640) {
                 e.preventDefault();
                 inputRef.current?.blur();
               }
             }}
             placeholder={isEN ? "Enter text or a word..." : "Nhập văn bản..."}
-            rows={3}
             enterKeyHint="done"
             className="w-full resize-none text-base focus:outline-none px-4 pt-3 pb-2"
             style={{
               background: "transparent",
-              color: "var(--ink)",
+              color: isOverLimit ? "#F87171" : "var(--ink)",
               lineHeight: 1.7,
               minHeight: 96,
+              height: "auto",
+              overflow: "hidden",
               border: "none",
-              /* iOS: prevent zoom on focus already handled globally */
             }}
           />
+          {/* Char counter — only show when nearing limit */}
+          {input.length > CHAR_LIMIT * 0.8 && (
+            <div className="px-4 pb-1 text-right">
+              <span className="text-[11px] font-semibold tabular-nums" style={{ color: isOverLimit ? "#F87171" : "var(--ink-ghost)" }}>
+                {input.length.toLocaleString()} / {CHAR_LIMIT.toLocaleString()}
+              </span>
+            </div>
+          )}
 
           {/* Action row */}
           <div className="flex items-center gap-2 px-4 pb-3">
@@ -436,15 +459,19 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
         {/* Translation output panel */}
         <div
           className="flex flex-col gap-3 p-4"
-          style={{ background: "var(--green-subtle)", minWidth: 0, flex: 1 }}
+          style={{ background: "var(--green-subtle)", minWidth: 0, flex: 1, minHeight: 96 }}
         >
-          {isTranslating ? (
+          {isOverLimit ? (
+            <p className="text-sm font-semibold" style={{ color: "#F87171", lineHeight: 1.7 }}>
+              ⚠️ Văn bản quá dài — tối đa {CHAR_LIMIT.toLocaleString()} ký tự.
+            </p>
+          ) : isTranslating ? (
             <div className="flex items-center gap-2 pt-1" style={{ color: "var(--electric)" }}>
               <Loader2 size={14} className="animate-spin" />
               <span className="text-sm">Đang dịch...</span>
             </div>
           ) : translated ? (
-            <p className="text-base font-semibold leading-relaxed" style={{ color: "var(--ink)", lineHeight: 1.7 }}>
+            <p className="text-base font-semibold" style={{ color: "var(--ink)", lineHeight: 1.7 }}>
               {translated}
             </p>
           ) : (

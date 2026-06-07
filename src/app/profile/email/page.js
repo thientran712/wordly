@@ -341,17 +341,6 @@ export default function EmailSettingsPage() {
     setCustomDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
   };
 
-  if (isLoading) {
-    return (
-      <>
-        <div className="bg-blobs"><div className="blob blob-1" /><div className="blob blob-2" /></div>
-        <main className="relative z-10 min-h-screen flex items-center justify-center">
-          <Loader2 size={28} className="animate-spin" style={{ color: "var(--electric)" }} />
-        </main>
-      </>
-    );
-  }
-
   const cardStyle = { background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "0 4px 24px rgba(0,0,0,0.15)" };
 
   return (
@@ -384,18 +373,28 @@ export default function EmailSettingsPage() {
 
         {/* Enable toggle card */}
         <div className="rounded-3xl p-5 sm:p-6 mb-4" style={cardStyle}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-bold text-sm" style={{ color: "var(--ink)" }}>Nhận email hàng ngày</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>Nhận từ vựng từ journal & lịch sử dịch</p>
+          {isLoading ? (
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="h-4 w-40 rounded animate-pulse" style={{ background: "var(--hover-bg)" }} />
+                <div className="h-3 w-56 rounded animate-pulse" style={{ background: "var(--hover-bg)" }} />
+              </div>
+              <div className="h-6 w-12 rounded-full animate-pulse" style={{ background: "var(--hover-bg)" }} />
             </div>
-            <button type="button" onClick={() => setEmailEnabled(prev => !prev)}
-              className="relative w-12 h-6 rounded-full transition-all"
-              style={{ background: emailEnabled ? "var(--electric)" : "var(--input-border)" }}>
-              <span className="absolute top-0.5 w-5 h-5 rounded-full shadow transition-all"
-                style={{ left: emailEnabled ? "26px" : "2px", background: emailEnabled ? "#0A0A0A" : "rgba(255,255,255,0.5)" }} />
-            </button>
-          </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-sm" style={{ color: "var(--ink)" }}>Nhận email hàng ngày</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>Nhận từ vựng từ journal & lịch sử dịch</p>
+              </div>
+              <button type="button" onClick={() => setEmailEnabled(prev => !prev)}
+                className="relative w-12 h-6 rounded-full transition-all"
+                style={{ background: emailEnabled ? "var(--electric)" : "var(--input-border)" }}>
+                <span className="absolute top-0.5 w-5 h-5 rounded-full shadow transition-all"
+                  style={{ left: emailEnabled ? "26px" : "2px", background: emailEnabled ? "#0A0A0A" : "rgba(255,255,255,0.5)" }} />
+              </button>
+            </div>
+          )}
         </div>
 
         {emailEnabled && (
@@ -549,7 +548,7 @@ export default function EmailSettingsPage() {
         )}
 
         {/* Save */}
-        <button type="button" onClick={handleSavePrefs} disabled={isSaving}
+        <button type="button" onClick={handleSavePrefs} disabled={isSaving || isLoading}
           className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
           style={{
             background: success ? "rgba(34,197,94,0.15)" : "var(--electric)",

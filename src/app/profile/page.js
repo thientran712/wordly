@@ -141,7 +141,6 @@ function ChangePasswordModal({ onClose }) {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState(null);
   const [email, setEmail] = useState("");
   const [authProvider, setAuthProvider] = useState("email");
   const [isLoading, setIsLoading] = useState(true);
@@ -159,7 +158,6 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile");
       const data = await res.json();
       if (data.profile) {
-        setProfile(data.profile);
         setEmail(data.email);
         setAuthProvider(data.auth_provider);
         setName(data.profile.name || "");
@@ -194,20 +192,6 @@ export default function ProfilePage() {
       setIsSaving(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <>
-        <div className="bg-blobs"><div className="blob blob-1"></div><div className="blob blob-2"></div></div>
-        <main className="relative z-10 min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-6xl mb-4">👤</div>
-            <p className="text-xl font-semibold" style={{ color: "var(--electric)" }}>Loading profile...</p>
-          </div>
-        </main>
-      </>
-    );
-  }
 
   return (
     <>
@@ -252,30 +236,28 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider block mb-1" style={{ color: "var(--ink-soft)" }}>Email</label>
-              <div className="flex items-center gap-2">
-                <p className="font-semibold" style={{ color: "var(--ink)" }}>{email}</p>
-                <span
-                  className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
-                  style={{
-                    background: "rgba(34,197,94,0.1)",
-                    color: "var(--electric)",
-                    border: "1px solid rgba(34,197,94,0.25)",
-                  }}
-                >
-                  {authProvider}
-                </span>
+              <div className="flex items-center gap-2 min-h-[24px]">
+                {isLoading ? (
+                  <div className="h-5 w-48 rounded-lg animate-pulse" style={{ background: "var(--hover-bg)" }} />
+                ) : (
+                  <>
+                    <p className="font-semibold" style={{ color: "var(--ink)" }}>{email}</p>
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                      style={{ background: "rgba(34,197,94,0.1)", color: "var(--electric)", border: "1px solid rgba(34,197,94,0.25)" }}
+                    >
+                      {authProvider}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
-            {authProvider === "email" && (
+            {!isLoading && authProvider === "email" && (
               <button
                 type="button"
                 onClick={() => setShowPasswordModal(true)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-sm hover:-translate-y-0.5 transition-all"
-                style={{
-                  background: "rgba(34,197,94,0.08)",
-                  border: "1.5px solid rgba(34,197,94,0.2)",
-                  color: "var(--electric)",
-                }}
+                style={{ background: "rgba(34,197,94,0.08)", border: "1.5px solid rgba(34,197,94,0.2)", color: "var(--electric)" }}
               >
                 <KeyRound size={15} />
                 Đổi mật khẩu
@@ -292,11 +274,15 @@ export default function ProfilePage() {
           </h2>
           <div>
             <label className="font-bold text-sm mb-2 block" style={{ color: "var(--ink)" }}>Your name</label>
-            <input
-              type="text" value={name} onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none transition-all"
-              style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}
-            />
+            {isLoading ? (
+              <div className="h-12 rounded-2xl animate-pulse" style={{ background: "var(--hover-bg)" }} />
+            ) : (
+              <input
+                type="text" value={name} onChange={e => setName(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none transition-all"
+                style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}
+              />
+            )}
           </div>
         </div>
 
@@ -311,34 +297,42 @@ export default function ProfilePage() {
               <BookOpen size={14} style={{ color: "var(--electric)" }} />
               English Level
             </label>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {Object.entries(LEVEL_LABELS).map(([value, label]) => {
-                const selected = skillLevel === value;
-                return (
-                  <button
-                    type="button" key={value}
-                    onClick={() => setSkillLevel(value)}
-                    title={label}
-                    className="py-2 px-2 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-all"
-                    style={{
-                      background: selected ? "var(--electric)" : "var(--hover-bg)",
-                      border: selected ? "none" : "1.5px solid var(--input-border)",
-                      color: selected ? "#0A0A0A" : "var(--ink-soft)",
-                      transform: selected ? "scale(1.05)" : "scale(1)",
-                      boxShadow: selected ? "0 4px 12px rgba(34,197,94,0.3)" : "none",
-                    }}
-                  >
-                    {value}
-                  </button>
-                );
-              })}
-            </div>
+            {isLoading ? (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-9 rounded-xl animate-pulse" style={{ background: "var(--hover-bg)" }} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {Object.entries(LEVEL_LABELS).map(([value, label]) => {
+                  const selected = skillLevel === value;
+                  return (
+                    <button
+                      type="button" key={value}
+                      onClick={() => setSkillLevel(value)}
+                      title={label}
+                      className="py-2 px-2 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-all"
+                      style={{
+                        background: selected ? "var(--electric)" : "var(--hover-bg)",
+                        border: selected ? "none" : "1.5px solid var(--input-border)",
+                        color: selected ? "#0A0A0A" : "var(--ink-soft)",
+                        transform: selected ? "scale(1.05)" : "scale(1)",
+                        boxShadow: selected ? "0 4px 12px rgba(34,197,94,0.3)" : "none",
+                      }}
+                    >
+                      {value}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Save button */}
         <button
-          onClick={handleSave} disabled={isSaving}
+          onClick={handleSave} disabled={isSaving || isLoading}
           className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
           style={{
             background: success ? "rgba(34,197,94,0.15)" : "var(--electric)",

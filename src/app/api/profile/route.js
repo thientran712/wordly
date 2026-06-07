@@ -2,27 +2,28 @@ import { createClient } from "@/lib/supabase-server";
 import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET() {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-  
+
+  const supabase = await createClient();
+
+  // app_metadata.provider requires a full getUser() call (not in JWT claims for
+  // all Supabase project configs), so we fetch it in parallel with the profile.
+  const [{ data: { user: fullUser } }, { data, error }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+  ]);
+
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-  
-  return Response.json({ 
+
+  return Response.json({
     profile: data,
-    email: user.email,
-    auth_provider: user.app_metadata?.provider || 'email',
+    email: user.email || fullUser?.email,
+    auth_provider: fullUser?.app_metadata?.provider || 'email',
   });
 }
 
