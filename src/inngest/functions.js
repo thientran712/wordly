@@ -15,7 +15,10 @@ function safeTimezone(tz) {
 }
 
 // Returns the next UTC Date when sendTime (HH:MM) occurs in the given timezone.
-function getNextSendDate(sendTime, timezone) {
+// Returns the next UTC Date when sendTime (HH:MM) occurs in the given timezone.
+// forceTomorrow=true: always schedule tomorrow (used after a send so we never loop).
+// forceTomorrow=false: today if still ahead + 2min grace, otherwise tomorrow.
+function getNextSendDate(sendTime, timezone, forceTomorrow = false) {
   const [sendHour, sendMinute] = sendTime.split(":").map(Number);
   const now = new Date();
 
@@ -34,11 +37,14 @@ function getNextSendDate(sendTime, timezone) {
   const currentMinute = get("minute");
   const currentSecond = get("second");
 
-  // UTC offset: difference between "local now" expressed in UTC vs actual UTC
   const userLocalNow = Date.UTC(year, month, day, currentHour, currentMinute, currentSecond);
   const utcOffset = userLocalNow - now.getTime();
 
-  let candidateLocal = Date.UTC(year, month, day, sendHour, sendMinute, 0, 0);
+  if (forceTomorrow) {
+    return new Date(Date.UTC(year, month, day + 1, sendHour, sendMinute, 0, 0) - utcOffset);
+  }
+
+  const candidateLocal = Date.UTC(year, month, day, sendHour, sendMinute, 0, 0);
   const candidateUTC = candidateLocal - utcOffset;
 
   // Grace period: if send_time passed but less than 2 minutes ago, fire immediately.
@@ -48,8 +54,7 @@ function getNextSendDate(sendTime, timezone) {
     if (now.getTime() - candidateUTC <= GRACE_MS) {
       return new Date(now.getTime() + 2000);
     }
-    candidateLocal = Date.UTC(year, month, day + 1, sendHour, sendMinute, 0, 0);
-    return new Date(candidateLocal - utcOffset);
+    return new Date(Date.UTC(year, month, day + 1, sendHour, sendMinute, 0, 0) - utcOffset);
   }
 
   return new Date(candidateUTC);
@@ -151,10 +156,14 @@ export const sendSlotEmail = inngest.createFunction(
       return { skipped: !sched.slotEnabled ? "slot disabled" : !sched.prefEnabled ? "email disabled" : "no send_time" };
     }
 
-    // nextSendDate is the authoritative timestamp for this run — used as reference
-    // for day-of-week check and todayStr so Inngest wake-up latency can't shift them.
-    const nextSendDate = getNextSendDate(sched.sendTime, sched.timezone);
+    // nextSendDate: today if still ahead (+ 2min grace), otherwise tomorrow.
+    const nextSendDate = getNextSendDate(sched.sendTime, sched.timezone, false);
     await step.sleepUntil("wait-until-send-time", nextSendDate);
+
+    // tomorrowSendDate: always tomorrow — used for all reschedules AFTER wake-up
+    // so grace period can never cause an infinite send loop.
+    const tomorrowSendDate = getNextSendDate(sched.sendTime, sched.timezone, true);
+    const tomorrowTs = tomorrowSendDate.getTime();
 
     // ── Step 2: re-check enabled + frequency AFTER sleep, reload fresh profile ─
     const current = await step.run("recheck", async () => {
@@ -181,8 +190,7 @@ export const sendSlotEmail = inngest.createFunction(
     if (!current.prefEnabled) return { skipped: "email disabled after sleep" };
     if (!current.email) return { skipped: "no email address" };
 
-    // Frequency check — use nextSendDate (not new Date()) as reference so
-    // Inngest wake-up latency can never shift the day-of-week into the next day.
+    // Frequency check — use nextSendDate (not new Date()) as reference.
     const dowMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
     const tzParts = new Intl.DateTimeFormat("en-US", {
       timeZone: current.timezone, weekday: "short",
@@ -190,11 +198,11 @@ export const sendSlotEmail = inngest.createFunction(
     const currentDay = dowMap[tzParts.find(p => p.type === "weekday")?.value] ?? 0;
 
     if (current.frequency === "weekdays" && (currentDay === 0 || currentDay === 6)) {
-      await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id, triggeredAt: Date.now() } });
+      await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id, triggeredAt: tomorrowTs }, ts: tomorrowTs });
       return { skipped: "weekend" };
     }
     if (current.frequency === "custom" && !current.customDays?.includes(currentDay)) {
-      await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id, triggeredAt: Date.now() } });
+      await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id, triggeredAt: tomorrowTs }, ts: tomorrowTs });
       return { skipped: "not scheduled day" };
     }
 
@@ -212,10 +220,7 @@ export const sendSlotEmail = inngest.createFunction(
           recipient: current.email,
         });
       });
-      await step.sendEvent("reschedule-tomorrow", {
-        name: "email/slot.scheduled",
-        data: { user_id, slot_id, triggeredAt: Date.now() },
-      });
+      await step.sendEvent("reschedule-tomorrow", { name: "email/slot.scheduled", data: { user_id, slot_id, triggeredAt: tomorrowTs }, ts: tomorrowTs });
       return { error: "No word available" };
     }
 
@@ -249,7 +254,8 @@ export const sendSlotEmail = inngest.createFunction(
 
     await step.sendEvent("reschedule-tomorrow", {
       name: "email/slot.scheduled",
-      data: { user_id, slot_id, triggeredAt: Date.now() },
+      data: { user_id, slot_id, triggeredAt: tomorrowTs },
+      ts: tomorrowTs,
     });
 
     return { sent: true, word: wordResult.word.word, source: wordResult.source };
