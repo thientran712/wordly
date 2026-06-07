@@ -418,9 +418,9 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
             </div>
           )}
 
-          {/* Word definitions — below input inside left panel */}
+          {/* Word definitions — desktop only here (mobile renders below output panel) */}
           {(detailLoading || wordDetail) && (
-            <div className="border-t px-4 py-3" style={{ borderColor: "var(--divider)" }}>
+            <div className="hidden sm:block border-t px-4 py-3" style={{ borderColor: "var(--divider)" }}>
               {detailLoading ? (
                 <div className="flex items-center gap-2" style={{ color: "var(--electric)" }}>
                   <Loader2 size={13} className="animate-spin" />
@@ -453,6 +453,20 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
             </p>
           )}
         </div>
+
+        {/* Word definitions — mobile only, appears after translation output */}
+        {(detailLoading || wordDetail) && (
+          <div className="sm:hidden border-t px-4 py-3" style={{ borderColor: "var(--divider)" }}>
+            {detailLoading ? (
+              <div className="flex items-center gap-2" style={{ color: "var(--electric)" }}>
+                <Loader2 size={13} className="animate-spin" />
+                <span className="text-xs">Đang tra từ điển...</span>
+              </div>
+            ) : (
+              <WordDefinitions detail={wordDetail} />
+            )}
+          </div>
+        )}
 
       </div>
     </div>
