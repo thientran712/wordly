@@ -46,8 +46,7 @@ export async function POST(request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // Schedule the new slot immediately
-  await inngest.send({ name: "email/slot.scheduled", data: { user_id: user.id, slot_id: data.id } });
+  await inngest.send({ name: "email/slot.scheduled", data: { user_id: user.id, slot_id: data.id, triggeredAt: Date.now() } });
 
   return Response.json({ slot: data });
 }
@@ -73,14 +72,20 @@ export async function PUT(request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // If time changed or toggled on, cancel old run then wait before scheduling new one
+  // If time changed or toggled on: cancel old run, schedule new one 4s later so cancel propagates first
   if (send_time !== undefined || enabled === true) {
-    await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } });
-    // 3s delay via a separate scheduled event so cancel propagates before new run starts
-    await new Promise(r => setTimeout(r, 3000));
-    await inngest.send({ name: "email/slot.scheduled", data: { user_id: user.id, slot_id: id } });
+    const triggeredAt = Date.now();
+    await inngest.send([
+      { name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id, triggeredAt } },
+      {
+        name: "email/slot.scheduled",
+        data: { user_id: user.id, slot_id: id, triggeredAt },
+        // Inngest-native delay: deliver this event 4s from now, no server blocking
+        ts: triggeredAt + 4000,
+      },
+    ]);
   } else if (enabled === false) {
-    await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } });
+    await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id, triggeredAt: Date.now() } });
   }
 
   return Response.json({ success: true });
@@ -106,8 +111,7 @@ export async function DELETE(request) {
 
   await admin.from("email_slots").delete().eq("id", id).eq("user_id", user.id);
 
-  // Cancel any sleeping Inngest run for this slot
-  await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } });
+  await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id, triggeredAt: Date.now() } });
 
   return Response.json({ success: true });
 }

@@ -48,8 +48,8 @@ export const scheduleAllSlots = inngest.createFunction(
   {
     id: "schedule-all-slots",
     triggers: [{ event: "email/schedule.updated" }],
-    // Deduplicate: if same user fires multiple times, only process the latest
-    idempotency: "event.data.user_id",
+    // Debounce: if same user saves multiple times within 5s, only run once with latest event
+    debounce: { key: "event.data.user_id", period: "5s" },
   },
   async ({ event, step }) => {
     const { user_id } = event.data;
@@ -65,28 +65,30 @@ export const scheduleAllSlots = inngest.createFunction(
     });
 
     if (slots.length > 0) {
-      // Only reschedule slots that haven't sent today (avoid cancelling one that's about to fire)
+      // Only reschedule slots that haven't sent recently (avoid cancelling one about to fire)
       const now = new Date();
+      const triggeredAt = now.getTime();
       const slotsToReschedule = slots.filter(slot => {
         if (!slot.last_sent_at) return true;
         const sentMs = new Date(slot.last_sent_at).getTime();
-        return (now.getTime() - sentMs) > 60 * 60 * 1000; // sent more than 1h ago
+        return (triggeredAt - sentMs) > 60 * 60 * 1000; // sent more than 1h ago
       });
 
       if (slotsToReschedule.length > 0) {
+        // Cancel existing runs first
         await step.sendEvent("cancel-existing", slotsToReschedule.map(slot => ({
           name: "email/slot.cancelled",
-          data: { user_id, slot_id: slot.id },
+          data: { user_id, slot_id: slot.id, triggeredAt },
         })));
 
-        // Small delay to let cancels propagate before scheduling new runs
+        // Sleep inside Inngest (doesn't block Vercel) then fire new runs
         await step.sleep("wait-for-cancels", "3s");
 
         await step.sendEvent(
           "trigger-slots",
           slotsToReschedule.map(slot => ({
             name: "email/slot.scheduled",
-            data: { user_id, slot_id: slot.id },
+            data: { user_id, slot_id: slot.id, triggeredAt },
           }))
         );
       }
@@ -104,7 +106,9 @@ export const sendSlotEmail = inngest.createFunction(
     cancelOn: [
       {
         event: "email/slot.cancelled",
-        if: "event.data.slot_id == async.data.slot_id",
+        // Only cancel if the cancel event was triggered AFTER this run's scheduled event
+        // This prevents a stale cancel (from a previous update) from killing a newer run
+        if: "event.data.slot_id == async.data.slot_id && event.data.triggeredAt >= async.data.triggeredAt",
       },
     ],
   },
@@ -157,12 +161,11 @@ export const sendSlotEmail = inngest.createFunction(
     const dowMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
     const currentDay = dowMap[tzParts.find(p => p.type === "weekday")?.value] ?? 0;
     if (current.pref.frequency === "weekdays" && (currentDay === 0 || currentDay === 6)) {
-      // Still reschedule for tomorrow even if skipping today
-      await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id } });
+      await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id, triggeredAt: Date.now() } });
       return { skipped: "weekend" };
     }
     if (current.pref.frequency === "custom" && !current.pref.custom_days?.includes(currentDay)) {
-      await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id } });
+      await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id, triggeredAt: Date.now() } });
       return { skipped: "not scheduled day" };
     }
 
@@ -241,10 +244,10 @@ export const sendSlotEmail = inngest.createFunction(
       return { error: result.error };
     });
 
-    // Reschedule for tomorrow
+    // Reschedule for tomorrow — new triggeredAt so stale cancels can't kill it
     await step.sendEvent("reschedule-tomorrow", {
       name: "email/slot.scheduled",
-      data: { user_id, slot_id },
+      data: { user_id, slot_id, triggeredAt: Date.now() },
     });
 
     return sendResult;
