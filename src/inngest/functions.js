@@ -1,8 +1,17 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendDailyWordEmail } from "@/lib/send-email";
-import { selectBestWordForUser, markWordEmailed } from "@/lib/select-word-for-email";
+import { claimBestWordForUser, markWordEmailed } from "@/lib/select-word-for-email";
 import { getOrGenerateWordContent } from "@/lib/generate-ai-content";
+
+// Returns YYYY-MM-DD for the given date in the given timezone.
+function dateStrInTz(date, timezone) {
+  const p = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const g = (t) => p.find(x => x.type === t)?.value;
+  return `${g("year")}-${g("month")}-${g("day")}`;
+}
 
 // Returns the next UTC Date when sendTime (HH:MM) occurs in the given timezone.
 function getNextSendDate(sendTime, timezone) {
@@ -65,33 +74,26 @@ export const scheduleAllSlots = inngest.createFunction(
     });
 
     if (slots.length > 0) {
-      // Only reschedule slots that haven't sent recently (avoid cancelling one about to fire)
-      const now = new Date();
-      const triggeredAt = now.getTime();
-      const slotsToReschedule = slots.filter(slot => {
-        if (!slot.last_sent_at) return true;
-        const sentMs = new Date(slot.last_sent_at).getTime();
-        return (triggeredAt - sentMs) > 60 * 60 * 1000; // sent more than 1h ago
-      });
+      // Cancel + reschedule ALL enabled slots. Safe to cancel a slot that already
+      // fired today: its run will re-sleep until tomorrow, and the last_sent_date
+      // idempotency guard prevents any duplicate send. No fragile "sent <1h" filter.
+      const triggeredAt = Date.now();
 
-      if (slotsToReschedule.length > 0) {
-        // Cancel existing runs first
-        await step.sendEvent("cancel-existing", slotsToReschedule.map(slot => ({
-          name: "email/slot.cancelled",
+      await step.sendEvent("cancel-existing", slots.map(slot => ({
+        name: "email/slot.cancelled",
+        data: { user_id, slot_id: slot.id, triggeredAt },
+      })));
+
+      // Sleep inside Inngest (doesn't block Vercel) so cancels land first
+      await step.sleep("wait-for-cancels", "3s");
+
+      await step.sendEvent(
+        "trigger-slots",
+        slots.map(slot => ({
+          name: "email/slot.scheduled",
           data: { user_id, slot_id: slot.id, triggeredAt },
-        })));
-
-        // Sleep inside Inngest (doesn't block Vercel) then fire new runs
-        await step.sleep("wait-for-cancels", "3s");
-
-        await step.sendEvent(
-          "trigger-slots",
-          slotsToReschedule.map(slot => ({
-            name: "email/slot.scheduled",
-            data: { user_id, slot_id: slot.id, triggeredAt },
-          }))
-        );
-      }
+        }))
+      );
     }
 
     return { scheduled: slots.length };
@@ -171,39 +173,35 @@ export const sendSlotEmail = inngest.createFunction(
 
     const sendResult = await step.run("send-email", async () => {
       const supabase = createAdminClient();
+      const todayStr = dateStrInTz(new Date(), ctx.timezone);
 
-      // Idempotency: skip if this slot already sent today (calendar date in user's timezone)
-      // This blocks Inngest retries AND duplicate runs, while allowing multiple
-      // different slots on the same day to each fire exactly once.
-      const { data: slotNow } = await supabase
-        .from("email_slots").select("last_sent_at").eq("id", slot_id).single();
-      if (slotNow?.last_sent_at) {
-        const sentAt = new Date(slotNow.last_sent_at);
-        const tzParts2 = new Intl.DateTimeFormat("en-US", {
-          timeZone: ctx.timezone,
-          year: "numeric", month: "2-digit", day: "2-digit",
-        }).formatToParts(sentAt);
-        const sentDate = `${tzParts2.find(p => p.type === "year")?.value}-${tzParts2.find(p => p.type === "month")?.value}-${tzParts2.find(p => p.type === "day")?.value}`;
+      // ── Idempotency: atomically claim "this slot for today" ──────────────────
+      // Update last_sent_date ONLY if it isn't already today. If 0 rows match,
+      // another run already sent for this slot today → skip. This is the single
+      // source of truth that blocks retries AND duplicate concurrent runs.
+      const { data: claimedSlot } = await supabase
+        .from("email_slots")
+        .update({ last_sent_date: todayStr, last_sent_at: new Date().toISOString() })
+        .eq("id", slot_id)
+        .or(`last_sent_date.is.null,last_sent_date.neq.${todayStr}`)
+        .select("id")
+        .maybeSingle();
 
-        const nowParts = new Intl.DateTimeFormat("en-US", {
-          timeZone: ctx.timezone,
-          year: "numeric", month: "2-digit", day: "2-digit",
-        }).formatToParts(new Date());
-        const todayDate = `${nowParts.find(p => p.type === "year")?.value}-${nowParts.find(p => p.type === "month")?.value}-${nowParts.find(p => p.type === "day")?.value}`;
-
-        if (sentDate === todayDate) {
-          return { skipped: `already sent today at ${sentAt.toISOString()}` };
-        }
+      if (!claimedSlot) {
+        return { skipped: `slot already sent today (${todayStr})` };
       }
 
-      const selectedWord = await selectBestWordForUser(supabase, user_id);
-      if (!selectedWord) return { error: "No word available" };
+      // ── Atomically claim a word (journal/translate dedup across slots) ───────
+      const selectedWord = await claimBestWordForUser(supabase, user_id);
+      if (!selectedWord) {
+        // No word — release the slot claim so a later retry/run can try again
+        await supabase.from("email_slots")
+          .update({ last_sent_date: null }).eq("id", slot_id);
+        return { error: "No word available" };
+      }
 
-      // Mark slot sent + word emailed BEFORE sending to prevent race condition and retries
-      await supabase
-        .from("email_slots")
-        .update({ last_sent_at: new Date().toISOString() })
-        .eq("id", slot_id);
+      // markWordEmailed is a no-op for atomically-claimed words; still call it
+      // to cover the system-word path (which doesn't pre-mark).
       await markWordEmailed(supabase, selectedWord);
 
       const isUserWord = selectedWord.source === "journal" || selectedWord.source === "translate_history";
@@ -255,6 +253,11 @@ export const sendSlotEmail = inngest.createFunction(
 
         return { sent: true, word: selectedWord.word.word, source: selectedWord.source };
       }
+
+      // Send failed: release the slot claim so Inngest's retry can re-attempt today.
+      // (Word claim is left marked — acceptable: it just rotates to the next word.)
+      await supabase.from("email_slots")
+        .update({ last_sent_date: null }).eq("id", slot_id);
       return { error: result.error };
     });
 

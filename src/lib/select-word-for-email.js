@@ -17,48 +17,79 @@ function daysSince(isoString) {
   return (todayDate - sentDate) / 86400000;
 }
 
-// ── PRIORITY 1: Journal words user đã note ──────────────────────────────────
-// Ưu tiên: chưa gửi bao giờ → gửi lâu nhất (> 7 ngày)
-async function pickFromJournal(supabase, userId) {
+// Today's date string (UTC) used for the atomic claim cutoff.
+// "claimed today" means last_emailed_at >= start of today UTC.
+function startOfTodayUtcISO() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+}
+
+// ── ATOMIC CLAIM: journal ───────────────────────────────────────────────────
+// Try to atomically claim the oldest un-emailed journal entry.
+// Returns the claimed word, or null if none available / all already claimed today.
+async function claimFromJournal(supabase, userId) {
+  const todayStart = startOfTodayUtcISO();
+
   const { data: entries } = await supabase
     .from("journal_entries")
-    .select("id, word, meaning_vi, last_emailed_at, email_count, created_at")
+    .select("id, word, meaning_vi, last_emailed_at, email_count")
     .eq("user_id", userId)
     .order("last_emailed_at", { ascending: true, nullsFirst: true });
 
   if (!entries?.length) return null;
 
-  // Exclude words emailed TODAY (daysSince = 0) to avoid duplicate across slots
+  // Candidates not emailed today (calendar-date check)
   const candidates = entries.filter(e =>
     !e.last_emailed_at || daysSince(e.last_emailed_at) >= RESEND_AFTER_DAYS
   );
-  if (!candidates.length) return null;
 
-  const pick = candidates[0]; // already sorted: null last_emailed_at first, then oldest
-  return {
-    word: {
-      id: `journal_${pick.id}`,
-      word: pick.word,
-      meaning_vi: pick.meaning_vi || "",
-      phonetic: null,
-      level: null,
-      pos: null,
-      def_en: null,
-      _journal_id: pick.id,
-      _type: "journal",
-    },
-    source: "journal",
-    journalId: pick.id,
-  };
+  for (const cand of candidates) {
+    // Atomic claim: only succeeds if no one else claimed it today in between.
+    // Condition mirrors the candidate filter so the DB enforces uniqueness.
+    let query = supabase
+      .from("journal_entries")
+      .update({
+        last_emailed_at: new Date().toISOString(),
+        email_count: (cand.email_count || 0) + 1,
+      })
+      .eq("id", cand.id)
+      .eq("user_id", userId);
+
+    if (cand.last_emailed_at == null) {
+      query = query.is("last_emailed_at", null);
+    } else {
+      // must still be < today's start (not yet re-claimed today)
+      query = query.lt("last_emailed_at", todayStart);
+    }
+
+    const { data: claimed } = await query.select("id, word, meaning_vi").maybeSingle();
+    if (claimed) {
+      return {
+        word: {
+          id: `journal_${claimed.id}`,
+          word: claimed.word,
+          meaning_vi: claimed.meaning_vi || "",
+          phonetic: null, level: null, pos: null, def_en: null,
+          _journal_id: claimed.id, _type: "journal",
+        },
+        source: "journal",
+        journalId: claimed.id,
+      };
+    }
+    // else: another slot claimed it first — try the next candidate
+  }
+  return null;
 }
 
-// ── PRIORITY 2: Translate history (saved by user) ───────────────────────────
-async function pickFromTranslateHistory(supabase, userId) {
+// ── ATOMIC CLAIM: translate history ─────────────────────────────────────────
+async function claimFromTranslateHistory(supabase, userId) {
+  const todayStart = startOfTodayUtcISO();
+
   const { data: entries } = await supabase
     .from("translate_history")
-    .select("id, source_text, translated_text, direction, last_emailed_at, saved_at")
+    .select("id, source_text, translated_text, direction, last_emailed_at, email_count")
     .eq("user_id", userId)
-    .eq("direction", "EN→VI") // only EN words make sense for vocab email
+    .eq("direction", "EN→VI")
     .order("last_emailed_at", { ascending: true, nullsFirst: true });
 
   if (!entries?.length) return null;
@@ -66,30 +97,48 @@ async function pickFromTranslateHistory(supabase, userId) {
   const candidates = entries.filter(e =>
     !e.last_emailed_at || daysSince(e.last_emailed_at) >= RESEND_AFTER_DAYS
   );
-  if (!candidates.length) return null;
-
   // Prefer single-word entries (not sentences)
-  const words = candidates.filter(e => !/\s/.test(e.source_text.trim()));
-  const pick = words[0] || candidates[0];
+  candidates.sort((a, b) => {
+    const aWord = !/\s/.test(a.source_text.trim()) ? 0 : 1;
+    const bWord = !/\s/.test(b.source_text.trim()) ? 0 : 1;
+    return aWord - bWord;
+  });
 
-  return {
-    word: {
-      id: `translate_${pick.id}`,
-      word: pick.source_text,
-      meaning_vi: pick.translated_text,
-      phonetic: null,
-      level: null,
-      pos: null,
-      def_en: null,
-      _translate_id: pick.id,
-      _type: "translate_history",
-    },
-    source: "translate_history",
-    translateId: pick.id,
-  };
+  for (const cand of candidates) {
+    let query = supabase
+      .from("translate_history")
+      .update({
+        last_emailed_at: new Date().toISOString(),
+        email_count: (cand.email_count || 0) + 1,
+      })
+      .eq("id", cand.id)
+      .eq("user_id", userId);
+
+    if (cand.last_emailed_at == null) {
+      query = query.is("last_emailed_at", null);
+    } else {
+      query = query.lt("last_emailed_at", todayStart);
+    }
+
+    const { data: claimed } = await query.select("id, source_text, translated_text").maybeSingle();
+    if (claimed) {
+      return {
+        word: {
+          id: `translate_${claimed.id}`,
+          word: claimed.source_text,
+          meaning_vi: claimed.translated_text,
+          phonetic: null, level: null, pos: null, def_en: null,
+          _translate_id: claimed.id, _type: "translate_history",
+        },
+        source: "translate_history",
+        translateId: claimed.id,
+      };
+    }
+  }
+  return null;
 }
 
-// ── PRIORITY 3: System words by level (original logic) ──────────────────────
+// ── PRIORITY 3: System words by level ───────────────────────────────────────
 async function pickFromSystemWords(supabase, userId, skillLevel) {
   const targetLevels = getTargetLevels(skillLevel);
 
@@ -112,7 +161,6 @@ async function pickFromSystemWords(supabase, userId, skillLevel) {
     return { word: pool[Math.floor(Math.random() * pool.length)], source: "new", skillLevel };
   }
 
-  // Expand to all levels
   const { data: allCandidates } = await supabase
     .from("words").select("*").order("level", { ascending: false }).limit(500);
   const anyNew = (allCandidates || []).filter(w => !learnedSet.has(w.id));
@@ -121,15 +169,16 @@ async function pickFromSystemWords(supabase, userId, skillLevel) {
     return { word: top[Math.floor(Math.random() * top.length)], source: "new_expanded", skillLevel };
   }
 
-  // Final fallback
   const { data: fallback } = await supabase.from("words").select("*").limit(20);
   return fallback?.length
     ? { word: fallback[Math.floor(Math.random() * fallback.length)], source: "fallback", skillLevel }
     : null;
 }
 
-// ── Main export ──────────────────────────────────────────────────────────────
-export async function selectBestWordForUser(supabase, userId) {
+// ── Main export: atomically claims a word so no two slots pick the same one ──
+// Replaces the old select-then-mark flow. The journal/translate claim is atomic
+// (the DB UPDATE itself reserves the word), so concurrent slots never collide.
+export async function claimBestWordForUser(supabase, userId) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("skill_level")
@@ -137,20 +186,43 @@ export async function selectBestWordForUser(supabase, userId) {
     .single();
   const skillLevel = profile?.skill_level || "B1";
 
-  // Priority 1: journal
-  const fromJournal = await pickFromJournal(supabase, userId);
-  if (fromJournal) return { ...fromJournal, skillLevel };
+  // Priority 1: journal (atomic claim)
+  const fromJournal = await claimFromJournal(supabase, userId);
+  if (fromJournal) return { ...fromJournal, skillLevel, _alreadyMarked: true };
 
-  // Priority 2: translate history
-  const fromHistory = await pickFromTranslateHistory(supabase, userId);
-  if (fromHistory) return { ...fromHistory, skillLevel };
+  // Priority 2: translate history (atomic claim)
+  const fromHistory = await claimFromTranslateHistory(supabase, userId);
+  if (fromHistory) return { ...fromHistory, skillLevel, _alreadyMarked: true };
 
-  // Priority 3: system words
+  // Priority 3: system words (random, no dedup needed across slots)
+  const sys = await pickFromSystemWords(supabase, userId, skillLevel);
+  return sys ? { ...sys, _alreadyMarked: false } : null;
+}
+
+// Kept for backward compat — non-atomic select (used by debug endpoint).
+export async function selectBestWordForUser(supabase, userId) {
+  const { data: profile } = await supabase
+    .from("profiles").select("skill_level").eq("id", userId).single();
+  const skillLevel = profile?.skill_level || "B1";
+
+  const { data: journal } = await supabase
+    .from("journal_entries")
+    .select("id, word, meaning_vi, last_emailed_at")
+    .eq("user_id", userId)
+    .order("last_emailed_at", { ascending: true, nullsFirst: true });
+  const jCand = (journal || []).filter(e => !e.last_emailed_at || daysSince(e.last_emailed_at) >= RESEND_AFTER_DAYS);
+  if (jCand.length) {
+    const p = jCand[0];
+    return { word: { id: `journal_${p.id}`, word: p.word, meaning_vi: p.meaning_vi || "", _journal_id: p.id, _type: "journal" }, source: "journal", journalId: p.id, skillLevel };
+  }
   return pickFromSystemWords(supabase, userId, skillLevel);
 }
 
-// Call this after email is sent to update tracking
+// Call this after email is sent — only needed for non-atomic paths (system words
+// don't need marking). For atomic journal/translate claims the word is already
+// marked during the claim, so this becomes a no-op (guarded by _alreadyMarked).
 export async function markWordEmailed(supabase, selected) {
+  if (selected._alreadyMarked) return; // already claimed atomically
   const now = new Date().toISOString();
 
   if (selected.journalId) {
