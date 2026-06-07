@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Languages, ArrowLeftRight, Volume2, X, Plus, Loader2, Check, BookOpen } from "lucide-react";
+import { Languages, ArrowLeftRight, Volume2, X, BookOpen } from "lucide-react";
 
 function speak(text, lang = "en-US") {
   if (!window.speechSynthesis) return;
@@ -28,8 +28,6 @@ export default function TranslateWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [direction, setDirection] = useState("EN→VI");
   const [wordInfo, setWordInfo] = useState(null);
-  const [added, setAdded] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionLoading, setSuggestionLoading] = useState(false);
@@ -74,7 +72,7 @@ export default function TranslateWidget() {
       const cached = translateCache.get(cacheKey);
       setTranslated(cached.translated);
       setWordInfo(cached.wordInfo);
-      setAdded(false);
+
       return;
     }
 
@@ -114,7 +112,7 @@ export default function TranslateWidget() {
 
       setTranslated(result.translated);
       setWordInfo(result.wordInfo);
-      setAdded(false);
+
     } catch {
       setTranslated("Lỗi dịch — thử lại sau");
     } finally {
@@ -153,7 +151,6 @@ export default function TranslateWidget() {
     setSuggestions([]);
     setInput(suggestion.word);
     setWordInfo(suggestion);
-    setAdded(false);
     // Still trigger full translate for the meaning
     if (debounceRef.current) clearTimeout(debounceRef.current);
     translate(suggestion.word, direction);
@@ -171,28 +168,10 @@ export default function TranslateWidget() {
     }
   };
 
-  const handleAddToStudy = async () => {
-    if (!wordInfo) return;
-    setIsAdding(true);
-    try {
-      const res = await fetch("/api/progress/rate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word_id: wordInfo.id, rating: 3 }),
-      });
-      if (res.ok) setAdded(true);
-    } catch {
-      // silently fail
-    } finally {
-      setIsAdding(false);
-    }
-  };
-
   const clear = () => {
     setInput("");
     setTranslated("");
     setWordInfo(null);
-    setAdded(false);
     setSuggestions([]);
     setShowSuggestions(false);
     inputRef.current?.focus();
@@ -456,20 +435,6 @@ export default function TranslateWidget() {
                         "{wordInfo.example}"
                       </p>
                     )}
-                    <button
-                      onClick={handleAddToStudy}
-                      disabled={isAdding || added}
-                      className="w-full mt-1 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-all disabled:opacity-60"
-                      style={{
-                        background: added ? "var(--green-subtle)" : "var(--electric)",
-                        color: added ? "var(--electric)" : "#0A0A0A",
-                        border: added ? "1px solid var(--green-subtle-border)" : "none",
-                      }}
-                    >
-                      {isAdding ? <Loader2 size={12} className="animate-spin" /> :
-                       added ? <><Check size={12} /> Đã thêm vào ôn tập!</> :
-                       <><Plus size={12} /> Thêm vào ôn tập</>}
-                    </button>
                   </div>
                 )}
 

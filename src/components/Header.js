@@ -131,7 +131,12 @@ export default function Header({ userName, isGuest = false, dueCount = 0, onJour
                       />
                       <MenuItem
                         icon={NotebookPen}
-                        label="Quick Journal"
+                        label="Journal"
+                        onClick={() => { setIsMenuOpen(false); router.push("/journal"); }}
+                      />
+                      <MenuItem
+                        icon={Plus}
+                        label="Quick Add"
                         badge={dueCount > 0 ? dueCount : null}
                         onClick={openJournal}
                       />

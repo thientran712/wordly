@@ -91,7 +91,7 @@ export default function JournalPage() {
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/60 hover:-translate-y-0.5 hover:shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-[var(--hover-bg)] hover:-translate-y-0.5 hover:shadow-sm"
           >
             <ArrowLeft size={18} />
             <span className="font-semibold">Back</span>
@@ -114,8 +114,8 @@ export default function JournalPage() {
         {/* Add form */}
         <form
           onSubmit={handleAdd}
-          className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-white mb-6"
-          style={{ boxShadow: "0 8px 24px rgba(108,92,231,0.10)" }}
+          className="rounded-3xl p-5 sm:p-6 border-2 mb-6"
+          style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 24px rgba(108,92,231,0.10)" }}
         >
           <p className="text-xs font-bold uppercase tracking-wider text-[--ink-soft] mb-3">
             ✏️ Ghi từ mới
@@ -128,7 +128,7 @@ export default function JournalPage() {
               onChange={e => setWord(e.target.value)}
               placeholder="Từ vựng (VD: resilient)"
               autoComplete="off"
-              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-white focus:ring-4 focus:ring-purple-100 transition-all font-semibold text-[--ink]"
+              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all font-semibold text-[--ink]"
             />
             <input
               type="text"
@@ -136,7 +136,7 @@ export default function JournalPage() {
               onChange={e => setMeaningVi(e.target.value)}
               placeholder="Nghĩa tiếng Việt (VD: kiên cường, bền bỉ)"
               autoComplete="off"
-              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-white focus:ring-4 focus:ring-purple-100 transition-all text-[--ink]"
+              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all text-[--ink]"
             />
             <button
               type="submit"
@@ -176,8 +176,8 @@ export default function JournalPage() {
                   {dayEntries.map(entry => (
                     <div
                       key={entry.id}
-                      className="bg-white rounded-2xl px-4 py-3.5 border-2 border-[--line] flex items-center gap-3 group"
-                      style={{ boxShadow: "0 2px 8px rgba(108,92,231,0.05)" }}
+                      className="rounded-2xl px-4 py-3.5 border-2 border-[--line] flex items-center gap-3 group"
+                      style={{ background: "var(--card-bg)", boxShadow: "0 2px 8px rgba(108,92,231,0.05)" }}
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-serif font-bold text-lg leading-tight text-[--ink]">

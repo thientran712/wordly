@@ -93,7 +93,7 @@ export default function JournalReviewPage() {
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => router.push("/journal")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-white/60 hover:-translate-y-0.5 hover:shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-[var(--hover-bg)] hover:-translate-y-0.5 hover:shadow-sm"
           >
             <ArrowLeft size={18} />
             <span className="font-semibold">Journal</span>
@@ -111,8 +111,8 @@ export default function JournalReviewPage() {
           </div>
         ) : done ? (
           /* All done */
-          <div className="bg-white rounded-3xl p-10 text-center border-2 border-white"
-            style={{ boxShadow: "0 8px 32px rgba(108,92,231,0.10)" }}>
+          <div className="rounded-3xl p-10 text-center border-2"
+            style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 32px rgba(108,92,231,0.10)" }}>
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="font-serif text-2xl font-bold mb-2">Xong rồi!</h2>
             <p className="text-[--ink-soft] text-sm mb-6">Không còn từ nào cần ôn hôm nay.</p>
@@ -128,8 +128,8 @@ export default function JournalReviewPage() {
           /* Flashcard */
           <div className="animate-fade-in">
             <div
-              className="bg-white rounded-3xl border-2 border-white mb-4 overflow-hidden"
-              style={{ boxShadow: "0 8px 32px rgba(45,27,78,0.08)", minHeight: "260px" }}
+              className="rounded-3xl border-2 mb-4 overflow-hidden"
+              style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 32px rgba(45,27,78,0.08)", minHeight: "260px" }}
             >
               {/* Word */}
               <div className="px-8 py-10 text-center border-b-2 border-[--line]">
@@ -191,7 +191,7 @@ export default function JournalReviewPage() {
       </main>
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white px-5 py-3 rounded-full font-semibold text-sm z-[200] shadow-[0_20px_48px_rgba(45,27,78,0.12)] border-2 border-[--mint] text-[--grass] animate-fade-in">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full font-semibold text-sm z-[200] shadow-[0_20px_48px_rgba(45,27,78,0.12)] border-2 border-[--mint] text-[--grass] animate-fade-in" style={{ background: "var(--card-bg)" }}>
           {toast}
         </div>
       )}
