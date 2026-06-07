@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase-server";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("journal_entries")
     .select("id, word, meaning_vi, created_at")
@@ -16,10 +17,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const supabase = await createClient();
   const { word, meaning_vi } = await request.json();
   if (!word?.trim()) return Response.json({ error: "Word is required" }, { status: 400 });
 
@@ -34,10 +35,10 @@ export async function POST(request) {
 }
 
 export async function DELETE(request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const supabase = await createClient();
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) return Response.json({ error: "Missing id" }, { status: 400 });

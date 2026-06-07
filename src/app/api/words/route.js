@@ -1,15 +1,7 @@
-import { createClient } from "@/lib/supabase-server";
+import { getAllWordsCached } from "@/lib/words-cache";
 
 export async function GET() {
-  const supabase = await createClient();
-  
-  const { data, error } = await supabase
-    .from("words")
-    .select("*");
-
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
-  }
+  const data = await getAllWordsCached();
 
   // Group by level, then interleave
   const byLevel = { A1: [], A2: [], B1: [], B2: [], C1: [], C2: [] };

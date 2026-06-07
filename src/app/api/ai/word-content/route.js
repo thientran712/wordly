@@ -3,15 +3,16 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { getOrGenerateWordContent } from "@/lib/generate-ai-content";
+import { getUserFast } from "@/lib/get-user-fast";
 
 const SELECT_FIELDS = "meanings, synonyms";
 
 // GET — fetch cached content only
 export async function GET(request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const supabase = await createClient();
   const { searchParams } = new URL(request.url);
   const word_id = searchParams.get("word_id");
   const skill_level = searchParams.get("skill_level");
@@ -33,8 +34,7 @@ export async function GET(request) {
 
 // POST — generate (or return cache hit)
 export async function POST(request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { word_id, word, pos, word_level, skill_level, learning_goal } = await request.json();

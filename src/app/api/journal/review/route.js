@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase-server";
+import { getUserFast } from "@/lib/get-user-fast";
 import { dbToCard, rateCard, cardToDb } from "@/lib/fsrs";
 
 // GET — next journal entry due for review
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const supabase = await createClient();
   // Count total due (new + overdue)
   const { count } = await supabase
     .from("journal_entries")
@@ -43,10 +44,10 @@ export async function GET() {
 
 // POST — submit rating, update FSRS state
 export async function POST(request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const supabase = await createClient();
   const { id, rating } = await request.json();
   if (!id || !rating || rating < 1 || rating > 4) {
     return Response.json({ error: "Invalid input" }, { status: 400 });

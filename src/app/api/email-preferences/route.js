@@ -1,15 +1,15 @@
 import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { inngest } from "@/inngest/client";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("email_preferences")
     .select("*")
@@ -24,13 +24,12 @@ export async function GET() {
 }
 
 export async function PUT(request) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const supabase = await createClient();
   const body = await request.json();
   const newEnabled = body.enabled ?? true;
   const newFrequency = body.frequency;

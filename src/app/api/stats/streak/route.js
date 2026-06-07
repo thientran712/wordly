@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase-server";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const supabase = await createClient();
   // Get all distinct review dates from review_logs
   const { data, error } = await supabase
     .from("review_logs")

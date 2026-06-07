@@ -1,14 +1,14 @@
 import { createClient } from "@/lib/supabase-server";
+import { getUserFast } from "@/lib/get-user-fast";
 import { dbToCard, rateCard, cardToDb } from "@/lib/fsrs";
 
 export async function POST(request) {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
+  const supabase = await createClient();
   const { word_id, rating } = await request.json();
 
   // Validate — rating 0 = "retire" (never review again), 1-4 = FSRS

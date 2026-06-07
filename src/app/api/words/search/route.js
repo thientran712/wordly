@@ -1,13 +1,13 @@
 import { createClient } from "@/lib/supabase-server";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET(request) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const supabase = await createClient();
   const url = new URL(request.url);
   const tab = url.searchParams.get("tab") || "learned";
   const query = url.searchParams.get("q") || "";

@@ -1,10 +1,9 @@
 import { createAdminClient } from "@/lib/supabase-admin";
-import { createClient } from "@/lib/supabase-server";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET(request) {
   // Verify user is logged in
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ suggestions: [] });
 
   const url = new URL(request.url);

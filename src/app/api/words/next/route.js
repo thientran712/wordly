@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
+import { getUserFast } from "@/lib/get-user-fast";
+import { getAllWordsCached } from "@/lib/words-cache";
 
 const LEVEL_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
@@ -10,13 +12,12 @@ function getTargetLevels(skillLevel) {
 }
 
 export async function GET(request) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const supabase = await createClient();
   const url = new URL(request.url);
   const exclude = url.searchParams.get("exclude");
   const now = new Date().toISOString();
@@ -103,16 +104,21 @@ export async function GET(request) {
   const learnedSet = new Set((learnedIds || []).map(r => r.word_id));
   if (exclude) learnedSet.add(exclude);
 
-  // Priority 2: Random thực sự từ pool gộp tất cả levels >= level của user.
-  // Fetch riêng từng level để đảm bảo mỗi level được đại diện (tránh bias theo insertion order).
-  const levelFetches = await Promise.all(
-    targetLevels.map(lvl =>
-      supabase.from("words").select("*").eq("level", lvl).limit(80)
-    )
-  );
+  // All words come from a 1-hour cache (static reference data) instead of hitting
+  // the DB on every request. We shuffle in-memory to preserve the original
+  // "truly random" selection behaviour the live queries had.
+  const allWords = await getAllWordsCached();
+  const targetLevelSet = new Set(targetLevels);
 
-  const pool = levelFetches
-    .flatMap(({ data }) => data || [])
+  // Priority 2: Random từ pool gộp tất cả levels >= level của user.
+  // Mỗi level đại diện tối đa 80 từ (giống limit(80) cũ), shuffle để random thật.
+  const byLevel = {};
+  for (const w of allWords) {
+    const lvl = w.level || "B1";
+    if (targetLevelSet.has(lvl)) (byLevel[lvl] ||= []).push(w);
+  }
+  const pool = targetLevels
+    .flatMap(lvl => shuffle(byLevel[lvl] || []).slice(0, 80))
     .filter(w => !learnedSet.has(w.id));
 
   if (pool.length > 0) {
@@ -120,35 +126,37 @@ export async function GET(request) {
     return Response.json({ word: picked, source: "new", progress: null });
   }
 
-  // Priority 3: User học hết từ ở level của mình → mở rộng xuống các level thấp hơn,
-  // nhưng ưu tiên level cao nhất có sẵn (A1 < A2 < B1 < B2 < C1 < C2 theo alphabet)
-  const { data: allCandidates } = await supabase
-    .from("words")
-    .select("*")
-    .order("level", { ascending: false })
-    .limit(500);
-
-  const anyNewWords = (allCandidates || []).filter(w => !learnedSet.has(w.id));
+  // Priority 3: User học hết từ ở level của mình → mở rộng, ưu tiên level cao nhất.
+  // Mirror the old `order(level desc).limit(500)` then filter behaviour.
+  const anyNewWords = [...allWords]
+    .sort((a, b) => (b.level || "").localeCompare(a.level || ""))
+    .slice(0, 500)
+    .filter(w => !learnedSet.has(w.id));
 
   if (anyNewWords.length > 0) {
-    // Pick randomly from top 30 to add variety while still preferring higher levels
     const topCandidates = anyNewWords.slice(0, Math.min(30, anyNewWords.length));
     const picked = topCandidates[Math.floor(Math.random() * topCandidates.length)];
     return Response.json({ word: picked, source: "new", progress: null });
   }
 
-  // Fallback: đã học hết mọi từ → random bất kỳ
-  let fallbackQuery = supabase.from("words").select("*").limit(20);
-  if (exclude) fallbackQuery = fallbackQuery.neq("id", exclude);
-  const { data: fallback } = await fallbackQuery;
-
-  if (fallback && fallback.length > 0) {
+  // Fallback: đã học hết mọi từ → random bất kỳ (loại trừ exclude)
+  const fallbackPool = shuffle(allWords.filter(w => !exclude || w.id !== exclude)).slice(0, 20);
+  if (fallbackPool.length > 0) {
     return Response.json({
-      word: fallback[Math.floor(Math.random() * fallback.length)],
+      word: fallbackPool[Math.floor(Math.random() * fallbackPool.length)],
       source: "fallback",
       progress: null,
     });
   }
 
   return Response.json({ error: "No words available" }, { status: 404 });
+}
+
+function shuffle(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }

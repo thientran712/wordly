@@ -1,16 +1,15 @@
-import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendDailyWordEmail } from "@/lib/send-email";
 import { claimBestWordForUser } from "@/lib/select-word-for-email";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function POST() {
-  const supabase = await createClient();
-  const admin = createAdminClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user.email) return Response.json({ error: "No email address" }, { status: 400 });
 
-  const { data: profile } = await supabase
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("name")
     .eq("id", user.id)

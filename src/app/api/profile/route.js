@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase-server";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET() {
   const supabase = await createClient();
@@ -26,13 +27,12 @@ export async function GET() {
 }
 
 export async function PUT(request) {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
+  const supabase = await createClient();
   const body = await request.json();
   
   // Whitelist các fields cho phép update

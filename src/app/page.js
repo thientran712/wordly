@@ -30,7 +30,6 @@ export default function Home() {
   const [user, setUser] = useState(undefined); // undefined = loading, null = guest
   const [currentWord, setCurrentWord] = useState(null);
   const [currentSource, setCurrentSource] = useState("new");
-  const [isLoading, setIsLoading] = useState(true);
   const [bookmarkedWordIds, setBookmarkedWordIds] = useState(new Set());
   const [toast, setToast] = useState(null);
   const [userName, setUserName] = useState("");
@@ -44,27 +43,33 @@ export default function Home() {
       try {
         const supabase = createClient();
         const { data: { user: authUser } } = await supabase.auth.getUser();
+        // Unblock the page as soon as we know guest vs logged-in — the translate
+        // widget + history can render immediately. Word card fills in async below.
         setUser(authUser || null);
 
         if (authUser) {
-          const [profileResult, progressData, reviewData] = await Promise.all([
-            supabase.from("profiles").select("name").eq("id", authUser.id).single(),
-            fetch("/api/progress").then(r => r.json()).catch(() => ({})),
-            fetch("/api/journal/review").then(r => r.json()).catch(() => ({})),
-            fetchNextWord(),
-          ]);
-          if (reviewData?.due_count) setJournalDueCount(reviewData.due_count);
-          if (profileResult?.data) {
-            setUserName(profileResult.data.name || authUser.email?.split("@")[0] || "");
-          }
-          if (progressData.progress) {
-            const bookmarkIds = new Set();
-            progressData.progress.forEach(p => { if (p.is_bookmarked) bookmarkIds.add(p.word_id); });
-            setBookmarkedWordIds(bookmarkIds);
-          }
+          // Fire all in parallel; each updates its own piece of UI when it lands,
+          // so a slow query never blocks the rest of the page.
+          supabase.from("profiles").select("name").eq("id", authUser.id).single()
+            .then(({ data }) => {
+              if (data) setUserName(data.name || authUser.email?.split("@")[0] || "");
+            }).catch(() => {});
+
+          fetch("/api/progress").then(r => r.json()).then(progressData => {
+            if (progressData.progress) {
+              const bookmarkIds = new Set();
+              progressData.progress.forEach(p => { if (p.is_bookmarked) bookmarkIds.add(p.word_id); });
+              setBookmarkedWordIds(bookmarkIds);
+            }
+          }).catch(() => {});
+
+          fetch("/api/journal/review").then(r => r.json()).then(reviewData => {
+            if (reviewData?.due_count) setJournalDueCount(reviewData.due_count);
+          }).catch(() => {});
+
+          fetchNextWord();
         }
       } catch (e) { console.error("Init error:", e); }
-      finally { setIsLoading(false); }
     }
     init();
   }, []);
@@ -153,7 +158,9 @@ export default function Home() {
   // Handle picking an entry from history → fill translate
   const [translatePick, setTranslatePick] = useState(null);
 
-  if (isLoading || user === undefined) {
+  // Only block the whole page until we know guest vs logged-in. Everything else
+  // (word card, bookmarks, due count) streams in afterwards.
+  if (user === undefined) {
     return (
       <>
         <div className="bg-blobs"><div className="blob blob-1" /><div className="blob blob-2" /><div className="blob blob-3" /><div className="blob blob-4" /></div>
@@ -184,6 +191,11 @@ export default function Home() {
 
           {/* ── Guest banner ── */}
           {isGuest && <GuestBanner />}
+
+          {/* ── Word card skeleton while the first word loads ── */}
+          {!isGuest && !currentWord && (
+            <div className="h-12 rounded-2xl animate-pulse" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)" }} />
+          )}
 
           {/* ── Word of the Day strip (logged-in only) ── */}
           {!isGuest && currentWord && (

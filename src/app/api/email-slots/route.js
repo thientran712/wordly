@@ -1,10 +1,9 @@
-import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { inngest } from "@/inngest/client";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
@@ -18,8 +17,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
@@ -52,8 +50,7 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, send_time, enabled } = await request.json();
@@ -92,8 +89,7 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);

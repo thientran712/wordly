@@ -1,10 +1,9 @@
-import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { claimBestWordForUser } from "@/lib/select-word-for-email";
+import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFast();
   if (!user) return Response.json({ error: "Not logged in" }, { status: 401 });
 
   const admin = createAdminClient();

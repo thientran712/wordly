@@ -19,7 +19,13 @@ export async function middleware(request) {
     }
   );
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  // getClaims() verifies the JWT locally (no network round-trip) when the project
+  // uses asymmetric signing keys; it transparently falls back to a getUser() network
+  // call for legacy HS256 secrets, so it's never less correct than getUser().
+  const { data: claimsData, error: authError } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims || null;
+  const userId = claims?.sub || null;
+  const userEmail = claims?.email || null;
 
   if (authError?.code === "refresh_token_not_found" || authError?.message?.includes("Refresh Token")) {
     const res = NextResponse.redirect(new URL("/login", request.url));
@@ -40,49 +46,63 @@ export async function middleware(request) {
   // Public pages: homepage (guest can use translate), auth pages
   const isPublicPage = path === "/" || isAuthPage;
 
+  // SECURITY: strip any client-supplied auth headers first so a guest can never
+  // spoof x-user-id to impersonate another user. We only ever set these from the
+  // server-validated JWT below.
+  request.headers.delete("x-user-id");
+  request.headers.delete("x-user-email");
+
+  // Forward the validated user id/email so downstream API routes don't have to
+  // call supabase.auth.getUser() again (avoids a second network round-trip).
+  if (userId) {
+    request.headers.set("x-user-id", userId);
+    if (userEmail) request.headers.set("x-user-email", userEmail);
+  }
+  // Re-create response so the mutated request headers propagate to the route.
+  response = NextResponse.next({ request });
+
   if (isCronApi || isAuthCallback || isInngestApi) return response;
+
+  // Helper: fetch onboarded_at once (only when actually needed).
+  const checkOnboarded = async () => {
+    const { data: profile } = await supabase
+      .from("profiles").select("onboarded_at").eq("id", userId).single();
+    return !!profile?.onboarded_at;
+  };
 
   // Homepage — guests allowed, but logged-in users must be onboarded
   if (path === "/") {
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles").select("onboarded_at").eq("id", user.id).single();
-      if (!profile?.onboarded_at) {
-        return NextResponse.redirect(new URL("/onboarding", request.url));
-      }
+    if (userId && !(await checkOnboarded())) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
     }
     return response;
   }
 
   // Auth pages — redirect logged-in users to home
-  if (user && isAuthPage) {
+  if (userId && isAuthPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
   // Protected API routes — 401 for guests
-  if (!user && isApi && !isPublicApi) {
+  if (!userId && isApi && !isPublicApi) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Protected pages — redirect guests to login
-  if (!user && !isAuthPage && !isPublicPage && !isApi) {
+  if (!userId && !isAuthPage && !isPublicPage && !isApi) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Logged-in users on protected pages must be onboarded
-  if (user && !isAuthPage && !isApi && !isOnboardingPage && !isPublicPage) {
-    const { data: profile } = await supabase
-      .from("profiles").select("onboarded_at").eq("id", user.id).single();
-    if (!profile?.onboarded_at) {
+  if (userId && !isAuthPage && !isApi && !isOnboardingPage && !isPublicPage) {
+    if (!(await checkOnboarded())) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
   }
 
   // Onboarding page — redirect already-onboarded users
-  if (user && isOnboardingPage) {
-    const { data: profile } = await supabase
-      .from("profiles").select("onboarded_at").eq("id", user.id).single();
-    if (profile?.onboarded_at) {
+  if (userId && isOnboardingPage) {
+    if (await checkOnboarded()) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
