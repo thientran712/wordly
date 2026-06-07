@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, Loader2, Check, Plus, Trash2, Clock, ToggleLeft, ToggleRight } from "lucide-react";
+import { ArrowLeft, Bell, Loader2, Check, Plus, Trash2, Clock, ToggleLeft, ToggleRight, Send, Globe } from "lucide-react";
 
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
@@ -19,9 +19,41 @@ function normalizeTime(time) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-function formatTime(value) {
-  const slot = TIME_SLOTS.find(s => s.value === value);
-  return slot ? slot.label : value;
+// Today's date string (YYYY-MM-DD) in a given timezone — matches the backend's
+// last_sent_date format so we can tell "đã gửi hôm nay" vs "kế tiếp".
+function todayStrInTz(timezone) {
+  try {
+    const p = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
+    return p; // en-CA gives YYYY-MM-DD
+  } catch {
+    return new Intl.DateTimeFormat("en-CA").format(new Date());
+  }
+}
+
+// Human label for when a slot's next email arrives.
+function nextSendLabel(slot, timezone) {
+  if (!slot.enabled) return null;
+  const today = todayStrInTz(timezone);
+  if (slot.last_sent_date === today) {
+    return { sent: true, text: `✓ Đã gửi hôm nay · kế tiếp mai ${slot.send_time}` };
+  }
+  // Not sent today yet — is send_time still ahead of now in user's tz?
+  try {
+    const nowParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(new Date());
+    const nh = parseInt(nowParts.find(p => p.type === "hour")?.value || "0");
+    const nm = parseInt(nowParts.find(p => p.type === "minute")?.value || "0");
+    const [sh, sm] = slot.send_time.split(":").map(Number);
+    const ahead = sh * 60 + sm > nh * 60 + nm;
+    return ahead
+      ? { sent: false, text: `⏰ Email kế tiếp: hôm nay ${slot.send_time}` }
+      : { sent: false, text: `⏰ Email kế tiếp: mai ${slot.send_time}` };
+  } catch {
+    return { sent: false, text: `⏰ Gửi lúc ${slot.send_time}` };
+  }
 }
 
 function TimeDropdown({ value, onChange }) {
@@ -163,11 +195,27 @@ export default function EmailSettingsPage() {
   const [newSlotTime, setNewSlotTime] = useState("12:00");
   const [showAddForm, setShowAddForm] = useState(false);
 
+  // Timezone + test email
+  const [timezone, setTimezone] = useState("Asia/Ho_Chi_Minh");
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  // Refs for cleanup
+  const successTimerRef = useRef(null);
+  const testTimerRef = useRef(null);
+  const slotDebounceRef = useRef({});
+  const pendingTimeRef = useRef({});
+
   useEffect(() => {
+    const browserTz = (() => {
+      try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; }
+    })();
+
     Promise.all([
       fetch("/api/email-preferences").then(r => r.json()),
       fetch("/api/email-slots").then(r => r.json()),
-    ]).then(([prefData, slotData]) => {
+      fetch("/api/profile").then(r => r.json()),
+    ]).then(([prefData, slotData, profileData]) => {
       if (prefData.preferences) {
         const p = prefData.preferences;
         setEmailEnabled(p.enabled ?? false);
@@ -177,11 +225,52 @@ export default function EmailSettingsPage() {
       if (slotData.slots) {
         setSlots(slotData.slots.map(s => ({ ...s, send_time: normalizeTime(s.send_time) })));
       }
+
+      // Timezone: prefer saved profile tz; if missing or differs from browser,
+      // adopt browser tz and persist it so emails arrive at the right local time.
+      const savedTz = profileData?.profile?.timezone;
+      if (savedTz) {
+        setTimezone(savedTz);
+        if (browserTz && browserTz !== savedTz) {
+          // Browser moved (travel / wrong default) — update silently
+          setTimezone(browserTz);
+          fetch("/api/profile", {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ timezone: browserTz }),
+          }).catch(() => {});
+        }
+      } else if (browserTz) {
+        setTimezone(browserTz);
+        fetch("/api/profile", {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ timezone: browserTz }),
+        }).catch(() => {});
+      }
     }).catch(e => console.error(e))
       .finally(() => setIsLoading(false));
   }, []);
 
+  // Cleanup all pending timers on unmount + flush any unsaved slot-time edits.
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      if (testTimerRef.current) clearTimeout(testTimerRef.current);
+      Object.values(slotDebounceRef.current).forEach(t => t && clearTimeout(t));
+      // Flush unsaved edits with keepalive so they survive navigation
+      const pending = pendingTimeRef.current;
+      Object.entries(pending).forEach(([slotId, time]) => {
+        fetch("/api/email-slots", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: slotId, send_time: time }),
+          keepalive: true,
+        }).catch(() => {});
+      });
+    };
+  }, []);
+
   const handleSavePrefs = async () => {
+    flushPendingEdits(); // ensure any unsaved slot-time edits land first
     setIsSaving(true); setError(null); setSuccess(false);
     try {
       const res = await fetch("/api/email-preferences", {
@@ -189,10 +278,31 @@ export default function EmailSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: emailEnabled, frequency, custom_days: customDays }),
       });
-      if (res.ok) { setSuccess(true); setTimeout(() => setSuccess(false), 3000); }
+      if (res.ok) {
+        setSuccess(true);
+        successTimerRef.current = setTimeout(() => setSuccess(false), 3000);
+      }
       else { const d = await res.json(); setError(d.error || "Failed to save"); }
     } catch (e) { setError(e.message); }
     finally { setIsSaving(false); }
+  };
+
+  const handleTestEmail = async () => {
+    setTesting(true); setTestResult(null); setError(null);
+    try {
+      const res = await fetch("/api/email/test", { method: "POST" });
+      const d = await res.json();
+      if (res.ok) {
+        setTestResult({ ok: true, text: `Đã gửi thử từ "${d.word}" → check inbox!` });
+      } else {
+        setTestResult({ ok: false, text: d.error || "Gửi thử thất bại" });
+      }
+      testTimerRef.current = setTimeout(() => setTestResult(null), 5000);
+    } catch (e) {
+      setTestResult({ ok: false, text: e.message });
+    } finally {
+      setTesting(false);
+    }
   };
 
   const handleToggleSlot = async (slot) => {
@@ -209,25 +319,46 @@ export default function EmailSettingsPage() {
     }
   };
 
-  const slotDebounceRef = useRef({});
+  const persistSlotTime = useCallback(async (slotId, newTime) => {
+    setSlotLoading(p => ({ ...p, [slotId]: true }));
+    try {
+      await fetch("/api/email-slots", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: slotId, send_time: newTime }),
+      });
+      delete pendingTimeRef.current[slotId];
+    } finally {
+      setSlotLoading(p => ({ ...p, [slotId]: false }));
+    }
+  }, []);
+
   const handleUpdateSlotTime = useCallback((slot, newTime) => {
     // Optimistic UI update immediately
     setSlots(prev => prev.map(s => s.id === slot.id ? { ...s, send_time: newTime } : s));
+    pendingTimeRef.current[slot.id] = newTime;
 
     // Debounce API call — only fires 1.5s after user stops changing
     if (slotDebounceRef.current[slot.id]) clearTimeout(slotDebounceRef.current[slot.id]);
-    slotDebounceRef.current[slot.id] = setTimeout(async () => {
-      setSlotLoading(p => ({ ...p, [slot.id]: true }));
-      try {
-        await fetch("/api/email-slots", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: slot.id, send_time: newTime }),
-        });
-      } finally {
-        setSlotLoading(p => ({ ...p, [slot.id]: false }));
-      }
+    slotDebounceRef.current[slot.id] = setTimeout(() => {
+      persistSlotTime(slot.id, newTime);
     }, 1500);
+  }, [persistSlotTime]);
+
+  // Flush any pending slot-time edits immediately (e.g. before navigating away)
+  const flushPendingEdits = useCallback(() => {
+    const pending = pendingTimeRef.current;
+    Object.entries(pending).forEach(([slotId, time]) => {
+      if (slotDebounceRef.current[slotId]) clearTimeout(slotDebounceRef.current[slotId]);
+      // Fire-and-forget; keepalive lets it complete even during navigation
+      fetch("/api/email-slots", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: slotId, send_time: time }),
+        keepalive: true,
+      }).catch(() => {});
+    });
+    pendingTimeRef.current = {};
   }, []);
 
   const handleDeleteSlot = async (slotId) => {
@@ -299,7 +430,7 @@ export default function EmailSettingsPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <button onClick={() => router.push("/")}
+          <button onClick={() => { flushPendingEdits(); router.push("/"); }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:-translate-y-0.5 transition-all"
             style={{ color: "var(--ink-soft)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <ArrowLeft size={18} />
@@ -342,6 +473,12 @@ export default function EmailSettingsPage() {
                 </span>
               </div>
 
+              {/* Timezone hint — so user knows which clock send_time follows */}
+              <div className="flex items-center gap-1.5 mb-3 text-[11px]" style={{ color: "var(--ink-soft)" }}>
+                <Globe size={12} style={{ color: "var(--ink-ghost)" }} />
+                <span>Giờ gửi theo múi giờ: <strong style={{ color: "var(--ink)" }}>{timezone}</strong></span>
+              </div>
+
               {slots.length > 0 && slots.every(s => !s.enabled) && (
                 <div className="mb-3 px-4 py-3 rounded-2xl text-xs font-semibold"
                   style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#F59E0B" }}>
@@ -350,38 +487,51 @@ export default function EmailSettingsPage() {
               )}
 
               <div className="space-y-2.5 mb-3">
-                {slots.map((slot, i) => (
-                  <div key={slot.id} className="flex items-center gap-2.5 p-3 rounded-2xl"
+                {slots.map((slot, i) => {
+                  const next = nextSendLabel(slot, timezone);
+                  return (
+                  <div key={slot.id} className="p-3 rounded-2xl"
                     style={{ background: "var(--hover-bg)", border: "1px solid var(--card-border)", opacity: slot.enabled ? 1 : 0.5 }}>
-                    <span className="text-xs font-bold w-5 text-center flex-shrink-0" style={{ color: "var(--ink-ghost)" }}>
-                      {i + 1}
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs font-bold w-5 text-center flex-shrink-0" style={{ color: "var(--ink-ghost)" }}>
+                        {i + 1}
+                      </span>
 
-                    <TimeDropdown
-                      value={slot.send_time}
-                      onChange={time => handleUpdateSlotTime(slot, time)}
-                    />
+                      <TimeDropdown
+                        value={slot.send_time}
+                        onChange={time => handleUpdateSlotTime(slot, time)}
+                      />
 
-                    {/* Toggle enable */}
-                    <button type="button"
-                      onClick={() => handleToggleSlot(slot)}
-                      disabled={slotLoading[slot.id]}
-                      className="no-min-h flex-shrink-0 transition-all active:scale-90"
-                      style={{ color: slot.enabled ? "var(--electric)" : "var(--ink-ghost)" }}
-                      title={slot.enabled ? "Tắt slot này" : "Bật slot này"}>
-                      {slot.enabled ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-                    </button>
+                      {/* Toggle enable */}
+                      <button type="button"
+                        onClick={() => handleToggleSlot(slot)}
+                        disabled={slotLoading[slot.id]}
+                        className="no-min-h flex-shrink-0 transition-all active:scale-90"
+                        style={{ color: slot.enabled ? "var(--electric)" : "var(--ink-ghost)" }}
+                        title={slot.enabled ? "Tắt slot này" : "Bật slot này"}>
+                        {slot.enabled ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                      </button>
 
-                    {/* Delete */}
-                    <button type="button"
-                      onClick={() => handleDeleteSlot(slot.id)}
-                      disabled={slotLoading[slot.id] || slots.length <= 1}
-                      className="no-min-h w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition-all disabled:opacity-30"
-                      style={{ background: "rgba(248,113,113,0.1)", color: "#F87171" }}>
-                      <Trash2 size={13} />
-                    </button>
+                      {/* Delete */}
+                      <button type="button"
+                        onClick={() => handleDeleteSlot(slot.id)}
+                        disabled={slotLoading[slot.id] || slots.length <= 1}
+                        className="no-min-h w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition-all disabled:opacity-30"
+                        style={{ background: "rgba(248,113,113,0.1)", color: "#F87171" }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+
+                    {/* Next-send hint */}
+                    {next && (
+                      <p className="text-[11px] font-semibold mt-2 ml-7"
+                        style={{ color: next.sent ? "var(--electric)" : "var(--ink-soft)" }}>
+                        {next.text}
+                      </p>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Add slot */}
@@ -453,6 +603,28 @@ export default function EmailSettingsPage() {
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Test email card */}
+            <div className="rounded-3xl p-5 sm:p-6 mb-4" style={cardStyle}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-bold text-sm" style={{ color: "var(--ink)" }}>Gửi thử ngay</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>Xem trước email từ vựng trong inbox của bạn</p>
+                </div>
+                <button type="button" onClick={handleTestEmail} disabled={testing}
+                  className="no-min-h px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 flex-shrink-0 active:scale-95 transition-all disabled:opacity-50"
+                  style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}>
+                  {testing ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  Gửi thử
+                </button>
+              </div>
+              {testResult && (
+                <p className="text-xs font-semibold mt-3"
+                  style={{ color: testResult.ok ? "var(--electric)" : "#F87171" }}>
+                  {testResult.ok ? "✓ " : "⚠️ "}{testResult.text}
+                </p>
               )}
             </div>
           </>
