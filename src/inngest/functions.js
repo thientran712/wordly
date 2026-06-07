@@ -81,7 +81,7 @@ export const sendSlotEmail = inngest.createFunction(
       return {
         slot,
         pref,
-        email: profile?.email || authData?.user?.email,
+        email: authData?.user?.email || profile?.email,
         name: profile?.name || authData?.user?.email?.split("@")[0],
         timezone: profile?.timezone || "Asia/Ho_Chi_Minh",
         learning_goal: profile?.learning_goal || "daily",

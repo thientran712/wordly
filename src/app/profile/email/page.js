@@ -8,9 +8,7 @@ const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
   const m = (i % 4) * 15;
   const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  const period = h < 12 ? "SA" : "CH";
-  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return { value, label: `${displayH}:${String(m).padStart(2, "0")} ${period}` };
+  return { value, label: value };
 });
 
 function normalizeTime(time) {
@@ -85,7 +83,7 @@ function TimeDropdown({ value, onChange }) {
           transition: "border-color 0.15s",
         }}
       >
-        <span style={{ fontSize: 14 }}>🕐</span>
+        <span style={{ fontSize: 14, color: "var(--ink-soft)" }}>⏰</span>
         <input
           ref={inputRef}
           type="text"
