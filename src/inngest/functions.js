@@ -6,18 +6,41 @@ import { getOrGenerateWordContent } from "@/lib/generate-ai-content";
 
 // Returns the next UTC Date when sendTime (HH:MM) occurs in the given timezone.
 function getNextSendDate(sendTime, timezone) {
-  const parts = sendTime.split(":");
-  const sendHour = parseInt(parts[0]);
-  const sendMinute = parseInt(parts[1]);
+  const [sendHour, sendMinute] = sendTime.split(":").map(Number);
   const now = new Date();
-  const userNow = new Date(now.toLocaleString("en-US", { timeZone: timezone }));
-  const candidate = new Date(userNow);
-  candidate.setHours(sendHour, sendMinute, 0, 0);
-  if (userNow >= candidate) {
-    candidate.setDate(candidate.getDate() + 1);
+
+  // Get user's current date components in their timezone
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  const get = (type) => parseInt(parts.find(p => p.type === type)?.value || "0");
+  const year = get("year");
+  const month = get("month") - 1;
+  const day = get("day");
+  const currentHour = get("hour");
+  const currentMinute = get("minute");
+  const currentSecond = get("second");
+
+  // Build candidate send time in user's timezone as a UTC instant
+  // We use the offset trick: find UTC offset by comparing UTC now vs user "local" now
+  const userLocalNow = Date.UTC(year, month, day, currentHour, currentMinute, currentSecond);
+  const utcOffset = userLocalNow - now.getTime(); // milliseconds ahead of UTC
+
+  // Candidate: today at sendHour:sendMinute in user's timezone
+  let candidateLocal = Date.UTC(year, month, day, sendHour, sendMinute, 0, 0);
+  const candidateUTC = candidateLocal - utcOffset;
+
+  // If that time has already passed (or is now), schedule for tomorrow
+  if (candidateUTC <= now.getTime()) {
+    candidateLocal = Date.UTC(year, month, day + 1, sendHour, sendMinute, 0, 0);
+    return new Date(candidateLocal - utcOffset);
   }
-  const offset = userNow.getTime() - now.getTime();
-  return new Date(candidate.getTime() - offset);
+
+  return new Date(candidateUTC);
 }
 
 // Triggered when user saves email settings — schedules one function per slot
