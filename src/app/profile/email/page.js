@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, Loader2, Check, Plus, Trash2, Clock, ToggleLeft, ToggleRight, Send, Globe } from "lucide-react";
+import { ArrowLeft, Bell, Loader2, Check, Plus, Trash2, Clock, Send, Globe } from "lucide-react";
 
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
@@ -17,25 +17,6 @@ function normalizeTime(time) {
   const h = Math.min(23, Math.max(0, parseInt(parts[0]) || 0));
   const m = Math.min(59, Math.max(0, parseInt(parts[1]) || 0));
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-// Human label for when a slot's next email arrives.
-function nextSendLabel(slot, timezone) {
-  if (!slot.enabled) return null;
-  try {
-    const nowParts = new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false,
-    }).formatToParts(new Date());
-    const nh = parseInt(nowParts.find(p => p.type === "hour")?.value || "0");
-    const nm = parseInt(nowParts.find(p => p.type === "minute")?.value || "0");
-    const [sh, sm] = slot.send_time.split(":").map(Number);
-    const ahead = sh * 60 + sm > nh * 60 + nm;
-    return ahead
-      ? { text: `⏰ Email kế tiếp: hôm nay ${slot.send_time}` }
-      : { text: `⏰ Email kế tiếp: mai ${slot.send_time}` };
-  } catch {
-    return { text: `⏰ Gửi lúc ${slot.send_time}` };
-  }
 }
 
 function TimeDropdown({ value, onChange }) {
@@ -172,7 +153,6 @@ export default function EmailSettingsPage() {
 
   // Slots
   const [slots, setSlots] = useState([]);
-  const [slotLoading, setSlotLoading] = useState({});
   const [addingSlot, setAddingSlot] = useState(false);
   const [newSlotTime, setNewSlotTime] = useState("12:00");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -287,22 +267,7 @@ export default function EmailSettingsPage() {
     }
   };
 
-  const handleToggleSlot = async (slot) => {
-    setSlotLoading(p => ({ ...p, [slot.id]: true }));
-    try {
-      await fetch("/api/email-slots", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: slot.id, enabled: !slot.enabled }),
-      });
-      setSlots(prev => prev.map(s => s.id === slot.id ? { ...s, enabled: !s.enabled } : s));
-    } finally {
-      setSlotLoading(p => ({ ...p, [slot.id]: false }));
-    }
-  };
-
   const persistSlotTime = useCallback(async (slotId, newTime) => {
-    setSlotLoading(p => ({ ...p, [slotId]: true }));
     try {
       await fetch("/api/email-slots", {
         method: "PUT",
@@ -310,8 +275,8 @@ export default function EmailSettingsPage() {
         body: JSON.stringify({ id: slotId, send_time: newTime }),
       });
       delete pendingTimeRef.current[slotId];
-    } finally {
-      setSlotLoading(p => ({ ...p, [slotId]: false }));
+    } catch {
+      // fire-and-forget; keepalive flush handles edge cases
     }
   }, []);
 
@@ -345,14 +310,9 @@ export default function EmailSettingsPage() {
 
   const handleDeleteSlot = async (slotId) => {
     if (slots.length <= 1) { setError("Phải có ít nhất 1 slot"); return; }
-    setSlotLoading(p => ({ ...p, [slotId]: true }));
-    try {
-      const res = await fetch(`/api/email-slots?id=${slotId}`, { method: "DELETE" });
-      if (res.ok) setSlots(prev => prev.filter(s => s.id !== slotId));
-      else { const d = await res.json(); setError(d.error); }
-    } finally {
-      setSlotLoading(p => ({ ...p, [slotId]: false }));
-    }
+    const res = await fetch(`/api/email-slots?id=${slotId}`, { method: "DELETE" });
+    if (res.ok) setSlots(prev => prev.filter(s => s.id !== slotId));
+    else { const d = await res.json(); setError(d.error); }
   };
 
   const handleAddSlot = async () => {
@@ -461,19 +421,13 @@ export default function EmailSettingsPage() {
                 <span>Giờ gửi theo múi giờ: <strong style={{ color: "var(--ink)" }}>{timezone}</strong></span>
               </div>
 
-              {slots.length > 0 && slots.every(s => !s.enabled) && (
-                <div className="mb-3 px-4 py-3 rounded-2xl text-xs font-semibold"
-                  style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#F59E0B" }}>
-                  ⚠️ Tất cả slots đang tắt — bạn sẽ không nhận được email nào.
-                </div>
-              )}
+
 
               <div className="space-y-2.5 mb-3">
                 {slots.map((slot, i) => {
-                  const next = nextSendLabel(slot, timezone);
                   return (
                   <div key={slot.id} className="p-3 rounded-2xl"
-                    style={{ background: "var(--hover-bg)", border: "1px solid var(--card-border)", opacity: slot.enabled ? 1 : 0.5 }}>
+                    style={{ background: "var(--hover-bg)", border: "1px solid var(--card-border)" }}>
                     <div className="flex items-center gap-2.5">
                       <span className="text-xs font-bold w-5 text-center flex-shrink-0" style={{ color: "var(--ink-ghost)" }}>
                         {i + 1}
@@ -484,33 +438,15 @@ export default function EmailSettingsPage() {
                         onChange={time => handleUpdateSlotTime(slot, time)}
                       />
 
-                      {/* Toggle enable */}
-                      <button type="button"
-                        onClick={() => handleToggleSlot(slot)}
-                        disabled={slotLoading[slot.id]}
-                        className="no-min-h flex-shrink-0 transition-all active:scale-90"
-                        style={{ color: slot.enabled ? "var(--electric)" : "var(--ink-ghost)" }}
-                        title={slot.enabled ? "Tắt slot này" : "Bật slot này"}>
-                        {slot.enabled ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-                      </button>
-
                       {/* Delete */}
                       <button type="button"
                         onClick={() => handleDeleteSlot(slot.id)}
-                        disabled={slotLoading[slot.id] || slots.length <= 1}
+                        disabled={slots.length <= 1}
                         className="no-min-h w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition-all disabled:opacity-30"
                         style={{ background: "rgba(248,113,113,0.1)", color: "#F87171" }}>
                         <Trash2 size={13} />
                       </button>
                     </div>
-
-                    {/* Next-send hint */}
-                    {next && (
-                      <p className="text-[11px] font-semibold mt-2 ml-7"
-                        style={{ color: "var(--ink-soft)" }}>
-                        {next.text}
-                      </p>
-                    )}
                   </div>
                   );
                 })}
