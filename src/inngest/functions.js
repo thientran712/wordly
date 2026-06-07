@@ -25,6 +25,8 @@ export const scheduleAllSlots = inngest.createFunction(
   {
     id: "schedule-all-slots",
     triggers: [{ event: "email/schedule.updated" }],
+    // Deduplicate: if same user fires multiple times, only process the latest
+    idempotency: "event.data.user_id",
   },
   async ({ event, step }) => {
     const { user_id } = event.data;
@@ -39,8 +41,16 @@ export const scheduleAllSlots = inngest.createFunction(
       return data || [];
     });
 
-    // Fire one event per slot
+    // Cancel existing slot runs before firing new ones
     if (slots.length > 0) {
+      await step.sendEvent("cancel-existing", slots.map(slot => ({
+        name: "email/slot.cancelled",
+        data: { user_id, slot_id: slot.id },
+      })));
+
+      // Small delay to let cancels propagate
+      await step.sleep("wait-for-cancels", "3s");
+
       await step.sendEvent(
         "trigger-slots",
         slots.map(slot => ({
