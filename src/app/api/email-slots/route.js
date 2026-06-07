@@ -34,6 +34,9 @@ export async function POST(request) {
 
   const { send_time } = await request.json();
   if (!send_time) return Response.json({ error: "Missing send_time" }, { status: 400 });
+  if (!/^\d{1,2}:\d{2}$/.test(send_time)) return Response.json({ error: "Invalid time format, use HH:MM" }, { status: 400 });
+  const [hh, mm] = send_time.split(":").map(Number);
+  if (hh > 23 || mm > 59) return Response.json({ error: "Invalid time value" }, { status: 400 });
 
   const { data, error } = await admin
     .from("email_slots")
@@ -70,12 +73,12 @@ export async function PUT(request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // If time changed or toggled on, cancel old sleep and reschedule
+  // If time changed or toggled on, cancel old run then wait before scheduling new one
   if (send_time !== undefined || enabled === true) {
-    await inngest.send([
-      { name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } },
-      { name: "email/slot.scheduled", data: { user_id: user.id, slot_id: id } },
-    ]);
+    await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } });
+    // 3s delay via a separate scheduled event so cancel propagates before new run starts
+    await new Promise(r => setTimeout(r, 3000));
+    await inngest.send({ name: "email/slot.scheduled", data: { user_id: user.id, slot_id: id } });
   } else if (enabled === false) {
     await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } });
   }
@@ -102,5 +105,9 @@ export async function DELETE(request) {
   if (count <= 1) return Response.json({ error: "Phải có ít nhất 1 slot" }, { status: 400 });
 
   await admin.from("email_slots").delete().eq("id", id).eq("user_id", user.id);
+
+  // Cancel any sleeping Inngest run for this slot
+  await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id } });
+
   return Response.json({ success: true });
 }

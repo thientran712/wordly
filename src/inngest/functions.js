@@ -64,23 +64,32 @@ export const scheduleAllSlots = inngest.createFunction(
       return data || [];
     });
 
-    // Cancel existing slot runs before firing new ones
     if (slots.length > 0) {
-      await step.sendEvent("cancel-existing", slots.map(slot => ({
-        name: "email/slot.cancelled",
-        data: { user_id, slot_id: slot.id },
-      })));
+      // Only reschedule slots that haven't sent today (avoid cancelling one that's about to fire)
+      const now = new Date();
+      const slotsToReschedule = slots.filter(slot => {
+        if (!slot.last_sent_at) return true;
+        const sentMs = new Date(slot.last_sent_at).getTime();
+        return (now.getTime() - sentMs) > 60 * 60 * 1000; // sent more than 1h ago
+      });
 
-      // Small delay to let cancels propagate
-      await step.sleep("wait-for-cancels", "3s");
-
-      await step.sendEvent(
-        "trigger-slots",
-        slots.map(slot => ({
-          name: "email/slot.scheduled",
+      if (slotsToReschedule.length > 0) {
+        await step.sendEvent("cancel-existing", slotsToReschedule.map(slot => ({
+          name: "email/slot.cancelled",
           data: { user_id, slot_id: slot.id },
-        }))
-      );
+        })));
+
+        // Small delay to let cancels propagate before scheduling new runs
+        await step.sleep("wait-for-cancels", "3s");
+
+        await step.sendEvent(
+          "trigger-slots",
+          slotsToReschedule.map(slot => ({
+            name: "email/slot.scheduled",
+            data: { user_id, slot_id: slot.id },
+          }))
+        );
+      }
     }
 
     return { scheduled: slots.length };
@@ -140,10 +149,13 @@ export const sendSlotEmail = inngest.createFunction(
     if (!current.slot?.enabled) return { skipped: "slot disabled after sleep" };
     if (!current.pref?.enabled) return { skipped: "email disabled after sleep" };
 
-    // Frequency check
+    // Frequency check — get day-of-week in user's timezone (0=Sun … 6=Sat)
     const now = new Date();
-    const userNow = new Date(now.toLocaleString("en-US", { timeZone: ctx.timezone }));
-    const currentDay = userNow.getDay();
+    const tzParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: ctx.timezone, weekday: "short",
+    }).formatToParts(now);
+    const dowMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const currentDay = dowMap[tzParts.find(p => p.type === "weekday")?.value] ?? 0;
     if (current.pref.frequency === "weekdays" && (currentDay === 0 || currentDay === 6)) {
       // Still reschedule for tomorrow even if skipping today
       await step.sendEvent("reschedule", { name: "email/slot.scheduled", data: { user_id, slot_id } });

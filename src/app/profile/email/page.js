@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Bell, Loader2, Check, Plus, Trash2, Clock, ToggleLeft, ToggleRight } from "lucide-react";
 
@@ -209,19 +209,26 @@ export default function EmailSettingsPage() {
     }
   };
 
-  const handleUpdateSlotTime = async (slot, newTime) => {
+  const slotDebounceRef = useRef({});
+  const handleUpdateSlotTime = useCallback((slot, newTime) => {
+    // Optimistic UI update immediately
     setSlots(prev => prev.map(s => s.id === slot.id ? { ...s, send_time: newTime } : s));
-    setSlotLoading(p => ({ ...p, [slot.id]: true }));
-    try {
-      await fetch("/api/email-slots", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: slot.id, send_time: newTime }),
-      });
-    } finally {
-      setSlotLoading(p => ({ ...p, [slot.id]: false }));
-    }
-  };
+
+    // Debounce API call — only fires 1.5s after user stops changing
+    if (slotDebounceRef.current[slot.id]) clearTimeout(slotDebounceRef.current[slot.id]);
+    slotDebounceRef.current[slot.id] = setTimeout(async () => {
+      setSlotLoading(p => ({ ...p, [slot.id]: true }));
+      try {
+        await fetch("/api/email-slots", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: slot.id, send_time: newTime }),
+        });
+      } finally {
+        setSlotLoading(p => ({ ...p, [slot.id]: false }));
+      }
+    }, 1500);
+  }, []);
 
   const handleDeleteSlot = async (slotId) => {
     if (slots.length <= 1) { setError("Phải có ít nhất 1 slot"); return; }
@@ -334,6 +341,13 @@ export default function EmailSettingsPage() {
                   {slots.length}/10 slots
                 </span>
               </div>
+
+              {slots.length > 0 && slots.every(s => !s.enabled) && (
+                <div className="mb-3 px-4 py-3 rounded-2xl text-xs font-semibold"
+                  style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#F59E0B" }}>
+                  ⚠️ Tất cả slots đang tắt — bạn sẽ không nhận được email nào.
+                </div>
+              )}
 
               <div className="space-y-2.5 mb-3">
                 {slots.map((slot, i) => (
