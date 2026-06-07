@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  LogOut, BookOpen, UserCog, Mail, Sun, Moon, User, LogIn,
+  LogOut, UserCog, Mail, Sun, Moon, User, LogIn,
   NotebookPen, Plus, GraduationCap, Loader2, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
@@ -124,11 +124,6 @@ export default function Header({ userName, isGuest = false, dueCount = 0, onJour
                       )}
 
                       {/* Navigation */}
-                      <MenuItem
-                        icon={BookOpen}
-                        label="My Words"
-                        onClick={() => { setIsMenuOpen(false); router.push("/words"); }}
-                      />
                       <MenuItem
                         icon={NotebookPen}
                         label="Journal"

@@ -93,13 +93,6 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Logged-in users on protected pages must be onboarded
-  if (userId && !isAuthPage && !isApi && !isOnboardingPage && !isPublicPage) {
-    if (!(await checkOnboarded())) {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
-    }
-  }
-
   // Onboarding page — redirect already-onboarded users
   if (userId && isOnboardingPage) {
     if (await checkOnboarded()) {
