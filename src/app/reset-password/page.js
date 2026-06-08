@@ -48,8 +48,8 @@ export default function ResetPasswordPage() {
 
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
         <div
-          className="bg-white rounded-[32px] p-8 sm:p-10 w-full max-w-md border-[3px] border-white animate-fade-in"
-          style={{ boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
+          className="rounded-[32px] p-8 sm:p-10 w-full max-w-md animate-fade-in"
+          style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
         >
           {done ? (
             <div className="text-center">
@@ -85,7 +85,7 @@ export default function ResetPasswordPage() {
                       placeholder="Min. 6 characters"
                       required
                       minLength={6}
-                      className="w-full px-4 py-3.5 pr-12 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-white focus:ring-4 focus:ring-purple-100 transition-all"
+                      className="w-full px-4 py-3.5 pr-12 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all"
                     />
                     <button
                       type="button"
@@ -107,7 +107,7 @@ export default function ResetPasswordPage() {
                     onChange={(e) => setConfirm(e.target.value)}
                     placeholder="Repeat password"
                     required
-                    className="w-full px-4 py-3.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-white focus:ring-4 focus:ring-purple-100 transition-all"
+                    className="w-full px-4 py-3.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all"
                   />
                 </div>
 

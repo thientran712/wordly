@@ -40,8 +40,8 @@ export default function ForgotPasswordPage() {
 
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
         <div
-          className="bg-white rounded-[32px] p-8 sm:p-10 w-full max-w-md border-[3px] border-white animate-fade-in"
-          style={{ boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
+          className="rounded-[32px] p-8 sm:p-10 w-full max-w-md animate-fade-in"
+          style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
         >
           <button
             onClick={() => router.push("/login")}
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     required
-                    className="w-full px-4 py-3.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-white focus:ring-4 focus:ring-purple-100 transition-all"
+                    className="w-full px-4 py-3.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all"
                   />
                 </div>
 
