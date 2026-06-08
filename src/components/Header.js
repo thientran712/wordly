@@ -106,7 +106,7 @@ export default function Header({ userName, isGuest = false, dueCount = 0, onJour
 
                 {isMenuOpen && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+                    <div className="fixed inset-0 z-40" style={{ background: "transparent" }} onClick={() => setIsMenuOpen(false)} onTouchStart={() => setIsMenuOpen(false)} />
                     <div
                       className="absolute right-0 top-11 z-50 rounded-2xl py-1.5 min-w-[210px] animate-fade-in"
                       style={{
