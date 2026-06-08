@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeftRight, Volume2, X, Loader2, Search, BookmarkPlus, BookmarkCheck } from "lucide-react";
-import { addToHistory } from "@/lib/translate-history";
 
 function speak(text, lang = "en-US") {
   if (!window.speechSynthesis) return;
@@ -222,19 +221,14 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   };
 
   const handleSave = async () => {
-    if (!input.trim() || !translated || saved) return;
-    // Always save to localStorage
-    addToHistory({ text: input.trim(), translated, direction });
+    if (!input.trim() || !translated || saved || !isLoggedIn) return;
     setSaved(true);
     onTranslated?.();
-    // If logged in, also sync to Supabase for email feature
-    if (isLoggedIn) {
-      fetch("/api/translate-history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source_text: input.trim(), translated_text: translated, direction }),
-      }).catch(() => null); // fire-and-forget
-    }
+    fetch("/api/translate-history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source_text: input.trim(), translated_text: translated, direction }),
+    }).catch(() => null);
   };
 
   const handleInputChange = (e) => {

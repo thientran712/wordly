@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { History, Trash2, X, Volume2, ArrowLeftRight, ChevronDown } from "lucide-react";
-import { getHistory, deleteFromHistory, clearHistory, groupByDate } from "@/lib/translate-history";
+import { useState, useEffect, useCallback } from "react";
+import { History, Trash2, X, Volume2, ArrowLeftRight, ChevronDown, Loader2 } from "lucide-react";
 
 function speak(text, lang = "en-US") {
   if (!window.speechSynthesis) return;
@@ -13,27 +12,65 @@ function speak(text, lang = "en-US") {
   window.speechSynthesis.speak(utter);
 }
 
-export default function TranslateHistory({ refreshToken, onPick }) {
+function groupByDate(history) {
+  const map = new Map();
+  for (const entry of history) {
+    const day = (entry.saved_at || entry.date || "").slice(0, 10);
+    if (!map.has(day)) map.set(day, []);
+    map.get(day).push(entry);
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  return Array.from(map.entries()).map(([day, entries]) => ({
+    day,
+    dateLabel: day === today ? "Hôm nay" : day === yesterday ? "Hôm qua" : formatDate(day),
+    entries,
+  }));
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric" });
+}
+
+export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = false }) {
   const [groups, setGroups] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
-  useEffect(() => {
-    setGroups(groupByDate(getHistory()));
-  }, [refreshToken]);
+  const fetchHistory = useCallback(async () => {
+    if (!isLoggedIn) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/translate-history");
+      const data = await res.json();
+      setGroups(groupByDate(data.history || []));
+    } catch {
+      setGroups([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoggedIn]);
 
-  if (groups.length === 0) return null;
+  useEffect(() => { fetchHistory(); }, [fetchHistory, refreshToken]);
 
-  const handleDelete = (id) => {
-    deleteFromHistory(id);
-    setGroups(groupByDate(getHistory()));
+  if (!isLoggedIn || (groups.length === 0 && !isLoading)) return null;
+
+  const handleDelete = async (id) => {
+    setGroups(prev => {
+      const next = prev.map(g => ({ ...g, entries: g.entries.filter(e => e.id !== id) }))
+        .filter(g => g.entries.length > 0);
+      return next;
+    });
+    fetch(`/api/translate-history?id=${id}`, { method: "DELETE" }).catch(() => null);
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!confirmClear) { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); return; }
-    clearHistory();
     setGroups([]);
     setConfirmClear(false);
+    fetch("/api/translate-history", { method: "DELETE" }).catch(() => null);
   };
 
   const totalCount = groups.reduce((s, g) => s + g.entries.length, 0);
@@ -53,12 +90,16 @@ export default function TranslateHistory({ refreshToken, onPick }) {
         <span className="font-bold text-sm flex-1" style={{ color: "var(--ink)" }}>
           Lịch sử dịch
         </span>
-        <span
-          className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-          style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
-        >
-          {totalCount}
-        </span>
+        {isLoading ? (
+          <Loader2 size={12} className="animate-spin" style={{ color: "var(--electric)" }} />
+        ) : (
+          <span
+            className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
+          >
+            {totalCount}
+          </span>
+        )}
         <button
           onMouseDown={e => e.preventDefault()}
           onClick={e => { e.stopPropagation(); handleClear(); }}
@@ -80,15 +121,12 @@ export default function TranslateHistory({ refreshToken, onPick }) {
         <div className="divide-y" style={{ borderColor: "var(--divider)" }}>
           {groups.map(({ day, dateLabel, entries }) => (
             <div key={day}>
-              {/* Date header */}
               <div
                 className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider sticky top-0"
                 style={{ background: "var(--card-bg)", color: "var(--ink-soft)", zIndex: 1 }}
               >
                 {dateLabel}
               </div>
-
-              {/* Entries */}
               {entries.map(entry => (
                 <HistoryEntry
                   key={entry.id}
@@ -106,9 +144,11 @@ export default function TranslateHistory({ refreshToken, onPick }) {
 }
 
 function HistoryEntry({ entry, onDelete, onPick }) {
-  const isEN = entry.direction === "EN→VI";
+  const text = entry.source_text || entry.text || "";
+  const translated = entry.translated_text || entry.translated || "";
+  const direction = entry.direction || "EN→VI";
+  const isEN = direction === "EN→VI";
   const srcLang = isEN ? "en-US" : "vi-VN";
-  const tgtLang = isEN ? "vi-VN" : "en-US";
 
   return (
     <div
@@ -116,31 +156,29 @@ function HistoryEntry({ entry, onDelete, onPick }) {
       style={{ borderTop: "1px solid var(--divider)" }}
       onMouseEnter={e => e.currentTarget.style.background = "var(--hover-bg)"}
       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-      onClick={() => onPick?.(entry)}
+      onClick={() => onPick?.({ text, translated, direction })}
     >
-      {/* Text block */}
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-sm font-semibold leading-snug" style={{ color: "var(--ink)" }}>
-            {entry.text}
+            {text}
           </span>
           <span
             className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
             style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
           >
-            {entry.direction}
+            {direction}
           </span>
         </div>
         <span className="text-xs leading-snug" style={{ color: "var(--ink-soft)" }}>
-          {entry.translated}
+          {translated}
         </span>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onMouseDown={e => e.preventDefault()}
-          onClick={e => { e.stopPropagation(); speak(entry.text, srcLang); }}
+          onClick={e => { e.stopPropagation(); speak(text, srcLang); }}
           className="no-min-h w-7 h-7 rounded-lg flex items-center justify-center active:scale-90 transition-all"
           style={{ background: "var(--hover-bg)", color: "var(--electric)" }}
         >

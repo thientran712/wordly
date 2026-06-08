@@ -87,6 +87,7 @@ export default function Home() {
           <TranslateHistory
             refreshToken={historyToken}
             onPick={(entry) => setTranslatePick(entry)}
+            isLoggedIn={!isGuest}
           />
 
         </div>
