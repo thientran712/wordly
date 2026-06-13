@@ -10,6 +10,11 @@ const LEVEL_LABELS = {
   B2: "Upper-Intermediate", C1: "Advanced", C2: "Proficient",
 };
 
+const GOAL_LABELS = {
+  daily: "💬 Daily Life", toeic: "📊 TOEIC", ielts: "🎓 IELTS",
+  business: "💼 Business", travel: "✈️ Travel",
+};
+
 const cardStyle = {
   background: "var(--card-bg)",
   border: "1px solid var(--card-border)",
@@ -150,6 +155,7 @@ export default function ProfilePage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [name, setName] = useState("");
   const [skillLevel, setSkillLevel] = useState("");
+  const [learningGoal, setLearningGoal] = useState("");
 
   useEffect(() => { fetchProfile(); }, []);
 
@@ -161,7 +167,8 @@ export default function ProfilePage() {
         setEmail(data.email);
         setAuthProvider(data.auth_provider);
         setName(data.profile.name || "");
-        setSkillLevel(data.profile.skill_level || "");
+        setSkillLevel(data.profile.skill_level || "B1");
+        setLearningGoal(data.profile.learning_goal || "daily");
       }
     } catch (e) {
       console.error("Fetch profile error:", e);
@@ -176,7 +183,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, skill_level: skillLevel }),
+        body: JSON.stringify({ name, skill_level: skillLevel, learning_goal: learningGoal }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -322,6 +329,42 @@ export default function ProfilePage() {
                       }}
                     >
                       {value}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5">
+            <label className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--ink)" }}>
+              <Target size={14} style={{ color: "var(--electric)" }} />
+              Learning Goal
+            </label>
+            {isLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-9 rounded-xl animate-pulse" style={{ background: "var(--hover-bg)" }} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {Object.entries(GOAL_LABELS).map(([value, label]) => {
+                  const selected = learningGoal === value;
+                  return (
+                    <button
+                      type="button" key={value}
+                      onClick={() => setLearningGoal(value)}
+                      className="py-2 px-2 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-all"
+                      style={{
+                        background: selected ? "var(--electric)" : "var(--hover-bg)",
+                        border: selected ? "none" : "1.5px solid var(--input-border)",
+                        color: selected ? "#0A0A0A" : "var(--ink-soft)",
+                        transform: selected ? "scale(1.05)" : "scale(1)",
+                        boxShadow: selected ? "0 4px 12px rgba(34,197,94,0.3)" : "none",
+                      }}
+                    >
+                      {label}
                     </button>
                   );
                 })}

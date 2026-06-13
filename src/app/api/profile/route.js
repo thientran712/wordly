@@ -37,7 +37,7 @@ export async function PUT(request) {
   const body = await request.json();
   
   // Whitelist các fields cho phép update
-  const allowedFields = ['name', 'skill_level', 'learning_goal', 'daily_goal', 'timezone'];
+  const allowedFields = ['name', 'skill_level', 'learning_goal', 'timezone'];
   const updates = {};
   for (const key of allowedFields) {
     if (body[key] !== undefined) {
@@ -62,12 +62,7 @@ export async function PUT(request) {
       return Response.json({ error: "Invalid goal" }, { status: 400 });
     }
   }
-  if (updates.daily_goal !== undefined) {
-    if (updates.daily_goal < 1 || updates.daily_goal > 50) {
-      return Response.json({ error: "Daily goal must be 1-50" }, { status: 400 });
-    }
-  }
-  
+
   const { data, error } = await supabase
     .from("profiles")
     .update(updates)

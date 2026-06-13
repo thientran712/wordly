@@ -42,7 +42,6 @@ export async function middleware(request) {
   const isCronApi = path.startsWith("/api/cron") || path.startsWith("/api/admin");
   const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback");
-  const isOnboardingPage = path === "/onboarding";
   // Public pages: homepage (guest can use translate), auth pages
   const isPublicPage = path === "/" || isAuthPage;
 
@@ -63,18 +62,8 @@ export async function middleware(request) {
 
   if (isCronApi || isAuthCallback || isInngestApi) return response;
 
-  // Helper: fetch onboarded_at once (only when actually needed).
-  const checkOnboarded = async () => {
-    const { data: profile } = await supabase
-      .from("profiles").select("onboarded_at").eq("id", userId).single();
-    return !!profile?.onboarded_at;
-  };
-
-  // Homepage — guests allowed, but logged-in users must be onboarded
+  // Homepage — guests allowed
   if (path === "/") {
-    if (userId && !(await checkOnboarded())) {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
-    }
     return response;
   }
 
@@ -91,13 +80,6 @@ export async function middleware(request) {
   // Protected pages — redirect guests to login
   if (!userId && !isAuthPage && !isPublicPage && !isApi) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Onboarding page — redirect already-onboarded users
-  if (userId && isOnboardingPage) {
-    if (await checkOnboarded()) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
   }
 
   return response;
