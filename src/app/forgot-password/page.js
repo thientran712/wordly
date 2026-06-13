@@ -41,35 +41,35 @@ export default function ForgotPasswordPage() {
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
         <div
           className="rounded-[32px] p-8 sm:p-10 w-full max-w-md animate-fade-in"
-          style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
+          style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: '0 20px 48px rgba(0, 0, 0, 0.12)' }}
         >
           <button
             onClick={() => router.push("/login")}
             className="flex items-center gap-1.5 text-sm text-[--ink-soft] font-semibold hover:text-[--electric] mb-6"
           >
-            <ArrowLeft size={15} /> Back to login
+            <ArrowLeft size={15} /> Quay lại đăng nhập
           </button>
 
           {sent ? (
             <div className="text-center">
               <div className="text-6xl mb-4">📬</div>
-              <h1 className="font-serif text-2xl font-bold mb-2">Check your email</h1>
+              <h1 className="font-serif text-2xl font-bold mb-2">Kiểm tra email của bạn</h1>
               <p className="text-[--ink-soft] text-sm leading-relaxed">
-                We sent a password reset link to <strong>{email}</strong>. Click the link in the email to set a new password.
+                Chúng tôi đã gửi liên kết đặt lại mật khẩu đến <strong>{email}</strong>. Nhấn vào liên kết trong email để đặt mật khẩu mới.
               </p>
-              <p className="text-xs text-[--ink-soft] mt-4">Didn't receive it? Check your spam folder.</p>
+              <p className="text-xs text-[--ink-soft] mt-4">Chưa nhận được email? Kiểm tra thư mục spam.</p>
             </div>
           ) : (
             <>
               <div className="text-center mb-8">
                 <div
-                  className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center text-3xl shadow-[0_12px_32px_rgba(108,92,231,0.18)]"
-                  style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)', transform: 'rotate(-5deg)' }}
+                  className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center text-3xl shadow-[0_12px_32px_rgba(34,197,94,0.18)]"
+                  style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', transform: 'rotate(-5deg)' }}
                 >
                   🔑
                 </div>
-                <h1 className="font-serif text-2xl font-bold tracking-tight">Forgot password?</h1>
-                <p className="text-sm text-[--ink-soft] mt-1">Enter your email and we'll send a reset link</p>
+                <h1 className="font-serif text-2xl font-bold tracking-tight">Quên mật khẩu?</h1>
+                <p className="text-sm text-[--ink-soft] mt-1">Nhập email của bạn và chúng tôi sẽ gửi liên kết đặt lại</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -81,9 +81,9 @@ export default function ForgotPasswordPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="ban@example.com"
                     required
-                    className="w-full px-4 py-3.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all"
+                    className="w-full px-4 py-3.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-green-100 transition-all"
                   />
                 </div>
 
@@ -96,13 +96,14 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-4 text-white border-none rounded-2xl font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-4 border-none rounded-2xl font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
-                    background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)',
-                    boxShadow: '0 12px 32px rgba(108, 92, 231, 0.18)',
+                    background: 'var(--electric)',
+                    color: '#0A0A0A',
+                    boxShadow: '0 12px 32px rgba(34, 197, 94, 0.25)',
                   }}
                 >
-                  {isLoading ? <><Loader2 size={18} className="animate-spin" /> Sending...</> : "Send reset link"}
+                  {isLoading ? <><Loader2 size={18} className="animate-spin" /> Đang gửi...</> : "Gửi liên kết đặt lại"}
                 </button>
               </form>
             </>

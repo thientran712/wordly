@@ -58,7 +58,7 @@ export default function Header({ userName, isGuest = false, onJournalAdded }) {
             >
               🌈
             </div>
-            <span className="font-serif font-black text-xl gradient-text-purple-pink tracking-tight">
+            <span className="font-serif font-black text-xl gradient-text-brand tracking-tight">
               Wordly
             </span>
           </button>
@@ -123,19 +123,19 @@ export default function Header({ userName, isGuest = false, onJournalAdded }) {
                       />
                       <MenuItem
                         icon={Plus}
-                        label="Quick Add"
+                        label="Thêm nhanh"
                         onClick={openJournal}
                       />
 
                       <div className="h-px my-1" style={{ background: "var(--divider)" }} />
 
                       {/* Settings */}
-                      <MenuItem icon={UserCog} label="Profile" onClick={() => { setIsMenuOpen(false); router.push("/profile"); }} />
-                      <MenuItem icon={Mail} label="Email Settings" onClick={() => { setIsMenuOpen(false); router.push("/profile/email"); }} />
+                      <MenuItem icon={UserCog} label="Hồ sơ" onClick={() => { setIsMenuOpen(false); router.push("/profile"); }} />
+                      <MenuItem icon={Mail} label="Cài đặt Email" onClick={() => { setIsMenuOpen(false); router.push("/profile/email"); }} />
 
                       <div className="h-px my-1" style={{ background: "var(--divider)" }} />
 
-                      <MenuItem icon={LogOut} label="Sign out" onClick={handleLogout} danger />
+                      <MenuItem icon={LogOut} label="Đăng xuất" onClick={handleLogout} danger />
                     </div>
                   </>
                 )}
@@ -233,7 +233,7 @@ function JournalSheet({ isOpen, onClose, onAdded }) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <NotebookPen size={15} style={{ color: "var(--electric)" }} />
-            <span className="font-bold text-sm" style={{ color: "var(--ink)" }}>Quick Journal</span>
+            <span className="font-bold text-sm" style={{ color: "var(--ink)" }}>Ghi chú nhanh</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -267,7 +267,7 @@ function JournalSheet({ isOpen, onClose, onAdded }) {
             style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 16px rgba(34,197,94,0.3)" }}
           >
             {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-            Save to Journal
+            Lưu vào Journal
           </button>
         </form>
       </div>

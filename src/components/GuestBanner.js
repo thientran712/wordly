@@ -25,7 +25,7 @@ export default function GuestBanner() {
             Đăng ký để mở khoá đầy đủ tính năng
           </p>
           <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
-            Từ mới mỗi ngày · Ghi chú từ vựng · Ôn tập thông minh
+            Từ mới mỗi ngày · Ghi chú từ vựng · Email nhắc ôn tập
           </p>
         </div>
       </div>

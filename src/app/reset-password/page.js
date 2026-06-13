@@ -18,11 +18,11 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
     if (password !== confirm) {
-      setError("Passwords do not match");
+      setError("Mật khẩu xác nhận không khớp");
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError("Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
     setIsLoading(true);
@@ -49,43 +49,43 @@ export default function ResetPasswordPage() {
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
         <div
           className="rounded-[32px] p-8 sm:p-10 w-full max-w-md animate-fade-in"
-          style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: '0 20px 48px rgba(45, 27, 78, 0.12)' }}
+          style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: '0 20px 48px rgba(0, 0, 0, 0.12)' }}
         >
           {done ? (
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, #00C896, #B8F3D2)' }}>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', color: '#0A0A0A' }}>
                 <Check size={32} />
               </div>
-              <h1 className="font-serif text-2xl font-bold mb-2">Password updated!</h1>
-              <p className="text-[--ink-soft] text-sm">Redirecting you to the app...</p>
+              <h1 className="font-serif text-2xl font-bold mb-2">Mật khẩu đã được cập nhật!</h1>
+              <p className="text-[--ink-soft] text-sm">Đang chuyển hướng về ứng dụng...</p>
             </div>
           ) : (
             <>
               <div className="text-center mb-8">
                 <div
-                  className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center text-3xl shadow-[0_12px_32px_rgba(108,92,231,0.18)]"
-                  style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)', transform: 'rotate(-5deg)' }}
+                  className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center text-3xl shadow-[0_12px_32px_rgba(34,197,94,0.18)]"
+                  style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', transform: 'rotate(-5deg)' }}
                 >
                   🔐
                 </div>
-                <h1 className="font-serif text-2xl font-bold tracking-tight">New password</h1>
-                <p className="text-sm text-[--ink-soft] mt-1">Choose a strong password for your account</p>
+                <h1 className="font-serif text-2xl font-bold tracking-tight">Mật khẩu mới</h1>
+                <p className="text-sm text-[--ink-soft] mt-1">Chọn một mật khẩu mạnh cho tài khoản của bạn</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="flex items-center gap-1.5 font-bold text-sm mb-2">
-                    <Lock size={14} /> New password
+                    <Lock size={14} /> Mật khẩu mới
                   </label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min. 6 characters"
+                      placeholder="Tối thiểu 6 ký tự"
                       required
                       minLength={6}
-                      className="w-full px-4 py-3.5 pr-12 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all"
+                      className="w-full px-4 py-3.5 pr-12 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-green-100 transition-all"
                     />
                     <button
                       type="button"
@@ -99,15 +99,15 @@ export default function ResetPasswordPage() {
 
                 <div>
                   <label className="flex items-center gap-1.5 font-bold text-sm mb-2">
-                    <Lock size={14} /> Confirm password
+                    <Lock size={14} /> Xác nhận mật khẩu
                   </label>
                   <input
                     type={showPassword ? "text" : "password"}
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
-                    placeholder="Repeat password"
+                    placeholder="Nhập lại mật khẩu"
                     required
-                    className="w-full px-4 py-3.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all"
+                    className="w-full px-4 py-3.5 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-green-100 transition-all"
                   />
                 </div>
 
@@ -120,13 +120,14 @@ export default function ResetPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-4 text-white border-none rounded-2xl font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-4 border-none rounded-2xl font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
-                    background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)',
-                    boxShadow: '0 12px 32px rgba(108, 92, 231, 0.18)',
+                    background: 'var(--electric)',
+                    color: '#0A0A0A',
+                    boxShadow: '0 12px 32px rgba(34, 197, 94, 0.25)',
                   }}
                 >
-                  {isLoading ? <><Loader2 size={18} className="animate-spin" /> Updating...</> : "Set new password"}
+                  {isLoading ? <><Loader2 size={18} className="animate-spin" /> Đang cập nhật...</> : "Đặt mật khẩu mới"}
                 </button>
               </form>
             </>

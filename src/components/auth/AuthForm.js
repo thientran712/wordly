@@ -37,7 +37,7 @@ export default function AuthForm({ mode = "login" }) {
           options: { data: { name }, emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw error;
-        if (data.user && !data.session) setSuccess("Check your email to verify your account!");
+        if (data.user && !data.session) setSuccess("Kiểm tra email để xác minh tài khoản của bạn!");
         else { router.push("/"); router.refresh(); }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -82,11 +82,11 @@ export default function AuthForm({ mode = "login" }) {
         >
           <img src="/favicon.png" alt="Wordly" className="w-10 h-10 object-contain" />
         </div>
-        <h1 className="font-serif text-3xl font-bold tracking-tight gradient-text-purple-pink">
+        <h1 className="font-serif text-3xl font-bold tracking-tight gradient-text-brand">
           Wordly
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>
-          {mode === "signup" ? "Create your account" : "Welcome back"}
+          {mode === "signup" ? "Tạo tài khoản của bạn" : "Chào mừng trở lại"}
         </p>
       </div>
 
@@ -111,13 +111,13 @@ export default function AuthForm({ mode = "login" }) {
             <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
           </svg>
         )}
-        <span>Continue with Google</span>
+        <span>Tiếp tục với Google</span>
       </button>
 
       {/* Divider */}
       <div className="flex items-center gap-3 my-4">
         <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
-        <span className="text-xs font-semibold uppercase" style={{ color: "var(--ink-soft)" }}>or</span>
+        <span className="text-xs font-semibold uppercase" style={{ color: "var(--ink-soft)" }}>hoặc</span>
         <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
       </div>
 
@@ -125,11 +125,11 @@ export default function AuthForm({ mode = "login" }) {
         {mode === "signup" && (
           <div>
             <label className="flex items-center gap-1.5 font-bold text-sm mb-2" style={{ color: "var(--ink)" }}>
-              <User size={14} style={{ color: "var(--electric)" }} /> Your name
+              <User size={14} style={{ color: "var(--electric)" }} /> Tên của bạn
             </label>
             <input
               type="text" value={name} onChange={e => setName(e.target.value)}
-              placeholder="David" required
+              placeholder="Minh" required
               className="w-full px-4 py-3.5 rounded-2xl text-sm focus:outline-none transition-all"
               style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}
             />
@@ -142,7 +142,7 @@ export default function AuthForm({ mode = "login" }) {
           </label>
           <input
             type="email" value={email} onChange={e => setEmail(e.target.value)}
-            placeholder="you@example.com" required
+            placeholder="ban@example.com" required
             className="w-full px-4 py-3.5 rounded-2xl text-sm focus:outline-none transition-all"
             style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}
           />
@@ -150,7 +150,7 @@ export default function AuthForm({ mode = "login" }) {
 
         <div>
           <label className="flex items-center gap-1.5 font-bold text-sm mb-2" style={{ color: "var(--ink)" }}>
-            <Lock size={14} style={{ color: "var(--electric)" }} /> Password
+            <Lock size={14} style={{ color: "var(--electric)" }} /> Mật khẩu
           </label>
           <input
             type="password" value={password} onChange={e => setPassword(e.target.value)}
@@ -161,7 +161,7 @@ export default function AuthForm({ mode = "login" }) {
           {mode === "login" && (
             <div className="text-right mt-2">
               <Link href="/forgot-password" className="text-xs font-semibold hover:underline" style={{ color: "var(--electric)" }}>
-                Forgot password?
+                Quên mật khẩu?
               </Link>
             </div>
           )}
@@ -183,18 +183,18 @@ export default function AuthForm({ mode = "login" }) {
           className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
           style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 8px 24px rgba(34,197,94,0.3)" }}
         >
-          {isLoading ? <><Loader2 size={18} className="animate-spin" /> Processing...</> :
-           mode === "signup" ? "Create account" : "Sign in"}
+          {isLoading ? <><Loader2 size={18} className="animate-spin" /> Đang xử lý...</> :
+           mode === "signup" ? "Tạo tài khoản" : "Đăng nhập"}
         </button>
       </form>
 
       <p className="text-center text-sm mt-6" style={{ color: "var(--ink-soft)" }}>
         {mode === "signup" ? (
-          <>Already have an account?{" "}
-            <Link href="/login" className="font-bold hover:underline" style={{ color: "var(--electric)" }}>Sign in</Link></>
+          <>Đã có tài khoản?{" "}
+            <Link href="/login" className="font-bold hover:underline" style={{ color: "var(--electric)" }}>Đăng nhập</Link></>
         ) : (
-          <>Don't have an account?{" "}
-            <Link href="/signup" className="font-bold hover:underline" style={{ color: "var(--electric)" }}>Sign up</Link></>
+          <>Chưa có tài khoản?{" "}
+            <Link href="/signup" className="font-bold hover:underline" style={{ color: "var(--electric)" }}>Đăng ký</Link></>
         )}
       </p>
     </div>

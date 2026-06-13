@@ -244,7 +244,7 @@ export default function EmailSettingsPage() {
         setSuccess(true);
         successTimerRef.current = setTimeout(() => setSuccess(false), 3000);
       }
-      else { const d = await res.json(); setError(d.error || "Failed to save"); }
+      else { const d = await res.json(); setError(d.error || "Lưu thất bại"); }
     } catch (e) { setError(e.message); }
     finally { setIsSaving(false); }
   };
@@ -355,7 +355,7 @@ export default function EmailSettingsPage() {
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] w-[90vw] max-w-xl px-5 py-4 rounded-2xl shadow-xl text-sm font-semibold"
             style={{ background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)", color: "#F87171" }}>
             ⚠️ {error}
-            <button type="button" onClick={() => setError(null)} className="ml-3 underline opacity-70">Dismiss</button>
+            <button type="button" onClick={() => setError(null)} className="ml-3 underline opacity-70">Đóng</button>
           </div>
         )}
 
@@ -365,7 +365,7 @@ export default function EmailSettingsPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:-translate-y-0.5 transition-all"
             style={{ color: "var(--ink-soft)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <ArrowLeft size={18} />
-            <span className="font-semibold">Back</span>
+            <span className="font-semibold">Quay lại</span>
           </button>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>✉️ Email</h1>
           <div className="w-20" />

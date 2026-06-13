@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Search, Volume2 } from "lucide-react";
 
 const STATE_CONFIG = {
-  learning:   { label: "Learning",   bg: "var(--error-soft)",  border: "var(--error-border)",   color: "var(--hot-pink)",      emoji: "🌱" },
-  review:     { label: "Review",     bg: "var(--whisper)",      border: "var(--lavender)",        color: "var(--electric)",      emoji: "🌿" },
-  relearning: { label: "Relearning", bg: "var(--butter)",       border: "var(--sunshine)",        color: "var(--sunshine-text)", emoji: "🔁" },
+  learning:   { label: "Đang học",   bg: "var(--error-soft)",     border: "var(--error-border)",      color: "var(--error)",        emoji: "🌱" },
+  review:     { label: "Ôn tập",     bg: "var(--green-subtle)",   border: "var(--green-subtle-border)", color: "var(--electric)",     emoji: "🌿" },
+  relearning: { label: "Học lại",    bg: "var(--sunshine-soft)",  border: "var(--sunshine-border)",   color: "var(--sunshine-text)", emoji: "🔁" },
 };
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -88,7 +88,7 @@ export default function WordsPage() {
             style={{ color: "var(--ink-soft)", background: "var(--surface-elevated)", border: "1px solid var(--line)" }}
           >
             <ArrowLeft size={18} />
-            <span className="font-semibold">Back</span>
+            <span className="font-semibold">Quay lại</span>
           </button>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
             📖 My Words

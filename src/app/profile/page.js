@@ -6,13 +6,13 @@ import { ArrowLeft, User, Mail, Target, BookOpen, Loader2, Check, KeyRound, Eye,
 import { createClient } from "@/lib/supabase-client";
 
 const LEVEL_LABELS = {
-  A1: "Beginner", A2: "Elementary", B1: "Intermediate",
-  B2: "Upper-Intermediate", C1: "Advanced", C2: "Proficient",
+  A1: "Mới bắt đầu", A2: "Sơ cấp", B1: "Trung cấp",
+  B2: "Trung cao cấp", C1: "Cao cấp", C2: "Thành thạo",
 };
 
 const GOAL_LABELS = {
-  daily: "💬 Daily Life", toeic: "📊 TOEIC", ielts: "🎓 IELTS",
-  business: "💼 Business", travel: "✈️ Travel",
+  daily: "💬 Giao tiếp hàng ngày", toeic: "📊 TOEIC", ielts: "🎓 IELTS",
+  business: "💼 Kinh doanh", travel: "✈️ Du lịch",
 };
 
 const cardStyle = {
@@ -191,10 +191,10 @@ export default function ProfilePage() {
         await fetchProfile();
         setTimeout(() => setSuccess(false), 3000);
       } else {
-        setError(`Save failed: ${data.error || "unknown error"}`);
+        setError(`Lưu thất bại: ${data.error || "lỗi không xác định"}`);
       }
     } catch (e) {
-      setError(`Error: ${e.message}`);
+      setError(`Lỗi: ${e.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -216,7 +216,7 @@ export default function ProfilePage() {
             style={{ background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)", color: "#F87171" }}
           >
             ⚠️ {error}
-            <button type="button" onClick={() => setError(null)} className="ml-3 underline opacity-70">Dismiss</button>
+            <button type="button" onClick={() => setError(null)} className="ml-3 underline opacity-70">Đóng</button>
           </div>
         )}
 
@@ -228,9 +228,9 @@ export default function ProfilePage() {
             style={{ color: "var(--ink-soft)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
             <ArrowLeft size={18} />
-            <span className="font-semibold">Back</span>
+            <span className="font-semibold">Quay lại</span>
           </button>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>👤 Profile</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>👤 Hồ sơ</h1>
           <div className="w-20" />
         </div>
 
@@ -238,7 +238,7 @@ export default function ProfilePage() {
         <div className="rounded-3xl p-6 sm:p-8 mb-5" style={cardStyle}>
           <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <Mail size={20} style={{ color: "var(--electric)" }} />
-            Account
+            Tài khoản
           </h2>
           <div className="space-y-4">
             <div>
@@ -277,10 +277,10 @@ export default function ProfilePage() {
         <div className="rounded-3xl p-6 sm:p-8 mb-5" style={cardStyle}>
           <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <User size={20} style={{ color: "var(--electric)" }} />
-            Personal Info
+            Thông tin cá nhân
           </h2>
           <div>
-            <label className="font-bold text-sm mb-2 block" style={{ color: "var(--ink)" }}>Your name</label>
+            <label className="font-bold text-sm mb-2 block" style={{ color: "var(--ink)" }}>Tên của bạn</label>
             {isLoading ? (
               <div className="h-12 rounded-2xl animate-pulse" style={{ background: "var(--hover-bg)" }} />
             ) : (
@@ -297,12 +297,12 @@ export default function ProfilePage() {
         <div className="rounded-3xl p-6 sm:p-8 mb-6" style={cardStyle}>
           <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <Target size={20} style={{ color: "var(--electric)" }} />
-            Learning Preferences
+            Tùy chọn học tập
           </h2>
           <div>
             <label className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--ink)" }}>
               <BookOpen size={14} style={{ color: "var(--electric)" }} />
-              English Level
+              Trình độ tiếng Anh
             </label>
             {isLoading ? (
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -339,7 +339,7 @@ export default function ProfilePage() {
           <div className="mt-5">
             <label className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--ink)" }}>
               <Target size={14} style={{ color: "var(--electric)" }} />
-              Learning Goal
+              Mục tiêu học tập
             </label>
             {isLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -384,9 +384,9 @@ export default function ProfilePage() {
             boxShadow: success ? "none" : "0 8px 24px rgba(34,197,94,0.3)",
           }}
         >
-          {isSaving ? <><Loader2 size={18} className="animate-spin" /> Saving...</> :
-           success ? <><Check size={18} /> Saved!</> :
-           "💾 Save Changes"}
+          {isSaving ? <><Loader2 size={18} className="animate-spin" /> Đang lưu...</> :
+           success ? <><Check size={18} /> Đã lưu!</> :
+           "💾 Lưu thay đổi"}
         </button>
       </main>
     </>

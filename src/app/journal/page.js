@@ -87,17 +87,17 @@ export default function JournalPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-[var(--hover-bg)] hover:-translate-y-0.5 hover:shadow-sm"
           >
             <ArrowLeft size={18} />
-            <span className="font-semibold">Back</span>
+            <span className="font-semibold">Quay lại</span>
           </button>
           <h1 className="font-serif text-3xl font-bold tracking-tight">📓 Journal</h1>
-          <div className="w-[68px]" />
+          <div className="w-20" />
         </div>
 
         {/* Add form */}
         <form
           onSubmit={handleAdd}
           className="rounded-3xl p-5 sm:p-6 border-2 mb-6"
-          style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 24px rgba(108,92,231,0.10)" }}
+          style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 24px rgba(34,197,94,0.10)" }}
         >
           <p className="text-xs font-bold uppercase tracking-wider text-[--ink-soft] mb-3">
             ✏️ Ghi chú mới
@@ -109,15 +109,16 @@ export default function JournalPage() {
               onChange={e => setContent(e.target.value)}
               placeholder="Câu, bài học, hoặc câu hỏi bạn gặp hôm nay..."
               rows={3}
-              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all text-[--ink] resize-none"
+              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-green-100 transition-all text-[--ink] resize-none"
             />
             <button
               type="submit"
               disabled={isAdding || !content.trim()}
-              className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm text-white border-none cursor-pointer hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-40"
+              className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm border-none cursor-pointer hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-40"
               style={{
-                background: "linear-gradient(135deg, #6C5CE7, #a29bfe)",
-                boxShadow: "0 8px 20px rgba(108,92,231,0.2)",
+                background: "var(--electric)",
+                color: "#0A0A0A",
+                boxShadow: "0 8px 20px rgba(34,197,94,0.3)",
               }}
             >
               {isAdding ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
@@ -150,7 +151,7 @@ export default function JournalPage() {
                     <div
                       key={entry.id}
                       className="rounded-2xl px-4 py-3.5 border-2 border-[--line] flex items-start gap-3 group"
-                      style={{ background: "var(--card-bg)", boxShadow: "0 2px 8px rgba(108,92,231,0.05)" }}
+                      style={{ background: "var(--card-bg)", boxShadow: "0 2px 8px rgba(34,197,94,0.05)" }}
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm leading-snug text-[--ink] whitespace-pre-wrap">
