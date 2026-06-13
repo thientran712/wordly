@@ -11,7 +11,6 @@ export default function Home() {
   const [user, setUser] = useState(undefined); // undefined = loading, null = guest
   const [toast, setToast] = useState(null);
   const [userName, setUserName] = useState("");
-  const [journalDueCount, setJournalDueCount] = useState(0);
   const [historyToken, setHistoryToken] = useState(0);
 
   useEffect(() => {
@@ -26,10 +25,6 @@ export default function Home() {
             .then(({ data }) => {
               if (data) setUserName(data.name || authUser.email?.split("@")[0] || "");
             }).catch(() => {});
-
-          fetch("/api/journal/review").then(r => r.json()).then(reviewData => {
-            if (reviewData?.due_count) setJournalDueCount(reviewData.due_count);
-          }).catch(() => {});
         }
       } catch (e) { console.error("Init error:", e); }
     }
@@ -63,8 +58,7 @@ export default function Home() {
         <Header
           userName={userName}
           isGuest={isGuest}
-          dueCount={journalDueCount}
-          onJournalAdded={() => { setJournalDueCount(c => c + 1); showToast("📝 Đã lưu vào Journal"); }}
+          onJournalAdded={() => showToast("📝 Đã lưu vào Journal")}
         />
 
         <div className="max-w-2xl mx-auto px-3 sm:px-5 pb-12 space-y-3 pt-1">

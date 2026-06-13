@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, BookMarked, Loader2, GraduationCap } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, BookMarked, Loader2 } from "lucide-react";
 
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
@@ -28,20 +28,15 @@ export default function JournalPage() {
   const router = useRouter();
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dueCount, setDueCount] = useState(0);
   const [content, setContent] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const contentRef = useRef(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/journal").then(r => r.json()),
-      fetch("/api/journal/review").then(r => r.json()),
-    ]).then(([journalData, reviewData]) => {
-      setEntries(journalData.entries || []);
-      setDueCount(reviewData.due_count || 0);
-    }).catch(() => {}).finally(() => setIsLoading(false));
+    fetch("/api/journal").then(r => r.json())
+      .then(journalData => setEntries(journalData.entries || []))
+      .catch(() => {}).finally(() => setIsLoading(false));
   }, []);
 
   const handleAdd = async (e) => {
@@ -95,18 +90,7 @@ export default function JournalPage() {
             <span className="font-semibold">Back</span>
           </button>
           <h1 className="font-serif text-3xl font-bold tracking-tight">📓 Journal</h1>
-          <button
-            onClick={() => router.push("/journal/review")}
-            disabled={dueCount === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl font-bold text-sm text-white disabled:opacity-40 hover:-translate-y-0.5 hover:opacity-90 transition-all"
-            style={{ background: "linear-gradient(135deg, #6C5CE7, #a29bfe)", boxShadow: "0 6px 16px rgba(108,92,231,0.25)" }}
-          >
-            <GraduationCap size={15} />
-            Ôn tập
-            {dueCount > 0 && (
-              <span className="bg-white/30 rounded-full px-1.5 text-xs">{dueCount}</span>
-            )}
-          </button>
+          <div className="w-[68px]" />
         </div>
 
         {/* Add form */}

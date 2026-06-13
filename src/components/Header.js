@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   LogOut, UserCog, Mail, Sun, Moon, User, LogIn,
-  NotebookPen, Plus, GraduationCap, Loader2, X,
+  NotebookPen, Plus, Loader2, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
-export default function Header({ userName, isGuest = false, dueCount = 0, onJournalAdded }) {
+export default function Header({ userName, isGuest = false, onJournalAdded }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
   const [theme, setTheme] = useState("dark");
@@ -94,14 +94,6 @@ export default function Header({ userName, isGuest = false, dueCount = 0, onJour
                   }}
                 >
                   <User size={15} />
-                  {dueCount > 0 && !isMenuOpen && (
-                    <span
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center"
-                      style={{ background: "#F87171", color: "#fff", border: "1.5px solid var(--card-bg)" }}
-                    >
-                      {dueCount > 9 ? "9+" : dueCount}
-                    </span>
-                  )}
                 </button>
 
                 {isMenuOpen && (
@@ -132,7 +124,6 @@ export default function Header({ userName, isGuest = false, dueCount = 0, onJour
                       <MenuItem
                         icon={Plus}
                         label="Quick Add"
-                        badge={dueCount > 0 ? dueCount : null}
                         onClick={openJournal}
                       />
 
@@ -159,16 +150,14 @@ export default function Header({ userName, isGuest = false, dueCount = 0, onJour
         <JournalSheet
           isOpen={isJournalOpen}
           onClose={() => setIsJournalOpen(false)}
-          dueCount={dueCount}
           onAdded={onJournalAdded}
-          onReview={() => { setIsJournalOpen(false); router.push("/journal/review"); }}
         />
       )}
     </>
   );
 }
 
-function MenuItem({ icon: Icon, label, onClick, danger, badge }) {
+function MenuItem({ icon: Icon, label, onClick, danger }) {
   return (
     <button
       onClick={onClick}
@@ -185,19 +174,11 @@ function MenuItem({ icon: Icon, label, onClick, danger, badge }) {
     >
       <Icon size={14} />
       <span className="flex-1">{label}</span>
-      {badge && (
-        <span
-          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-          style={{ background: "rgba(248,113,113,0.15)", color: "#F87171" }}
-        >
-          {badge > 9 ? "9+" : badge}
-        </span>
-      )}
     </button>
   );
 }
 
-function JournalSheet({ isOpen, onClose, dueCount, onAdded, onReview }) {
+function JournalSheet({ isOpen, onClose, onAdded }) {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -255,17 +236,6 @@ function JournalSheet({ isOpen, onClose, dueCount, onAdded, onReview }) {
             <span className="font-bold text-sm" style={{ color: "var(--ink)" }}>Quick Journal</span>
           </div>
           <div className="flex items-center gap-2">
-            {dueCount > 0 && (
-              <button
-                type="button"
-                onClick={onReview}
-                className="no-min-h flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full text-black active:scale-95 transition-all"
-                style={{ background: "var(--electric)" }}
-              >
-                <GraduationCap size={11} />
-                Ôn {dueCount}
-              </button>
-            )}
             <button
               type="button"
               onClick={onClose}
