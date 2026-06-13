@@ -5,7 +5,6 @@ import Header from "@/components/Header";
 import InlineTranslate from "@/components/InlineTranslate";
 import TranslateHistory from "@/components/TranslateHistory";
 import GuestBanner from "@/components/GuestBanner";
-import { createClient } from "@/lib/supabase-client";
 
 export default function Home() {
   const [user, setUser] = useState(undefined); // undefined = loading, null = guest
@@ -14,21 +13,20 @@ export default function Home() {
   const [historyToken, setHistoryToken] = useState(0);
 
   useEffect(() => {
-    async function init() {
-      try {
-        const supabase = createClient();
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        setUser(authUser || null);
-
-        if (authUser) {
-          supabase.from("profiles").select("name").eq("id", authUser.id).single()
-            .then(({ data }) => {
-              if (data) setUserName(data.name || authUser.email?.split("@")[0] || "");
-            }).catch(() => {});
+    fetch("/api/profile")
+      .then(r => {
+        if (!r.ok) {
+          setUser(null);
+          return null;
         }
-      } catch (e) { console.error("Init error:", e); }
-    }
-    init();
+        setUser(true);
+        return r.json();
+      })
+      .then(data => {
+        if (!data) return;
+        setUserName(data.profile?.name || data.email?.split("@")[0] || "");
+      })
+      .catch(() => setUser(null));
   }, []);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };

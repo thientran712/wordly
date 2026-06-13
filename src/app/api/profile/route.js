@@ -9,12 +9,11 @@ export async function GET() {
 
   const supabase = await createClient();
 
-  // app_metadata.provider requires a full getUser() call (not in JWT claims for
-  // all Supabase project configs), so we fetch it in parallel with the profile.
-  const [{ data: { user: fullUser } }, { data, error }] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
-  ]);
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -22,8 +21,8 @@ export async function GET() {
 
   return Response.json({
     profile: data,
-    email: user.email || fullUser?.email,
-    auth_provider: fullUser?.app_metadata?.provider || 'email',
+    email: user.email,
+    auth_provider: user.provider || 'email',
   });
 }
 

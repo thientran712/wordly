@@ -26,6 +26,7 @@ export async function middleware(request) {
   const claims = claimsData?.claims || null;
   const userId = claims?.sub || null;
   const userEmail = claims?.email || null;
+  const userProvider = claims?.app_metadata?.provider || null;
 
   if (authError?.code === "refresh_token_not_found" || authError?.message?.includes("Refresh Token")) {
     const res = NextResponse.redirect(new URL("/login", request.url));
@@ -50,12 +51,14 @@ export async function middleware(request) {
   // server-validated JWT below.
   request.headers.delete("x-user-id");
   request.headers.delete("x-user-email");
+  request.headers.delete("x-user-provider");
 
-  // Forward the validated user id/email so downstream API routes don't have to
-  // call supabase.auth.getUser() again (avoids a second network round-trip).
+  // Forward the validated user id/email/provider so downstream API routes don't
+  // have to call supabase.auth.getUser() again (avoids a second network round-trip).
   if (userId) {
     request.headers.set("x-user-id", userId);
     if (userEmail) request.headers.set("x-user-email", userEmail);
+    if (userProvider) request.headers.set("x-user-provider", userProvider);
   }
   // Re-create response so the mutated request headers propagate to the route.
   response = NextResponse.next({ request });
