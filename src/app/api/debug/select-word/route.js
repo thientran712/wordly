@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase-admin";
-import { claimBestWordForUser } from "@/lib/select-word-for-email";
+import { selectEmailContent } from "@/lib/select-word-for-email";
 import { getUserFast } from "@/lib/get-user-fast";
 
 export async function GET() {
@@ -11,19 +11,19 @@ export async function GET() {
   // Show what's in journal and translate_history for this user
   const [{ data: journal }, { data: history }] = await Promise.all([
     admin.from("journal_entries")
-      .select("id, word, meaning_vi, last_emailed_at, email_count")
+      .select("id, content, state, due_at, review_count")
       .eq("user_id", user.id),
     admin.from("translate_history")
-      .select("id, source_text, direction, last_emailed_at, email_count")
+      .select("id, source_text, translated_text, direction, state, due_at, review_count")
       .eq("user_id", user.id),
   ]);
 
-  const selected = await claimBestWordForUser(admin, user.id);
+  const selected = await selectEmailContent(admin, user.id);
 
   return Response.json({
     user_id: user.id,
     journal_entries: journal || [],
     translate_history: history || [],
-    selected_word: selected,
+    selected: selected,
   });
 }

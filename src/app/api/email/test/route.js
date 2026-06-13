@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendDailyWordEmail } from "@/lib/send-email";
-import { claimBestWordForUser } from "@/lib/select-word-for-email";
+import { selectEmailContent } from "@/lib/select-word-for-email";
 import { getUserFast } from "@/lib/get-user-fast";
 
 export async function POST() {
@@ -15,22 +15,21 @@ export async function POST() {
     .eq("id", user.id)
     .single();
 
-  const selected = await claimBestWordForUser(admin, user.id);
-  if (!selected) return Response.json({ error: "No word available — add words to your journal or translate history first" }, { status: 404 });
+  const content = await selectEmailContent(admin, user.id);
+  if (!content) return Response.json({ error: "Nothing to send — add words to your journal or translate history first" }, { status: 404 });
 
   const result = await sendDailyWordEmail({
     to: user.email,
     userName: profile?.name || user.email.split("@")[0],
-    word: selected.word,
-    aiContent: null,
-    source: selected.source,
+    words: content.words,
+    journal: content.journal,
   });
 
   if (!result.success) return Response.json({ error: result.error }, { status: 500 });
 
   return Response.json({
     success: true,
-    word: selected.word.word,
-    source: selected.source,
+    words: content.words.map(w => w.word),
+    journal: content.journal?.content || null,
   });
 }

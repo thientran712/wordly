@@ -18,7 +18,7 @@ export async function GET() {
   // Pick next: new first, then by due_at asc
   const { data: newEntry } = await supabase
     .from("journal_entries")
-    .select("id, word, meaning_vi, state, stability, difficulty, due_at, review_count, lapses, last_reviewed_at, scheduled_days, elapsed_days")
+    .select("id, content, state, stability, difficulty, due_at, review_count, lapses, last_reviewed_at, scheduled_days, elapsed_days")
     .eq("user_id", user.id)
     .eq("state", "new")
     .order("created_at", { ascending: true })
@@ -31,7 +31,7 @@ export async function GET() {
 
   const { data: dueEntry } = await supabase
     .from("journal_entries")
-    .select("id, word, meaning_vi, state, stability, difficulty, due_at, review_count, lapses, last_reviewed_at, scheduled_days, elapsed_days")
+    .select("id, content, state, stability, difficulty, due_at, review_count, lapses, last_reviewed_at, scheduled_days, elapsed_days")
     .eq("user_id", user.id)
     .neq("state", "new")
     .lte("due_at", new Date().toISOString())

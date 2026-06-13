@@ -29,11 +29,10 @@ export default function JournalPage() {
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dueCount, setDueCount] = useState(0);
-  const [word, setWord] = useState("");
-  const [meaningVi, setMeaningVi] = useState("");
+  const [content, setContent] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const wordRef = useRef(null);
+  const contentRef = useRef(null);
 
   useEffect(() => {
     Promise.all([
@@ -47,20 +46,19 @@ export default function JournalPage() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!word.trim()) return;
+    if (!content.trim()) return;
     setIsAdding(true);
     try {
       const res = await fetch("/api/journal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word, meaning_vi: meaningVi }),
+        body: JSON.stringify({ content }),
       });
       const data = await res.json();
       if (data.entry) {
         setEntries(prev => [data.entry, ...prev]);
-        setWord("");
-        setMeaningVi("");
-        wordRef.current?.focus();
+        setContent("");
+        contentRef.current?.focus();
       }
     } finally {
       setIsAdding(false);
@@ -118,29 +116,20 @@ export default function JournalPage() {
           style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 24px rgba(108,92,231,0.10)" }}
         >
           <p className="text-xs font-bold uppercase tracking-wider text-[--ink-soft] mb-3">
-            ✏️ Ghi từ mới
+            ✏️ Ghi chú mới
           </p>
           <div className="flex flex-col gap-2.5">
-            <input
-              ref={wordRef}
-              type="text"
-              value={word}
-              onChange={e => setWord(e.target.value)}
-              placeholder="Từ vựng (VD: resilient)"
-              autoComplete="off"
-              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all font-semibold text-[--ink]"
-            />
-            <input
-              type="text"
-              value={meaningVi}
-              onChange={e => setMeaningVi(e.target.value)}
-              placeholder="Nghĩa tiếng Việt (VD: kiên cường, bền bỉ)"
-              autoComplete="off"
-              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all text-[--ink]"
+            <textarea
+              ref={contentRef}
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              placeholder="Câu, bài học, hoặc câu hỏi bạn gặp hôm nay..."
+              rows={3}
+              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-purple-100 transition-all text-[--ink] resize-none"
             />
             <button
               type="submit"
-              disabled={isAdding || !word.trim()}
+              disabled={isAdding || !content.trim()}
               className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm text-white border-none cursor-pointer hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-40"
               style={{
                 background: "linear-gradient(135deg, #6C5CE7, #a29bfe)",
@@ -162,8 +151,8 @@ export default function JournalPage() {
         ) : entries.length === 0 ? (
           <div className="text-center py-16">
             <BookMarked size={40} className="mx-auto mb-3 opacity-20" />
-            <p className="font-semibold text-[--ink-soft]">Chưa có từ nào</p>
-            <p className="text-sm text-[--ink-soft] mt-1 opacity-70">Ghi lại từ đầu tiên bạn bắt gặp hôm nay</p>
+            <p className="font-semibold text-[--ink-soft]">Chưa có ghi chú nào</p>
+            <p className="text-sm text-[--ink-soft] mt-1 opacity-70">Ghi lại điều đầu tiên bạn học được hôm nay</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -176,18 +165,13 @@ export default function JournalPage() {
                   {dayEntries.map(entry => (
                     <div
                       key={entry.id}
-                      className="rounded-2xl px-4 py-3.5 border-2 border-[--line] flex items-center gap-3 group"
+                      className="rounded-2xl px-4 py-3.5 border-2 border-[--line] flex items-start gap-3 group"
                       style={{ background: "var(--card-bg)", boxShadow: "0 2px 8px rgba(108,92,231,0.05)" }}
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="font-serif font-bold text-lg leading-tight text-[--ink]">
-                          {entry.word}
+                        <p className="text-sm leading-snug text-[--ink] whitespace-pre-wrap">
+                          {entry.content}
                         </p>
-                        {entry.meaning_vi && (
-                          <p className="text-sm text-[--ink-soft] mt-0.5 truncate">
-                            🇻🇳 {entry.meaning_vi}
-                          </p>
-                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] text-[--ink-soft] opacity-50 tabular-nums">
@@ -213,7 +197,7 @@ export default function JournalPage() {
 
         {entries.length > 0 && (
           <p className="text-center text-xs text-[--ink-soft] opacity-40 mt-8">
-            {entries.length} từ đã ghi
+            {entries.length} ghi chú
           </p>
         )}
       </main>

@@ -8,7 +8,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("journal_entries")
-    .select("id, word, meaning_vi, created_at")
+    .select("id, content, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -21,13 +21,13 @@ export async function POST(request) {
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const supabase = await createClient();
-  const { word, meaning_vi } = await request.json();
-  if (!word?.trim()) return Response.json({ error: "Word is required" }, { status: 400 });
+  const { content } = await request.json();
+  if (!content?.trim()) return Response.json({ error: "Content is required" }, { status: 400 });
 
   const { data, error } = await supabase
     .from("journal_entries")
-    .insert({ user_id: user.id, word: word.trim(), meaning_vi: meaning_vi?.trim() || "" })
-    .select("id, word, meaning_vi, created_at")
+    .insert({ user_id: user.id, content: content.trim() })
+    .select("id, content, created_at")
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });

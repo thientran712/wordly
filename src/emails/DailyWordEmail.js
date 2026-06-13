@@ -5,26 +5,15 @@ import {
 
 export default function DailyWordEmail({
   userName = "there",
-  word = {},
-  aiContent = null,
-  source = "new",
+  words = [],
+  journal = null,
   appUrl = "https://wordly.app"
 }) {
-  const isUserWord = source === "journal" || source === "translate_history";
-  const previewText = isUserWord
-    ? `🔁 Ôn lại: ${word.word || ""}`
-    : `✨ Từ hôm nay: ${word.word || ""}`;
-
-  const meanings = aiContent?.meanings || [];
-  const synonyms = aiContent?.synonyms?.filter(Boolean) || [];
-  const fallbackPhonetic = word.phonetic && !word.phonetic.endsWith(".mp3") ? word.phonetic : "";
-  const phonetic = meanings[0]?.phonetic_ipa || fallbackPhonetic;
-
-  const badgeLabel = source === "journal"
-    ? "📓 Từ bạn đã note"
-    : source === "translate_history"
-    ? "🔁 Từ bạn đã dịch"
-    : "✨ Từ mới hôm nay";
+  const previewText = words.length > 0
+    ? `${words.map(w => w.word).join(" · ")}`
+    : journal?.content
+    ? `📓 ${journal.content.slice(0, 60)}`
+    : "Wordly hôm nay";
 
   return (
     <Html>
@@ -43,38 +32,25 @@ export default function DailyWordEmail({
           {/* Greeting */}
           <Section style={greetingSection}>
             <Text style={greeting}>Hi <strong>{userName}</strong> 👋</Text>
-            <Text style={subtitle}>Từ vựng hôm nay đang chờ bạn!</Text>
+            <Text style={subtitle}>Từ vựng & ghi chú hôm nay đang chờ bạn!</Text>
           </Section>
 
-          {/* Word card */}
-          <Section style={wordCard}>
-            <Text style={badge}>{badgeLabel}</Text>
-            <Heading style={wordMain}>{word.word}</Heading>
-            {phonetic && <Text style={phoneticText}>/{phonetic}/</Text>}
-
-            {/* Meaning */}
-            {word.meaning_vi && (
-              <Text style={meaningVi}>🇻🇳 {word.meaning_vi}</Text>
-            )}
-
-            {/* For system words with no meaning_vi but has AI content */}
-            {!word.meaning_vi && meanings[0]?.definition_vi && (
-              <Text style={meaningVi}>🇻🇳 {meanings[0].definition_vi}</Text>
-            )}
-          </Section>
-
-          {/* Extra details for system words only */}
-          {!isUserWord && meanings[0] && (
-            <Section style={detailCard}>
-              {meanings[0].definition_en && (
-                <Text style={defEn}>{meanings[0].definition_en}</Text>
+          {/* Word cards */}
+          {words.map((word, i) => (
+            <Section key={word.id || i} style={wordCard}>
+              <Text style={badge}>{word.step === "new" ? "✨ Từ mới" : "🔁 Ôn tập"}</Text>
+              <Heading style={wordMain}>{word.word}</Heading>
+              {word.meaning_vi && (
+                <Text style={meaningVi}>🇻🇳 {word.meaning_vi}</Text>
               )}
-              {meanings[0].memory_vi && (
-                <Text style={memoryText}>💡 {meanings[0].memory_vi}</Text>
-              )}
-              {synonyms.length > 0 && (
-                <Text style={synonymsText}>🔗 {synonyms.join(" · ")}</Text>
-              )}
+            </Section>
+          ))}
+
+          {/* Journal note */}
+          {journal?.content && (
+            <Section style={journalCard}>
+              <Text style={badge}>📓 Ghi chú của bạn</Text>
+              <Text style={journalText}>{journal.content}</Text>
             </Section>
           )}
 
@@ -107,15 +83,12 @@ const tagline = { fontSize: "11px", color: "#6B7280", margin: "4px 0 0 0", fontS
 const greetingSection = { marginBottom: "20px" };
 const greeting = { fontSize: "18px", fontWeight: "700", color: "#111827", margin: "0 0 4px 0" };
 const subtitle = { fontSize: "13px", color: "#6B7280", margin: "0" };
-const wordCard = { background: "linear-gradient(135deg, #F0FDF4, #DCFCE7)", borderRadius: "20px", padding: "28px 24px", textAlign: "center", marginBottom: "16px", border: "2px solid #BBF7D0" };
+const wordCard = { background: "linear-gradient(135deg, #F0FDF4, #DCFCE7)", borderRadius: "20px", padding: "24px", textAlign: "center", marginBottom: "16px", border: "2px solid #BBF7D0" };
 const badge = { fontSize: "10px", fontWeight: "700", letterSpacing: "0.12em", color: "#16A34A", margin: "0 0 12px 0", textTransform: "uppercase" };
-const wordMain = { fontSize: "52px", fontWeight: "900", margin: "0 0 6px 0", color: "#15803D", fontFamily: "Georgia, serif", lineHeight: "1.1" };
-const phoneticText = { fontSize: "15px", color: "#6B7280", fontStyle: "italic", margin: "0 0 16px 0" };
-const meaningVi = { fontSize: "20px", fontWeight: "700", color: "#111827", margin: "12px 0 0 0", lineHeight: "1.4" };
-const detailCard = { borderRadius: "14px", padding: "16px 20px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", marginBottom: "20px" };
-const defEn = { fontSize: "14px", color: "#374151", margin: "0 0 8px 0", lineHeight: "1.6" };
-const memoryText = { fontSize: "13px", color: "#D97706", margin: "0 0 8px 0", lineHeight: "1.5" };
-const synonymsText = { fontSize: "13px", color: "#059669", margin: "0", fontWeight: "600" };
+const wordMain = { fontSize: "40px", fontWeight: "900", margin: "0 0 6px 0", color: "#15803D", fontFamily: "Georgia, serif", lineHeight: "1.1" };
+const meaningVi = { fontSize: "18px", fontWeight: "700", color: "#111827", margin: "8px 0 0 0", lineHeight: "1.4" };
+const journalCard = { borderRadius: "20px", padding: "24px", backgroundColor: "#F5F3FF", border: "2px solid #DDD6FE", marginBottom: "16px" };
+const journalText = { fontSize: "15px", color: "#374151", margin: "0", lineHeight: "1.6", whiteSpace: "pre-wrap" };
 const ctaSection = { textAlign: "center", margin: "24px 0" };
 const ctaButton = { background: "linear-gradient(135deg, #22C55E, #16A34A)", color: "#ffffff", fontSize: "15px", fontWeight: "700", textDecoration: "none", padding: "14px 36px", borderRadius: "100px", display: "inline-block" };
 const divider = { border: "none", borderTop: "1px solid #E5E7EB", margin: "20px 0" };

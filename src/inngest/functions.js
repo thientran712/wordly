@@ -1,7 +1,7 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendDailyWordEmail } from "@/lib/send-email";
-import { claimBestWordForUser } from "@/lib/select-word-for-email";
+import { selectEmailContent } from "@/lib/select-word-for-email";
 
 // Validate a timezone string; fall back to Asia/Ho_Chi_Minh if invalid/empty.
 function safeTimezone(tz) {
@@ -171,7 +171,7 @@ export const sendSlotEmail = inngest.createFunction(
       const [{ data: slot }, { data: pref }, { data: profile }, { data: authData }] = await Promise.all([
         supabase.from("email_slots").select("enabled, send_time").eq("id", slot_id).single(),
         supabase.from("email_preferences").select("enabled, frequency, custom_days").eq("user_id", user_id).single(),
-        supabase.from("profiles").select("name, timezone, learning_goal, skill_level").eq("id", user_id).single(),
+        supabase.from("profiles").select("name, timezone").eq("id", user_id).single(),
         supabase.auth.admin.getUserById(user_id),
       ]);
       return {
@@ -182,7 +182,6 @@ export const sendSlotEmail = inngest.createFunction(
         timezone: safeTimezone(profile?.timezone),
         email: authData?.user?.email || null,
         name: profile?.name || authData?.user?.email?.split("@")[0] || "there",
-        learningGoal: profile?.learning_goal || "daily",
       };
     });
 
@@ -206,22 +205,33 @@ export const sendSlotEmail = inngest.createFunction(
       return { skipped: "not scheduled day" };
     }
 
-    // ── Step 3: claim a word from journal / translate history ────────────────
-    const wordResult = await step.run("claim-word", async () => {
+    // ── Step 3: select content from journal / translate history queues ───────
+    const content = await step.run("select-content", async () => {
       const supabase = createAdminClient();
-      return await claimBestWordForUser(supabase, user_id);
+
+      // Avoid repeating whatever was sent in the most recent email.
+      const { data: lastLog } = await supabase
+        .from("email_log")
+        .select("entry_ids")
+        .eq("user_id", user_id)
+        .eq("status", "sent")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      return await selectEmailContent(supabase, user_id, { lastEntryIds: lastLog?.entry_ids || [] });
     });
 
-    if (!wordResult) {
-      await step.run("log-no-word", async () => {
+    if (!content) {
+      await step.run("log-empty", async () => {
         const supabase = createAdminClient();
         await supabase.from("email_log").insert({
-          user_id, slot_id, status: "failed", error: "No word available",
+          user_id, slot_id, status: "failed", error: "Nothing to send — both queues empty",
           recipient: current.email,
         });
       });
       await step.sendEvent("reschedule-tomorrow", { name: "email/slot.scheduled", data: { user_id, slot_id, triggeredAt: tomorrowTs }, ts: tomorrowTs });
-      return { error: "No word available" };
+      return { error: "Nothing to send" };
     }
 
     // ── Step 4: send the email ────────────────────────────────────────────────
@@ -229,20 +239,25 @@ export const sendSlotEmail = inngest.createFunction(
       const result = await sendDailyWordEmail({
         to: current.email,
         userName: current.name,
-        word: wordResult.word,
-        aiContent: null,
-        source: wordResult.source,
+        words: content.words,
+        journal: content.journal,
       });
       return { success: result.success, error: result.error || null, id: result.id || null };
     });
 
     // ── Step 5: log outcome ───────────────────────────────────────────────────
+    const entryIds = [
+      ...content.words.map(w => w.id),
+      ...(content.journal ? [content.journal.id] : []),
+    ];
     await step.run("track-and-log", async () => {
       const supabase = createAdminClient();
       await supabase.from("email_log").insert({
         user_id, slot_id,
         status: sendResult.success ? "sent" : "failed",
-        word: wordResult.word.word, source: wordResult.source,
+        word: content.words.map(w => w.word).join(", ") || null,
+        source: "unified",
+        entry_ids: entryIds,
         recipient: current.email,
         error: sendResult.success ? null : sendResult.error,
       });
@@ -258,7 +273,7 @@ export const sendSlotEmail = inngest.createFunction(
       ts: tomorrowTs,
     });
 
-    return { sent: true, word: wordResult.word.word, source: wordResult.source };
+    return { sent: true, words: content.words.map(w => w.word), journal: content.journal?.id || null };
   }
 );
 

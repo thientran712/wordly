@@ -82,16 +82,15 @@ export function rateCard(card, rating) {
 }
 
 /**
- * Predict retrievability (% user còn nhớ NOW)
+ * Predict retrievability (% user còn nhớ tại thời điểm `now`)
  */
-export function predictRetrievability(card) {
+export function predictRetrievability(card, now = new Date()) {
   if (!card.last_review) return 0;
-  
-  const now = new Date();
+
   const elapsed = (now - new Date(card.last_review)) / (1000 * 60 * 60 * 24); // days
-  
+
   if (card.stability === 0) return 0;
-  
+
   return Math.pow(1 + elapsed / (9 * card.stability), -1);
 }
 

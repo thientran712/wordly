@@ -15,7 +15,6 @@ export default function JournalReviewPage() {
   const router = useRouter();
   const [entry, setEntry] = useState(null);
   const [dueCount, setDueCount] = useState(0);
-  const [revealed, setRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRating, setIsRating] = useState(false);
   const [toast, setToast] = useState(null);
@@ -23,7 +22,6 @@ export default function JournalReviewPage() {
 
   const fetchNext = useCallback(async () => {
     setIsLoading(true);
-    setRevealed(false);
     try {
       const res = await fetch("/api/journal/review");
       const data = await res.json();
@@ -72,14 +70,12 @@ export default function JournalReviewPage() {
   useEffect(() => {
     const handler = (e) => {
       if (!entry) return;
-      if (e.key === " " && !revealed) { e.preventDefault(); setRevealed(true); return; }
-      if (!revealed) return;
       const map = { "1": 1, "2": 2, "3": 3, "4": 4 };
       if (map[e.key]) { e.preventDefault(); handleRate(map[e.key]); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [entry, revealed, isRating]);
+  }, [entry, isRating]);
 
   return (
     <>
@@ -101,7 +97,7 @@ export default function JournalReviewPage() {
           <h1 className="font-serif text-2xl font-bold tracking-tight">📖 Ôn tập</h1>
           <div className="px-3 py-1 rounded-full text-xs font-bold"
             style={{ background: "#F0EDFC", color: "#6C5CE7" }}>
-            {dueCount} từ
+            {dueCount} ghi chú
           </div>
         </div>
 
@@ -115,7 +111,7 @@ export default function JournalReviewPage() {
             style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 32px rgba(108,92,231,0.10)" }}>
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="font-serif text-2xl font-bold mb-2">Xong rồi!</h2>
-            <p className="text-[--ink-soft] text-sm mb-6">Không còn từ nào cần ôn hôm nay.</p>
+            <p className="text-[--ink-soft] text-sm mb-6">Không còn ghi chú nào cần ôn hôm nay.</p>
             <button
               onClick={() => router.push("/journal")}
               className="px-6 py-3 rounded-2xl font-bold text-sm text-white"
@@ -125,66 +121,45 @@ export default function JournalReviewPage() {
             </button>
           </div>
         ) : (
-          /* Flashcard */
+          /* Note card */
           <div className="animate-fade-in">
             <div
               className="rounded-3xl border-2 mb-4 overflow-hidden"
-              style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 32px rgba(45,27,78,0.08)", minHeight: "260px" }}
+              style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 32px rgba(45,27,78,0.08)", minHeight: "180px" }}
             >
-              {/* Word */}
-              <div className="px-8 py-10 text-center border-b-2 border-[--line]">
+              <div className="px-8 py-10 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[--ink-soft] opacity-50 mb-4">
-                  {entry.state === "new" ? "✨ Từ mới" : `🔄 Ôn lần ${entry.review_count}`}
+                  {entry.state === "new" ? "✨ Ghi chú mới" : `🔄 Ôn lần ${entry.review_count}`}
                 </p>
-                <h2
-                  className="font-serif font-black gradient-text-word leading-none tracking-tight"
-                  style={{ fontSize: "clamp(48px, 8vw, 80px)" }}
-                >
-                  {entry.word}
-                </h2>
-              </div>
-
-              {/* Meaning */}
-              <div className="px-8 py-6 text-center" style={{ minHeight: "90px" }}>
-                {revealed ? (
-                  <div className="animate-fade-in">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[--ink-soft] opacity-50 mb-2">🇻🇳 Nghĩa</p>
-                    <p className="text-xl font-semibold text-[--ink]">
-                      {entry.meaning_vi || <span className="italic opacity-40">Không có nghĩa</span>}
-                    </p>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setRevealed(true)}
-                    className="px-6 py-3 rounded-2xl border-2 font-semibold text-sm text-[--ink-soft] border-[--line] hover:border-[--electric] hover:text-[--electric] hover:bg-[--whisper] transition-all"
-                  >
-                    Xem đáp án <span className="opacity-40 text-xs ml-1">[Space]</span>
-                  </button>
-                )}
+                <p className="text-xl font-semibold leading-relaxed text-[--ink] whitespace-pre-wrap">
+                  {entry.content}
+                </p>
               </div>
             </div>
 
+            <p className="text-center text-xs text-[--ink-soft] opacity-60 mb-3">
+              Bạn còn nhớ / hiểu rõ điều này không?
+            </p>
+
             {/* Rating buttons */}
-            {revealed && (
-              <div className="grid grid-cols-4 gap-2 animate-fade-in">
-                {RATINGS.map((r, i) => (
-                  <button
-                    key={r.rating}
-                    onClick={() => handleRate(r.rating)}
-                    disabled={isRating}
-                    className="py-4 rounded-2xl border-2 font-bold text-xs flex flex-col items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-md transition-all"
-                    style={{ background: r.bg, borderColor: r.border, color: r.color }}
-                  >
-                    <r.icon size={16} />
-                    <span>{r.label}</span>
-                    <span className="opacity-40 font-normal text-[10px]">[{i + 1}]</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-4 gap-2 animate-fade-in">
+              {RATINGS.map((r, i) => (
+                <button
+                  key={r.rating}
+                  onClick={() => handleRate(r.rating)}
+                  disabled={isRating}
+                  className="py-4 rounded-2xl border-2 font-bold text-xs flex flex-col items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-md transition-all"
+                  style={{ background: r.bg, borderColor: r.border, color: r.color }}
+                >
+                  <r.icon size={16} />
+                  <span>{r.label}</span>
+                  <span className="opacity-40 font-normal text-[10px]">[{i + 1}]</span>
+                </button>
+              ))}
+            </div>
 
             <p className="text-center text-[10px] text-[--ink-soft] opacity-30 mt-4">
-              {revealed ? "Phím 1–4 để đánh giá" : "Phím Space để xem đáp án"}
+              Phím 1–4 để đánh giá
             </p>
           </div>
         )}

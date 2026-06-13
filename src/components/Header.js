@@ -198,22 +198,21 @@ function MenuItem({ icon: Icon, label, onClick, danger, badge }) {
 }
 
 function JournalSheet({ isOpen, onClose, dueCount, onAdded, onReview }) {
-  const [word, setWord] = useState("");
-  const [meaning, setMeaning] = useState("");
+  const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!word.trim()) return;
+    if (!content.trim()) return;
     setIsLoading(true);
     try {
       const res = await fetch("/api/journal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word: word.trim(), meaning_vi: meaning }),
+        body: JSON.stringify({ content: content.trim() }),
       });
       if (res.ok) {
-        setWord(""); setMeaning("");
+        setContent("");
         onClose();
         onAdded?.();
       }
@@ -280,32 +279,20 @@ function JournalSheet({ isOpen, onClose, dueCount, onAdded, onReview }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-          <input
-            type="text"
-            value={word}
-            onChange={e => setWord(e.target.value)}
-            placeholder="Từ mới..."
+          <textarea
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            placeholder="Câu, bài học, hoặc câu hỏi bạn gặp hôm nay..."
             autoFocus
-            autoComplete="off"
-            className="w-full px-4 py-3 rounded-2xl text-sm font-semibold focus:outline-none transition-all"
-            style={{ background: "var(--input-bg)", border: "1.5px solid var(--input-border)", color: "var(--ink)" }}
-            onFocus={e => { e.target.style.borderColor = "rgba(34,197,94,0.5)"; }}
-            onBlur={e => { e.target.style.borderColor = "var(--input-border)"; }}
-          />
-          <input
-            type="text"
-            value={meaning}
-            onChange={e => setMeaning(e.target.value)}
-            placeholder="Nghĩa tiếng Việt (tuỳ chọn)"
-            autoComplete="off"
-            className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none transition-all"
+            rows={3}
+            className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none transition-all resize-none"
             style={{ background: "var(--input-bg)", border: "1.5px solid var(--input-border)", color: "var(--ink)" }}
             onFocus={e => { e.target.style.borderColor = "rgba(34,197,94,0.5)"; }}
             onBlur={e => { e.target.style.borderColor = "var(--input-border)"; }}
           />
           <button
             type="submit"
-            disabled={isLoading || !word.trim()}
+            disabled={isLoading || !content.trim()}
             className="w-full py-3 rounded-2xl font-bold text-sm disabled:opacity-40 flex items-center justify-center gap-2 active:scale-95 transition-all"
             style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 16px rgba(34,197,94,0.3)" }}
           >
