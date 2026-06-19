@@ -9,7 +9,7 @@ function base64url(buf) {
 }
 
 async function getAccessToken() {
-  const privateKey = process.env.GOOGLE_TTS_PRIVATE_KEY.replace(/\\n/g, "\n");
+  const privateKey = Buffer.from(process.env.GOOGLE_TTS_PRIVATE_KEY_BASE64 || "", "base64").toString("utf8");
   const clientEmail = process.env.GOOGLE_TTS_CLIENT_EMAIL;
 
   const now = Math.floor(Date.now() / 1000);
