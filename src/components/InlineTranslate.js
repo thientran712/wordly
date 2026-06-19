@@ -3,16 +3,28 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeftRight, Volume2, X, Loader2, Search, BookmarkPlus, BookmarkCheck } from "lucide-react";
 
-function speak(text, lang = "en-US") {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = lang;
-  utter.rate = 0.85;
-  const voices = window.speechSynthesis.getVoices();
-  const match = voices.find(v => v.lang.startsWith(lang.split("-")[0]));
-  if (match) utter.voice = match;
-  window.speechSynthesis.speak(utter);
+async function speak(text, lang = "en-US") {
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang }),
+    });
+    if (!res.ok) throw new Error("TTS API failed");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => URL.revokeObjectURL(url);
+    audio.play();
+  } catch {
+    // Fallback to browser TTS
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang;
+    utter.rate = 0.85;
+    window.speechSynthesis.speak(utter);
+  }
 }
 
 const translateCache = new Map();

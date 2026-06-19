@@ -3,13 +3,27 @@
 import { useState, useEffect, useCallback } from "react";
 import { History, Trash2, X, Volume2, ChevronDown, Loader2 } from "lucide-react";
 
-function speak(text, lang = "en-US") {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = lang;
-  utter.rate = 0.85;
-  window.speechSynthesis.speak(utter);
+async function speak(text, lang = "en-US") {
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang }),
+    });
+    if (!res.ok) throw new Error("TTS API failed");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => URL.revokeObjectURL(url);
+    audio.play();
+  } catch {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang;
+    utter.rate = 0.85;
+    window.speechSynthesis.speak(utter);
+  }
 }
 
 function groupByDate(history) {
