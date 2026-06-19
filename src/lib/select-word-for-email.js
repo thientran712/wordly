@@ -1,55 +1,33 @@
-import { predictRetrievability, dbToCard } from "@/lib/fsrs";
-
 // Fixed email re-send schedule: index = current review_count before this send.
 // review_count 0 → send again in 1 day, 1 → 3 days, 2 → 7 days, etc.
 // Last bucket (5+) stays at 90 days indefinitely.
 export const EMAIL_INTERVALS = [1, 3, 7, 14, 30, 90];
 
-// Day-of-year, used for deterministic round-robin (no extra state needed).
-function dayOfYear(date = new Date()) {
-  const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 0));
-  const diff = date - start;
-  return Math.floor(diff / 86400000);
-}
-
-// How many "low retrievability" candidates to round-robin between in step 3.
-const EARLY_REVIEW_POOL = 3;
-
 /**
- * Pick one card from a list of FSRS-enabled rows using the 4-step algorithm:
- *  1. Due now      — state != 'new' && due_at <= now, oldest due_at first
- *  2. New          — state == 'new', oldest created_at first
- *  3. Early review — lowest predicted retrievability R(t), round-robin top-N by day
- *  4. Empty        — null (caller decides fallback)
+ * Pick one eligible row using a 2-priority algorithm.
+ * Rows arriving here are already pre-filtered to state='new' OR due_at<=now.
  *
- * `excludeIds` removes candidates outright (already picked for this email).
+ *  1. Due now — state != 'new', oldest due_at first (longest overdue gets priority)
+ *  2. New     — state == 'new', oldest created_at first (FIFO introduction)
+ *
+ * `excludeIds` removes candidates already picked for this email batch.
  * Returns { row, step } or null.
  */
-export function pickFromRows(rows, { excludeIds = new Set(), now = new Date() } = {}) {
+export function pickFromRows(rows, { excludeIds = new Set() } = {}) {
   const candidates = rows.filter(r => !excludeIds.has(r.id));
   if (candidates.length === 0) return null;
 
-  // Step 1: due now
+  // Priority 1: overdue (state != 'new' and due_at has passed)
   const due = candidates
-    .filter(r => r.state !== "new" && r.due_at && new Date(r.due_at) <= now)
+    .filter(r => r.state !== "new" && r.due_at)
     .sort((a, b) => new Date(a.due_at) - new Date(b.due_at));
   if (due.length > 0) return { row: due[0], step: "due" };
 
-  // Step 2: new (never reviewed)
+  // Priority 2: brand new, never sent
   const fresh = candidates
     .filter(r => r.state === "new")
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   if (fresh.length > 0) return { row: fresh[0], step: "new" };
-
-  // Step 3: early review — lowest R(t), round-robin among the weakest N
-  const scored = candidates
-    .map(r => ({ row: r, r: predictRetrievability(dbToCard(r), now) }))
-    .sort((a, b) => a.r - b.r);
-  if (scored.length > 0) {
-    const pool = scored.slice(0, Math.min(EARLY_REVIEW_POOL, scored.length));
-    const idx = dayOfYear(now) % pool.length;
-    return { row: pool[idx].row, step: "early" };
-  }
 
   return null;
 }
@@ -60,16 +38,16 @@ export function pickFromRows(rows, { excludeIds = new Set(), now = new Date() } 
  * entries sent in the previous email — only honored on the first pick so a
  * truly empty queue doesn't block all picks).
  */
-export function pickMultipleFromRows(rows, count, { avoidIds = new Set(), now = new Date() } = {}) {
+export function pickMultipleFromRows(rows, count, { avoidIds = new Set() } = {}) {
   const picks = [];
   const excluded = new Set();
 
   for (let i = 0; i < count; i++) {
     // First try excluding both already-picked ids and the previous email's ids.
-    let result = pickFromRows(rows, { excludeIds: new Set([...excluded, ...avoidIds]), now });
-    // If that leaves nothing (e.g. only the "avoid" card is available), allow it.
+    let result = pickFromRows(rows, { excludeIds: new Set([...excluded, ...avoidIds]) });
+    // If that leaves nothing (e.g. only the "avoid" card exists), allow it.
     if (!result && avoidIds.size > 0) {
-      result = pickFromRows(rows, { excludeIds: excluded, now });
+      result = pickFromRows(rows, { excludeIds: excluded });
     }
     if (!result) break;
     picks.push(result);
@@ -95,26 +73,33 @@ const JOURNAL_FIELDS = "id, content, state, stability, difficulty, due_at, revie
  */
 export async function selectEmailContent(supabase, userId, { lastEntryIds = [] } = {}) {
   const now = new Date();
+  const nowIso = now.toISOString();
   const avoidIds = new Set(lastEntryIds);
 
+  // Only load rows that are actually eligible: new (never sent) or due now.
+  // This avoids pulling the entire table into memory for users with large histories.
   const [{ data: translateRows }, { data: journalRows }] = await Promise.all([
     supabase
       .from("translate_history")
       .select(TRANSLATE_FIELDS)
       .eq("user_id", userId)
-      .eq("direction", "EN→VI"),
+      .eq("direction", "EN→VI")
+      .or(`state.eq.new,due_at.lte.${nowIso}`)
+      .limit(200),
     supabase
       .from("journal_entries")
       .select(JOURNAL_FIELDS)
-      .eq("user_id", userId),
+      .eq("user_id", userId)
+      .or(`state.eq.new,due_at.lte.${nowIso}`)
+      .limit(200),
   ]);
 
   // translate_history rows don't have created_at — use saved_at for step 2 ordering.
   const tRows = (translateRows || []).map(r => ({ ...r, created_at: r.saved_at }));
   const jRows = journalRows || [];
 
-  const wordPicks = pickMultipleFromRows(tRows, 2, { avoidIds, now });
-  const journalPicks = pickMultipleFromRows(jRows, 1, { avoidIds, now });
+  const wordPicks = pickMultipleFromRows(tRows, 2, { avoidIds });
+  const journalPicks = pickMultipleFromRows(jRows, 1, { avoidIds });
 
   if (wordPicks.length === 0 && journalPicks.length === 0) return null;
 

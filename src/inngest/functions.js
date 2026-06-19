@@ -209,17 +209,19 @@ export const sendSlotEmail = inngest.createFunction(
     const content = await step.run("select-content", async () => {
       const supabase = createAdminClient();
 
-      // Avoid repeating whatever was sent in the most recent email.
-      const { data: lastLog } = await supabase
+      // Collect all entry_ids sent in the last 12 hours across ALL slots so
+      // two slots firing the same day never pick the same word (race-safe).
+      const since = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+      const { data: recentLogs } = await supabase
         .from("email_log")
         .select("entry_ids")
         .eq("user_id", user_id)
         .eq("status", "sent")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+        .gte("created_at", since);
 
-      return await selectEmailContent(supabase, user_id, { lastEntryIds: lastLog?.entry_ids || [] });
+      const recentIds = (recentLogs || []).flatMap(l => l.entry_ids || []);
+
+      return await selectEmailContent(supabase, user_id, { lastEntryIds: recentIds });
     });
 
     if (!content) {
@@ -269,47 +271,46 @@ export const sendSlotEmail = inngest.createFunction(
 
     // ── Step 6: advance spaced-repetition schedule for every sent entry ───────
     // Sets due_at = now + interval[review_count] so the same word isn't picked
-    // again until its next scheduled window. Without this step every word stays
-    // state='new' forever and the same entries repeat every day.
+    // again until its next scheduled window. Throws on DB failure so Inngest
+    // retries this step (email already sent — only the schedule update is redone).
     await step.run("advance-schedule", async () => {
       const supabase = createAdminClient();
       const now = new Date();
 
-      const wordUpdates = content.words.map(w => {
-        const nextCount = (w.review_count ?? 0) + 1;
-        const intervalDays = EMAIL_INTERVALS[Math.min(w.review_count ?? 0, EMAIL_INTERVALS.length - 1)];
+      const buildUpdate = (reviewCount) => {
+        const intervalDays = EMAIL_INTERVALS[Math.min(reviewCount, EMAIL_INTERVALS.length - 1)];
         const dueAt = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
-        return supabase
-          .from("translate_history")
-          .update({
-            state: "review",
-            review_count: nextCount,
-            last_reviewed_at: now.toISOString(),
-            due_at: dueAt.toISOString(),
-            scheduled_days: intervalDays,
-          })
-          .eq("id", w.id)
-          .eq("user_id", user_id);
-      });
+        return {
+          state: "review",
+          review_count: reviewCount + 1,
+          last_reviewed_at: now.toISOString(),
+          due_at: dueAt.toISOString(),
+          scheduled_days: intervalDays,
+        };
+      };
 
-      const journalUpdate = content.journal ? (() => {
-        const nextCount = (content.journal.review_count ?? 0) + 1;
-        const intervalDays = EMAIL_INTERVALS[Math.min(content.journal.review_count ?? 0, EMAIL_INTERVALS.length - 1)];
-        const dueAt = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
-        return supabase
-          .from("journal_entries")
-          .update({
-            state: "review",
-            review_count: nextCount,
-            last_reviewed_at: now.toISOString(),
-            due_at: dueAt.toISOString(),
-            scheduled_days: intervalDays,
-          })
-          .eq("id", content.journal.id)
-          .eq("user_id", user_id);
-      })() : null;
+      const results = await Promise.all([
+        ...content.words.map(w =>
+          supabase
+            .from("translate_history")
+            .update(buildUpdate(w.review_count ?? 0))
+            .eq("id", w.id)
+            .eq("user_id", user_id)
+        ),
+        ...(content.journal ? [
+          supabase
+            .from("journal_entries")
+            .update(buildUpdate(content.journal.review_count ?? 0))
+            .eq("id", content.journal.id)
+            .eq("user_id", user_id)
+        ] : []),
+      ]);
 
-      await Promise.all([...wordUpdates, ...(journalUpdate ? [journalUpdate] : [])]);
+      const failed = results.filter(r => r.error);
+      if (failed.length > 0) {
+        const msgs = failed.map(r => r.error.message).join("; ");
+        throw new Error(`advance-schedule DB update failed: ${msgs}`);
+      }
     });
 
     await step.sendEvent("reschedule-tomorrow", {
