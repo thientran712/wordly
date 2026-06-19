@@ -32,19 +32,25 @@ export async function POST(request) {
   return Response.json({ success: true, id: data.id });
 }
 
-export async function GET() {
+export async function GET(request) {
   const user = await getUserFast();
-  if (!user) return Response.json({ history: [] });
+  if (!user) return Response.json({ history: [], hasMore: false });
+
+  const { searchParams } = new URL(request.url);
+  const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
+  const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
 
   const admin = createAdminClient();
+  // Fetch limit+1 to know if there are more rows without a separate count query.
   const { data } = await admin
     .from("translate_history")
     .select("id, source_text, translated_text, direction, saved_at")
     .eq("user_id", user.id)
     .order("saved_at", { ascending: false })
-    .limit(120);
+    .range(offset, offset + limit);
 
-  return Response.json({ history: data || [] });
+  const hasMore = (data || []).length > limit;
+  return Response.json({ history: (data || []).slice(0, limit), hasMore });
 }
 
 export async function DELETE(request) {

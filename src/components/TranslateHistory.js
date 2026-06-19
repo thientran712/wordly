@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { History, Trash2, X, Volume2, ArrowLeftRight, ChevronDown, Loader2 } from "lucide-react";
+import { History, Trash2, X, Volume2, ChevronDown, Loader2 } from "lucide-react";
 
 function speak(text, lang = "en-US") {
   if (!window.speechSynthesis) return;
@@ -33,9 +33,14 @@ function formatDate(iso) {
   return d.toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric" });
 }
 
+const PAGE_SIZE = 20;
+
 export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = false }) {
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -43,15 +48,52 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
     if (!isLoggedIn) return;
     setIsLoading(true);
     try {
-      const res = await fetch("/api/translate-history");
+      const res = await fetch(`/api/translate-history?limit=${PAGE_SIZE}&offset=0`);
       const data = await res.json();
       setGroups(groupByDate(data.history || []));
+      setHasMore(data.hasMore ?? false);
+      setOffset(PAGE_SIZE);
     } catch {
       setGroups([]);
+      setHasMore(false);
     } finally {
       setIsLoading(false);
     }
   }, [isLoggedIn]);
+
+  const loadMore = async () => {
+    setIsLoadingMore(true);
+    try {
+      const res = await fetch(`/api/translate-history?limit=${PAGE_SIZE}&offset=${offset}`);
+      const data = await res.json();
+      setGroups(prev => {
+        // Merge new entries into existing groups by date
+        const merged = [...prev];
+        for (const entry of (data.history || [])) {
+          const day = (entry.saved_at || "").slice(0, 10);
+          const existing = merged.find(g => g.day === day);
+          if (existing) {
+            existing.entries.push(entry);
+          } else {
+            const today = new Date().toISOString().slice(0, 10);
+            const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+            merged.push({
+              day,
+              dateLabel: day === today ? "Hôm nay" : day === yesterday ? "Hôm qua" : formatDate(day),
+              entries: [entry],
+            });
+          }
+        }
+        return merged;
+      });
+      setHasMore(data.hasMore ?? false);
+      setOffset(prev => prev + PAGE_SIZE);
+    } catch {
+      // silently fail — existing entries stay visible
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   useEffect(() => { fetchHistory(); }, [fetchHistory, refreshToken]);
 
@@ -137,6 +179,21 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
               ))}
             </div>
           ))}
+
+          {hasMore && (
+            <div className="px-4 py-3 flex justify-center">
+              <button
+                onClick={loadMore}
+                disabled={isLoadingMore}
+                className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                style={{ background: "var(--hover-bg)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
+              >
+                {isLoadingMore
+                  ? <><Loader2 size={12} className="animate-spin" /> Đang tải...</>
+                  : <><ChevronDown size={12} /> Tải thêm</>}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
