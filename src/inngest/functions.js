@@ -1,7 +1,7 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendDailyWordEmail } from "@/lib/send-email";
-import { selectEmailContent } from "@/lib/select-word-for-email";
+import { selectEmailContent, EMAIL_INTERVALS } from "@/lib/select-word-for-email";
 
 // Validate a timezone string; fall back to Asia/Ho_Chi_Minh if invalid/empty.
 function safeTimezone(tz) {
@@ -266,6 +266,51 @@ export const sendSlotEmail = inngest.createFunction(
     if (!sendResult.success) {
       throw new Error(`Email send failed: ${sendResult.error}`);
     }
+
+    // ── Step 6: advance spaced-repetition schedule for every sent entry ───────
+    // Sets due_at = now + interval[review_count] so the same word isn't picked
+    // again until its next scheduled window. Without this step every word stays
+    // state='new' forever and the same entries repeat every day.
+    await step.run("advance-schedule", async () => {
+      const supabase = createAdminClient();
+      const now = new Date();
+
+      const wordUpdates = content.words.map(w => {
+        const nextCount = (w.review_count ?? 0) + 1;
+        const intervalDays = EMAIL_INTERVALS[Math.min(w.review_count ?? 0, EMAIL_INTERVALS.length - 1)];
+        const dueAt = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+        return supabase
+          .from("translate_history")
+          .update({
+            state: "review",
+            review_count: nextCount,
+            last_reviewed_at: now.toISOString(),
+            due_at: dueAt.toISOString(),
+            scheduled_days: intervalDays,
+          })
+          .eq("id", w.id)
+          .eq("user_id", user_id);
+      });
+
+      const journalUpdate = content.journal ? (() => {
+        const nextCount = (content.journal.review_count ?? 0) + 1;
+        const intervalDays = EMAIL_INTERVALS[Math.min(content.journal.review_count ?? 0, EMAIL_INTERVALS.length - 1)];
+        const dueAt = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+        return supabase
+          .from("journal_entries")
+          .update({
+            state: "review",
+            review_count: nextCount,
+            last_reviewed_at: now.toISOString(),
+            due_at: dueAt.toISOString(),
+            scheduled_days: intervalDays,
+          })
+          .eq("id", content.journal.id)
+          .eq("user_id", user_id);
+      })() : null;
+
+      await Promise.all([...wordUpdates, ...(journalUpdate ? [journalUpdate] : [])]);
+    });
 
     await step.sendEvent("reschedule-tomorrow", {
       name: "email/slot.scheduled",

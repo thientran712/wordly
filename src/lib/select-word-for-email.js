@@ -1,5 +1,10 @@
 import { predictRetrievability, dbToCard } from "@/lib/fsrs";
 
+// Fixed email re-send schedule: index = current review_count before this send.
+// review_count 0 → send again in 1 day, 1 → 3 days, 2 → 7 days, etc.
+// Last bucket (5+) stays at 90 days indefinitely.
+export const EMAIL_INTERVALS = [1, 3, 7, 14, 30, 90];
+
 // Day-of-year, used for deterministic round-robin (no extra state needed).
 function dayOfYear(date = new Date()) {
   const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 0));
@@ -118,10 +123,16 @@ export async function selectEmailContent(supabase, userId, { lastEntryIds = [] }
       id: row.id,
       word: row.source_text,
       meaning_vi: row.translated_text,
+      review_count: row.review_count ?? 0,
       step, // 'due' | 'new' | 'early'
     })),
     journal: journalPicks.length > 0
-      ? { id: journalPicks[0].row.id, content: journalPicks[0].row.content, step: journalPicks[0].step }
+      ? {
+          id: journalPicks[0].row.id,
+          content: journalPicks[0].row.content,
+          review_count: journalPicks[0].row.review_count ?? 0,
+          step: journalPicks[0].step,
+        }
       : null,
   };
 }

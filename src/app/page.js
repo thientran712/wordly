@@ -7,46 +7,31 @@ import TranslateHistory from "@/components/TranslateHistory";
 import GuestBanner from "@/components/GuestBanner";
 
 export default function Home() {
-  const [user, setUser] = useState(undefined); // undefined = loading, null = guest
+  // Render optimistically as logged-in; flip to guest only if /api/profile says so.
+  // Avoids a full-page skeleton + sequential history fetch on every load.
+  const [isGuest, setIsGuest] = useState(false);
   const [toast, setToast] = useState(null);
   const [userName, setUserName] = useState("");
   const [historyToken, setHistoryToken] = useState(0);
+  const [translatePick, setTranslatePick] = useState(null);
 
   useEffect(() => {
     fetch("/api/profile")
       .then(r => {
         if (!r.ok) {
-          setUser(null);
+          setIsGuest(true);
           return null;
         }
-        setUser(true);
         return r.json();
       })
       .then(data => {
         if (!data) return;
         setUserName(data.profile?.name || data.email?.split("@")[0] || "");
       })
-      .catch(() => setUser(null));
+      .catch(() => setIsGuest(true));
   }, []);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
-
-  const isGuest = user === null;
-  const [translatePick, setTranslatePick] = useState(null);
-
-  if (user === undefined) {
-    return (
-      <>
-        <div className="bg-blobs"><div className="blob blob-1" /><div className="blob blob-2" /><div className="blob blob-3" /><div className="blob blob-4" /></div>
-        <main className="relative z-10">
-          <div className="h-14 animate-pulse" style={{ background: "var(--header-bg)", borderBottom: "1px solid var(--divider)" }} />
-          <div className="max-w-2xl mx-auto px-4 pt-4 space-y-3 animate-pulse">
-            <div className="h-56 rounded-2xl" style={{ background: "var(--card-bg)" }} />
-          </div>
-        </main>
-      </>
-    );
-  }
 
   return (
     <>
