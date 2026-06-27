@@ -149,20 +149,31 @@ export default function PracticePage() {
   // Chat state
   const [sessionState, setSessionState] = useState("idle"); // idle | connecting | active | ended
   const [messages, setMessages] = useState([]);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
+  const [isListening, setIsListening] = useState(false);  // VAD mic is on
+  const [isSpeaking, setIsSpeaking] = useState(false);    // Alex is speaking
+  const [isThinking, setIsThinking] = useState(false);    // AI is processing
+  const [isUserTalking, setIsUserTalking] = useState(false); // VAD detected voice
   const [transcript, setTranscript] = useState("");
   const [avatarFrame, setAvatarFrame] = useState(0);
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [vadReady, setVadReady] = useState(false);
 
+  const vadRef = useRef(null);
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
   const avatarTimerRef = useRef(null);
-  const silenceTimerRef = useRef(null);
-  const accumulatedRef = useRef("");
   const saveTimeoutRef = useRef(null);
+  const isSpeakingRef = useRef(false);
+  const isThinkingRef = useRef(false);
+  const activeSessionIdRef = useRef(null);
+  const messagesRef = useRef([]);
+
+  // Keep refs in sync
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
+  useEffect(() => { isThinkingRef.current = isThinking; }, [isThinking]);
+  useEffect(() => { activeSessionIdRef.current = activeSessionId; }, [activeSessionId]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   // ── Load sessions ──────────────────────────────────────────────────────────
   const fetchSessions = useCallback(async () => {
@@ -212,8 +223,10 @@ export default function PracticePage() {
   // ── Select existing session ────────────────────────────────────────────────
   const selectSession = useCallback(async (id) => {
     // Stop any active session first
-    recognitionRef.current?.stop();
+    if (vadRef.current) { try { vadRef.current.destroy(); } catch {} vadRef.current = null; }
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
     setIsListening(false);
+    setVadReady(false);
     setIsSpeaking(false);
     setIsThinking(false);
     setError(null);
@@ -327,100 +340,172 @@ export default function PracticePage() {
     setError(null);
   }, []);
 
-  // ── Speech ─────────────────────────────────────────────────────────────────
-  const submitSpeech = useCallback((text) => {
-    clearTimeout(silenceTimerRef.current);
-    accumulatedRef.current = "";
-    setTranscript("");
-    setIsListening(false);
-    if (recognitionRef.current) {
-      recognitionRef.current._shouldRestart = false;
-      recognitionRef.current.stop();
-    }
-    setMessages(prev => {
-      sendMessage(text, prev, activeSessionId).then(updated => setMessages(updated));
-      return prev;
+  // ── STT: convert audio blob → text via Web Speech API ─────────────────────
+  const transcribeAudio = useCallback((audioFloat32) => {
+    return new Promise((resolve) => {
+      if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+        resolve(""); return;
+      }
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SR();
+      recognition.lang = "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      // Convert float32 PCM → WAV blob → play back into recognition
+      // Since Web Speech API can't accept blobs directly, we use a short
+      // continuous session trick: start recognition right when speech starts.
+      // The VAD already detected speech; we just need the text.
+      let result = "";
+      recognition.onresult = (e) => {
+        result = Array.from(e.results).map(r => r[0].transcript).join(" ").trim();
+      };
+      recognition.onend = () => resolve(result);
+      recognition.onerror = () => resolve(result);
+      try { recognition.start(); setTimeout(() => recognition.stop(), 200); } catch { resolve(""); }
     });
-  }, [sendMessage, activeSessionId]);
+  }, []);
 
-  const startListening = useCallback(() => {
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      setError("Trình duyệt không hỗ trợ mic. Dùng Chrome nhé!"); return;
-    }
-    accumulatedRef.current = "";
-    clearTimeout(silenceTimerRef.current);
+  // ── VAD: init once per session ─────────────────────────────────────────────
+  const startVAD = useCallback(async () => {
+    try {
+      const { MicVAD } = await import("@ricky0123/vad-web");
 
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = true;
+      const vad = await MicVAD.new({
+        workletURL: "/vad.worklet.bundle.min.js",
+        modelURL: "/silero_vad_v5.onnx",
+        ortConfig: (ort) => {
+          ort.env.wasm.wasmPaths = "/";
+        },
+        positiveSpeechThreshold: 0.6,
+        negativeSpeechThreshold: 0.4,
+        minSpeechFrames: 4,
+        preSpeechPadFrames: 10,
+        redemptionFrames: 8,
 
-    recognition.onresult = (e) => {
-      let finalText = "", interimText = "";
-      for (const result of e.results) {
-        if (result.isFinal) finalText += result[0].transcript;
-        else interimText += result[0].transcript;
-      }
-      accumulatedRef.current = finalText;
-      setTranscript((finalText + " " + interimText).trim());
+        onSpeechStart: () => {
+          // Don't listen while Alex is speaking or AI is thinking
+          if (isSpeakingRef.current || isThinkingRef.current) return;
+          setIsUserTalking(true);
+          setTranscript("");
 
-      clearTimeout(silenceTimerRef.current);
-      if (finalText.trim()) {
-        silenceTimerRef.current = setTimeout(() => {
-          const text = accumulatedRef.current.trim();
-          if (text) submitSpeech(text);
-        }, 2500);
-      }
-    };
+          // Start Web Speech API in parallel to capture text
+          if (("webkitSpeechRecognition" in window) || ("SpeechRecognition" in window)) {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const rec = new SR();
+            rec.lang = "en-US";
+            rec.continuous = true;
+            rec.interimResults = true;
+            let accumulated = "";
 
-    recognition.onerror = (e) => {
-      if (e.error === "no-speech") return;
-      setError("Mic lỗi: " + e.error);
+            rec.onresult = (e) => {
+              let final = "", interim = "";
+              for (const r of e.results) {
+                if (r.isFinal) final += r[0].transcript;
+                else interim += r[0].transcript;
+              }
+              accumulated = final;
+              setTranscript((final + " " + interim).trim());
+              recognitionRef.current._accumulated = accumulated;
+            };
+            rec.onerror = () => {};
+            rec.onend = () => {};
+            rec.start();
+            recognitionRef.current = rec;
+          }
+        },
+
+        onSpeechEnd: () => {
+          if (isSpeakingRef.current || isThinkingRef.current) {
+            setIsUserTalking(false);
+            setTranscript("");
+            if (recognitionRef.current) {
+              try { recognitionRef.current.stop(); } catch {}
+              recognitionRef.current = null;
+            }
+            return;
+          }
+
+          setIsUserTalking(false);
+
+          // Stop STT and get accumulated text
+          const rec = recognitionRef.current;
+          if (rec) {
+            try { rec.stop(); } catch {}
+            recognitionRef.current = null;
+          }
+
+          // Small delay to let final STT result come in
+          setTimeout(() => {
+            const text = rec?._accumulated?.trim() || "";
+            setTranscript("");
+            if (text) {
+              const currentMessages = messagesRef.current;
+              const sessionId = activeSessionIdRef.current;
+              setMessages(prev => {
+                sendMessage(text, prev, sessionId).then(updated => setMessages(updated));
+                return prev;
+              });
+            }
+          }, 300);
+        },
+
+        onVADMisfire: () => {
+          setIsUserTalking(false);
+          setTranscript("");
+          if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch {}
+            recognitionRef.current = null;
+          }
+        },
+      });
+
+      vadRef.current = vad;
+      vad.start();
+      setIsListening(true);
+      setVadReady(true);
+      setError(null);
+    } catch (err) {
+      setError("Không thể bật mic: " + (err.message || "unknown error"));
       setIsListening(false);
-      setTranscript("");
-    };
-
-    recognition.onend = () => {
-      if (recognitionRef.current?._shouldRestart) {
-        try { recognition.start(); } catch {}
-      }
-    };
-
-    recognition._shouldRestart = true;
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-    setTranscript("");
-    setError(null);
-  }, [submitSpeech]);
-
-  const stopListening = useCallback(() => {
-    clearTimeout(silenceTimerRef.current);
-    if (recognitionRef.current) {
-      recognitionRef.current._shouldRestart = false;
-      recognitionRef.current.stop();
     }
-    const text = accumulatedRef.current.trim();
-    if (text) submitSpeech(text);
-    else { setIsListening(false); setTranscript(""); }
-  }, [submitSpeech]);
+  }, [sendMessage]);
+
+  const stopVAD = useCallback(() => {
+    if (vadRef.current) {
+      try { vadRef.current.destroy(); } catch {}
+      vadRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+    setIsUserTalking(false);
+    setTranscript("");
+    setVadReady(false);
+  }, []);
 
   const toggleListening = useCallback(() => {
-    if (isListening) stopListening();
-    else startListening();
-  }, [isListening, startListening, stopListening]);
+    if (isListening) stopVAD();
+    else startVAD();
+  }, [isListening, startVAD, stopVAD]);
+
+  // Auto-start VAD when session becomes active
+  useEffect(() => {
+    if (sessionState === "active" && !isListening && !vadRef.current) {
+      startVAD();
+    }
+    if (sessionState !== "active" && isListening) {
+      stopVAD();
+    }
+  }, [sessionState]); // eslint-disable-line
 
   const endSession = useCallback(() => {
-    clearTimeout(silenceTimerRef.current);
-    if (recognitionRef.current) {
-      recognitionRef.current._shouldRestart = false;
-      recognitionRef.current.stop();
-    }
+    stopVAD();
     setSessionState("ended");
-    setIsListening(false);
     setIsSpeaking(false);
-  }, []);
+  }, [stopVAD]);
 
   // ── Session CRUD ───────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id) => {
@@ -443,7 +528,8 @@ export default function PracticePage() {
   }, []);
 
   const handleNew = useCallback(() => {
-    recognitionRef.current?.stop();
+    if (vadRef.current) { try { vadRef.current.destroy(); } catch {} vadRef.current = null; }
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
     setActiveSessionId(null);
     setMessages([]);
     setSessionState("idle");
@@ -453,7 +539,7 @@ export default function PracticePage() {
     setSidebarOpen(false);
   }, []);
 
-  const canTalk = sessionState === "active" && !isThinking && !isSpeaking;
+  const canTalk = sessionState === "active" && !isThinking && !isSpeaking; // kept for reference
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg)" }}>
@@ -606,20 +692,25 @@ export default function PracticePage() {
             {sessionState === "active" && (
               <>
                 <div className="flex items-center gap-5">
-                  <button
-                    onClick={toggleListening}
-                    disabled={!canTalk}
-                    className="w-18 h-18 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-40"
-                    style={{
-                      width: 72, height: 72,
-                      background: isListening ? "var(--electric)" : "var(--card-bg)",
-                      border: `3px solid ${isListening ? "var(--electric)" : "var(--card-border)"}`,
-                      boxShadow: isListening ? "0 0 28px rgba(34,197,94,0.5)" : "0 4px 16px rgba(0,0,0,0.15)",
-                      color: isListening ? "#0A0A0A" : "var(--ink)",
-                    }}
-                  >
-                    {isListening ? <Mic size={28} /> : <MicOff size={24} />}
-                  </button>
+                  {/* Mic toggle — VAD auto-detects voice, this just enables/disables */}
+                  <div className="relative">
+                    <button
+                      onClick={toggleListening}
+                      className="rounded-full flex items-center justify-center transition-all active:scale-95"
+                      style={{
+                        width: 72, height: 72,
+                        background: isUserTalking ? "var(--electric)" : isListening ? "var(--green-subtle)" : "var(--card-bg)",
+                        border: `3px solid ${isUserTalking ? "var(--electric)" : isListening ? "var(--electric)" : "var(--card-border)"}`,
+                        boxShadow: isUserTalking ? "0 0 32px rgba(34,197,94,0.7)" : isListening ? "0 0 20px rgba(34,197,94,0.3)" : "0 4px 16px rgba(0,0,0,0.15)",
+                        color: isListening ? "var(--electric)" : "var(--ink-soft)",
+                      }}
+                    >
+                      {isListening ? <Mic size={28} /> : <MicOff size={24} />}
+                    </button>
+                    {isListening && !isUserTalking && !isSpeaking && !isThinking && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 animate-pulse border-2" style={{ borderColor: "var(--card-bg)" }} />
+                    )}
+                  </div>
                   <button
                     onClick={endSession}
                     className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95"
@@ -629,7 +720,11 @@ export default function PracticePage() {
                   </button>
                 </div>
                 <p className="text-xs text-center" style={{ color: "var(--ink-soft)" }}>
-                  {isListening ? "Đang nghe — click mic để gửi, hoặc dừng 2.5s" : canTalk ? "Click mic để nói" : "Chờ Alex trả lời..."}
+                  {isThinking ? "Alex đang suy nghĩ..." :
+                   isSpeaking ? "Alex đang nói..." :
+                   isUserTalking ? "Đang nghe bạn nói..." :
+                   isListening ? "Mic đang bật — cứ tự nhiên nói" :
+                   "Nhấn mic để bật"}
                 </p>
               </>
             )}
