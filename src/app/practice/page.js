@@ -376,6 +376,7 @@ export default function PracticePage() {
         modelURL: "/silero_vad_v5.onnx",
         ortConfig: (ort) => {
           ort.env.wasm.wasmPaths = "/";
+          ort.env.wasm.numThreads = 1;
         },
         positiveSpeechThreshold: 0.6,
         negativeSpeechThreshold: 0.4,
