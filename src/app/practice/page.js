@@ -41,6 +41,8 @@ export default function PracticePage() {
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
   const avatarTimerRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+  const accumulatedRef = useRef("");
 
   // Animate avatar when speaking
   useEffect(() => {
@@ -127,55 +129,98 @@ export default function PracticePage() {
     }
   }, []);
 
+  const submitSpeech = useCallback((text, currentMessages) => {
+    clearTimeout(silenceTimerRef.current);
+    accumulatedRef.current = "";
+    setTranscript("");
+    setIsListening(false);
+    recognitionRef.current?.stop();
+    setMessages(prev => {
+      const base = currentMessages ?? prev;
+      sendMessage(text, base).then(updated => setMessages(updated));
+      return prev;
+    });
+  }, [sendMessage]);
+
   const startListening = useCallback(() => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
       setError("Trình duyệt không hỗ trợ mic. Dùng Chrome nhé!");
       return;
     }
 
+    accumulatedRef.current = "";
+    clearTimeout(silenceTimerRef.current);
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SR();
     recognition.lang = "en-US";
-    recognition.continuous = false;
+    recognition.continuous = true;      // keep listening — no auto cut-off
     recognition.interimResults = true;
 
     recognition.onresult = (e) => {
-      const interim = Array.from(e.results).map(r => r[0].transcript).join("");
-      setTranscript(interim);
+      // Accumulate all final segments + current interim
+      let finalText = "";
+      let interimText = "";
+      for (const result of e.results) {
+        if (result.isFinal) finalText += result[0].transcript;
+        else interimText += result[0].transcript;
+      }
+      accumulatedRef.current = finalText;
+      setTranscript((finalText + " " + interimText).trim());
 
-      if (e.results[e.results.length - 1].isFinal) {
-        const final = e.results[e.results.length - 1][0].transcript.trim();
-        if (final) {
-          setTranscript("");
-          setIsListening(false);
-          setMessages(prev => {
-            sendMessage(final, prev).then(updated => setMessages(updated));
-            return prev;
-          });
-        }
+      // Reset silence timer on every speech event (2.5s of silence = done)
+      clearTimeout(silenceTimerRef.current);
+      if (finalText.trim()) {
+        silenceTimerRef.current = setTimeout(() => {
+          const text = accumulatedRef.current.trim();
+          if (text) submitSpeech(text);
+        }, 2500);
       }
     };
 
     recognition.onerror = (e) => {
-      if (e.error !== "no-speech") setError("Mic error: " + e.error);
+      if (e.error === "no-speech") return; // ignore — continuous mode fires this often
+      setError("Mic lỗi: " + e.error);
       setIsListening(false);
       setTranscript("");
     };
 
+    // continuous=true: onend fires when manually stopped or browser restarts it
     recognition.onend = () => {
-      setIsListening(false);
+      // Auto-restart if still in listening state (Chrome stops after ~60s)
+      if (recognitionRef.current?._shouldRestart) {
+        try { recognition.start(); } catch {}
+      }
     };
 
+    recognition._shouldRestart = true;
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
     setTranscript("");
-  }, [sendMessage]);
+    setError(null);
+  }, [submitSpeech]);
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  }, []);
+    clearTimeout(silenceTimerRef.current);
+    if (recognitionRef.current) {
+      recognitionRef.current._shouldRestart = false;
+      recognitionRef.current.stop();
+    }
+    // If there's accumulated text, send it
+    const text = accumulatedRef.current.trim();
+    if (text) {
+      submitSpeech(text);
+    } else {
+      setIsListening(false);
+      setTranscript("");
+    }
+  }, [submitSpeech]);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) stopListening();
+    else startListening();
+  }, [isListening, startListening, stopListening]);
 
   const endSession = useCallback(() => {
     recognitionRef.current?.stop();
@@ -315,12 +360,9 @@ export default function PracticePage() {
 
           {sessionState === "active" && (
             <div className="flex items-center gap-4">
-              {/* Mic button */}
+              {/* Mic button — click to toggle */}
               <button
-                onMouseDown={startListening}
-                onMouseUp={stopListening}
-                onTouchStart={(e) => { e.preventDefault(); startListening(); }}
-                onTouchEnd={(e) => { e.preventDefault(); stopListening(); }}
+                onClick={toggleListening}
                 disabled={!canTalk}
                 className="w-20 h-20 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-40"
                 style={{
@@ -346,7 +388,7 @@ export default function PracticePage() {
 
           {sessionState === "active" && (
             <p className="text-xs text-center" style={{ color: "var(--ink-soft)" }}>
-              {isListening ? "Thả để gửi" : canTalk ? "Giữ nút mic để nói" : "Chờ Alex trả lời..."}
+              {isListening ? "Đang nghe — click mic để gửi, hoặc dừng nói 2.5s" : canTalk ? "Click mic để bắt đầu nói" : "Chờ Alex trả lời..."}
             </p>
           )}
 
