@@ -373,6 +373,24 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Practice speaking */}
+        <div className="rounded-3xl p-6 sm:p-8 mb-5" style={cardStyle}>
+          <h2 className="font-serif text-xl font-bold mb-2 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+            🎙️ Luyện nói
+          </h2>
+          <p className="text-sm mb-4" style={{ color: "var(--ink-soft)" }}>
+            Trò chuyện trực tiếp với Alex — giáo viên AI giọng native American. Luyện phát âm, ngữ pháp và từ vựng qua hội thoại tự nhiên.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push("/practice")}
+            className="w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+            style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 20px rgba(34,197,94,0.3)" }}
+          >
+            🎙️ Bắt đầu luyện nói với Alex
+          </button>
+        </div>
+
         {/* Save button */}
         <button
           onClick={handleSave} disabled={isSaving || isLoading}
