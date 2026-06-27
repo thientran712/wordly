@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Mic, MicOff, ArrowLeft, Volume2, Loader2, Phone, PhoneOff } from "lucide-react";
+import {
+  Mic, MicOff, ArrowLeft, Volume2, Loader2, Phone, PhoneOff,
+  Plus, Trash2, Pencil, Check, X, MessageSquare, Menu, ChevronLeft,
+} from "lucide-react";
 
 const AVATAR_FRAMES = ["🧑‍🏫", "👨‍🏫"];
 
@@ -13,7 +16,7 @@ async function speakText(text) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, lang: "en-US" }),
     });
-    if (!res.ok) throw new Error("TTS failed");
+    if (!res.ok) throw new Error();
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     return new Promise((resolve) => {
@@ -22,13 +25,128 @@ async function speakText(text) {
       audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
       audio.play();
     });
-  } catch {
-    return Promise.resolve();
-  }
+  } catch { return Promise.resolve(); }
 }
 
+function formatDate(iso) {
+  const d = new Date(iso);
+  const today = new Date();
+  const diff = Math.floor((today - d) / 86400000);
+  if (diff === 0) return "Hôm nay";
+  if (diff === 1) return "Hôm qua";
+  if (diff < 7) return `${diff} ngày trước`;
+  return d.toLocaleDateString("vi-VN", { day: "numeric", month: "numeric" });
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onRename, loading, open, onClose }) {
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameVal, setRenameVal] = useState("");
+  const inputRef = useRef(null);
+
+  useEffect(() => { if (renamingId) inputRef.current?.focus(); }, [renamingId]);
+
+  const startRename = (s) => { setRenamingId(s.id); setRenameVal(s.title); };
+  const submitRename = (id) => {
+    if (renameVal.trim()) onRename(id, renameVal.trim());
+    setRenamingId(null);
+  };
+
+  return (
+    <>
+      {/* Backdrop on mobile */}
+      {open && (
+        <div className="fixed inset-0 z-20 md:hidden" style={{ background: "rgba(0,0,0,0.5)" }} onClick={onClose} />
+      )}
+      <aside
+        className={`fixed md:relative top-0 left-0 h-full z-30 md:z-auto flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+        style={{ width: 260, background: "var(--card-bg)", borderRight: "1px solid var(--divider)", minHeight: "100vh" }}
+      >
+        {/* Sidebar header */}
+        <div className="flex items-center gap-2 px-3 py-3 border-b" style={{ borderColor: "var(--divider)" }}>
+          <span className="font-bold text-sm flex-1" style={{ color: "var(--ink)" }}>Lịch sử luyện nói</span>
+          <button
+            onClick={onNew}
+            className="no-min-h w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-90"
+            style={{ background: "var(--electric)", color: "#0A0A0A" }}
+            title="Cuộc trò chuyện mới"
+          >
+            <Plus size={14} />
+          </button>
+          <button onClick={onClose} className="no-min-h w-7 h-7 rounded-lg flex items-center justify-center md:hidden" style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Session list */}
+        <div className="flex-1 overflow-y-auto py-2">
+          {loading && (
+            <div className="flex justify-center py-6">
+              <Loader2 size={16} className="animate-spin" style={{ color: "var(--ink-soft)" }} />
+            </div>
+          )}
+          {!loading && sessions.length === 0 && (
+            <div className="px-4 py-6 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
+              Chưa có cuộc trò chuyện nào
+            </div>
+          )}
+          {sessions.map(s => (
+            <div
+              key={s.id}
+              className="group relative flex items-center gap-2 px-3 py-2.5 cursor-pointer transition-colors mx-1 rounded-xl"
+              style={{ background: activeId === s.id ? "var(--hover-bg)" : "transparent" }}
+              onClick={() => { if (renamingId !== s.id) { onSelect(s.id); onClose(); } }}
+            >
+              <MessageSquare size={13} style={{ color: "var(--ink-soft)", flexShrink: 0 }} />
+              <div className="flex-1 min-w-0">
+                {renamingId === s.id ? (
+                  <input
+                    ref={inputRef}
+                    value={renameVal}
+                    onChange={e => setRenameVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") submitRename(s.id); if (e.key === "Escape") setRenamingId(null); }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full text-xs rounded px-1 py-0.5 outline-none"
+                    style={{ background: "var(--input-bg)", border: "1px solid var(--electric)", color: "var(--ink)" }}
+                  />
+                ) : (
+                  <>
+                    <div className="text-xs font-medium truncate" style={{ color: "var(--ink)" }}>{s.title}</div>
+                    <div className="text-[10px]" style={{ color: "var(--ink-soft)" }}>{formatDate(s.updated_at)}</div>
+                  </>
+                )}
+              </div>
+
+              {renamingId === s.id ? (
+                <div className="flex gap-1">
+                  <button onClick={e => { e.stopPropagation(); submitRename(s.id); }} className="no-min-h w-5 h-5 flex items-center justify-center rounded" style={{ color: "var(--electric)" }}><Check size={11} /></button>
+                  <button onClick={e => { e.stopPropagation(); setRenamingId(null); }} className="no-min-h w-5 h-5 flex items-center justify-center rounded" style={{ color: "var(--ink-soft)" }}><X size={11} /></button>
+                </div>
+              ) : (
+                <div className="hidden group-hover:flex gap-1">
+                  <button onClick={e => { e.stopPropagation(); startRename(s); }} className="no-min-h w-6 h-6 flex items-center justify-center rounded-lg transition-all" style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}><Pencil size={11} /></button>
+                  <button onClick={e => { e.stopPropagation(); onDelete(s.id); }} className="no-min-h w-6 h-6 flex items-center justify-center rounded-lg transition-all" style={{ background: "var(--hover-bg)", color: "var(--error)" }}><Trash2 size={11} /></button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </aside>
+    </>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function PracticePage() {
   const router = useRouter();
+
+  // Session management
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Chat state
   const [sessionState, setSessionState] = useState("idle"); // idle | connecting | active | ended
   const [messages, setMessages] = useState([]);
   const [isListening, setIsListening] = useState(false);
@@ -37,19 +155,51 @@ export default function PracticePage() {
   const [transcript, setTranscript] = useState("");
   const [avatarFrame, setAvatarFrame] = useState(0);
   const [error, setError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
   const avatarTimerRef = useRef(null);
   const silenceTimerRef = useRef(null);
   const accumulatedRef = useRef("");
+  const saveTimeoutRef = useRef(null);
 
-  // Animate avatar when speaking
+  // ── Load sessions ──────────────────────────────────────────────────────────
+  const fetchSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    try {
+      const res = await fetch("/api/practice/sessions");
+      const data = await res.json();
+      setSessions(data.sessions || []);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  // ── Auto-save messages to active session ───────────────────────────────────
+  const saveMessages = useCallback((msgs, sessionId) => {
+    if (!sessionId || msgs.length === 0) return;
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(async () => {
+      setIsSaving(true);
+      try {
+        await fetch(`/api/practice/sessions/${sessionId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: msgs }),
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    }, 1500);
+  }, []);
+
+  // ── Avatar animation ───────────────────────────────────────────────────────
   useEffect(() => {
     if (isSpeaking) {
-      avatarTimerRef.current = setInterval(() => {
-        setAvatarFrame(f => (f + 1) % AVATAR_FRAMES.length);
-      }, 400);
+      avatarTimerRef.current = setInterval(() => setAvatarFrame(f => (f + 1) % AVATAR_FRAMES.length), 400);
     } else {
       clearInterval(avatarTimerRef.current);
       setAvatarFrame(0);
@@ -57,11 +207,48 @@ export default function PracticePage() {
     return () => clearInterval(avatarTimerRef.current);
   }, [isSpeaking]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  const sendMessage = useCallback(async (userText, currentMessages) => {
+  // ── Select existing session ────────────────────────────────────────────────
+  const selectSession = useCallback(async (id) => {
+    // Stop any active session first
+    recognitionRef.current?.stop();
+    setIsListening(false);
+    setIsSpeaking(false);
+    setIsThinking(false);
+    setError(null);
+
+    setSessionState("idle");
+    setMessages([]);
+    setActiveSessionId(id);
+
+    try {
+      const res = await fetch(`/api/practice/sessions/${id}`);
+      const data = await res.json();
+      if (data.session?.messages?.length > 0) {
+        setMessages(data.session.messages);
+        setSessionState("ended");
+      }
+    } catch { /* silently fail */ }
+  }, []);
+
+  // ── Create new session ─────────────────────────────────────────────────────
+  const createSession = useCallback(async (firstMessages) => {
+    const title = "Conversation " + new Date().toLocaleDateString("vi-VN", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+    const res = await fetch("/api/practice/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, messages: firstMessages || [] }),
+    });
+    const data = await res.json();
+    const session = data.session;
+    setSessions(prev => [session, ...prev]);
+    setActiveSessionId(session.id);
+    return session.id;
+  }, []);
+
+  // ── Send message ───────────────────────────────────────────────────────────
+  const sendMessage = useCallback(async (userText, currentMessages, sessionId) => {
     const newMessages = [...currentMessages, { role: "user", content: userText }];
     setMessages(newMessages);
     setIsThinking(true);
@@ -78,8 +265,8 @@ export default function PracticePage() {
       const withReply = [...newMessages, { role: "assistant", content: data.reply }];
       setMessages(withReply);
       setIsThinking(false);
+      saveMessages(withReply, sessionId);
 
-      // Speak the reply
       setIsSpeaking(true);
       await speakText(data.reply);
       setIsSpeaking(false);
@@ -89,23 +276,24 @@ export default function PracticePage() {
       setIsThinking(false);
       setIsSpeaking(false);
       setError("Có lỗi xảy ra. Thử lại nhé!");
-      return newMessages;
+      return currentMessages;
     }
-  }, []);
+  }, [saveMessages]);
 
+  // ── Start new session ──────────────────────────────────────────────────────
   const startSession = useCallback(async () => {
     setSessionState("connecting");
     setMessages([]);
     setError(null);
-
-    // AI greets first
     setIsThinking(true);
+
     try {
       const res = await fetch("/api/practice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [{ role: "user", content: "Hello! I want to practice my English." }],
+          vocabularyContext: true,
         }),
       });
       const data = await res.json();
@@ -119,6 +307,10 @@ export default function PracticePage() {
       setIsThinking(false);
       setSessionState("active");
 
+      // Create session in DB
+      const newId = await createSession(initMessages);
+      setActiveSessionId(newId);
+
       setIsSpeaking(true);
       await speakText(greeting);
       setIsSpeaking(false);
@@ -127,40 +319,45 @@ export default function PracticePage() {
       setSessionState("idle");
       setError("Không thể kết nối. Thử lại nhé!");
     }
+  }, [createSession]);
+
+  // ── Resume session ─────────────────────────────────────────────────────────
+  const resumeSession = useCallback(() => {
+    setSessionState("active");
+    setError(null);
   }, []);
 
-  const submitSpeech = useCallback((text, currentMessages) => {
+  // ── Speech ─────────────────────────────────────────────────────────────────
+  const submitSpeech = useCallback((text) => {
     clearTimeout(silenceTimerRef.current);
     accumulatedRef.current = "";
     setTranscript("");
     setIsListening(false);
-    recognitionRef.current?.stop();
+    if (recognitionRef.current) {
+      recognitionRef.current._shouldRestart = false;
+      recognitionRef.current.stop();
+    }
     setMessages(prev => {
-      const base = currentMessages ?? prev;
-      sendMessage(text, base).then(updated => setMessages(updated));
+      sendMessage(text, prev, activeSessionId).then(updated => setMessages(updated));
       return prev;
     });
-  }, [sendMessage]);
+  }, [sendMessage, activeSessionId]);
 
   const startListening = useCallback(() => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      setError("Trình duyệt không hỗ trợ mic. Dùng Chrome nhé!");
-      return;
+      setError("Trình duyệt không hỗ trợ mic. Dùng Chrome nhé!"); return;
     }
-
     accumulatedRef.current = "";
     clearTimeout(silenceTimerRef.current);
 
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SR();
     recognition.lang = "en-US";
-    recognition.continuous = true;      // keep listening — no auto cut-off
+    recognition.continuous = true;
     recognition.interimResults = true;
 
     recognition.onresult = (e) => {
-      // Accumulate all final segments + current interim
-      let finalText = "";
-      let interimText = "";
+      let finalText = "", interimText = "";
       for (const result of e.results) {
         if (result.isFinal) finalText += result[0].transcript;
         else interimText += result[0].transcript;
@@ -168,7 +365,6 @@ export default function PracticePage() {
       accumulatedRef.current = finalText;
       setTranscript((finalText + " " + interimText).trim());
 
-      // Reset silence timer on every speech event (2.5s of silence = done)
       clearTimeout(silenceTimerRef.current);
       if (finalText.trim()) {
         silenceTimerRef.current = setTimeout(() => {
@@ -179,15 +375,13 @@ export default function PracticePage() {
     };
 
     recognition.onerror = (e) => {
-      if (e.error === "no-speech") return; // ignore — continuous mode fires this often
+      if (e.error === "no-speech") return;
       setError("Mic lỗi: " + e.error);
       setIsListening(false);
       setTranscript("");
     };
 
-    // continuous=true: onend fires when manually stopped or browser restarts it
     recognition.onend = () => {
-      // Auto-restart if still in listening state (Chrome stops after ~60s)
       if (recognitionRef.current?._shouldRestart) {
         try { recognition.start(); } catch {}
       }
@@ -207,14 +401,9 @@ export default function PracticePage() {
       recognitionRef.current._shouldRestart = false;
       recognitionRef.current.stop();
     }
-    // If there's accumulated text, send it
     const text = accumulatedRef.current.trim();
-    if (text) {
-      submitSpeech(text);
-    } else {
-      setIsListening(false);
-      setTranscript("");
-    }
+    if (text) submitSpeech(text);
+    else { setIsListening(false); setTranscript(""); }
   }, [submitSpeech]);
 
   const toggleListening = useCallback(() => {
@@ -223,200 +412,252 @@ export default function PracticePage() {
   }, [isListening, startListening, stopListening]);
 
   const endSession = useCallback(() => {
-    recognitionRef.current?.stop();
+    clearTimeout(silenceTimerRef.current);
+    if (recognitionRef.current) {
+      recognitionRef.current._shouldRestart = false;
+      recognitionRef.current.stop();
+    }
     setSessionState("ended");
     setIsListening(false);
     setIsSpeaking(false);
   }, []);
 
+  // ── Session CRUD ───────────────────────────────────────────────────────────
+  const handleDelete = useCallback(async (id) => {
+    setSessions(prev => prev.filter(s => s.id !== id));
+    if (activeSessionId === id) {
+      setActiveSessionId(null);
+      setMessages([]);
+      setSessionState("idle");
+    }
+    await fetch(`/api/practice/sessions/${id}`, { method: "DELETE" });
+  }, [activeSessionId]);
+
+  const handleRename = useCallback(async (id, title) => {
+    setSessions(prev => prev.map(s => s.id === id ? { ...s, title } : s));
+    await fetch(`/api/practice/sessions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+  }, []);
+
+  const handleNew = useCallback(() => {
+    recognitionRef.current?.stop();
+    setActiveSessionId(null);
+    setMessages([]);
+    setSessionState("idle");
+    setError(null);
+    setIsListening(false);
+    setIsSpeaking(false);
+    setSidebarOpen(false);
+  }, []);
+
   const canTalk = sessionState === "active" && !isThinking && !isSpeaking;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
-      {/* Header */}
-      <div
-        className="flex items-center gap-3 px-4 py-3 border-b"
-        style={{ background: "var(--card-bg)", borderColor: "var(--divider)" }}
-      >
-        <button
-          onClick={() => router.push("/profile")}
-          className="no-min-h w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90"
-          style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div className="flex-1">
-          <div className="font-bold text-sm" style={{ color: "var(--ink)" }}>Luyện nói với Alex</div>
-          <div className="text-[11px]" style={{ color: "var(--ink-soft)" }}>Native American English Teacher</div>
-        </div>
-        {sessionState === "active" && (
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs font-medium" style={{ color: "var(--electric)" }}>Đang kết nối</span>
-          </div>
-        )}
-      </div>
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg)" }}>
+      {/* Sidebar */}
+      <Sidebar
+        sessions={sessions}
+        activeId={activeSessionId}
+        onSelect={selectSession}
+        onNew={handleNew}
+        onDelete={handleDelete}
+        onRename={handleRename}
+        loading={sessionsLoading}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <div className="flex-1 flex flex-col max-w-lg mx-auto w-full px-4 py-6 gap-6">
-        {/* Avatar */}
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="w-28 h-28 rounded-full flex items-center justify-center text-5xl transition-all duration-200"
-            style={{
-              background: isSpeaking ? "var(--green-subtle)" : "var(--card-bg)",
-              border: `3px solid ${isSpeaking ? "var(--electric)" : "var(--card-border)"}`,
-              boxShadow: isSpeaking ? "0 0 24px rgba(34,197,94,0.3)" : "0 4px 20px rgba(0,0,0,0.15)",
-              transform: isSpeaking ? "scale(1.05)" : "scale(1)",
-            }}
+      {/* Main panel */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b flex-shrink-0" style={{ background: "var(--card-bg)", borderColor: "var(--divider)" }}>
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            className="no-min-h w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 md:hidden"
+            style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
           >
-            {AVATAR_FRAMES[avatarFrame]}
-          </div>
-          <div className="text-center">
-            <div className="font-bold text-base" style={{ color: "var(--ink)" }}>Alex</div>
-            <div className="text-xs" style={{ color: "var(--ink-soft)" }}>
-              {isThinking ? "Đang suy nghĩ..." : isSpeaking ? "Đang nói..." : sessionState === "active" ? "Sẵn sàng nghe" : "American English Teacher"}
+            <Menu size={16} />
+          </button>
+          <button
+            onClick={() => router.push("/profile")}
+            className="no-min-h w-8 h-8 rounded-xl items-center justify-center transition-all active:scale-90 hidden md:flex"
+            style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-sm truncate" style={{ color: "var(--ink)" }}>
+              {sessions.find(s => s.id === activeSessionId)?.title || "Luyện nói với Alex"}
             </div>
+            <div className="text-[11px]" style={{ color: "var(--ink-soft)" }}>Native American English Teacher</div>
+          </div>
+          <div className="flex items-center gap-2">
+            {isSaving && <Loader2 size={12} className="animate-spin" style={{ color: "var(--ink-soft)" }} />}
+            {sessionState === "active" && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-xs font-medium hidden sm:block" style={{ color: "var(--electric)" }}>Live</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Conversation */}
-        {messages.length > 0 && (
-          <div
-            className="rounded-2xl p-4 flex flex-col gap-3 overflow-y-auto"
-            style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", maxHeight: "280px" }}
-          >
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className="max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed"
-                  style={m.role === "user"
-                    ? { background: "var(--electric)", color: "#fff", borderBottomRightRadius: "4px" }
-                    : { background: "var(--hover-bg)", color: "var(--ink)", borderBottomLeftRadius: "4px" }
-                  }
-                >
-                  {m.content}
-                  {m.role === "assistant" && (
-                    <button
-                      onClick={() => speakText(m.content)}
-                      className="ml-2 opacity-50 hover:opacity-100 inline-flex"
-                    >
-                      <Volume2 size={11} />
-                    </button>
-                  )}
+        {/* Scrollable chat area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-lg mx-auto w-full px-4 py-6 flex flex-col gap-5">
+            {/* Avatar */}
+            <div className="flex flex-col items-center gap-3">
+              <div
+                className="w-24 h-24 rounded-full flex items-center justify-center text-4xl transition-all duration-200"
+                style={{
+                  background: isSpeaking ? "var(--green-subtle)" : "var(--card-bg)",
+                  border: `3px solid ${isSpeaking ? "var(--electric)" : "var(--card-border)"}`,
+                  boxShadow: isSpeaking ? "0 0 24px rgba(34,197,94,0.3)" : "0 4px 20px rgba(0,0,0,0.1)",
+                  transform: isSpeaking ? "scale(1.05)" : "scale(1)",
+                }}
+              >
+                {AVATAR_FRAMES[avatarFrame]}
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-sm" style={{ color: "var(--ink)" }}>Alex</div>
+                <div className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                  {isThinking ? "Đang suy nghĩ..." : isSpeaking ? "Đang nói..." : sessionState === "active" ? "Sẵn sàng nghe" : "American English Teacher"}
                 </div>
               </div>
-            ))}
-            {isThinking && (
-              <div className="flex justify-start">
-                <div className="px-3 py-2 rounded-2xl" style={{ background: "var(--hover-bg)" }}>
-                  <Loader2 size={14} className="animate-spin" style={{ color: "var(--ink-soft)" }} />
+            </div>
+
+            {/* Messages */}
+            {messages.length > 0 && (
+              <div className="flex flex-col gap-3">
+                {messages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className="max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed"
+                      style={m.role === "user"
+                        ? { background: "var(--electric)", color: "#fff", borderBottomRightRadius: "4px" }
+                        : { background: "var(--card-bg)", color: "var(--ink)", borderBottomLeftRadius: "4px", border: "1px solid var(--card-border)" }
+                      }
+                    >
+                      {m.content}
+                      {m.role === "assistant" && (
+                        <button onClick={() => speakText(m.content)} className="ml-2 opacity-40 hover:opacity-100 inline-flex align-middle">
+                          <Volume2 size={11} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isThinking && (
+                  <div className="flex justify-start">
+                    <div className="px-4 py-3 rounded-2xl" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)" }}>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(i => (
+                          <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "var(--ink-soft)", animationDelay: `${i * 0.15}s` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+
+            {/* Transcript */}
+            {isListening && (
+              <div className="rounded-xl px-4 py-3 text-center text-sm" style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}>
+                {transcript || "Đang nghe... hãy nói tiếng Anh"}
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div className="rounded-xl px-4 py-3 text-center text-sm flex items-center justify-between" style={{ background: "var(--error-soft)", color: "var(--error)" }}>
+                {error}
+                <button onClick={() => setError(null)}><X size={14} /></button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Fixed bottom controls */}
+        <div className="flex-shrink-0 border-t py-5" style={{ background: "var(--card-bg)", borderColor: "var(--divider)" }}>
+          <div className="max-w-lg mx-auto px-4 flex flex-col items-center gap-3">
+
+            {sessionState === "idle" && (
+              <button
+                onClick={startSession}
+                className="flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-95"
+                style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 20px rgba(34,197,94,0.4)" }}
+              >
+                <Phone size={18} />
+                {activeSessionId ? "Bắt đầu cuộc trò chuyện mới" : "Bắt đầu luyện nói"}
+              </button>
+            )}
+
+            {sessionState === "connecting" && (
+              <div className="flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-sm" style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}>
+                <Loader2 size={18} className="animate-spin" /> Đang kết nối...
+              </div>
+            )}
+
+            {sessionState === "active" && (
+              <>
+                <div className="flex items-center gap-5">
+                  <button
+                    onClick={toggleListening}
+                    disabled={!canTalk}
+                    className="w-18 h-18 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-40"
+                    style={{
+                      width: 72, height: 72,
+                      background: isListening ? "var(--electric)" : "var(--card-bg)",
+                      border: `3px solid ${isListening ? "var(--electric)" : "var(--card-border)"}`,
+                      boxShadow: isListening ? "0 0 28px rgba(34,197,94,0.5)" : "0 4px 16px rgba(0,0,0,0.15)",
+                      color: isListening ? "#0A0A0A" : "var(--ink)",
+                    }}
+                  >
+                    {isListening ? <Mic size={28} /> : <MicOff size={24} />}
+                  </button>
+                  <button
+                    onClick={endSession}
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95"
+                    style={{ background: "var(--error)", color: "#fff", boxShadow: "0 4px 12px rgba(239,68,68,0.4)" }}
+                  >
+                    <PhoneOff size={18} />
+                  </button>
+                </div>
+                <p className="text-xs text-center" style={{ color: "var(--ink-soft)" }}>
+                  {isListening ? "Đang nghe — click mic để gửi, hoặc dừng 2.5s" : canTalk ? "Click mic để nói" : "Chờ Alex trả lời..."}
+                </p>
+              </>
+            )}
+
+            {sessionState === "ended" && (
+              <div className="flex flex-col items-center gap-3 w-full">
+                <div className="text-sm font-semibold" style={{ color: "var(--ink-soft)" }}>
+                  Buổi luyện tập kết thúc · {messages.filter(m => m.role === "user").length} lượt nói
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={resumeSession}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                    style={{ background: "var(--electric)", color: "#0A0A0A" }}
+                  >
+                    <Mic size={15} /> Tiếp tục
+                  </button>
+                  <button
+                    onClick={handleNew}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
+                    style={{ background: "var(--hover-bg)", color: "var(--ink)", border: "1px solid var(--card-border)" }}
+                  >
+                    <Plus size={15} /> Cuộc mới
+                  </button>
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
-        )}
-
-        {/* Transcript preview */}
-        {isListening && (
-          <div
-            className="rounded-xl px-4 py-3 text-center text-sm animate-pulse"
-            style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
-          >
-            {transcript || "Đang nghe... hãy nói tiếng Anh"}
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div
-            className="rounded-xl px-4 py-3 text-center text-sm"
-            style={{ background: "var(--error-soft)", color: "var(--error)" }}
-          >
-            {error}
-          </div>
-        )}
-
-        {/* Controls */}
-        <div className="flex flex-col items-center gap-4 mt-auto">
-          {sessionState === "idle" && (
-            <button
-              onClick={startSession}
-              className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all active:scale-95"
-              style={{ background: "var(--electric)", color: "#fff", boxShadow: "0 4px 20px rgba(34,197,94,0.4)" }}
-            >
-              <Phone size={20} />
-              Bắt đầu luyện nói
-            </button>
-          )}
-
-          {sessionState === "connecting" && (
-            <div className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-base"
-              style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}>
-              <Loader2 size={20} className="animate-spin" />
-              Đang kết nối...
-            </div>
-          )}
-
-          {sessionState === "active" && (
-            <div className="flex items-center gap-4">
-              {/* Mic button — click to toggle */}
-              <button
-                onClick={toggleListening}
-                disabled={!canTalk}
-                className="w-20 h-20 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-40"
-                style={{
-                  background: isListening ? "var(--electric)" : "var(--card-bg)",
-                  border: `3px solid ${isListening ? "var(--electric)" : "var(--card-border)"}`,
-                  boxShadow: isListening ? "0 0 32px rgba(34,197,94,0.5)" : "0 4px 20px rgba(0,0,0,0.15)",
-                  color: isListening ? "#fff" : "var(--ink)",
-                }}
-              >
-                {isListening ? <Mic size={32} /> : <MicOff size={28} />}
-              </button>
-
-              {/* End call */}
-              <button
-                onClick={endSession}
-                className="w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-95"
-                style={{ background: "var(--error)", color: "#fff", boxShadow: "0 4px 16px rgba(239,68,68,0.4)" }}
-              >
-                <PhoneOff size={22} />
-              </button>
-            </div>
-          )}
-
-          {sessionState === "active" && (
-            <p className="text-xs text-center" style={{ color: "var(--ink-soft)" }}>
-              {isListening ? "Đang nghe — click mic để gửi, hoặc dừng nói 2.5s" : canTalk ? "Click mic để bắt đầu nói" : "Chờ Alex trả lời..."}
-            </p>
-          )}
-
-          {sessionState === "ended" && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="text-2xl">🎉</div>
-              <div className="font-bold text-base" style={{ color: "var(--ink)" }}>Buổi luyện tập hoàn thành!</div>
-              <div className="text-sm" style={{ color: "var(--ink-soft)" }}>
-                {messages.filter(m => m.role === "user").length} lượt nói
-              </div>
-              <div className="flex gap-3 mt-2">
-                <button
-                  onClick={() => { setSessionState("idle"); setMessages([]); }}
-                  className="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
-                  style={{ background: "var(--electric)", color: "#fff" }}
-                >
-                  Luyện tiếp
-                </button>
-                <button
-                  onClick={() => router.push("/profile")}
-                  className="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
-                  style={{ background: "var(--hover-bg)", color: "var(--ink)" }}
-                >
-                  Về profile
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
