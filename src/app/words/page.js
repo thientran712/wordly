@@ -90,7 +90,7 @@ export default function WordsPage() {
             <ArrowLeft size={18} />
             <span className="font-semibold">Quay lại</span>
           </button>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
             📖 My Words
           </h1>
           <div className="w-20" />
@@ -108,8 +108,8 @@ export default function WordsPage() {
               className="px-5 py-2.5 rounded-full font-bold text-sm hover:-translate-y-0.5 transition-all"
               style={{
                 background: tab === t.value ? "var(--electric)" : "var(--surface-elevated)",
-                color: tab === t.value ? "#0A0A0A" : "var(--ink-soft)",
-                boxShadow: tab === t.value ? "0 4px 12px rgba(34,197,94,0.3)" : "none",
+                color: tab === t.value ? "var(--on-electric)" : "var(--ink-soft)",
+                boxShadow: tab === t.value ? "0 4px 12px rgba(var(--electric-rgb),0.3)" : "none",
                 border: tab === t.value ? "none" : "1.5px solid var(--line)",
               }}
             >
@@ -133,7 +133,7 @@ export default function WordsPage() {
               color: "var(--ink)",
               boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
             }}
-            onFocus={e => { e.target.style.borderColor = "var(--electric)"; e.target.style.boxShadow = "0 0 0 3px rgba(34,197,94,0.15)"; }}
+            onFocus={e => { e.target.style.borderColor = "var(--electric)"; e.target.style.boxShadow = "0 0 0 3px rgba(var(--electric-rgb),0.15)"; }}
             onBlur={e => { e.target.style.borderColor = "var(--line)"; e.target.style.boxShadow = "0 4px 16px rgba(0,0,0,0.2)"; }}
           />
           {query && (
@@ -152,7 +152,7 @@ export default function WordsPage() {
             className="px-3 py-1.5 rounded-full text-xs font-bold hover:-translate-y-0.5 transition-all"
             style={{
               background: level === "" ? "var(--electric)" : "var(--surface-elevated)",
-              color: level === "" ? "#0A0A0A" : "var(--ink-soft)",
+              color: level === "" ? "var(--on-electric)" : "var(--ink-soft)",
               border: level === "" ? "none" : "1.5px solid var(--line)",
             }}
           >
@@ -164,7 +164,7 @@ export default function WordsPage() {
               onClick={() => setLevel(level === l ? "" : l)}
               className="px-3 py-1.5 rounded-full text-xs font-bold hover:-translate-y-0.5 transition-all"
               style={{
-                background: level === l ? "rgba(34,197,94,0.15)" : "var(--surface-elevated)",
+                background: level === l ? "var(--green-subtle)" : "var(--surface-elevated)",
                 color: level === l ? "var(--electric)" : "var(--ink-soft)",
                 border: level === l ? "1.5px solid var(--electric-border)" : "1.5px solid var(--line)",
               }}
@@ -248,12 +248,12 @@ function WordRow({ word, onClick, onSpeak }) {
         background: "var(--surface-elevated)",
         border: "1.5px solid var(--line)",
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--electric)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(34,197,94,0.1)"; }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--electric)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(var(--electric-rgb),0.1)"; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line)"; e.currentTarget.style.boxShadow = "none"; }}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-serif font-bold text-lg" style={{ color: "var(--ink)" }}>{word.word}</span>
+          <span className="font-bold text-lg" style={{ color: "var(--ink)" }}>{word.word}</span>
           {word.is_bookmarked && <span className="text-sm">💖</span>}
         </div>
         {word.phonetic && !word.phonetic.endsWith(".mp3") && (
@@ -272,14 +272,14 @@ function WordRow({ word, onClick, onSpeak }) {
           </span>
           {word.level && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-              style={{ background: "rgba(34,197,94,0.12)", color: "var(--electric)", border: "1px solid var(--electric-border)" }}>
+              style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--electric-border)" }}>
               {word.level}
             </span>
           )}
           <button
             onClick={e => onSpeak(e, word.word)}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:scale-110 transition-all"
-            style={{ background: "rgba(34,197,94,0.1)", color: "var(--electric)", border: "1px solid var(--electric-border)" }}
+            style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--electric-border)" }}
           >
             <Volume2 size={14} />
           </button>
@@ -309,7 +309,7 @@ function WordDetailModal({ word, onClose }) {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in"
-      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(12px)" }}
+      style={{ background: "var(--overlay-bg)", backdropFilter: "blur(12px)" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -326,13 +326,13 @@ function WordDetailModal({ word, onClose }) {
         >✕</button>
 
         <div className="text-center mb-6">
-          <h1 className="font-serif font-black gradient-text-word mb-2"
+          <h1 className="font-black gradient-text-word mb-2"
             style={{ fontSize: "clamp(40px,8vw,64px)" }}>
             {word.word}
           </h1>
           <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
             {word.phonetic && !word.phonetic.endsWith(".mp3") && (
-              <span className="font-serif italic" style={{ color: "var(--ink-soft)" }}>{word.phonetic}</span>
+              <span className="italic" style={{ color: "var(--ink-soft)" }}>{word.phonetic}</span>
             )}
             <span className="px-3 py-1 rounded-full text-xs font-bold uppercase"
               style={{ background: "var(--grass-soft)", color: "var(--grass-text)", border: "1px solid var(--grass-border)" }}>
@@ -340,7 +340,7 @@ function WordDetailModal({ word, onClose }) {
             </span>
             {word.level && (
               <span className="px-3 py-1 rounded-full text-xs font-bold uppercase"
-                style={{ background: "rgba(34,197,94,0.12)", color: "var(--electric)", border: "1px solid var(--electric-border)" }}>
+                style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--electric-border)" }}>
                 {word.level}
               </span>
             )}
@@ -349,8 +349,8 @@ function WordDetailModal({ word, onClose }) {
               {state.emoji} {state.label}
             </span>
             <button onClick={speakWord}
-              className="w-10 h-10 rounded-full text-white flex items-center justify-center hover:scale-110 transition-all"
-              style={{ background: "linear-gradient(135deg,#22C55E,#16A34A)" }}>
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:scale-110 transition-all"
+              style={{ background: "linear-gradient(135deg,var(--electric),var(--electric-muted))", color: "var(--on-electric)" }}>
               <Volume2 size={16} />
             </button>
           </div>
@@ -372,7 +372,7 @@ function WordDetailModal({ word, onClose }) {
             <div className="p-4 rounded-2xl"
               style={{ background: "var(--surface)", border: "1.5px solid var(--line)" }}>
               <div className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "var(--ocean)" }}>💬 Example</div>
-              <p className="text-sm italic" style={{ color: "var(--ink-soft)" }}>"{word.ex_en}"</p>
+              <p className="text-sm italic" style={{ color: "var(--ink-soft)" }}>&ldquo;{word.ex_en}&rdquo;</p>
             </div>
           )}
 

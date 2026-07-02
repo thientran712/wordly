@@ -1,0 +1,116 @@
+{
+  "topic": "technology",
+  "family": "Analyze Data",
+  "words": [
+    {
+      "word": "aggregate",
+      "pos": "verb",
+      "cefr": "C1",
+      "definition": "to collect and combine data from multiple sources into a single set or total",
+      "example": "The dashboard aggregates metrics from every microservice into one view.",
+      "register": "formal",
+      "collocations": ["aggregate data", "aggregate results", "aggregate statistics"],
+      "usage_note": null,
+      "frequency": 4
+    },
+    {
+      "word": "extrapolate",
+      "pos": "verb",
+      "cefr": "C2",
+      "definition": "to estimate unknown values by extending a known pattern or trend",
+      "example": "Analysts extrapolated next quarter's growth from the last six months of data.",
+      "register": "formal",
+      "collocations": ["extrapolate a trend", "extrapolate from data", "extrapolate results"],
+      "usage_note": null,
+      "frequency": 3
+    },
+    {
+      "word": "granular",
+      "pos": "adjective",
+      "cefr": "C2",
+      "definition": "showing a very fine level of detail",
+      "example": "We need more granular logging to pinpoint exactly where the request failed.",
+      "register": "neutral",
+      "collocations": ["granular detail", "granular data", "granular control"],
+      "usage_note": "Common in tech/data contexts, less so in everyday speech.",
+      "frequency": 3
+    },
+    {
+      "word": "anomaly",
+      "pos": "noun",
+      "cefr": "C1",
+      "definition": "something that deviates from what is standard or expected",
+      "example": "The monitoring system flagged an anomaly in overnight traffic patterns.",
+      "register": "formal",
+      "collocations": ["detect an anomaly", "flag an anomaly", "statistical anomaly"],
+      "usage_note": null,
+      "frequency": 4
+    },
+    {
+      "word": "correlate",
+      "pos": "verb",
+      "cefr": "C1",
+      "definition": "to show or find a mutual relationship between two or more things",
+      "example": "Higher latency correlated strongly with a recent spike in database load.",
+      "register": "formal",
+      "collocations": ["correlate with", "strongly correlate", "correlate variables"],
+      "usage_note": null,
+      "frequency": 4
+    },
+    {
+      "word": "quantify",
+      "pos": "verb",
+      "cefr": "C1",
+      "definition": "to express or measure something as a number or amount",
+      "example": "It's hard to quantify exactly how much the redesign improved retention.",
+      "register": "neutral",
+      "collocations": ["quantify impact", "quantify results", "hard to quantify"],
+      "usage_note": null,
+      "frequency": 4
+    },
+    {
+      "word": "skew",
+      "pos": "verb",
+      "cefr": "C2",
+      "definition": "to distort data or results so they no longer represent an accurate picture",
+      "example": "A few extreme outliers skewed the average response time.",
+      "register": "neutral",
+      "collocations": ["skew results", "skew the data", "heavily skewed"],
+      "usage_note": null,
+      "frequency": 3
+    },
+    {
+      "word": "benchmark",
+      "pos": "verb",
+      "cefr": "C1",
+      "definition": "to measure the performance of something against a standard or comparison point",
+      "example": "We benchmarked the new algorithm against the old one on the same dataset.",
+      "register": "neutral",
+      "collocations": ["benchmark performance", "benchmark against", "run a benchmark"],
+      "usage_note": null,
+      "frequency": 4
+    },
+    {
+      "word": "discrepancy",
+      "pos": "noun",
+      "cefr": "C1",
+      "definition": "a difference or inconsistency between two things that should match",
+      "example": "There's a discrepancy between the logs and the actual database records.",
+      "register": "formal",
+      "collocations": ["discrepancy between", "spot a discrepancy", "resolve a discrepancy"],
+      "usage_note": null,
+      "frequency": 3
+    },
+    {
+      "word": "corroborate",
+      "pos": "verb",
+      "cefr": "C2",
+      "definition": "to confirm or support a claim or finding with additional evidence",
+      "example": "The second dataset corroborated our initial hypothesis about user churn.",
+      "register": "formal",
+      "collocations": ["corroborate a finding", "corroborate evidence", "corroborate a claim"],
+      "usage_note": "Formal/academic register; rare in casual speech.",
+      "frequency": 2
+    }
+  ]
+}

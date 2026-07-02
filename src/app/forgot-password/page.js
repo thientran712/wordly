@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
           {sent ? (
             <div className="text-center">
               <div className="text-6xl mb-4">📬</div>
-              <h1 className="font-serif text-2xl font-bold mb-2">Kiểm tra email của bạn</h1>
+              <h1 className="text-2xl font-bold mb-2">Kiểm tra email của bạn</h1>
               <p className="text-[--ink-soft] text-sm leading-relaxed">
                 Chúng tôi đã gửi liên kết đặt lại mật khẩu đến <strong>{email}</strong>. Nhấn vào liên kết trong email để đặt mật khẩu mới.
               </p>
@@ -63,12 +63,12 @@ export default function ForgotPasswordPage() {
             <>
               <div className="text-center mb-8">
                 <div
-                  className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center text-3xl shadow-[0_12px_32px_rgba(34,197,94,0.18)]"
-                  style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', transform: 'rotate(-5deg)' }}
+                  className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center text-3xl shadow-[0_12px_32px_rgba(var(--electric-rgb),0.18)]"
+                  style={{ background: 'linear-gradient(135deg, var(--electric), var(--electric-muted))', transform: 'rotate(-5deg)' }}
                 >
                   🔑
                 </div>
-                <h1 className="font-serif text-2xl font-bold tracking-tight">Quên mật khẩu?</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Quên mật khẩu?</h1>
                 <p className="text-sm text-[--ink-soft] mt-1">Nhập email của bạn và chúng tôi sẽ gửi liên kết đặt lại</p>
               </div>
 
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
                   className="w-full py-4 border-none rounded-2xl font-bold text-sm cursor-pointer transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
                     background: 'var(--electric)',
-                    color: '#0A0A0A',
+                    color: 'var(--on-electric)',
                     boxShadow: '0 12px 32px rgba(34, 197, 94, 0.25)',
                   }}
                 >

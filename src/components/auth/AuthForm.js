@@ -11,7 +11,7 @@ const inputStyle = {
   border: "1.5px solid var(--input-border)",
   color: "var(--ink)",
 };
-const inputFocus = (e) => { e.target.style.borderColor = "rgba(34,197,94,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(34,197,94,0.1)"; };
+const inputFocus = (e) => { e.target.style.borderColor = "rgba(var(--electric-rgb),0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(var(--electric-rgb),0.1)"; };
 const inputBlur  = (e) => { e.target.style.borderColor = "var(--input-border)"; e.target.style.boxShadow = "none"; };
 
 export default function AuthForm({ mode = "login" }) {
@@ -75,14 +75,14 @@ export default function AuthForm({ mode = "login" }) {
         <div
           className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center overflow-hidden"
           style={{
-            background: "linear-gradient(135deg, #22C55E, #16A34A)",
-            boxShadow: "0 8px 24px rgba(34,197,94,0.35)",
+            background: "linear-gradient(135deg, var(--electric), var(--electric-muted))",
+            boxShadow: "0 8px 24px rgba(var(--electric-rgb),0.35)",
             transform: "rotate(-5deg)",
           }}
         >
           <img src="/favicon.png" alt="Wordly" className="w-10 h-10 object-contain" />
         </div>
-        <h1 className="font-serif text-3xl font-bold tracking-tight gradient-text-brand">
+        <h1 className="text-3xl font-bold tracking-tight gradient-text-brand">
           Wordly
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>
@@ -116,9 +116,9 @@ export default function AuthForm({ mode = "login" }) {
 
       {/* Divider */}
       <div className="flex items-center gap-3 my-4">
-        <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+        <div className="flex-1 h-px" style={{ background: "var(--divider)" }} />
         <span className="text-xs font-semibold uppercase" style={{ color: "var(--ink-soft)" }}>hoặc</span>
-        <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+        <div className="flex-1 h-px" style={{ background: "var(--divider)" }} />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -168,12 +168,12 @@ export default function AuthForm({ mode = "login" }) {
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl text-sm" style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", color: "#F87171" }}>
+          <div className="p-3 rounded-xl text-sm" style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", color: "var(--error)" }}>
             {error}
           </div>
         )}
         {success && (
-          <div className="p-3 rounded-xl text-sm" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", color: "var(--electric)" }}>
+          <div className="p-3 rounded-xl text-sm" style={{ background: "rgba(var(--electric-rgb),0.1)", border: "1px solid rgba(var(--electric-rgb),0.25)", color: "var(--electric)" }}>
             {success}
           </div>
         )}
@@ -181,7 +181,7 @@ export default function AuthForm({ mode = "login" }) {
         <button
           type="submit" disabled={isLoading}
           className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
-          style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 8px 24px rgba(34,197,94,0.3)" }}
+          style={{ background: "var(--electric)", color: "var(--on-electric)", boxShadow: "0 8px 24px rgba(var(--electric-rgb),0.3)" }}
         >
           {isLoading ? <><Loader2 size={18} className="animate-spin" /> Đang xử lý...</> :
            mode === "signup" ? "Tạo tài khoản" : "Đăng nhập"}

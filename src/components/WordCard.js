@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { Volume2, RotateCcw, Frown, Smile, Zap, EyeOff, Bookmark, BookmarkCheck } from "lucide-react";
 
 const RATINGS = [
-  { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "#F87171",        bg: "rgba(248,113,113,0.06)",  border: "rgba(248,113,113,0.2)",       hoverBg: "rgba(248,113,113,0.12)" },
+  { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "var(--error)",        bg: "rgba(248,113,113,0.06)",  border: "rgba(248,113,113,0.2)",       hoverBg: "rgba(248,113,113,0.12)" },
   { rating: 2, label: "Hard",  icon: Frown,     desc: "<1d",  color: "var(--ink-soft)", bg: "var(--hover-bg)",         border: "var(--input-border)",         hoverBg: "var(--input-bg)" },
-  { rating: 3, label: "Good",  icon: Smile,     desc: "~3d",  color: "var(--electric)", bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.25)",        hoverBg: "rgba(34,197,94,0.15)" },
-  { rating: 4, label: "Easy",  icon: Zap,       desc: "~7d",  color: "#0A0A0A",         bg: "var(--electric)",         border: "var(--electric)",             hoverBg: "var(--electric-muted)" },
+  { rating: 3, label: "Good",  icon: Smile,     desc: "~3d",  color: "var(--electric)", bg: "rgba(var(--electric-rgb),0.08)",   border: "rgba(var(--electric-rgb),0.25)",        hoverBg: "rgba(var(--electric-rgb),0.15)" },
+  { rating: 4, label: "Easy",  icon: Zap,       desc: "~7d",  color: "var(--on-electric)",         bg: "var(--electric)",         border: "var(--electric)",             hoverBg: "var(--electric-muted)" },
 ];
 
 const CONTEXT_ICONS = { love: "💕", life: "🌿", work: "💼" };
@@ -104,10 +104,10 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
   const isEmailToday = source === "email_today";
 
   const sourceBadge = isEmailToday
-    ? { label: "📧 Email word", color: "var(--electric)", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.25)" }
+    ? { label: "📧 Email word", color: "var(--electric)", bg: "rgba(var(--electric-rgb),0.1)", border: "rgba(var(--electric-rgb),0.25)" }
     : isReview
-    ? { label: `🔄 Review · ${formatStability(progress?.stability)}`, color: "var(--ink-soft)", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.12)" }
-    : { label: "✨ New", color: "var(--electric)", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.25)" };
+    ? { label: `🔄 Review · ${formatStability(progress?.stability)}`, color: "var(--ink-soft)", bg: "var(--hover-bg)", border: "var(--card-border)" }
+    : { label: "✨ New", color: "var(--electric)", bg: "rgba(var(--electric-rgb),0.1)", border: "rgba(var(--electric-rgb),0.25)" };
 
   return (
     <div className={`flex flex-col ${isExiting ? 'word-exit' : enterAnim ? 'word-enter' : ''}`} style={{ minHeight: "calc(100vh - 72px)" }}>
@@ -127,9 +127,9 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
             onClick={onBookmark}
             className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-110"
             style={{
-              background: isBookmarked ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.04)",
+              background: isBookmarked ? "rgba(var(--electric-rgb),0.12)" : "var(--hover-bg)",
               color: isBookmarked ? "var(--electric)" : "var(--ink-soft)",
-              border: `1.5px solid ${isBookmarked ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.1)"}`,
+              border: `1.5px solid ${isBookmarked ? "rgba(var(--electric-rgb),0.3)" : "var(--card-border)"}`,
             }}
           >
             {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
@@ -138,7 +138,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
 
         {/* Word */}
         <h1
-          className="font-serif font-black leading-none tracking-tight gradient-text-word mb-4"
+          className="font-black leading-none tracking-tight gradient-text-word mb-4"
           style={{ fontSize: "clamp(52px, 8vw, 96px)" }}
         >
           {word.word}
@@ -155,10 +155,10 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
             onClick={speakWord}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:scale-110 transition-all"
             style={{
-              background: isPlaying ? "var(--electric)" : "rgba(34,197,94,0.1)",
-              color: isPlaying ? "#0A0A0A" : "var(--electric)",
-              border: "1.5px solid rgba(34,197,94,0.3)",
-              boxShadow: isPlaying ? "0 0 0 3px rgba(34,197,94,0.2)" : "none",
+              background: isPlaying ? "var(--electric)" : "rgba(var(--electric-rgb),0.1)",
+              color: isPlaying ? "var(--on-electric)" : "var(--electric)",
+              border: "1.5px solid rgba(var(--electric-rgb),0.3)",
+              boxShadow: isPlaying ? "0 0 0 3px rgba(var(--electric-rgb),0.2)" : "none",
             }}
             title="Nghe phát âm"
           >
@@ -167,7 +167,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
           {word.level && (
             <span
               className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"
-              style={{ background: "rgba(34,197,94,0.1)", color: "var(--electric)", border: "1.5px solid rgba(34,197,94,0.25)" }}
+              style={{ background: "rgba(var(--electric-rgb),0.1)", color: "var(--electric)", border: "1.5px solid rgba(var(--electric-rgb),0.25)" }}
             >
               {word.level}
             </span>
@@ -175,7 +175,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
           {word.pos && (
             <span
               className="px-2.5 py-0.5 rounded-full text-xs"
-              style={{ background: "rgba(255,255,255,0.05)", color: "var(--ink-soft)", border: "1px solid rgba(255,255,255,0.1)" }}
+              style={{ background: "var(--hover-bg)", color: "var(--ink-soft)", border: "1px solid var(--card-border)" }}
             >
               {word.pos}
             </span>
@@ -183,7 +183,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
         </div>
 
         {/* Divider */}
-        <div className="mb-5" style={{ height: "1px", background: "rgba(255,255,255,0.07)" }} />
+        <div className="mb-5" style={{ height: "1px", background: "var(--divider)" }} />
 
         {/* AI Content */}
         {isLoadingAI ? (
@@ -200,7 +200,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                 className="rounded-2xl px-5 py-4"
                 style={{
                   background: "var(--surface-elevated)",
-                  border: "1px solid rgba(34,197,94,0.1)",
+                  border: "1px solid rgba(var(--electric-rgb),0.1)",
                 }}
               >
                 {/* POS badge */}
@@ -208,7 +208,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                   <span className="text-[10px] font-black opacity-20" style={{ color: "var(--ink)" }}>{i + 1}</span>
                   <span
                     className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                    style={{ background: "rgba(34,197,94,0.1)", color: "var(--electric)", border: "1px solid rgba(34,197,94,0.2)" }}
+                    style={{ background: "rgba(var(--electric-rgb),0.1)", color: "var(--electric)", border: "1px solid rgba(var(--electric-rgb),0.2)" }}
                   >
                     {m.pos}
                   </span>
@@ -218,7 +218,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                 {m.memory_vi && (
                   <div
                     className="rounded-xl px-3 py-2.5 mb-3"
-                    style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}
+                    style={{ background: "rgba(var(--electric-rgb),0.06)", border: "1px solid rgba(var(--electric-rgb),0.15)" }}
                   >
                     <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--electric)" }}>
                       💡 Mẹo nhớ
@@ -241,12 +241,12 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
 
                 {/* Examples */}
                 {m.examples?.length > 0 && (
-                  <div className="space-y-1.5 mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="space-y-1.5 mt-3 pt-3" style={{ borderTop: "1px solid var(--divider)" }}>
                     {m.examples.map((ex, j) => (
                       <div key={j} className="flex gap-2 items-start">
                         <span className="flex-shrink-0 text-sm mt-0.5">{CONTEXT_ICONS[ex.context] || "•"}</span>
                         <p className="text-sm italic leading-relaxed" style={{ color: "var(--ink-soft)" }}>
-                          "{ex.sentence}"
+                          &ldquo;{ex.sentence}&rdquo;
                         </p>
                       </div>
                     ))}
@@ -266,7 +266,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                     <span
                       key={i}
                       className="px-3 py-1 rounded-full text-sm font-semibold"
-                      style={{ background: "rgba(34,197,94,0.08)", color: "var(--electric)", border: "1px solid rgba(34,197,94,0.2)" }}
+                      style={{ background: "rgba(var(--electric-rgb),0.08)", color: "var(--electric)", border: "1px solid rgba(var(--electric-rgb),0.2)" }}
                     >
                       {s}
                     </span>
@@ -307,7 +307,7 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
                   border: `1.5px solid ${r.border}`,
                   color: r.color,
                   transform: hovered === r.rating ? "translateY(-2px)" : "none",
-                  boxShadow: hovered === r.rating && r.rating === 4 ? "0 6px 20px rgba(34,197,94,0.35)" : "none",
+                  boxShadow: hovered === r.rating && r.rating === 4 ? "0 6px 20px rgba(var(--electric-rgb),0.35)" : "none",
                 }}
               >
                 <r.icon size={14} />
@@ -319,8 +319,10 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
           <button
             onClick={() => handleRate(0)}
             disabled={isRating}
-            className="w-full py-1.5 rounded-xl text-[11px] font-medium flex items-center justify-center gap-1.5 disabled:opacity-40 hover:bg-white/5 transition-colors"
+            className="w-full py-1.5 rounded-xl text-[11px] font-medium flex items-center justify-center gap-1.5 disabled:opacity-40 transition-colors"
             style={{ color: "var(--ink-ghost)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--hover-bg)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
           >
             <EyeOff size={11} />
             Không cần nhắc lại từ này
@@ -340,15 +342,15 @@ function AILoadingSkeleton({ message }) {
           <div
             key={i}
             className="rounded-2xl p-5 space-y-2.5"
-            style={{ background: "var(--surface-elevated)", border: "1px solid rgba(34,197,94,0.08)" }}
+            style={{ background: "var(--surface-elevated)", border: "1px solid rgba(var(--electric-rgb),0.08)" }}
           >
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full" style={{ background: "rgba(34,197,94,0.15)" }} />
-              <div className="h-4 w-16 rounded-full" style={{ background: "rgba(34,197,94,0.1)" }} />
+              <div className="w-4 h-4 rounded-full" style={{ background: "rgba(var(--electric-rgb),0.15)" }} />
+              <div className="h-4 w-16 rounded-full" style={{ background: "rgba(var(--electric-rgb),0.1)" }} />
             </div>
-            <div className="h-4 rounded-full" style={{ background: "rgba(255,255,255,0.05)", width: i === 0 ? "75%" : "82%" }} />
-            <div className="h-4 rounded-full" style={{ background: "rgba(255,255,255,0.04)", width: i === 0 ? "60%" : "55%" }} />
-            <div className="h-3 rounded-full" style={{ background: "rgba(255,255,255,0.03)", width: i === 0 ? "88%" : "78%" }} />
+            <div className="h-4 rounded-full" style={{ background: "var(--hover-bg)", width: i === 0 ? "75%" : "82%" }} />
+            <div className="h-4 rounded-full" style={{ background: "var(--hover-bg)", width: i === 0 ? "60%" : "55%" }} />
+            <div className="h-3 rounded-full" style={{ background: "var(--hover-bg)", width: i === 0 ? "88%" : "78%" }} />
           </div>
         ))}
       </div>

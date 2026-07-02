@@ -26,7 +26,7 @@ const inputStyle = {
   border: "1.5px solid var(--input-border)",
   color: "var(--ink)",
 };
-const inputFocus = (e) => { e.target.style.borderColor = "rgba(34,197,94,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(34,197,94,0.1)"; };
+const inputFocus = (e) => { e.target.style.borderColor = "var(--electric)"; e.target.style.boxShadow = "0 0 0 3px rgba(var(--electric-rgb),0.1)"; };
 const inputBlur  = (e) => { e.target.style.borderColor = "var(--input-border)"; e.target.style.boxShadow = "none"; };
 
 function ChangePasswordModal({ onClose }) {
@@ -53,7 +53,7 @@ function ChangePasswordModal({ onClose }) {
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center px-4"
-      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
+      style={{ background: "var(--overlay-bg)", backdropFilter: "blur(8px)" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -61,14 +61,16 @@ function ChangePasswordModal({ onClose }) {
         style={{ background: "var(--card-bg)", border: "1px solid var(--green-subtle-border)", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-serif text-xl font-bold flex items-center gap-2" style={{ color: "var(--ink)" }}>
+          <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <KeyRound size={18} style={{ color: "var(--electric)" }} />
             Đổi mật khẩu
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
             style={{ color: "var(--ink-soft)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--hover-bg)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
           >
             <X size={16} />
           </button>
@@ -80,7 +82,7 @@ function ChangePasswordModal({ onClose }) {
               className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center"
               style={{ background: "var(--electric)" }}
             >
-              <Check size={28} color="#0A0A0A" />
+              <Check size={28} color="var(--on-electric)" />
             </div>
             <p className="font-bold" style={{ color: "var(--electric)" }}>Mật khẩu đã được cập nhật!</p>
           </div>
@@ -116,22 +118,24 @@ function ChangePasswordModal({ onClose }) {
               />
             </div>
             {error && (
-              <div className="p-3 rounded-xl text-sm" style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", color: "#F87171" }}>
+              <div className="p-3 rounded-xl text-sm" style={{ background: "var(--error-soft)", border: "1px solid var(--error-border)", color: "var(--error)" }}>
                 {error}
               </div>
             )}
             <div className="flex gap-3 pt-1">
               <button
                 type="button" onClick={onClose}
-                className="flex-1 py-3 rounded-2xl font-semibold text-sm hover:bg-white/5 transition-colors"
-                style={{ border: "1.5px solid rgba(255,255,255,0.1)", color: "var(--ink-soft)" }}
+                className="flex-1 py-3 rounded-2xl font-semibold text-sm transition-colors"
+                style={{ border: "1.5px solid var(--card-border)", color: "var(--ink-soft)" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--hover-bg)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
               >
                 Huỷ
               </button>
               <button
                 type="submit" disabled={isLoading}
                 className="flex-1 py-3 rounded-2xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
-                style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 16px rgba(34,197,94,0.3)" }}
+                style={{ background: "var(--electric)", color: "var(--on-electric)", boxShadow: "0 4px 16px rgba(var(--electric-rgb),0.3)" }}
               >
                 {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                 {isLoading ? "Đang lưu..." : "Lưu"}
@@ -213,7 +217,7 @@ export default function ProfilePage() {
         {error && (
           <div
             className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] w-[90vw] max-w-xl px-5 py-4 rounded-2xl shadow-xl text-sm font-semibold"
-            style={{ background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)", color: "#F87171" }}
+            style={{ background: "var(--error-soft)", border: "1px solid var(--error-border)", color: "var(--error)" }}
           >
             ⚠️ {error}
             <button type="button" onClick={() => setError(null)} className="ml-3 underline opacity-70">Đóng</button>
@@ -230,13 +234,13 @@ export default function ProfilePage() {
             <ArrowLeft size={18} />
             <span className="font-semibold">Quay lại</span>
           </button>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>👤 Hồ sơ</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>👤 Hồ sơ</h1>
           <div className="w-20" />
         </div>
 
         {/* Account card */}
         <div className="rounded-3xl p-6 sm:p-8 mb-5" style={cardStyle}>
-          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <Mail size={20} style={{ color: "var(--electric)" }} />
             Tài khoản
           </h2>
@@ -251,7 +255,7 @@ export default function ProfilePage() {
                     <p className="font-semibold" style={{ color: "var(--ink)" }}>{email}</p>
                     <span
                       className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
-                      style={{ background: "rgba(34,197,94,0.1)", color: "var(--electric)", border: "1px solid rgba(34,197,94,0.25)" }}
+                      style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
                     >
                       {authProvider}
                     </span>
@@ -264,7 +268,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={() => setShowPasswordModal(true)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-sm hover:-translate-y-0.5 transition-all"
-                style={{ background: "rgba(34,197,94,0.08)", border: "1.5px solid rgba(34,197,94,0.2)", color: "var(--electric)" }}
+                style={{ background: "var(--green-subtle)", border: "1.5px solid var(--green-subtle-border)", color: "var(--electric)" }}
               >
                 <KeyRound size={15} />
                 Đổi mật khẩu
@@ -275,7 +279,7 @@ export default function ProfilePage() {
 
         {/* Personal info card */}
         <div className="rounded-3xl p-6 sm:p-8 mb-5" style={cardStyle}>
-          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <User size={20} style={{ color: "var(--electric)" }} />
             Thông tin cá nhân
           </h2>
@@ -295,7 +299,7 @@ export default function ProfilePage() {
 
         {/* Learning preferences card */}
         <div className="rounded-3xl p-6 sm:p-8 mb-6" style={cardStyle}>
-          <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <Target size={20} style={{ color: "var(--electric)" }} />
             Tùy chọn học tập
           </h2>
@@ -323,9 +327,9 @@ export default function ProfilePage() {
                       style={{
                         background: selected ? "var(--electric)" : "var(--hover-bg)",
                         border: selected ? "none" : "1.5px solid var(--input-border)",
-                        color: selected ? "#0A0A0A" : "var(--ink-soft)",
+                        color: selected ? "var(--on-electric)" : "var(--ink-soft)",
                         transform: selected ? "scale(1.05)" : "scale(1)",
-                        boxShadow: selected ? "0 4px 12px rgba(34,197,94,0.3)" : "none",
+                        boxShadow: selected ? "0 4px 12px rgba(var(--electric-rgb),0.3)" : "none",
                       }}
                     >
                       {value}
@@ -359,9 +363,9 @@ export default function ProfilePage() {
                       style={{
                         background: selected ? "var(--electric)" : "var(--hover-bg)",
                         border: selected ? "none" : "1.5px solid var(--input-border)",
-                        color: selected ? "#0A0A0A" : "var(--ink-soft)",
+                        color: selected ? "var(--on-electric)" : "var(--ink-soft)",
                         transform: selected ? "scale(1.05)" : "scale(1)",
-                        boxShadow: selected ? "0 4px 12px rgba(34,197,94,0.3)" : "none",
+                        boxShadow: selected ? "0 4px 12px rgba(var(--electric-rgb),0.3)" : "none",
                       }}
                     >
                       {label}
@@ -373,33 +377,15 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Practice speaking */}
-        <div className="rounded-3xl p-6 sm:p-8 mb-5" style={cardStyle}>
-          <h2 className="font-serif text-xl font-bold mb-2 flex items-center gap-2" style={{ color: "var(--ink)" }}>
-            🎙️ Luyện nói
-          </h2>
-          <p className="text-sm mb-4" style={{ color: "var(--ink-soft)" }}>
-            Trò chuyện trực tiếp với Alex — giáo viên AI giọng native American. Luyện phát âm, ngữ pháp và từ vựng qua hội thoại tự nhiên.
-          </p>
-          <button
-            type="button"
-            onClick={() => router.push("/practice")}
-            className="w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
-            style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 20px rgba(34,197,94,0.3)" }}
-          >
-            🎙️ Bắt đầu luyện nói với Alex
-          </button>
-        </div>
-
         {/* Save button */}
         <button
           onClick={handleSave} disabled={isSaving || isLoading}
           className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
           style={{
-            background: success ? "rgba(34,197,94,0.15)" : "var(--electric)",
-            color: success ? "var(--electric)" : "#0A0A0A",
-            border: success ? "1.5px solid rgba(34,197,94,0.4)" : "none",
-            boxShadow: success ? "none" : "0 8px 24px rgba(34,197,94,0.3)",
+            background: success ? "var(--green-subtle)" : "var(--electric)",
+            color: success ? "var(--electric)" : "var(--on-electric)",
+            border: success ? "1.5px solid var(--electric-border)" : "none",
+            boxShadow: success ? "none" : "0 8px 24px rgba(var(--electric-rgb),0.3)",
           }}
         >
           {isSaving ? <><Loader2 size={18} className="animate-spin" /> Đang lưu...</> :

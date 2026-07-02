@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Mic, MicOff, ArrowLeft, Volume2, Loader2, Phone, PhoneOff,
-  Plus, Trash2, Pencil, Check, X, MessageSquare, Menu, ChevronLeft,
+  Plus, Trash2, Pencil, Check, X, MessageSquare, Menu, ChevronLeft, Send,
 } from "lucide-react";
 
 const AVATAR_FRAMES = ["🧑‍🏫", "👨‍🏫"];
@@ -28,18 +28,41 @@ async function speakText(text) {
   } catch { return Promise.resolve(); }
 }
 
-function formatDate(iso) {
-  const d = new Date(iso);
-  const today = new Date();
-  const diff = Math.floor((today - d) / 86400000);
-  if (diff === 0) return "Hôm nay";
-  if (diff === 1) return "Hôm qua";
-  if (diff < 7) return `${diff} ngày trước`;
-  return d.toLocaleDateString("vi-VN", { day: "numeric", month: "numeric" });
+// Buckets sessions into ChatGPT-style time groups. `sessions` must already be
+// sorted by updated_at desc (the API returns them that way).
+function groupSessionsByTime(sessions) {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const buckets = [
+    { label: "Hôm nay", items: [] },
+    { label: "Hôm qua", items: [] },
+    { label: "7 ngày qua", items: [] },
+    { label: "30 ngày qua", items: [] },
+  ];
+  const monthGroups = new Map(); // key: "YYYY-MM" -> { label, items }
+
+  for (const s of sessions) {
+    const d = new Date(s.updated_at);
+    const diffDays = Math.floor((startOfToday - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+
+    if (diffDays === 0) buckets[0].items.push(s);
+    else if (diffDays === 1) buckets[1].items.push(s);
+    else if (diffDays < 7) buckets[2].items.push(s);
+    else if (diffDays < 30) buckets[3].items.push(s);
+    else {
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!monthGroups.has(key)) {
+        monthGroups.set(key, { label: d.toLocaleDateString("vi-VN", { month: "long", year: "numeric" }), items: [] });
+      }
+      monthGroups.get(key).items.push(s);
+    }
+  }
+
+  return [...buckets, ...monthGroups.values()].filter((g) => g.items.length > 0);
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onRename, loading, open, onClose }) {
+function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onRename, loading, open, onClose, collapsed, onToggleCollapse }) {
   const [renamingId, setRenamingId] = useState(null);
   const [renameVal, setRenameVal] = useState("");
   const inputRef = useRef(null);
@@ -52,6 +75,8 @@ function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onRename, load
     setRenamingId(null);
   };
 
+  const groups = groupSessionsByTime(sessions);
+
   return (
     <>
       {/* Backdrop on mobile */}
@@ -59,16 +84,24 @@ function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onRename, load
         <div className="fixed inset-0 z-20 md:hidden" style={{ background: "rgba(0,0,0,0.5)" }} onClick={onClose} />
       )}
       <aside
-        className={`fixed md:relative top-0 left-0 h-full z-30 md:z-auto flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
-        style={{ width: 260, background: "var(--card-bg)", borderRight: "1px solid var(--divider)", minHeight: "100vh" }}
+        className={`fixed md:relative top-0 left-0 h-full z-30 md:z-auto flex flex-col transition-all duration-200 overflow-hidden ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+        style={{ width: collapsed ? 60 : 260, background: "var(--card-bg)", borderRight: "1px solid var(--divider)", minHeight: "100vh" }}
       >
         {/* Sidebar header */}
-        <div className="flex items-center gap-2 px-3 py-3 border-b" style={{ borderColor: "var(--divider)" }}>
-          <span className="font-bold text-sm flex-1" style={{ color: "var(--ink)" }}>Lịch sử luyện nói</span>
+        <div className={`flex items-center gap-2 px-3 py-3 border-b ${collapsed ? "flex-col" : ""}`} style={{ borderColor: "var(--divider)" }}>
+          {!collapsed && <span className="font-bold text-sm flex-1 truncate" style={{ color: "var(--ink)" }}>Lịch sử luyện nói</span>}
+          <button
+            onClick={onToggleCollapse}
+            className="no-min-h w-7 h-7 rounded-lg items-center justify-center transition-all active:scale-90 hidden md:flex"
+            style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
+            title={collapsed ? "Mở rộng" : "Thu gọn"}
+          >
+            <ChevronLeft size={14} style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+          </button>
           <button
             onClick={onNew}
             className="no-min-h w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-90"
-            style={{ background: "var(--electric)", color: "#0A0A0A" }}
+            style={{ background: "var(--electric)", color: "var(--on-electric)" }}
             title="Cuộc trò chuyện mới"
           >
             <Plus size={14} />
@@ -79,58 +112,64 @@ function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onRename, load
         </div>
 
         {/* Session list */}
-        <div className="flex-1 overflow-y-auto py-2">
-          {loading && (
-            <div className="flex justify-center py-6">
-              <Loader2 size={16} className="animate-spin" style={{ color: "var(--ink-soft)" }} />
-            </div>
-          )}
-          {!loading && sessions.length === 0 && (
-            <div className="px-4 py-6 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
-              Chưa có cuộc trò chuyện nào
-            </div>
-          )}
-          {sessions.map(s => (
-            <div
-              key={s.id}
-              className="group relative flex items-center gap-2 px-3 py-2.5 cursor-pointer transition-colors mx-1 rounded-xl"
-              style={{ background: activeId === s.id ? "var(--hover-bg)" : "transparent" }}
-              onClick={() => { if (renamingId !== s.id) { onSelect(s.id); onClose(); } }}
-            >
-              <MessageSquare size={13} style={{ color: "var(--ink-soft)", flexShrink: 0 }} />
-              <div className="flex-1 min-w-0">
-                {renamingId === s.id ? (
-                  <input
-                    ref={inputRef}
-                    value={renameVal}
-                    onChange={e => setRenameVal(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") submitRename(s.id); if (e.key === "Escape") setRenamingId(null); }}
-                    onClick={e => e.stopPropagation()}
-                    className="w-full text-xs rounded px-1 py-0.5 outline-none"
-                    style={{ background: "var(--input-bg)", border: "1px solid var(--electric)", color: "var(--ink)" }}
-                  />
-                ) : (
-                  <>
-                    <div className="text-xs font-medium truncate" style={{ color: "var(--ink)" }}>{s.title}</div>
-                    <div className="text-[10px]" style={{ color: "var(--ink-soft)" }}>{formatDate(s.updated_at)}</div>
-                  </>
-                )}
+        {!collapsed && (
+          <div className="flex-1 overflow-y-auto py-2">
+            {loading && (
+              <div className="flex justify-center py-6">
+                <Loader2 size={16} className="animate-spin" style={{ color: "var(--ink-soft)" }} />
               </div>
+            )}
+            {!loading && sessions.length === 0 && (
+              <div className="px-4 py-6 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
+                Chưa có cuộc trò chuyện nào
+              </div>
+            )}
+            {groups.map((group) => (
+              <div key={group.label} className="mb-2">
+                <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--ink-soft)" }}>
+                  {group.label}
+                </div>
+                {group.items.map(s => (
+                  <div
+                    key={s.id}
+                    className="group relative flex items-center gap-2 px-3 py-2.5 cursor-pointer transition-colors mx-1 rounded-xl"
+                    style={{ background: activeId === s.id ? "var(--hover-bg)" : "transparent" }}
+                    onClick={() => { if (renamingId !== s.id) { onSelect(s.id); onClose(); } }}
+                  >
+                    <MessageSquare size={13} style={{ color: "var(--ink-soft)", flexShrink: 0 }} />
+                    <div className="flex-1 min-w-0">
+                      {renamingId === s.id ? (
+                        <input
+                          ref={inputRef}
+                          value={renameVal}
+                          onChange={e => setRenameVal(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") submitRename(s.id); if (e.key === "Escape") setRenamingId(null); }}
+                          onClick={e => e.stopPropagation()}
+                          className="w-full text-xs rounded px-1 py-0.5 outline-none"
+                          style={{ background: "var(--input-bg)", border: "1px solid var(--electric)", color: "var(--ink)" }}
+                        />
+                      ) : (
+                        <div className="text-xs font-medium truncate" style={{ color: "var(--ink)" }}>{s.title}</div>
+                      )}
+                    </div>
 
-              {renamingId === s.id ? (
-                <div className="flex gap-1">
-                  <button onClick={e => { e.stopPropagation(); submitRename(s.id); }} className="no-min-h w-5 h-5 flex items-center justify-center rounded" style={{ color: "var(--electric)" }}><Check size={11} /></button>
-                  <button onClick={e => { e.stopPropagation(); setRenamingId(null); }} className="no-min-h w-5 h-5 flex items-center justify-center rounded" style={{ color: "var(--ink-soft)" }}><X size={11} /></button>
-                </div>
-              ) : (
-                <div className="hidden group-hover:flex gap-1">
-                  <button onClick={e => { e.stopPropagation(); startRename(s); }} className="no-min-h w-6 h-6 flex items-center justify-center rounded-lg transition-all" style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}><Pencil size={11} /></button>
-                  <button onClick={e => { e.stopPropagation(); onDelete(s.id); }} className="no-min-h w-6 h-6 flex items-center justify-center rounded-lg transition-all" style={{ background: "var(--hover-bg)", color: "var(--error)" }}><Trash2 size={11} /></button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                    {renamingId === s.id ? (
+                      <div className="flex gap-1">
+                        <button onClick={e => { e.stopPropagation(); submitRename(s.id); }} className="no-min-h w-5 h-5 flex items-center justify-center rounded" style={{ color: "var(--electric)" }}><Check size={11} /></button>
+                        <button onClick={e => { e.stopPropagation(); setRenamingId(null); }} className="no-min-h w-5 h-5 flex items-center justify-center rounded" style={{ color: "var(--ink-soft)" }}><X size={11} /></button>
+                      </div>
+                    ) : (
+                      <div className="hidden group-hover:flex gap-1">
+                        <button onClick={e => { e.stopPropagation(); startRename(s); }} className="no-min-h w-6 h-6 flex items-center justify-center rounded-lg transition-all" style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}><Pencil size={11} /></button>
+                        <button onClick={e => { e.stopPropagation(); onDelete(s.id); }} className="no-min-h w-6 h-6 flex items-center justify-center rounded-lg transition-all" style={{ background: "var(--hover-bg)", color: "var(--error)" }}><Trash2 size={11} /></button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </aside>
     </>
   );
@@ -138,13 +177,25 @@ function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onRename, load
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function PracticePage() {
+  return (
+    <Suspense fallback={null}>
+      <PracticePageInner />
+    </Suspense>
+  );
+}
+
+function PracticePageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const wordParam = searchParams.get("word");
+  const wordIdParam = searchParams.get("word_id");
 
   // Session management
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Chat state
   const [sessionState, setSessionState] = useState("idle"); // idle | connecting | active | ended
@@ -154,6 +205,7 @@ export default function PracticePage() {
   const [isThinking, setIsThinking] = useState(false);    // AI is processing
   const [isUserTalking, setIsUserTalking] = useState(false); // VAD detected voice
   const [transcript, setTranscript] = useState("");
+  const [textInput, setTextInput] = useState("");
   const [avatarFrame, setAvatarFrame] = useState(0);
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -247,41 +299,94 @@ export default function PracticePage() {
 
   // ── Create new session ─────────────────────────────────────────────────────
   const createSession = useCallback(async (firstMessages) => {
-    const title = "Conversation " + new Date().toLocaleDateString("vi-VN", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+    const title = wordParam ? `"${wordParam}"` : "Conversation " + new Date().toLocaleDateString("vi-VN", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
     const res = await fetch("/api/practice/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, messages: firstMessages || [] }),
+      body: JSON.stringify({ title, messages: firstMessages || [], word_id: wordIdParam || undefined }),
     });
     const data = await res.json();
     const session = data.session;
     setSessions(prev => [session, ...prev]);
     setActiveSessionId(session.id);
     return session.id;
+  }, [wordParam, wordIdParam]);
+
+  // ── Stream a reply from /api/practice, updating the last assistant message
+  //    as chunks arrive (produces the ChatGPT-style typing effect) ────────────
+  const streamReply = useCallback(async (requestMessages, extra) => {
+    const res = await fetch("/api/practice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: requestMessages, word: wordParam || undefined, ...extra }),
+    });
+    if (!res.ok || !res.body) throw new Error("Stream failed");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = "";
+    let firstChunk = true;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      if (!chunk) continue;
+      if (firstChunk) { setIsThinking(false); firstChunk = false; }
+      full += chunk;
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: full };
+        return next;
+      });
+    }
+
+    return full;
+  }, [wordParam]);
+
+  // ── Auto-generate a session title from the first exchange (fire-and-forget) ─
+  const generateTitle = useCallback(async (sessionId, firstExchange) => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(`/api/practice/sessions/${sessionId}/title`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: firstExchange }),
+      });
+      const data = await res.json();
+      if (data.session?.title) {
+        setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, title: data.session.title } : s)));
+      }
+    } catch {
+      // non-critical — session keeps its placeholder title
+    }
   }, []);
 
   // ── Send message ───────────────────────────────────────────────────────────
   const sendMessage = useCallback(async (userText, currentMessages, sessionId) => {
     const newMessages = [...currentMessages, { role: "user", content: userText }];
-    setMessages(newMessages);
+    const withPlaceholder = [...newMessages, { role: "assistant", content: "" }];
+    setMessages(withPlaceholder);
     setIsThinking(true);
 
     try {
-      const res = await fetch("/api/practice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
-      });
-      const data = await res.json();
-      if (!data.reply) throw new Error("No reply");
+      const fullReply = await streamReply(newMessages);
+      if (!fullReply) throw new Error("No reply");
 
-      const withReply = [...newMessages, { role: "assistant", content: data.reply }];
+      const withReply = [...newMessages, { role: "assistant", content: fullReply }];
       setMessages(withReply);
       setIsThinking(false);
       saveMessages(withReply, sessionId);
 
+      // Auto-title the session right after the user's first real message
+      // (currentMessages here is just [kickoff, autoGreeting] from startSession).
+      // Skip if a word context already gave it a meaningful title at creation.
+      if (!wordParam && currentMessages.length === 2) {
+        generateTitle(sessionId, newMessages);
+      }
+
       setIsSpeaking(true);
-      await speakText(data.reply);
+      await speakText(fullReply);
       setIsSpeaking(false);
 
       return withReply;
@@ -291,29 +396,37 @@ export default function PracticePage() {
       setError("Có lỗi xảy ra. Thử lại nhé!");
       return currentMessages;
     }
-  }, [saveMessages]);
+  }, [saveMessages, wordParam, streamReply, generateTitle]);
+
+  // ── Send typed text message ────────────────────────────────────────────────
+  const sendTextMessage = useCallback(() => {
+    const text = textInput.trim();
+    if (!text || isThinking || isSpeaking) return;
+    setTextInput("");
+    const currentMessages = messagesRef.current;
+    const sessionId = activeSessionIdRef.current;
+    sendMessage(text, currentMessages, sessionId).then((updated) => setMessages(updated));
+  }, [textInput, isThinking, isSpeaking, sendMessage]);
 
   // ── Start new session ──────────────────────────────────────────────────────
   const startSession = useCallback(async () => {
     setSessionState("connecting");
-    setMessages([]);
     setError(null);
     setIsThinking(true);
 
+    const kickoff = wordParam
+      ? `Please explain this word to me: "${wordParam}".`
+      : "Hello! I want to practice my English.";
+
+    const kickoffMessages = [{ role: "user", content: kickoff }];
+    setMessages([...kickoffMessages, { role: "assistant", content: "" }]);
+
     try {
-      const res = await fetch("/api/practice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: "Hello! I want to practice my English." }],
-          vocabularyContext: true,
-        }),
-      });
-      const data = await res.json();
-      const greeting = data.reply || "Hey! I'm Alex, your English teacher. Great to meet you! What would you like to talk about today?";
+      const greeting = await streamReply(kickoffMessages, { vocabularyContext: true }) ||
+        "Hey! I'm Alex, your English teacher. Great to meet you! What would you like to talk about today?";
 
       const initMessages = [
-        { role: "user", content: "Hello! I want to practice my English." },
+        { role: "user", content: kickoff },
         { role: "assistant", content: greeting },
       ];
       setMessages(initMessages);
@@ -332,7 +445,16 @@ export default function PracticePage() {
       setSessionState("idle");
       setError("Không thể kết nối. Thử lại nhé!");
     }
-  }, [createSession]);
+  }, [createSession, wordParam, streamReply]);
+
+  // ── Auto-start when arriving from /vocabulary-chat with a word ────────────
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (wordParam && !autoStartedRef.current && sessionState === "idle" && !sessionsLoading) {
+      autoStartedRef.current = true;
+      startSession();
+    }
+  }, [wordParam, sessionState, sessionsLoading, startSession]);
 
   // ── Resume session ─────────────────────────────────────────────────────────
   const resumeSession = useCallback(() => {
@@ -543,7 +665,7 @@ export default function PracticePage() {
   const canTalk = sessionState === "active" && !isThinking && !isSpeaking; // kept for reference
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--cream)" }}>
       {/* Sidebar */}
       <Sidebar
         sessions={sessions}
@@ -555,6 +677,8 @@ export default function PracticePage() {
         loading={sessionsLoading}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(v => !v)}
       />
 
       {/* Main panel */}
@@ -602,7 +726,7 @@ export default function PracticePage() {
                 style={{
                   background: isSpeaking ? "var(--green-subtle)" : "var(--card-bg)",
                   border: `3px solid ${isSpeaking ? "var(--electric)" : "var(--card-border)"}`,
-                  boxShadow: isSpeaking ? "0 0 24px rgba(34,197,94,0.3)" : "0 4px 20px rgba(0,0,0,0.1)",
+                  boxShadow: isSpeaking ? "0 0 24px rgba(var(--electric-rgb),0.3)" : "0 4px 20px rgba(0,0,0,0.1)",
                   transform: isSpeaking ? "scale(1.05)" : "scale(1)",
                 }}
               >
@@ -619,24 +743,32 @@ export default function PracticePage() {
             {/* Messages */}
             {messages.length > 0 && (
               <div className="flex flex-col gap-3">
-                {messages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className="max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed"
-                      style={m.role === "user"
-                        ? { background: "var(--electric)", color: "#fff", borderBottomRightRadius: "4px" }
-                        : { background: "var(--card-bg)", color: "var(--ink)", borderBottomLeftRadius: "4px", border: "1px solid var(--card-border)" }
-                      }
-                    >
-                      {m.content}
-                      {m.role === "assistant" && (
-                        <button onClick={() => speakText(m.content)} className="ml-2 opacity-40 hover:opacity-100 inline-flex align-middle">
-                          <Volume2 size={11} />
-                        </button>
-                      )}
+                {messages.map((m, i) => {
+                  const isLastAssistant = m.role === "assistant" && i === messages.length - 1;
+                  const isStreamingThisBubble = isLastAssistant && (isThinking || (!m.content && !isSpeaking));
+                  if (m.role === "assistant" && !m.content && isThinking) return null; // dots below cover this
+                  return (
+                    <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className="max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed"
+                        style={m.role === "user"
+                          ? { background: "var(--electric)", color: "var(--on-electric)", borderBottomRightRadius: "4px" }
+                          : { background: "var(--card-bg)", color: "var(--ink)", borderBottomLeftRadius: "4px", border: "1px solid var(--card-border)" }
+                        }
+                      >
+                        {m.content}
+                        {isStreamingThisBubble && m.content && (
+                          <span className="inline-block w-1.5 h-3.5 ml-0.5 align-middle animate-pulse" style={{ background: "var(--ink-soft)" }} />
+                        )}
+                        {m.role === "assistant" && m.content && !isStreamingThisBubble && (
+                          <button onClick={() => speakText(m.content)} className="ml-2 opacity-40 hover:opacity-100 inline-flex align-middle">
+                            <Volume2 size={11} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {isThinking && (
                   <div className="flex justify-start">
                     <div className="px-4 py-3 rounded-2xl" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)" }}>
@@ -677,7 +809,7 @@ export default function PracticePage() {
               <button
                 onClick={startSession}
                 className="flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-95"
-                style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 20px rgba(34,197,94,0.4)" }}
+                style={{ background: "var(--electric)", color: "var(--on-electric)", boxShadow: "0 4px 20px rgba(var(--electric-rgb),0.4)" }}
               >
                 <Phone size={18} />
                 {activeSessionId ? "Bắt đầu cuộc trò chuyện mới" : "Bắt đầu luyện nói"}
@@ -692,6 +824,30 @@ export default function PracticePage() {
 
             {sessionState === "active" && (
               <>
+                {/* Text input — always available, independent of mic state */}
+                <div className="w-full flex items-center gap-2 mb-1">
+                  <input
+                    type="text"
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") sendTextMessage(); }}
+                    placeholder="Nhắn tin cho Alex..."
+                    disabled={isThinking || isSpeaking}
+                    className="flex-1 px-4 py-2.5 rounded-2xl text-sm focus:outline-none transition-all disabled:opacity-50"
+                    style={{ background: "var(--input-bg)", border: "1.5px solid var(--input-border)", color: "var(--ink)" }}
+                    onFocus={(e) => { e.target.style.borderColor = "var(--electric)"; }}
+                    onBlur={(e) => { e.target.style.borderColor = "var(--input-border)"; }}
+                  />
+                  <button
+                    onClick={sendTextMessage}
+                    disabled={!textInput.trim() || isThinking || isSpeaking}
+                    className="no-min-h w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 flex-shrink-0"
+                    style={{ background: "var(--electric)", color: "var(--on-electric)" }}
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+
                 <div className="flex items-center gap-5">
                   {/* Mic toggle — VAD auto-detects voice, this just enables/disables */}
                   <div className="relative">
@@ -702,7 +858,7 @@ export default function PracticePage() {
                         width: 72, height: 72,
                         background: isUserTalking ? "var(--electric)" : isListening ? "var(--green-subtle)" : "var(--card-bg)",
                         border: `3px solid ${isUserTalking ? "var(--electric)" : isListening ? "var(--electric)" : "var(--card-border)"}`,
-                        boxShadow: isUserTalking ? "0 0 32px rgba(34,197,94,0.7)" : isListening ? "0 0 20px rgba(34,197,94,0.3)" : "0 4px 16px rgba(0,0,0,0.15)",
+                        boxShadow: isUserTalking ? "0 0 32px rgba(var(--electric-rgb),0.7)" : isListening ? "0 0 20px rgba(var(--electric-rgb),0.3)" : "0 4px 16px rgba(0,0,0,0.15)",
                         color: isListening ? "var(--electric)" : "var(--ink-soft)",
                       }}
                     >
@@ -724,8 +880,8 @@ export default function PracticePage() {
                   {isThinking ? "Alex đang suy nghĩ..." :
                    isSpeaking ? "Alex đang nói..." :
                    isUserTalking ? "Đang nghe bạn nói..." :
-                   isListening ? "Mic đang bật — cứ tự nhiên nói" :
-                   "Nhấn mic để bật"}
+                   isListening ? "Mic đang bật — cứ tự nhiên nói, hoặc gõ tin nhắn" :
+                   "Nhấn mic để nói, hoặc gõ tin nhắn"}
                 </p>
               </>
             )}
@@ -739,7 +895,7 @@ export default function PracticePage() {
                   <button
                     onClick={resumeSession}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
-                    style={{ background: "var(--electric)", color: "#0A0A0A" }}
+                    style={{ background: "var(--electric)", color: "var(--on-electric)" }}
                   >
                     <Mic size={15} /> Tiếp tục
                   </button>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   LogOut, UserCog, Mail, Sun, Moon, User, LogIn,
-  NotebookPen, Plus, Loader2, X,
+  NotebookPen, Plus, Loader2, X, Mic, MessageCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
@@ -53,12 +53,14 @@ export default function Header({ userName, isGuest = false, onJournalAdded }) {
             className="flex items-center gap-2 flex-shrink-0 active:opacity-70 transition-opacity"
           >
             <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)", boxShadow: "0 2px 8px rgba(34,197,94,0.35)" }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: "var(--electric)" }}
             >
-              🌈
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 4C2 3.44772 2.44772 3 3 3H4.5C5.05228 3 5.5 3.44772 5.5 4V9C5.5 10.1046 6.39543 11 7.5 11C8.60457 11 9.5 10.1046 9.5 9V4C9.5 3.44772 9.94772 3 10.5 3H12C12.5523 3 13 3.44772 13 4V9C13 11.7614 10.7614 14 8 14C7.14 14 6.33 13.78 5.63 13.39" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
-            <span className="font-serif font-black text-xl gradient-text-brand tracking-tight">
+            <span className="font-bold text-xl tracking-tight" style={{ color: "var(--ink)" }}>
               Wordly
             </span>
           </button>
@@ -78,7 +80,7 @@ export default function Header({ userName, isGuest = false, onJournalAdded }) {
               <button
                 onClick={() => router.push("/login")}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 no-min-h"
-                style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 2px 8px rgba(34,197,94,0.3)" }}
+                style={{ background: "var(--electric)", color: "var(--on-electric)", boxShadow: "0 2px 8px rgba(var(--electric-rgb),0.3)" }}
               >
                 <LogIn size={13} />
                 <span>Đăng nhập</span>
@@ -87,10 +89,11 @@ export default function Header({ userName, isGuest = false, onJournalAdded }) {
               <div className="relative">
                 <button
                   onClick={() => setIsMenuOpen(o => !o)}
-                  className="relative w-9 h-9 rounded-xl flex items-center justify-center text-black active:scale-95 transition-all"
+                  className="relative w-9 h-9 rounded-xl flex items-center justify-center active:scale-95 transition-all"
                   style={{
                     background: "var(--electric)",
-                    boxShadow: isMenuOpen ? "0 4px 16px rgba(34,197,94,0.5)" : "0 2px 8px rgba(34,197,94,0.3)",
+                    color: "var(--on-electric)",
+                    boxShadow: isMenuOpen ? "0 4px 16px rgba(var(--electric-rgb),0.5)" : "0 2px 8px rgba(var(--electric-rgb),0.3)",
                   }}
                 >
                   <User size={15} />
@@ -125,6 +128,16 @@ export default function Header({ userName, isGuest = false, onJournalAdded }) {
                         icon={Plus}
                         label="Thêm nhanh"
                         onClick={openJournal}
+                      />
+                      <MenuItem
+                        icon={Mic}
+                        label="Luyện nói với Alex"
+                        onClick={() => { setIsMenuOpen(false); router.push("/practice"); }}
+                      />
+                      <MenuItem
+                        icon={MessageCircle}
+                        label="Chat theo từ vựng"
+                        onClick={() => { setIsMenuOpen(false); router.push("/vocabulary-chat"); }}
                       />
 
                       <div className="h-px my-1" style={{ background: "var(--divider)" }} />
@@ -257,14 +270,14 @@ function JournalSheet({ isOpen, onClose, onAdded }) {
             rows={3}
             className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none transition-all resize-none"
             style={{ background: "var(--input-bg)", border: "1.5px solid var(--input-border)", color: "var(--ink)" }}
-            onFocus={e => { e.target.style.borderColor = "rgba(34,197,94,0.5)"; }}
+            onFocus={e => { e.target.style.borderColor = "var(--electric)"; }}
             onBlur={e => { e.target.style.borderColor = "var(--input-border)"; }}
           />
           <button
             type="submit"
             disabled={isLoading || !content.trim()}
             className="w-full py-3 rounded-2xl font-bold text-sm disabled:opacity-40 flex items-center justify-center gap-2 active:scale-95 transition-all"
-            style={{ background: "var(--electric)", color: "#0A0A0A", boxShadow: "0 4px 16px rgba(34,197,94,0.3)" }}
+            style={{ background: "var(--electric)", color: "var(--on-electric)", boxShadow: "0 4px 16px rgba(var(--electric-rgb),0.3)" }}
           >
             {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             Lưu vào Journal

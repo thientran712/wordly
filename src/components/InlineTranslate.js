@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeftRight, Volume2, X, Loader2, Search, BookmarkPlus, BookmarkCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeftRight, Volume2, X, Loader2, Search, BookmarkPlus, BookmarkCheck, Sparkles } from "lucide-react";
 
 async function speak(text, lang = "en-US") {
   try {
@@ -37,7 +38,7 @@ const POS_LABEL = {
 };
 const POS_COLOR = {
   noun:      { bg: "rgba(96,165,250,0.12)",  border: "rgba(96,165,250,0.3)",  text: "#60A5FA" },
-  verb:      { bg: "rgba(34,197,94,0.12)",   border: "rgba(34,197,94,0.3)",   text: "#22C55E" },
+  verb:      { bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)", text: "#A78BFA" },
   adjective: { bg: "rgba(251,191,36,0.12)",  border: "rgba(251,191,36,0.3)",  text: "#FBBF24" },
   adverb:    { bg: "rgba(232,121,249,0.12)", border: "rgba(232,121,249,0.3)", text: "#E879F9" },
   default:   { bg: "var(--hover-bg)",         border: "var(--divider)",         text: "var(--ink-soft)" },
@@ -45,6 +46,7 @@ const POS_COLOR = {
 const posStyle = (pos) => POS_COLOR[pos] || POS_COLOR.default;
 
 export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn = false }) {
+  const router = useRouter();
   const [input, setInput] = useState("");
   const [translated, setTranslated] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
@@ -243,6 +245,12 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     }).catch(() => null);
   };
 
+  const handleAskAI = () => {
+    const word = input.trim();
+    if (!word) return;
+    router.push(`/practice?${new URLSearchParams({ word })}`);
+  };
+
   const handleInputChange = (e) => {
     suppressSuggestRef.current = false;
     setWordDetail(null);
@@ -276,7 +284,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
             onMouseDown={e => e.preventDefault()}
             onClick={dismissKeyboard}
             className="no-min-h px-4 py-1.5 rounded-xl text-sm font-bold active:scale-95 transition-all"
-            style={{ background: "var(--electric)", color: "#0A0A0A" }}
+            style={{ background: "var(--electric)", color: "var(--on-electric)" }}
           >
             Xong
           </button>
@@ -338,7 +346,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
             className="w-full resize-none text-base focus:outline-none px-4 pt-3 pb-2"
             style={{
               background: "transparent",
-              color: isOverLimit ? "#F87171" : "var(--ink)",
+              color: isOverLimit ? "var(--error)" : "var(--ink)",
               lineHeight: 1.7,
               minHeight: 96,
               height: "auto",
@@ -349,7 +357,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
           {/* Char counter — only show when nearing limit */}
           {input.length > CHAR_LIMIT * 0.8 && (
             <div className="px-4 pb-1 text-right">
-              <span className="text-[11px] font-semibold tabular-nums" style={{ color: isOverLimit ? "#F87171" : "var(--ink-ghost)" }}>
+              <span className="text-[11px] font-semibold tabular-nums" style={{ color: isOverLimit ? "var(--error)" : "var(--ink-ghost)" }}>
                 {input.length.toLocaleString()} / {CHAR_LIMIT.toLocaleString()}
               </span>
             </div>
@@ -382,6 +390,17 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
                 title={saved ? "Đã lưu" : "Lưu vào lịch sử"}
               >
                 {saved ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
+              </button>
+            )}
+            {/* Ask AI — explain this word in a chat with Alex */}
+            {translated && isEN && isSingleWord(input) && (
+              <button
+                onClick={handleAskAI}
+                className="no-min-h flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-bold active:scale-95 transition-all"
+                style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
+                title="Hỏi AI giải thích từ này"
+              >
+                <Sparkles size={13} /> Hỏi AI
               </button>
             )}
             {suggLoading && (
@@ -468,7 +487,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
           style={{ background: "var(--green-subtle)", minWidth: 0, flex: 1, minHeight: 96 }}
         >
           {isOverLimit ? (
-            <p className="text-sm font-semibold" style={{ color: "#F87171", lineHeight: 1.7 }}>
+            <p className="text-sm font-semibold" style={{ color: "var(--error)", lineHeight: 1.7 }}>
               ⚠️ Văn bản quá dài — tối đa {CHAR_LIMIT.toLocaleString()} ký tự.
             </p>
           ) : isTranslating ? (
@@ -535,7 +554,7 @@ function WordDefinitions({ detail }) {
                       className="text-[11px] italic pl-3 leading-relaxed"
                       style={{ color: "var(--ink-ghost)", borderLeft: "2px solid var(--green-subtle-border)" }}
                     >
-                      "{d.example}"
+                      &ldquo;{d.example}&rdquo;
                     </span>
                   )}
                 </li>

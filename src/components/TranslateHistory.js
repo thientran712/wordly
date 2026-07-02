@@ -174,7 +174,7 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
 
       {/* Body */}
       {!collapsed && (
-        <div className="divide-y" style={{ borderColor: "var(--divider)" }}>
+        <div>
           {groups.map(({ day, dateLabel, entries }) => (
             <div key={day}>
               <div

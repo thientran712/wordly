@@ -1,16 +1,10 @@
-import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-jakarta",
-});
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "900"],
-  variable: "--font-fraunces",
 });
 
 export const metadata = {
@@ -30,7 +24,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="vi" className={`${jakarta.variable} ${fraunces.variable}`} suppressHydrationWarning>
+    <html lang="vi" className={jakarta.variable} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{

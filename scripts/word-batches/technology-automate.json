@@ -1,0 +1,116 @@
+{
+  "topic": "technology",
+  "family": "Automate",
+  "words": [
+    {
+      "word": "automate",
+      "pos": "verb",
+      "cefr": "C1",
+      "definition": "to make a process or system operate using machines or computers instead of people",
+      "example": "The factory automated its packaging line to cut labor costs.",
+      "register": "neutral",
+      "collocations": ["automate a process", "automate a task", "automate workflows"],
+      "usage_note": null,
+      "frequency": 5
+    },
+    {
+      "word": "streamline",
+      "pos": "verb",
+      "cefr": "C1",
+      "definition": "to make a system or process simpler and more efficient",
+      "example": "The new software streamlined the entire deployment pipeline.",
+      "register": "neutral",
+      "collocations": ["streamline a workflow", "streamline operations", "streamline a process"],
+      "usage_note": "Avoid pairing with 'complicate' in the same sentence.",
+      "frequency": 4
+    },
+    {
+      "word": "integrate",
+      "pos": "verb",
+      "cefr": "C1",
+      "definition": "to combine two or more systems or components so they work together as one",
+      "example": "We integrated the payment gateway directly into the checkout flow.",
+      "register": "neutral",
+      "collocations": ["integrate a system", "integrate with", "seamlessly integrate"],
+      "usage_note": null,
+      "frequency": 5
+    },
+    {
+      "word": "orchestrate",
+      "pos": "verb",
+      "cefr": "C2",
+      "definition": "to carefully organize and coordinate a complex process or set of systems",
+      "example": "Kubernetes orchestrates hundreds of containers across the cluster automatically.",
+      "register": "formal",
+      "collocations": ["orchestrate deployment", "orchestrate a workflow", "orchestrate services"],
+      "usage_note": "In tech contexts this usually refers to coordinating systems, not people.",
+      "frequency": 3
+    },
+    {
+      "word": "scalable",
+      "pos": "adjective",
+      "cefr": "C1",
+      "definition": "able to be changed in size or scale, especially able to handle growth without breaking down",
+      "example": "The architecture needs to be scalable enough to handle ten times the current traffic.",
+      "register": "neutral",
+      "collocations": ["scalable architecture", "scalable solution", "highly scalable"],
+      "usage_note": null,
+      "frequency": 4
+    },
+    {
+      "word": "provision",
+      "pos": "verb",
+      "cefr": "C2",
+      "definition": "to set up and allocate the resources or infrastructure a system needs before it runs",
+      "example": "The script automatically provisions new servers when demand spikes.",
+      "register": "formal",
+      "collocations": ["provision a server", "provision resources", "auto-provision"],
+      "usage_note": "Mostly used as a technical/IT term, not in general conversation.",
+      "frequency": 2
+    },
+    {
+      "word": "delegate",
+      "pos": "verb",
+      "cefr": "C1",
+      "definition": "to assign a task or responsibility to another person, system, or process",
+      "example": "The main thread delegates heavy computation to background workers.",
+      "register": "neutral",
+      "collocations": ["delegate a task", "delegate authority", "delegate responsibility"],
+      "usage_note": null,
+      "frequency": 4
+    },
+    {
+      "word": "expedite",
+      "pos": "verb",
+      "cefr": "C2",
+      "definition": "to make a process happen faster or more efficiently",
+      "example": "Automating the approval step expedited the entire release cycle.",
+      "register": "formal",
+      "collocations": ["expedite a process", "expedite delivery", "expedite approval"],
+      "usage_note": "Sounds overly formal in casual speech — prefer 'speed up' there.",
+      "frequency": 3
+    },
+    {
+      "word": "self-sufficient",
+      "pos": "adjective",
+      "cefr": "C1",
+      "definition": "able to function or sustain itself without needing outside help or intervention",
+      "example": "The pipeline was designed to be self-sufficient, requiring no manual restarts.",
+      "register": "neutral",
+      "collocations": ["self-sufficient system", "become self-sufficient", "largely self-sufficient"],
+      "usage_note": null,
+      "frequency": 2
+    },
+    {
+      "word": "redundant",
+      "pos": "adjective",
+      "cefr": "C1",
+      "definition": "duplicated as a backup so that a system continues working if one part fails",
+      "example": "Critical services run on redundant servers in case one instance goes down.",
+      "register": "neutral",
+      "collocations": ["redundant system", "build in redundancy", "redundant backup"],
+      "usage_note": "In tech this is a positive/neutral term, unlike its everyday meaning of 'unnecessary'.",
+      "frequency": 3
+    }
+  ]
+}

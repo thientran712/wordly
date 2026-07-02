@@ -89,7 +89,7 @@ export default function JournalPage() {
             <ArrowLeft size={18} />
             <span className="font-semibold">Quay lại</span>
           </button>
-          <h1 className="font-serif text-3xl font-bold tracking-tight">📓 Journal</h1>
+          <h1 className="text-3xl font-bold tracking-tight">📓 Journal</h1>
           <div className="w-20" />
         </div>
 
@@ -97,7 +97,7 @@ export default function JournalPage() {
         <form
           onSubmit={handleAdd}
           className="rounded-3xl p-5 sm:p-6 border-2 mb-6"
-          style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 24px rgba(34,197,94,0.10)" }}
+          style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "0 8px 24px rgba(var(--electric-rgb),0.10)" }}
         >
           <p className="text-xs font-bold uppercase tracking-wider text-[--ink-soft] mb-3">
             ✏️ Ghi chú mới
@@ -109,7 +109,9 @@ export default function JournalPage() {
               onChange={e => setContent(e.target.value)}
               placeholder="Câu, bài học, hoặc câu hỏi bạn gặp hôm nay..."
               rows={3}
-              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] focus:ring-4 focus:ring-green-100 transition-all text-[--ink] resize-none"
+              onFocus={e => { e.target.style.boxShadow = "0 0 0 3px var(--green-subtle)"; }}
+              onBlur={e => { e.target.style.boxShadow = "none"; }}
+              className="w-full px-4 py-3 bg-[--whisper] border-2 border-[--line] rounded-2xl focus:outline-none focus:border-[--electric] focus:bg-[var(--card-bg)] transition-all text-[--ink] resize-none"
             />
             <button
               type="submit"
@@ -117,8 +119,8 @@ export default function JournalPage() {
               className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm border-none cursor-pointer hover:-translate-y-0.5 hover:opacity-90 disabled:opacity-40"
               style={{
                 background: "var(--electric)",
-                color: "#0A0A0A",
-                boxShadow: "0 8px 20px rgba(34,197,94,0.3)",
+                color: "var(--on-electric)",
+                boxShadow: "0 8px 20px rgba(var(--electric-rgb),0.3)",
               }}
             >
               {isAdding ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
@@ -151,7 +153,7 @@ export default function JournalPage() {
                     <div
                       key={entry.id}
                       className="rounded-2xl px-4 py-3.5 border-2 border-[--line] flex items-start gap-3 group"
-                      style={{ background: "var(--card-bg)", boxShadow: "0 2px 8px rgba(34,197,94,0.05)" }}
+                      style={{ background: "var(--card-bg)", boxShadow: "0 2px 8px rgba(var(--electric-rgb),0.05)" }}
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm leading-snug text-[--ink] whitespace-pre-wrap">
@@ -165,7 +167,7 @@ export default function JournalPage() {
                         <button
                           onClick={() => handleDelete(entry.id)}
                           disabled={deletingId === entry.id}
-                          className="w-7 h-7 rounded-xl flex items-center justify-center text-[--ink-soft] opacity-0 group-hover:opacity-100 hover:bg-[#FFE8E8] hover:text-[#B83426] transition-all disabled:opacity-30"
+                          className="w-7 h-7 rounded-xl flex items-center justify-center text-[--ink-soft] opacity-0 group-hover:opacity-100 hover:bg-[var(--error-soft)] hover:text-[var(--error)] transition-all disabled:opacity-30"
                         >
                           {deletingId === entry.id
                             ? <Loader2 size={13} className="animate-spin" />
