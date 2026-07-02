@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Search, Volume2 } from "lucide-react";
+import { Search, Volume2 } from "lucide-react";
+import BackButton from "@/components/ui/BackButton";
 
 const STATE_CONFIG = {
   learning:   { label: "Đang học",   bg: "var(--error-soft)",     border: "var(--error-border)",      color: "var(--error)",        emoji: "🌱" },
@@ -26,7 +26,6 @@ function formatLearnedDate(dateStr) {
 }
 
 export default function WordsPage() {
-  const router = useRouter();
   const [tab, setTab] = useState("learned");
   const [query, setQuery] = useState("");
   const [level, setLevel] = useState("");
@@ -82,14 +81,7 @@ export default function WordsPage() {
       <main className="relative z-10 max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:-translate-y-0.5 hover:shadow-sm transition-all"
-            style={{ color: "var(--ink-soft)", background: "var(--surface-elevated)", border: "1px solid var(--line)" }}
-          >
-            <ArrowLeft size={18} />
-            <span className="font-semibold">Quay lại</span>
-          </button>
+          <BackButton label="Quay lại" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
             📖 My Words
           </h1>

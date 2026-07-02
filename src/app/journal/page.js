@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, BookMarked, Loader2 } from "lucide-react";
+import { Plus, Trash2, BookMarked, Loader2 } from "lucide-react";
+import BackButton from "@/components/ui/BackButton";
 
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
@@ -25,7 +25,6 @@ function groupByDate(entries) {
 }
 
 export default function JournalPage() {
-  const router = useRouter();
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [content, setContent] = useState("");
@@ -82,13 +81,7 @@ export default function JournalPage() {
       <main className="relative z-10 max-w-xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[--ink-soft] hover:bg-[var(--hover-bg)] hover:-translate-y-0.5 hover:shadow-sm"
-          >
-            <ArrowLeft size={18} />
-            <span className="font-semibold">Quay lại</span>
-          </button>
+          <BackButton label="Quay lại" />
           <h1 className="text-3xl font-bold tracking-tight">📓 Journal</h1>
           <div className="w-20" />
         </div>

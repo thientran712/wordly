@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Mic, MicOff, ArrowLeft, Volume2, Loader2, Phone, PhoneOff,
+  Mic, MicOff, ArrowLeft, Volume2, Loader2, PhoneOff,
   Plus, Trash2, Pencil, Check, X, MessageSquare, Menu, ChevronLeft, Send,
 } from "lucide-react";
 
@@ -85,7 +85,7 @@ function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onRename, load
       )}
       <aside
         className={`fixed md:relative top-0 left-0 h-full z-30 md:z-auto flex flex-col transition-all duration-200 overflow-hidden ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
-        style={{ width: collapsed ? 60 : 260, background: "var(--card-bg)", borderRight: "1px solid var(--divider)", minHeight: "100vh" }}
+        style={{ width: collapsed ? 60 : 260, background: "var(--card-bg)", borderRight: "1px solid var(--divider)", height: "100vh" }}
       >
         {/* Sidebar header */}
         <div className={`flex items-center gap-2 px-3 py-3 border-b ${collapsed ? "flex-col" : ""}`} style={{ borderColor: "var(--divider)" }}>
@@ -198,7 +198,8 @@ function PracticePageInner() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Chat state
-  const [sessionState, setSessionState] = useState("idle"); // idle | connecting | active | ended
+  const [sessionState, setSessionState] = useState("idle"); // idle | connecting | active
+  const [voiceMode, setVoiceMode] = useState(false); // text-only (false) vs voice on (true)
   const [messages, setMessages] = useState([]);
   const [isListening, setIsListening] = useState(false);  // VAD mic is on
   const [isSpeaking, setIsSpeaking] = useState(false);    // Alex is speaking
@@ -218,12 +219,14 @@ function PracticePageInner() {
   const saveTimeoutRef = useRef(null);
   const isSpeakingRef = useRef(false);
   const isThinkingRef = useRef(false);
+  const voiceModeRef = useRef(false);
   const activeSessionIdRef = useRef(null);
   const messagesRef = useRef([]);
 
   // Keep refs in sync
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
   useEffect(() => { isThinkingRef.current = isThinking; }, [isThinking]);
+  useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
   useEffect(() => { activeSessionIdRef.current = activeSessionId; }, [activeSessionId]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
@@ -274,13 +277,14 @@ function PracticePageInner() {
 
   // ── Select existing session ────────────────────────────────────────────────
   const selectSession = useCallback(async (id) => {
-    // Stop any active session first
+    // Turn off voice mode from any previous session first
     if (vadRef.current) { try { vadRef.current.destroy(); } catch {} vadRef.current = null; }
     if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
     setIsListening(false);
     setVadReady(false);
     setIsSpeaking(false);
     setIsThinking(false);
+    setVoiceMode(false);
     setError(null);
 
     setSessionState("idle");
@@ -290,10 +294,8 @@ function PracticePageInner() {
     try {
       const res = await fetch(`/api/practice/sessions/${id}`);
       const data = await res.json();
-      if (data.session?.messages?.length > 0) {
-        setMessages(data.session.messages);
-        setSessionState("ended");
-      }
+      setMessages(data.session?.messages || []);
+      setSessionState("active");
     } catch { /* silently fail */ }
   }, []);
 
@@ -385,9 +387,11 @@ function PracticePageInner() {
         generateTitle(sessionId, newMessages);
       }
 
-      setIsSpeaking(true);
-      await speakText(fullReply);
-      setIsSpeaking(false);
+      if (voiceModeRef.current) {
+        setIsSpeaking(true);
+        await speakText(fullReply);
+        setIsSpeaking(false);
+      }
 
       return withReply;
     } catch {
@@ -409,6 +413,8 @@ function PracticePageInner() {
   }, [textInput, isThinking, isSpeaking, sendMessage]);
 
   // ── Start new session ──────────────────────────────────────────────────────
+  // Creates a session and gets Alex's opening reply as text only — voice is
+  // never auto-activated; the user opts in via the mic icon in the input row.
   const startSession = useCallback(async () => {
     setSessionState("connecting");
     setError(null);
@@ -436,10 +442,6 @@ function PracticePageInner() {
       // Create session in DB
       const newId = await createSession(initMessages);
       setActiveSessionId(newId);
-
-      setIsSpeaking(true);
-      await speakText(greeting);
-      setIsSpeaking(false);
     } catch {
       setIsThinking(false);
       setSessionState("idle");
@@ -447,20 +449,14 @@ function PracticePageInner() {
     }
   }, [createSession, wordParam, streamReply]);
 
-  // ── Auto-start when arriving from /vocabulary-chat with a word ────────────
+  // ── Auto-start a fresh conversation on arrival (text-first, like ChatGPT) ──
   const autoStartedRef = useRef(false);
   useEffect(() => {
-    if (wordParam && !autoStartedRef.current && sessionState === "idle" && !sessionsLoading) {
+    if (!autoStartedRef.current && sessionState === "idle" && !sessionsLoading) {
       autoStartedRef.current = true;
       startSession();
     }
-  }, [wordParam, sessionState, sessionsLoading, startSession]);
-
-  // ── Resume session ─────────────────────────────────────────────────────────
-  const resumeSession = useCallback(() => {
-    setSessionState("active");
-    setError(null);
-  }, []);
+  }, [sessionState, sessionsLoading, startSession]);
 
   // ── STT: convert audio blob → text via Web Speech API ─────────────────────
   const transcribeAudio = useCallback((audioFloat32) => {
@@ -609,26 +605,25 @@ function PracticePageInner() {
     setVadReady(false);
   }, []);
 
-  const toggleListening = useCallback(() => {
-    if (isListening) stopVAD();
-    else startVAD();
-  }, [isListening, startVAD, stopVAD]);
-
-  // Auto-start VAD when session becomes active
-  useEffect(() => {
-    if (sessionState === "active" && !isListening && !vadRef.current) {
+  // Explicit mic-icon toggle — the only way voice mode turns on/off. Does not
+  // touch messages or sessionState; the conversation just keeps going.
+  const toggleVoiceMode = useCallback(() => {
+    if (voiceMode) {
+      stopVAD();
+      setVoiceMode(false);
+    } else {
+      setVoiceMode(true);
       startVAD();
     }
-    if (sessionState !== "active" && isListening) {
-      stopVAD();
-    }
-  }, [sessionState]); // eslint-disable-line
+  }, [voiceMode, startVAD, stopVAD]);
 
-  const endSession = useCallback(() => {
-    stopVAD();
-    setSessionState("ended");
-    setIsSpeaking(false);
-  }, [stopVAD]);
+  // Stop the mic if the user navigates away or closes the tab while active.
+  useEffect(() => {
+    return () => {
+      if (vadRef.current) { try { vadRef.current.destroy(); } catch {} vadRef.current = null; }
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
+    };
+  }, []);
 
   // ── Session CRUD ───────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id) => {
@@ -656,13 +651,13 @@ function PracticePageInner() {
     setActiveSessionId(null);
     setMessages([]);
     setSessionState("idle");
+    setVoiceMode(false);
     setError(null);
     setIsListening(false);
     setIsSpeaking(false);
     setSidebarOpen(false);
+    autoStartedRef.current = false; // allow the idle→active auto-start effect to fire again
   }, []);
-
-  const canTalk = sessionState === "active" && !isThinking && !isSpeaking; // kept for reference
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--cream)" }}>
@@ -693,7 +688,7 @@ function PracticePageInner() {
             <Menu size={16} />
           </button>
           <button
-            onClick={() => router.push("/profile")}
+            onClick={() => { if (typeof window !== "undefined" && window.history.length > 1) router.back(); else router.push("/"); }}
             className="no-min-h w-8 h-8 rounded-xl items-center justify-center transition-all active:scale-90 hidden md:flex"
             style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
           >
@@ -707,10 +702,10 @@ function PracticePageInner() {
           </div>
           <div className="flex items-center gap-2">
             {isSaving && <Loader2 size={12} className="animate-spin" style={{ color: "var(--ink-soft)" }} />}
-            {sessionState === "active" && (
+            {voiceMode && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-xs font-medium hidden sm:block" style={{ color: "var(--electric)" }}>Live</span>
+                <span className="text-xs font-medium hidden sm:block" style={{ color: "var(--electric)" }}>Voice</span>
               </div>
             )}
           </div>
@@ -719,26 +714,34 @@ function PracticePageInner() {
         {/* Scrollable chat area */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-lg mx-auto w-full px-4 py-6 flex flex-col gap-5">
-            {/* Avatar */}
-            <div className="flex flex-col items-center gap-3">
-              <div
-                className="w-24 h-24 rounded-full flex items-center justify-center text-4xl transition-all duration-200"
-                style={{
-                  background: isSpeaking ? "var(--green-subtle)" : "var(--card-bg)",
-                  border: `3px solid ${isSpeaking ? "var(--electric)" : "var(--card-border)"}`,
-                  boxShadow: isSpeaking ? "0 0 24px rgba(var(--electric-rgb),0.3)" : "0 4px 20px rgba(0,0,0,0.1)",
-                  transform: isSpeaking ? "scale(1.05)" : "scale(1)",
-                }}
-              >
-                {AVATAR_FRAMES[avatarFrame]}
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-sm" style={{ color: "var(--ink)" }}>Alex</div>
-                <div className="text-xs" style={{ color: "var(--ink-soft)" }}>
-                  {isThinking ? "Đang suy nghĩ..." : isSpeaking ? "Đang nói..." : sessionState === "active" ? "Sẵn sàng nghe" : "American English Teacher"}
+            {/* Avatar — full treatment only while voice mode is on */}
+            {voiceMode ? (
+              <div className="flex flex-col items-center gap-3">
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center text-4xl transition-all duration-200"
+                  style={{
+                    background: isSpeaking ? "var(--green-subtle)" : "var(--card-bg)",
+                    border: `3px solid ${isSpeaking ? "var(--electric)" : "var(--card-border)"}`,
+                    boxShadow: isSpeaking ? "0 0 24px rgba(var(--electric-rgb),0.3)" : "0 4px 20px rgba(0,0,0,0.1)",
+                    transform: isSpeaking ? "scale(1.05)" : "scale(1)",
+                  }}
+                >
+                  {AVATAR_FRAMES[avatarFrame]}
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm" style={{ color: "var(--ink)" }}>Alex</div>
+                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                    {isThinking ? "Đang suy nghĩ..." : isSpeaking ? "Đang nói..." : "Sẵn sàng nghe"}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center">
+                <div className="text-2xl mb-1">🧑‍🏫</div>
+                <div className="font-bold text-sm" style={{ color: "var(--ink)" }}>Alex</div>
+                <div className="text-xs" style={{ color: "var(--ink-soft)" }}>American English Teacher</div>
+              </div>
+            )}
 
             {/* Messages */}
             {messages.length > 0 && (
@@ -805,17 +808,6 @@ function PracticePageInner() {
         <div className="flex-shrink-0 border-t py-5" style={{ background: "var(--card-bg)", borderColor: "var(--divider)" }}>
           <div className="max-w-lg mx-auto px-4 flex flex-col items-center gap-3">
 
-            {sessionState === "idle" && (
-              <button
-                onClick={startSession}
-                className="flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-95"
-                style={{ background: "var(--electric)", color: "var(--on-electric)", boxShadow: "0 4px 20px rgba(var(--electric-rgb),0.4)" }}
-              >
-                <Phone size={18} />
-                {activeSessionId ? "Bắt đầu cuộc trò chuyện mới" : "Bắt đầu luyện nói"}
-              </button>
-            )}
-
             {sessionState === "connecting" && (
               <div className="flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-sm" style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}>
                 <Loader2 size={18} className="animate-spin" /> Đang kết nối...
@@ -824,8 +816,8 @@ function PracticePageInner() {
 
             {sessionState === "active" && (
               <>
-                {/* Text input — always available, independent of mic state */}
-                <div className="w-full flex items-center gap-2 mb-1">
+                {/* Text input row — always available; mic icon toggles voice mode */}
+                <div className="w-full flex items-center gap-2">
                   <input
                     type="text"
                     value={textInput}
@@ -839,6 +831,17 @@ function PracticePageInner() {
                     onBlur={(e) => { e.target.style.borderColor = "var(--input-border)"; }}
                   />
                   <button
+                    onClick={toggleVoiceMode}
+                    className="no-min-h w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
+                    style={{
+                      background: voiceMode ? "var(--electric)" : "var(--hover-bg)",
+                      color: voiceMode ? "var(--on-electric)" : "var(--ink-soft)",
+                    }}
+                    title={voiceMode ? "Tắt voice" : "Bật voice"}
+                  >
+                    {voiceMode ? <Mic size={16} /> : <MicOff size={16} />}
+                  </button>
+                  <button
                     onClick={sendTextMessage}
                     disabled={!textInput.trim() || isThinking || isSpeaking}
                     className="no-min-h w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 flex-shrink-0"
@@ -848,66 +851,46 @@ function PracticePageInner() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-5">
-                  {/* Mic toggle — VAD auto-detects voice, this just enables/disables */}
-                  <div className="relative">
-                    <button
-                      onClick={toggleListening}
-                      className="rounded-full flex items-center justify-center transition-all active:scale-95"
-                      style={{
-                        width: 72, height: 72,
-                        background: isUserTalking ? "var(--electric)" : isListening ? "var(--green-subtle)" : "var(--card-bg)",
-                        border: `3px solid ${isUserTalking ? "var(--electric)" : isListening ? "var(--electric)" : "var(--card-border)"}`,
-                        boxShadow: isUserTalking ? "0 0 32px rgba(var(--electric-rgb),0.7)" : isListening ? "0 0 20px rgba(var(--electric-rgb),0.3)" : "0 4px 16px rgba(0,0,0,0.15)",
-                        color: isListening ? "var(--electric)" : "var(--ink-soft)",
-                      }}
-                    >
-                      {isListening ? <Mic size={28} /> : <MicOff size={24} />}
-                    </button>
-                    {isListening && !isUserTalking && !isSpeaking && !isThinking && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 animate-pulse border-2" style={{ borderColor: "var(--card-bg)" }} />
-                    )}
-                  </div>
-                  <button
-                    onClick={endSession}
-                    className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95"
-                    style={{ background: "var(--error)", color: "#fff", boxShadow: "0 4px 12px rgba(239,68,68,0.4)" }}
-                  >
-                    <PhoneOff size={18} />
-                  </button>
-                </div>
-                <p className="text-xs text-center" style={{ color: "var(--ink-soft)" }}>
-                  {isThinking ? "Alex đang suy nghĩ..." :
-                   isSpeaking ? "Alex đang nói..." :
-                   isUserTalking ? "Đang nghe bạn nói..." :
-                   isListening ? "Mic đang bật — cứ tự nhiên nói, hoặc gõ tin nhắn" :
-                   "Nhấn mic để nói, hoặc gõ tin nhắn"}
-                </p>
+                {/* Full voice UI — only while voice mode is on */}
+                {voiceMode && (
+                  <>
+                    <div className="flex items-center gap-5 mt-2">
+                      <div className="relative">
+                        <button
+                          onClick={toggleVoiceMode}
+                          className="rounded-full flex items-center justify-center transition-all active:scale-95"
+                          style={{
+                            width: 72, height: 72,
+                            background: isUserTalking ? "var(--electric)" : isListening ? "var(--green-subtle)" : "var(--card-bg)",
+                            border: `3px solid ${isUserTalking ? "var(--electric)" : isListening ? "var(--electric)" : "var(--card-border)"}`,
+                            boxShadow: isUserTalking ? "0 0 32px rgba(var(--electric-rgb),0.7)" : isListening ? "0 0 20px rgba(var(--electric-rgb),0.3)" : "0 4px 16px rgba(0,0,0,0.15)",
+                            color: isListening ? "var(--electric)" : "var(--ink-soft)",
+                          }}
+                        >
+                          {isListening ? <Mic size={28} /> : <MicOff size={24} />}
+                        </button>
+                        {isListening && !isUserTalking && !isSpeaking && !isThinking && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 animate-pulse border-2" style={{ borderColor: "var(--card-bg)" }} />
+                        )}
+                      </div>
+                      <button
+                        onClick={toggleVoiceMode}
+                        className="w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95"
+                        style={{ background: "var(--error)", color: "#fff", boxShadow: "0 4px 12px rgba(239,68,68,0.4)" }}
+                        title="Tắt voice"
+                      >
+                        <PhoneOff size={18} />
+                      </button>
+                    </div>
+                    <p className="text-xs text-center" style={{ color: "var(--ink-soft)" }}>
+                      {isThinking ? "Alex đang suy nghĩ..." :
+                       isSpeaking ? "Alex đang nói..." :
+                       isUserTalking ? "Đang nghe bạn nói..." :
+                       "Mic đang bật — cứ tự nhiên nói, hoặc gõ tin nhắn"}
+                    </p>
+                  </>
+                )}
               </>
-            )}
-
-            {sessionState === "ended" && (
-              <div className="flex flex-col items-center gap-3 w-full">
-                <div className="text-sm font-semibold" style={{ color: "var(--ink-soft)" }}>
-                  Buổi luyện tập kết thúc · {messages.filter(m => m.role === "user").length} lượt nói
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={resumeSession}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
-                    style={{ background: "var(--electric)", color: "var(--on-electric)" }}
-                  >
-                    <Mic size={15} /> Tiếp tục
-                  </button>
-                  <button
-                    onClick={handleNew}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95"
-                    style={{ background: "var(--hover-bg)", color: "var(--ink)", border: "1px solid var(--card-border)" }}
-                  >
-                    <Plus size={15} /> Cuộc mới
-                  </button>
-                </div>
-              </div>
             )}
           </div>
         </div>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Search, MessageCircle, ChevronDown, Volume2, X } from "lucide-react";
+import { Search, MessageCircle, ChevronDown, Volume2, X } from "lucide-react";
+import BackButton from "@/components/ui/BackButton";
 
 const TOPIC_ICONS = {
   business: "💼",
@@ -96,14 +97,7 @@ export default function VocabularyChatPage() {
       <main className="relative z-10 max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:-translate-y-0.5 hover:shadow-sm transition-all"
-            style={{ color: "var(--ink-soft)", background: "var(--surface-elevated)", border: "1px solid var(--line)" }}
-          >
-            <ArrowLeft size={18} />
-            <span className="font-semibold">Quay lại</span>
-          </button>
+          <BackButton label="Quay lại" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
             💬 Chat với Alex về từ
           </h1>

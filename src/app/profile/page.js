@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Mail, Target, BookOpen, Loader2, Check, KeyRound, Eye, EyeOff, X } from "lucide-react";
+import { User, Mail, Target, BookOpen, Loader2, Check, KeyRound, Eye, EyeOff, X } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
+import BackButton from "@/components/ui/BackButton";
 
 const LEVEL_LABELS = {
   A1: "Mới bắt đầu", A2: "Sơ cấp", B1: "Trung cấp",
@@ -149,7 +149,6 @@ function ChangePasswordModal({ onClose }) {
 }
 
 export default function ProfilePage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [authProvider, setAuthProvider] = useState("email");
   const [isLoading, setIsLoading] = useState(true);
@@ -226,14 +225,7 @@ export default function ProfilePage() {
 
         {/* Page header */}
         <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => router.push("/")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:-translate-y-0.5 transition-all"
-            style={{ color: "var(--ink-soft)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            <ArrowLeft size={18} />
-            <span className="font-semibold">Quay lại</span>
-          </button>
+          <BackButton label="Quay lại" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>👤 Hồ sơ</h1>
           <div className="w-20" />
         </div>

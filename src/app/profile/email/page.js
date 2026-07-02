@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, Loader2, Check, Plus, Trash2, Clock, Globe } from "lucide-react";
+import { Bell, Loader2, Check, Plus, Trash2, Clock, Globe } from "lucide-react";
+import BackButton from "@/components/ui/BackButton";
 
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
@@ -140,7 +140,6 @@ function TimeDropdown({ value, onChange }) {
 }
 
 export default function EmailSettingsPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -339,12 +338,7 @@ export default function EmailSettingsPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <button onClick={() => { flushPendingEdits(); router.push("/"); }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:-translate-y-0.5 transition-all"
-            style={{ color: "var(--ink-soft)", background: "var(--hover-bg)", border: "1px solid var(--card-border)" }}>
-            <ArrowLeft size={18} />
-            <span className="font-semibold">Quay lại</span>
-          </button>
+          <BackButton label="Quay lại" onBeforeNavigate={flushPendingEdits} />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>✉️ Email</h1>
           <div className="w-20" />
         </div>
