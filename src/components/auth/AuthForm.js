@@ -72,8 +72,8 @@ export default function AuthForm({ mode = "login" }) {
     >
       {/* Logo */}
       <div className="text-center mb-8">
-        <div className="w-16 h-16 mx-auto mb-3">
-          <img src="/favicon.png" alt="Wordly" className="w-full h-full object-contain" />
+        <div className="w-16 h-16 mx-auto mb-3 rounded-2xl overflow-hidden">
+          <img src="/favicon.png" alt="Wordly" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight gradient-text-brand">
           Wordly

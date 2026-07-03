@@ -99,7 +99,7 @@ export default function AppSidebar() {
             className="flex items-center gap-2 min-w-0"
           >
             <div className="w-9 h-9 flex-shrink-0 rounded-lg overflow-hidden">
-              <img src="/favicon.png" alt="Wordly" className="w-full h-full object-cover scale-125" />
+              <img src="/favicon.png" alt="Wordly" className="w-full h-full object-cover" />
             </div>
             {!isPractice && (
               <span className="font-black text-xl tracking-tight truncate" style={{ color: "var(--electric)" }}>Wordly</span>
