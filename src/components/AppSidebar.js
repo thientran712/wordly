@@ -149,7 +149,7 @@ export default function AppSidebar() {
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
               <Plus size={20} className="flex-shrink-0" />
-              <span className="truncate">Thêm nhanh</span>
+              <span className="truncate">Ghi chú nhanh</span>
             </button>
           )}
         </nav>
