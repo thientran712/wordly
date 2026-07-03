@@ -365,17 +365,36 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
 
           {/* Action row */}
           <div className="flex items-center gap-2 px-4 pb-3">
-            {/* Phát âm input */}
-            {input && (
+            {/* Phát âm input — US/UK accent buttons for English, single button for Vietnamese */}
+            {input && (isEN ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => speak(input, "en-US")}
+                  className="no-min-h px-2 h-8 flex items-center gap-1 rounded-xl text-[11px] font-bold active:scale-95 transition-all"
+                  style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
+                  title="Phát âm giọng Mỹ"
+                >
+                  <Volume2 size={13} /> US
+                </button>
+                <button
+                  onClick={() => speak(input, "en-GB")}
+                  className="no-min-h px-2 h-8 flex items-center gap-1 rounded-xl text-[11px] font-bold active:scale-95 transition-all"
+                  style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
+                  title="Phát âm giọng Anh"
+                >
+                  <Volume2 size={13} /> UK
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={() => speak(input, isEN ? "en-US" : "vi-VN")}
+                onClick={() => speak(input, "vi-VN")}
                 className="no-min-h w-8 h-8 flex items-center justify-center rounded-xl active:scale-95 transition-all"
                 style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
                 title="Phát âm"
               >
                 <Volume2 size={15} />
               </button>
-            )}
+            ))}
             {/* Save button — always on left/input side */}
             {translated && (
               <button

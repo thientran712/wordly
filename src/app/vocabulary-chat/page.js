@@ -7,6 +7,32 @@ import BackButton from "@/components/ui/BackButton";
 import { EXAM_GOALS } from "@/lib/exam-goals";
 import { TOPICS } from "@/lib/topic-classifier";
 
+// Same server-side Google Cloud TTS used by translation (InlineTranslate.js) —
+// much better quality than the browser's built-in speechSynthesis, which is
+// kept only as a fallback if the API call fails.
+async function speak(text, lang = "en-US") {
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang }),
+    });
+    if (!res.ok) throw new Error("TTS API failed");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => URL.revokeObjectURL(url);
+    audio.play();
+  } catch {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang;
+    utter.rate = 0.85;
+    window.speechSynthesis.speak(utter);
+  }
+}
+
 function starRating(n) {
   const filled = Math.max(0, Math.min(5, n || 0));
   return "★".repeat(filled) + "☆".repeat(5 - filled);
@@ -131,14 +157,9 @@ export default function VocabularyChatPage() {
     router.push(`/practice?${params}`);
   };
 
-  const speakWord = (e, word) => {
+  const speakWord = (e, word, accent) => {
     e.stopPropagation();
-    if ("speechSynthesis" in window) {
-      const u = new SpeechSynthesisUtterance(word);
-      u.lang = "en-US";
-      u.rate = 0.85;
-      speechSynthesis.speak(u);
-    }
+    speak(word, accent);
   };
 
   const examOptions = EXAM_GOALS.map((g) => ({ value: g.key, label: `${g.icon} ${g.label} (${examCounts[g.key] || 0})` }));
@@ -256,7 +277,14 @@ export default function VocabularyChatPage() {
   );
 }
 
+const ACCENTS = [
+  { key: "en-US", label: "🇺🇸 US" },
+  { key: "en-GB", label: "🇬🇧 UK" },
+];
+
 function WordDetailModal({ word, onClose, onChat, onSpeak }) {
+  const [accent, setAccent] = useState("en-US");
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in"
@@ -290,12 +318,31 @@ function WordDetailModal({ word, onClose, onChat, onSpeak }) {
                 {word.level}
               </span>
             )}
-            <button onClick={(e) => onSpeak(e, word.word)}
+            <button onClick={(e) => onSpeak(e, word.word, accent)}
               className="w-10 h-10 rounded-full flex items-center justify-center hover:scale-110 transition-all"
               style={{ background: "linear-gradient(135deg,var(--electric),var(--electric-muted))", color: "var(--on-electric)" }}>
               <Volume2 size={16} />
             </button>
           </div>
+
+          {/* Accent toggle */}
+          <div className="flex items-center justify-center gap-1.5 mb-2">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.key}
+                onClick={(e) => { e.stopPropagation(); setAccent(a.key); }}
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold transition-all"
+                style={{
+                  background: accent === a.key ? "var(--electric)" : "var(--surface)",
+                  color: accent === a.key ? "var(--on-electric)" : "var(--ink-soft)",
+                  border: accent === a.key ? "none" : "1px solid var(--line)",
+                }}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+
           {word.frequency != null && (
             <p className="text-xs" style={{ color: "var(--sunshine-text)" }}>{starRating(word.frequency)}</p>
           )}

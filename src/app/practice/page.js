@@ -9,12 +9,12 @@ import {
 
 const AVATAR_FRAMES = ["🧑‍🏫", "👨‍🏫"];
 
-async function speakText(text) {
+async function speakText(text, lang = "en-US") {
   try {
     const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, lang: "en-US" }),
+      body: JSON.stringify({ text, lang }),
     });
     if (!res.ok) throw new Error();
     const blob = await res.blob();
@@ -200,6 +200,7 @@ function PracticePageInner() {
   // Chat state
   const [sessionState, setSessionState] = useState("idle"); // idle | connecting | active
   const [voiceMode, setVoiceMode] = useState(false); // text-only (false) vs voice on (true)
+  const [accent, setAccent] = useState("en-US"); // "en-US" | "en-GB" — used for both voice mode and per-message playback
   const [messages, setMessages] = useState([]);
   const [isListening, setIsListening] = useState(false);  // VAD mic is on
   const [isSpeaking, setIsSpeaking] = useState(false);    // Alex is speaking
@@ -220,6 +221,7 @@ function PracticePageInner() {
   const isSpeakingRef = useRef(false);
   const isThinkingRef = useRef(false);
   const voiceModeRef = useRef(false);
+  const accentRef = useRef("en-US");
   const activeSessionIdRef = useRef(null);
   const messagesRef = useRef([]);
   const createSessionRef = useRef(null);
@@ -227,6 +229,7 @@ function PracticePageInner() {
   // Keep refs in sync
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
   useEffect(() => { isThinkingRef.current = isThinking; }, [isThinking]);
+  useEffect(() => { accentRef.current = accent; }, [accent]);
   useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
   useEffect(() => { activeSessionIdRef.current = activeSessionId; }, [activeSessionId]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
@@ -391,7 +394,7 @@ function PracticePageInner() {
 
       if (voiceModeRef.current) {
         setIsSpeaking(true);
-        await speakText(fullReply);
+        await speakText(fullReply, accentRef.current);
         setIsSpeaking(false);
       }
 
@@ -714,6 +717,22 @@ function PracticePageInner() {
           </div>
           <div className="flex items-center gap-2">
             {isSaving && <Loader2 size={12} className="animate-spin" style={{ color: "var(--ink-soft)" }} />}
+            {/* Accent picker — applies to both voice mode auto-speak and per-message playback */}
+            <div className="flex items-center gap-0.5 p-0.5 rounded-lg" style={{ background: "var(--hover-bg)" }}>
+              {[{ key: "en-US", label: "US" }, { key: "en-GB", label: "UK" }].map((a) => (
+                <button
+                  key={a.key}
+                  onClick={() => setAccent(a.key)}
+                  className="no-min-h px-2 py-1 rounded-md text-[10px] font-bold transition-all"
+                  style={{
+                    background: accent === a.key ? "var(--electric)" : "transparent",
+                    color: accent === a.key ? "var(--on-electric)" : "var(--ink-soft)",
+                  }}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
             {voiceMode && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -776,7 +795,7 @@ function PracticePageInner() {
                           <span className="inline-block w-1.5 h-3.5 ml-0.5 align-middle animate-pulse" style={{ background: "var(--ink-soft)" }} />
                         )}
                         {m.role === "assistant" && m.content && !isStreamingThisBubble && (
-                          <button onClick={() => speakText(m.content)} className="ml-2 opacity-40 hover:opacity-100 inline-flex align-middle">
+                          <button onClick={() => speakText(m.content, accent)} className="ml-2 opacity-40 hover:opacity-100 inline-flex align-middle">
                             <Volume2 size={11} />
                           </button>
                         )}
