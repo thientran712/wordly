@@ -222,6 +222,7 @@ function PracticePageInner() {
   const voiceModeRef = useRef(false);
   const activeSessionIdRef = useRef(null);
   const messagesRef = useRef([]);
+  const createSessionRef = useRef(null);
 
   // Keep refs in sync
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
@@ -313,6 +314,7 @@ function PracticePageInner() {
     setActiveSessionId(session.id);
     return session.id;
   }, [wordParam, wordIdParam]);
+  useEffect(() => { createSessionRef.current = createSession; }, [createSession]);
 
   // ── Stream a reply from /api/practice, updating the last assistant message
   //    as chunks arrive (produces the ChatGPT-style typing effect) ────────────
@@ -403,27 +405,37 @@ function PracticePageInner() {
   }, [saveMessages, wordParam, streamReply, generateTitle]);
 
   // ── Send typed text message ────────────────────────────────────────────────
-  const sendTextMessage = useCallback(() => {
+  // If there's no session yet (blank ChatGPT-style composer), create one first
+  // using the user's own first message — no fake kickoff line.
+  const sendTextMessage = useCallback(async () => {
     const text = textInput.trim();
     if (!text || isThinking || isSpeaking) return;
     setTextInput("");
-    const currentMessages = messagesRef.current;
-    const sessionId = activeSessionIdRef.current;
-    sendMessage(text, currentMessages, sessionId).then((updated) => setMessages(updated));
-  }, [textInput, isThinking, isSpeaking, sendMessage]);
 
-  // ── Start new session ──────────────────────────────────────────────────────
-  // Creates a session and gets Alex's opening reply as text only — voice is
-  // never auto-activated; the user opts in via the mic icon in the input row.
+    let sessionId = activeSessionIdRef.current;
+    const currentMessages = messagesRef.current;
+
+    if (!sessionId) {
+      setSessionState("active");
+      // Persist whatever's already on screen (e.g. a word-explainer greeting
+      // from startSession) as the session's starting history.
+      sessionId = await createSession(currentMessages);
+    }
+
+    sendMessage(text, currentMessages, sessionId).then((updated) => setMessages(updated));
+  }, [textInput, isThinking, isSpeaking, sendMessage, createSession]);
+
+  // ── Start new session (word-focused only) ──────────────────────────────────
+  // Shows Alex's opening reply about the word right away, but does NOT create
+  // a DB session yet — that only happens once the user sends a real message
+  // of their own (in sendTextMessage / VAD), so just viewing the greeting and
+  // leaving doesn't leave a junk conversation behind.
   const startSession = useCallback(async () => {
     setSessionState("connecting");
     setError(null);
     setIsThinking(true);
 
-    const kickoff = wordParam
-      ? `Please explain this word to me: "${wordParam}".`
-      : "Hello! I want to practice my English.";
-
+    const kickoff = `Can you teach me the word "${wordParam}"? Please explain what it means, give me an example sentence, and share a common idiom or collocation with it if there is one.`;
     const kickoffMessages = [{ role: "user", content: kickoff }];
     setMessages([...kickoffMessages, { role: "assistant", content: "" }]);
 
@@ -438,25 +450,25 @@ function PracticePageInner() {
       setMessages(initMessages);
       setIsThinking(false);
       setSessionState("active");
-
-      // Create session in DB
-      const newId = await createSession(initMessages);
-      setActiveSessionId(newId);
+      // Intentionally no createSession() here — see comment above.
     } catch {
       setIsThinking(false);
       setSessionState("idle");
       setError("Không thể kết nối. Thử lại nhé!");
     }
-  }, [createSession, wordParam, streamReply]);
+  }, [wordParam, streamReply]);
 
-  // ── Auto-start a fresh conversation on arrival (text-first, like ChatGPT) ──
+  // ── Auto-start only when arriving with a specific word to discuss (from
+  //    "Học từ mới") — a deliberate action, so it's fine to kick off right away.
+  //    Arriving at /practice directly shows a blank composer instead, like
+  //    ChatGPT, and waits for the user's first message. ─────────────────────
   const autoStartedRef = useRef(false);
   useEffect(() => {
-    if (!autoStartedRef.current && sessionState === "idle" && !sessionsLoading) {
+    if (wordParam && !autoStartedRef.current && sessionState === "idle" && !sessionsLoading) {
       autoStartedRef.current = true;
       startSession();
     }
-  }, [sessionState, sessionsLoading, startSession]);
+  }, [wordParam, sessionState, sessionsLoading, startSession]);
 
   // ── STT: convert audio blob → text via Web Speech API ─────────────────────
   const transcribeAudio = useCallback((audioFloat32) => {
@@ -555,16 +567,16 @@ function PracticePageInner() {
           }
 
           // Small delay to let final STT result come in
-          setTimeout(() => {
+          setTimeout(async () => {
             const text = rec?._accumulated?.trim() || "";
             setTranscript("");
             if (text) {
               const currentMessages = messagesRef.current;
-              const sessionId = activeSessionIdRef.current;
-              setMessages(prev => {
-                sendMessage(text, prev, sessionId).then(updated => setMessages(updated));
-                return prev;
-              });
+              let sessionId = activeSessionIdRef.current;
+              if (!sessionId) {
+                sessionId = await createSessionRef.current(currentMessages);
+              }
+              sendMessage(text, currentMessages, sessionId).then(updated => setMessages(updated));
             }
           }, 300);
         },
@@ -814,7 +826,7 @@ function PracticePageInner() {
               </div>
             )}
 
-            {sessionState === "active" && (
+            {(sessionState === "active" || sessionState === "idle") && (
               <>
                 {/* Text input row — always available; mic icon toggles voice mode */}
                 <div className="w-full flex items-center gap-2">
@@ -832,12 +844,13 @@ function PracticePageInner() {
                   />
                   <button
                     onClick={toggleVoiceMode}
-                    className="no-min-h w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
+                    disabled={sessionState === "idle"}
+                    className="no-min-h w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 flex-shrink-0"
                     style={{
                       background: voiceMode ? "var(--electric)" : "var(--hover-bg)",
                       color: voiceMode ? "var(--on-electric)" : "var(--ink-soft)",
                     }}
-                    title={voiceMode ? "Tắt voice" : "Bật voice"}
+                    title={sessionState === "idle" ? "Gửi tin nhắn trước để bật voice" : voiceMode ? "Tắt voice" : "Bật voice"}
                   >
                     {voiceMode ? <Mic size={16} /> : <MicOff size={16} />}
                   </button>

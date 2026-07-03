@@ -1,127 +1,141 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Brand accent (Fresh Green) ── */
-  --color-electric: #22C55E;
-  --color-electric-muted: #14B8A6;
-  --color-electric-border: #A7F3D0;
+  /* ── Brand accent (Duolingo green) ── */
+  --color-electric: #58CC02;
+  --color-electric-muted: #58A700;
+  --color-electric-border: #D7FFB8;
+  /* ── Duolingo category accents ── */
+  --color-duo-blue: #1CB0F6;
+  --color-duo-orange: #FF9600;
+  --color-duo-purple: #CE82FF;
+  --color-duo-yellow: #FFC800;
   /* ── Neutrals ── */
-  --color-ink: #18181B;
-  --color-ink-soft: #52525B;
-  --color-ink-ghost: #A1A1AA;
-  --color-line: #E4E4E7;
-  --color-cream: #F9FAFB;
-  --color-whisper: #F4F4F5;
+  --color-ink: #3C3C3C;
+  --color-ink-soft: #777777;
+  --color-ink-ghost: #AFAFAF;
+  --color-line: #E5E5E5;
+  --color-cream: #FFFFFF;
+  --color-whisper: #F7F7F7;
   /* ── Semantic: error ── */
-  --color-error: #DC2626;
-  --color-error-soft: #FEF2F2;
-  --color-error-border: #FECACA;
+  --color-error: #FF4B4B;
+  --color-error-soft: #FFDFE0;
+  --color-error-border: #FFB3B3;
   /* ── Semantic: success ── */
-  --color-grass-text: #16A34A;
-  --color-grass-soft: #F0FDF4;
-  --color-grass-border: #A7F3D0;
+  --color-grass-text: #58A700;
+  --color-grass-soft: #D7FFB8;
+  --color-grass-border: #B2F296;
   /* ── Semantic: warning ── */
-  --color-sunshine-text: #F59E0B;
-  --color-sunshine-dark: #B45309;
-  --color-sunshine-soft: #FFFBEB;
-  --color-sunshine-border: #FDE68A;
+  --color-sunshine-text: #FFC800;
+  --color-sunshine-dark: #A87B00;
+  --color-sunshine-soft: #FFF3C4;
+  --color-sunshine-border: #FFE59A;
 }
 
 :root {
-  /* ── Brand accent (Fresh Green) — same hues in dark, only surfaces/neutrals shift ── */
-  --electric: #22C55E;
-  --electric-muted: #14B8A6;
-  --electric-border: rgba(34,197,94,0.3);
-  --electric-rgb: 34,197,94;
+  /* ── Brand accent (Duolingo green) — same hues in dark, only surfaces/neutrals shift ── */
+  --electric: #58CC02;
+  --electric-muted: #58A700;
+  --electric-border: rgba(88,204,2,0.3);
+  --electric-rgb: 88,204,2;
   --on-electric: #FFFFFF;
-  /* ── Neutrals (dark) ── */
-  --cream: #09090B;
-  --ink: #FAFAFA;
-  --ink-soft: #A1A1AA;
-  --ink-ghost: #52525B;
+  /* ── Duolingo category accents ── */
+  --duo-blue: #1CB0F6;
+  --duo-orange: #FF9600;
+  --duo-purple: #CE82FF;
+  --duo-yellow: #FFC800;
+  /* ── Neutrals (dark, Duolingo near-black) ── */
+  --cream: #131F24;
+  --ink: #FFFFFF;
+  --ink-soft: #AFAFAF;
+  --ink-ghost: #6B7A80;
   --line: rgba(255,255,255,0.08);
-  --whisper: #111113;
-  --ocean: #14B8A6;
+  --whisper: #1A2930;
+  --ocean: #1CB0F6;
   /* ── Surface ── */
-  --surface: #111113;
-  --surface-elevated: #18181B;
+  --surface: #1A2930;
+  --surface-elevated: #1F2E36;
   /* ── Semantic: error ── */
-  --error: #F87171;
-  --error-soft: rgba(248,113,113,0.12);
-  --error-border: rgba(248,113,113,0.25);
+  --error: #FF4B4B;
+  --error-soft: rgba(255,75,75,0.15);
+  --error-border: rgba(255,75,75,0.3);
   /* ── Semantic: success ── */
-  --grass-text: #4ADE80;
-  --grass-soft: rgba(74,222,128,0.12);
-  --grass-border: rgba(74,222,128,0.25);
+  --grass-text: #89E219;
+  --grass-soft: rgba(137,226,25,0.12);
+  --grass-border: rgba(137,226,25,0.25);
   /* ── Semantic: warning ── */
-  --sunshine-text: #F59E0B;
-  --sunshine-dark: #D97706;
-  --sunshine-soft: rgba(245,158,11,0.1);
-  --sunshine-border: rgba(245,158,11,0.25);
+  --sunshine-text: #FFC800;
+  --sunshine-dark: #E0AC00;
+  --sunshine-soft: rgba(255,200,0,0.12);
+  --sunshine-border: rgba(255,200,0,0.25);
   /* ── Adaptive theme tokens (dark defaults) ── */
-  --header-bg: rgba(9,9,11,0.95);
-  --overlay-bg: rgba(9,9,11,0.96);
-  --card-bg: #18181B;
+  --header-bg: rgba(19,31,36,0.95);
+  --overlay-bg: rgba(19,31,36,0.96);
+  --card-bg: #1F2E36;
   --card-border: rgba(255,255,255,0.08);
   --input-bg: rgba(255,255,255,0.05);
-  --input-border: rgba(255,255,255,0.1);
+  --input-border: rgba(255,255,255,0.12);
   --divider: rgba(255,255,255,0.08);
-  --hover-bg: rgba(255,255,255,0.05);
-  --green-subtle: rgba(34,197,94,0.1);
-  --green-subtle-border: rgba(34,197,94,0.25);
+  --hover-bg: rgba(255,255,255,0.06);
+  --green-subtle: rgba(88,204,2,0.12);
+  --green-subtle-border: rgba(88,204,2,0.25);
 }
 
 /* ── Light theme ── */
 [data-theme="light"] {
-  --cream: #F9FAFB;
-  --whisper: #F4F4F5;
-  --ocean: #14B8A6;
-  --surface: #F4F4F5;
+  --cream: #FFFFFF;
+  --whisper: #F7F7F7;
+  --ocean: #1CB0F6;
+  --surface: #F7F7F7;
   --surface-elevated: #FFFFFF;
-  /* Same Fresh Green accent, tuned for light contrast */
-  --electric: #22C55E;
-  --electric-muted: #14B8A6;
-  --electric-border: rgba(34,197,94,0.3);
-  --electric-rgb: 34,197,94;
+  /* Same Duolingo green accent, tuned for light contrast */
+  --electric: #58CC02;
+  --electric-muted: #58A700;
+  --electric-border: rgba(88,204,2,0.3);
+  --electric-rgb: 88,204,2;
   --on-electric: #FFFFFF;
-  --ink: #27272A;
-  --ink-soft: #71717A;
-  --ink-ghost: #A1A1AA;
-  --line: #E4E4E7;
-  --grass-text: #16A34A;
-  --grass-soft: rgba(34,197,94,0.08);
-  --grass-border: rgba(34,197,94,0.25);
-  --error: #DC2626;
-  --error-soft: rgba(220,38,38,0.08);
-  --error-border: rgba(220,38,38,0.2);
-  --sunshine-text: #F59E0B;
-  --sunshine-soft: rgba(245,158,11,0.08);
-  --sunshine-border: rgba(245,158,11,0.2);
-  --sunshine-dark: #B45309;
+  --duo-blue: #1CB0F6;
+  --duo-orange: #FF9600;
+  --duo-purple: #CE82FF;
+  --duo-yellow: #FFC800;
+  --ink: #3C3C3C;
+  --ink-soft: #777777;
+  --ink-ghost: #AFAFAF;
+  --line: #E5E5E5;
+  --grass-text: #58A700;
+  --grass-soft: rgba(88,204,2,0.1);
+  --grass-border: rgba(88,204,2,0.25);
+  --error: #FF4B4B;
+  --error-soft: #FFDFE0;
+  --error-border: #FFB3B3;
+  --sunshine-text: #FFC800;
+  --sunshine-soft: #FFF3C4;
+  --sunshine-border: #FFE59A;
+  --sunshine-dark: #A87B00;
   /* ── Adaptive theme tokens (light values) ── */
-  --header-bg: rgba(249,250,251,0.96);
-  --overlay-bg: rgba(249,250,251,0.98);
+  --header-bg: rgba(255,255,255,0.96);
+  --overlay-bg: rgba(255,255,255,0.98);
   --card-bg: #FFFFFF;
-  --card-border: #E4E4E7;
-  --input-bg: #F9FAFB;
-  --input-border: #E4E4E7;
-  --divider: #E4E4E7;
-  --hover-bg: #F4F4F5;
-  --green-subtle: rgba(34,197,94,0.08);
-  --green-subtle-border: rgba(34,197,94,0.2);
+  --card-border: #E5E5E5;
+  --input-bg: #F7F7F7;
+  --input-border: #E5E5E5;
+  --divider: #E5E5E5;
+  --hover-bg: #F7F7F7;
+  --green-subtle: rgba(88,204,2,0.08);
+  --green-subtle-border: rgba(88,204,2,0.2);
 }
 
-[data-theme="light"] body { background-color: #F9FAFB; }
+[data-theme="light"] body { background-color: #FFFFFF; }
 
-[data-theme="light"] .blob-1 { background: #86EFAC; }
-[data-theme="light"] .blob-2 { background: #5EEAD4; }
-[data-theme="light"] .blob-3 { background: #BBF7D0; }
-[data-theme="light"] .blob-4 { background: #86EFAC; }
-[data-theme="light"] .blob   { opacity: 0.18; }
+[data-theme="light"] .blob-1 { background: #D7FFB8; }
+[data-theme="light"] .blob-2 { background: #B8EBFF; }
+[data-theme="light"] .blob-3 { background: #D7FFB8; }
+[data-theme="light"] .blob-4 { background: #FFE8B8; }
+[data-theme="light"] .blob   { opacity: 0.12; }
 
-[data-theme="light"] ::-webkit-scrollbar-track { background: #F4F4F5; }
-[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(34,197,94,0.3); }
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(34,197,94,0.55); }
+[data-theme="light"] ::-webkit-scrollbar-track { background: #F7F7F7; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(88,204,2,0.3); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(88,204,2,0.55); }
 
 body {
   background-color: var(--cream);
@@ -162,7 +176,7 @@ html {
 .blob-1 {
   width: 600px;
   height: 600px;
-  background: #22C55E;
+  background: #58CC02;
   top: -200px;
   left: -200px;
 }
@@ -170,7 +184,7 @@ html {
 .blob-2 {
   width: 500px;
   height: 500px;
-  background: #14B8A6;
+  background: #1CB0F6;
   top: 40%;
   right: -200px;
 }
@@ -178,7 +192,7 @@ html {
 .blob-3 {
   width: 400px;
   height: 400px;
-  background: #166534;
+  background: #58A700;
   bottom: -100px;
   left: 20%;
 }
@@ -186,7 +200,7 @@ html {
 .blob-4 {
   width: 350px;
   height: 350px;
-  background: #22C55E;
+  background: #FF9600;
   top: 20%;
   left: 45%;
 }

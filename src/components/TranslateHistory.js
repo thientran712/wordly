@@ -236,7 +236,7 @@ function HistoryEntry({ entry, onDelete, onPick }) {
           </span>
           <span
             className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-            style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
+            style={{ background: "var(--hover-bg)", color: "var(--ink-soft)", border: "1px solid var(--card-border)" }}
           >
             {direction}
           </span>

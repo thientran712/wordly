@@ -484,7 +484,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
         {/* Translation output panel */}
         <div
           className="flex flex-col gap-3 p-4"
-          style={{ background: "var(--green-subtle)", minWidth: 0, flex: 1, minHeight: 96 }}
+          style={{ background: "var(--whisper)", minWidth: 0, flex: 1, minHeight: 96 }}
         >
           {isOverLimit ? (
             <p className="text-sm font-semibold" style={{ color: "var(--error)", lineHeight: 1.7 }}>

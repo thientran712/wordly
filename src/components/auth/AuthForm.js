@@ -72,15 +72,8 @@ export default function AuthForm({ mode = "login" }) {
     >
       {/* Logo */}
       <div className="text-center mb-8">
-        <div
-          className="w-16 h-16 mx-auto mb-3 rounded-3xl flex items-center justify-center overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, var(--electric), var(--electric-muted))",
-            boxShadow: "0 8px 24px rgba(var(--electric-rgb),0.35)",
-            transform: "rotate(-5deg)",
-          }}
-        >
-          <img src="/favicon.png" alt="Wordly" className="w-10 h-10 object-contain" />
+        <div className="w-16 h-16 mx-auto mb-3">
+          <img src="/favicon.png" alt="Wordly" className="w-full h-full object-contain" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight gradient-text-brand">
           Wordly
