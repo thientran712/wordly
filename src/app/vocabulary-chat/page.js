@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, MessageCircle, ChevronDown, Volume2, X } from "lucide-react";
+import { Search, MessageCircle, Volume2, X } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
+import Dropdown from "@/components/ui/Dropdown";
 import { EXAM_GOALS } from "@/lib/exam-goals";
 import { TOPICS } from "@/lib/topic-classifier";
 
@@ -50,30 +51,6 @@ const LEVEL_LABELS = {
   C1: "C1 — Nâng cao", C2: "C2 — Thành thạo",
 };
 const WORDS_PER_PAGE = 40;
-
-// ── Reusable dropdown (select-style) filter ──────────────────────────────
-function Dropdown({ value, onChange, options, allLabel = "Tất cả" }) {
-  return (
-    <div className="relative">
-      <select
-        value={value || ""}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="appearance-none pl-4 pr-9 py-2.5 rounded-xl text-sm font-bold focus:outline-none cursor-pointer transition-all"
-        style={{
-          background: "var(--surface-elevated)",
-          border: "1.5px solid var(--line)",
-          color: "var(--ink)",
-        }}
-      >
-        <option value="">{allLabel}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-soft)" }} />
-    </div>
-  );
-}
 
 export default function VocabularyChatPage() {
   const router = useRouter();

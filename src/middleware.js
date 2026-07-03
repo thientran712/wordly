@@ -39,12 +39,12 @@ export async function middleware(request) {
   const path = request.nextUrl.pathname;
   const isAuthPage = ["/login", "/signup", "/forgot-password", "/reset-password"].includes(path);
   const isApi = path.startsWith("/api/");
-  const isPublicApi = path.startsWith("/api/words") || path.startsWith("/api/translate");
+  const isPublicApi = path.startsWith("/api/words") || path.startsWith("/api/translate") || path.startsWith("/api/spinner");
   const isCronApi = path.startsWith("/api/cron") || path.startsWith("/api/admin");
   const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback");
-  // Public pages: homepage (guest can use translate), auth pages
-  const isPublicPage = path === "/" || isAuthPage;
+  // Public pages: homepage (guest can use translate), auth pages, speaking-practice spinner (guest can try it)
+  const isPublicPage = path === "/" || isAuthPage || path.startsWith("/speak");
 
   // SECURITY: strip any client-supplied auth headers first so a guest can never
   // spoof x-user-id to impersonate another user. We only ever set these from the
