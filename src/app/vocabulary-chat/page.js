@@ -1,18 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Search, MessageCircle, ChevronDown, Volume2, X } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
-
-const TOPIC_ICONS = {
-  business: "💼",
-  communication: "🗣️",
-  psychology: "🧠",
-  technology: "💻",
-  academic: "🎓",
-  daily: "☀️",
-};
+import { EXAM_GOALS } from "@/lib/exam-goals";
+import { TOPICS } from "@/lib/topic-classifier";
 
 function starRating(n) {
   const filled = Math.max(0, Math.min(5, n || 0));
@@ -24,51 +17,114 @@ function dueRank(word) {
   return new Date(word.due_at).getTime() <= Date.now() ? 0 : 2;
 }
 
+const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+const LEVEL_LABELS = {
+  A1: "A1 — Mới bắt đầu", A2: "A2 — Sơ cấp",
+  B1: "B1 — Trung cấp", B2: "B2 — Trung cấp cao",
+  C1: "C1 — Nâng cao", C2: "C2 — Thành thạo",
+};
+const WORDS_PER_PAGE = 40;
+
+// ── Reusable dropdown (select-style) filter ──────────────────────────────
+function Dropdown({ value, onChange, options, allLabel = "Tất cả" }) {
+  return (
+    <div className="relative">
+      <select
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        className="appearance-none pl-4 pr-9 py-2.5 rounded-xl text-sm font-bold focus:outline-none cursor-pointer transition-all"
+        style={{
+          background: "var(--surface-elevated)",
+          border: "1.5px solid var(--line)",
+          color: "var(--ink)",
+        }}
+      >
+        <option value="">{allLabel}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-soft)" }} />
+    </div>
+  );
+}
+
 export default function VocabularyChatPage() {
   const router = useRouter();
-  const [topics, setTopics] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTopic, setActiveTopic] = useState(null);
-  const [query, setQuery] = useState("");
-  const [openFamilies, setOpenFamilies] = useState(new Set());
-  const [selectedWord, setSelectedWord] = useState(null);
 
+  const [words, setWords] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [examCounts, setExamCounts] = useState({});
+  const [topicCounts, setTopicCounts] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [examFilter, setExamFilter] = useState(null);
+  const [topicFilter, setTopicFilter] = useState(null);
+  const [levelFilter, setLevelFilter] = useState(null);
+  const [query, setQuery] = useState("");
+  const [selectedWord, setSelectedWord] = useState(null);
+  const debounceRef = useRef(null);
+
+  // Server does the filtering, sorting, and pagination — each request pulls
+  // only PAGE_SIZE rows instead of the full ~7.5k-word table, so changing a
+  // filter is a small targeted query instead of a full-table scan + JS filter.
+  const fetchPage = useCallback(async ({ exam, topic, level, q, offset, withCounts }) => {
+    const params = new URLSearchParams();
+    if (exam) params.set("exam", exam);
+    if (topic) params.set("topic", topic);
+    if (level) params.set("level", level);
+    if (q) params.set("q", q);
+    params.set("offset", String(offset));
+    if (withCounts) params.set("counts", "1");
+
+    const res = await fetch(`/api/words/by-topic?${params}`);
+    return res.json();
+  }, []);
+
+  // Filter/level/exam/topic changes: fresh query, replace the list. Counts
+  // are only requested once on first load — they don't change per-filter.
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    const q = query.trim();
+
+    const run = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch("/api/words/by-topic");
-        const data = await res.json();
-        const list = data.topics || [];
-        setTopics(list);
-        if (list.length > 0) setActiveTopic(list[0].key);
+        const data = await fetchPage({
+          exam: examFilter, topic: topicFilter, level: levelFilter, q, offset: 0,
+          withCounts: Object.keys(examCounts).length === 0,
+        });
+        if (cancelled) return;
+        setWords(data.words || []);
+        setTotal(data.total || 0);
+        if (data.examCounts) setExamCounts(data.examCounts);
+        if (data.topicCounts) setTopicCounts(data.topicCounts);
       } catch (e) {
         console.error(e);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
-    })();
-  }, []);
+    };
 
-  const currentTopic = topics.find((t) => t.key === activeTopic);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(run, q ? 300 : 0);
+    return () => { cancelled = true; clearTimeout(debounceRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [examFilter, topicFilter, levelFilter, query, fetchPage]);
 
-  const filteredFamilies = useMemo(() => {
-    if (!currentTopic) return [];
-    const q = query.trim().toLowerCase();
-    if (!q) return currentTopic.families;
-    return currentTopic.families
-      .map((f) => ({ ...f, words: f.words.filter((w) => w.word.toLowerCase().includes(q) || w.def_en?.toLowerCase().includes(q)) }))
-      .filter((f) => f.words.length > 0);
-  }, [currentTopic, query]);
-
-  const toggleFamily = useCallback((name) => {
-    setOpenFamilies((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  }, []);
+  const loadMore = async () => {
+    setIsLoadingMore(true);
+    try {
+      const data = await fetchPage({
+        exam: examFilter, topic: topicFilter, level: levelFilter, q: query.trim(), offset: words.length,
+      });
+      setWords((prev) => [...prev, ...(data.words || [])]);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const openChat = (word) => {
     const params = new URLSearchParams({ word: word.word, word_id: word.id });
@@ -85,6 +141,10 @@ export default function VocabularyChatPage() {
     }
   };
 
+  const examOptions = EXAM_GOALS.map((g) => ({ value: g.key, label: `${g.icon} ${g.label} (${examCounts[g.key] || 0})` }));
+  const topicOptions = TOPICS.map((t) => ({ value: t.key, label: `${t.icon} ${t.label} (${topicCounts[t.key] || 0})` }));
+  const levelOptions = LEVELS.map((lv) => ({ value: lv, label: LEVEL_LABELS[lv] }));
+
   return (
     <>
       <div className="bg-blobs">
@@ -99,127 +159,92 @@ export default function VocabularyChatPage() {
         <div className="flex items-center justify-between mb-6">
           <BackButton label="Quay lại" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
-            💬 Chat với Alex về từ
+            📚 Học từ mới
           </h1>
           <div className="w-20" />
         </div>
 
         <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
-          Chọn một chủ đề, rồi chọn từ theo nhóm nghĩa (semantic family). Alex sẽ giải thích và trò chuyện để giúp bạn nhớ từ lâu hơn.
+          Lọc theo mục tiêu thi, chủ đề và level, rồi bấm vào một từ để xem chi tiết và trò chuyện với Alex.
         </p>
+
+        {/* Parallel filters: exam goal + topic + level (AND) */}
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          <Dropdown value={examFilter} onChange={setExamFilter} options={examOptions} allLabel="Mọi mục tiêu thi" />
+          <Dropdown value={topicFilter} onChange={setTopicFilter} options={topicOptions} allLabel="Mọi chủ đề" />
+          <Dropdown value={levelFilter} onChange={setLevelFilter} options={levelOptions} allLabel="Mọi level" />
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-5">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--ink-soft)" }} />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm từ..."
+            className="w-full pl-12 pr-5 py-3 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 transition-all"
+            style={{
+              background: "var(--surface-elevated)",
+              border: "1.5px solid var(--line)",
+              color: "var(--ink)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+            }}
+            onFocus={(e) => { e.target.style.borderColor = "var(--electric)"; e.target.style.boxShadow = "0 0 0 3px rgba(var(--electric-rgb),0.15)"; }}
+            onBlur={(e) => { e.target.style.borderColor = "var(--line)"; e.target.style.boxShadow = "0 4px 16px rgba(0,0,0,0.2)"; }}
+          />
+          {query && (
+            <button onClick={() => setQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "var(--ink-soft)" }}>✕</button>
+          )}
+        </div>
 
         {isLoading ? (
           <div className="text-center py-16">
             <div className="text-4xl mb-3">💬</div>
             <p style={{ color: "var(--ink-soft)" }}>Đang tải...</p>
           </div>
-        ) : topics.length === 0 ? (
+        ) : words.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-4xl mb-3">📭</div>
-            <p className="font-semibold" style={{ color: "var(--ink-soft)" }}>Chưa có dữ liệu từ vựng theo chủ đề</p>
+            <p className="font-semibold" style={{ color: "var(--ink-soft)" }}>Không tìm thấy từ nào với bộ lọc này</p>
           </div>
         ) : (
           <>
-            {/* Topic tabs */}
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              {topics.map((t) => (
+            <p className="text-xs mb-3" style={{ color: "var(--ink-soft)" }}>{total.toLocaleString()} từ</p>
+            <div className="flex flex-wrap gap-2">
+              {words.map((word) => (
                 <button
-                  key={t.key}
-                  onClick={() => { setActiveTopic(t.key); setQuery(""); setOpenFamilies(new Set()); }}
-                  className="px-4 py-2 rounded-full text-sm font-bold hover:-translate-y-0.5 transition-all flex items-center gap-1.5"
-                  style={{
-                    background: activeTopic === t.key ? "var(--electric)" : "var(--surface-elevated)",
-                    color: activeTopic === t.key ? "var(--on-electric)" : "var(--ink-soft)",
-                    boxShadow: activeTopic === t.key ? "0 4px 12px rgba(var(--electric-rgb),0.3)" : "none",
-                    border: activeTopic === t.key ? "none" : "1.5px solid var(--line)",
-                  }}
+                  key={word.id}
+                  onClick={() => setSelectedWord(word)}
+                  className="px-3 py-2 rounded-xl text-left transition-all hover:scale-[1.02]"
+                  style={{ background: "var(--surface-elevated)", border: "1.5px solid var(--line)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--electric)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--line)"; }}
                 >
-                  <span>{TOPIC_ICONS[t.key] || "📚"}</span>
-                  {t.label}
-                  <span className="opacity-60 text-xs">({t.families.reduce((n, f) => n + f.words.length, 0)})</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-sm" style={{ color: "var(--ink)" }}>{word.word}</span>
+                    {dueRank(word) === 0 && word.user_state && <span className="text-[9px]" title="Cần ôn">🔴</span>}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[9px]" style={{ color: "var(--sunshine-text)" }}>{starRating(word.frequency)}</span>
+                    {word.level && (
+                      <span className="text-[9px] font-bold" style={{ color: "var(--electric)" }}>{word.level}</span>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
 
-            {/* Search within topic */}
-            <div className="relative mb-5">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--ink-soft)" }} />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={`Tìm từ trong ${currentTopic?.label || ""}...`}
-                className="w-full pl-12 pr-5 py-3 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 transition-all"
-                style={{
-                  background: "var(--surface-elevated)",
-                  border: "1.5px solid var(--line)",
-                  color: "var(--ink)",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-                }}
-                onFocus={(e) => { e.target.style.borderColor = "var(--electric)"; e.target.style.boxShadow = "0 0 0 3px rgba(var(--electric-rgb),0.15)"; }}
-                onBlur={(e) => { e.target.style.borderColor = "var(--line)"; e.target.style.boxShadow = "0 4px 16px rgba(0,0,0,0.2)"; }}
-              />
-              {query && (
-                <button onClick={() => setQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "var(--ink-soft)" }}>✕</button>
-              )}
-            </div>
-
-            {/* Semantic family accordions */}
-            <div className="space-y-3">
-              {filteredFamilies.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="text-4xl mb-3">🔍</div>
-                  <p className="font-semibold" style={{ color: "var(--ink-soft)" }}>Không tìm thấy từ nào</p>
-                </div>
-              ) : (
-                filteredFamilies.map((family) => {
-                  const isOpen = openFamilies.has(family.name) || query.trim().length > 0;
-                  return (
-                    <div key={family.name} className="rounded-2xl overflow-hidden" style={{ background: "var(--surface-elevated)", border: "1.5px solid var(--line)" }}>
-                      <button
-                        onClick={() => toggleFamily(family.name)}
-                        className="w-full flex items-center justify-between px-4 py-3.5 text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-base" style={{ color: "var(--ink)" }}>{family.name}</span>
-                          <span className="text-xs" style={{ color: "var(--ink-soft)" }}>({family.words.length} từ)</span>
-                        </div>
-                        <ChevronDown
-                          size={18}
-                          style={{ color: "var(--ink-soft)", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
-                        />
-                      </button>
-
-                      {isOpen && (
-                        <div className="px-4 pb-4 flex flex-wrap gap-2">
-                          {family.words.map((word) => (
-                            <button
-                              key={word.id}
-                              onClick={() => setSelectedWord(word)}
-                              className="px-3 py-2 rounded-xl text-left transition-all hover:scale-[1.02]"
-                              style={{ background: "var(--surface)", border: "1.5px solid var(--line)" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--electric)"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--line)"; }}
-                            >
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-semibold text-sm" style={{ color: "var(--ink)" }}>{word.word}</span>
-                                {dueRank(word) === 0 && word.user_state && <span className="text-[9px]" title="Cần ôn">🔴</span>}
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[9px]" style={{ color: "var(--sunshine-text)" }}>{starRating(word.frequency)}</span>
-                                {word.level && (
-                                  <span className="text-[9px] font-bold" style={{ color: "var(--electric)" }}>{word.level}</span>
-                                )}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            {words.length < total && (
+              <button
+                onClick={loadMore}
+                disabled={isLoadingMore}
+                className="w-full mt-4 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:opacity-60"
+                style={{ background: "var(--surface-elevated)", border: "1.5px solid var(--line)", color: "var(--ink)" }}
+              >
+                {isLoadingMore ? "Đang tải..." : `Xem thêm ${Math.min(WORDS_PER_PAGE, total - words.length)} từ`}
+              </button>
+            )}
           </>
         )}
 
@@ -271,7 +296,9 @@ function WordDetailModal({ word, onClose, onChat, onSpeak }) {
               <Volume2 size={16} />
             </button>
           </div>
-          <p className="text-xs" style={{ color: "var(--sunshine-text)" }}>{starRating(word.frequency)}</p>
+          {word.frequency != null && (
+            <p className="text-xs" style={{ color: "var(--sunshine-text)" }}>{starRating(word.frequency)}</p>
+          )}
         </div>
 
         <div className="space-y-3">

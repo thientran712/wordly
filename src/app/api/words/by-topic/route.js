@@ -1,59 +1,67 @@
 import { createAdminClient } from "@/lib/supabase-admin";
 import { getUserFast } from "@/lib/get-user-fast";
+import { EXAM_GOALS, examGoalsForLevel } from "@/lib/exam-goals";
+import { TOPICS } from "@/lib/topic-classifier";
 
-const TOPIC_LABELS = {
-  business: "Business & Strategy",
-  communication: "Communication & Negotiation",
-  psychology: "Psychology & Human Behavior",
-  technology: "Technology & AI",
-  academic: "Academic & IELTS",
-  daily: "Daily Sophisticated English",
-};
+const TOPIC_LABELS = Object.fromEntries(TOPICS.map((t) => [t.key, t.label]));
+const ALL_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
-export async function GET() {
+// Levels that count toward a given exam goal (inverse of examGoalsForLevel).
+const LEVELS_FOR_EXAM = Object.fromEntries(
+  EXAM_GOALS.map((g) => [g.key, ALL_LEVELS.filter((lv) => examGoalsForLevel(lv).includes(g.key))])
+);
+
+const PAGE_SIZE = 40;
+
+export async function GET(request) {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { searchParams } = new URL(request.url);
+  const examFilter = searchParams.get("exam");
+  const topicFilter = searchParams.get("topic");
+  const levelFilter = searchParams.get("level");
+  const q = (searchParams.get("q") || "").trim();
+  const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
+  const withCounts = searchParams.get("counts") === "1";
+
   const admin = createAdminClient();
 
-  let layers = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await admin
-      .from("word_layers")
-      .select("word_id, semantic_family, topic, register, collocations, usage_notes, frequency, words!inner(id, word, pos, level, def_en, ex_en, phonetic)")
-      .not("topic", "is", null)
-      .range(from, from + 999);
+  const levelsForQuery = levelFilter
+    ? [levelFilter]
+    : examFilter
+    ? LEVELS_FOR_EXAM[examFilter] || []
+    : null;
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
-    if (!data || data.length === 0) break;
-    layers = layers.concat(data);
-    if (data.length < 1000) break;
-    from += 1000;
-  }
+  // ── Page of words matching the current filters — DB does the filtering,
+  // sorting, and pagination, so we only ever pull PAGE_SIZE rows over the
+  // wire instead of the full 7.5k-word table. ────────────────────────────
+  let wordsQuery = admin
+    .from("word_layers")
+    .select(
+      "word_id, semantic_family, topic, register, collocations, usage_notes, frequency, words!inner(id, word, pos, level, def_en, ex_en, phonetic)",
+      { count: "exact" }
+    )
+    .not("topic", "is", null);
 
-  const { data: progress } = await admin
-    .from("user_progress")
-    .select("word_id, state, due_at")
-    .eq("user_id", user.id);
+  if (topicFilter) wordsQuery = wordsQuery.eq("topic", topicFilter);
+  if (levelsForQuery) wordsQuery = wordsQuery.in("words.level", levelsForQuery);
+  if (q) wordsQuery = wordsQuery.ilike("words.word", `${q}%`);
 
+  wordsQuery = wordsQuery.order("frequency", { ascending: false, nullsFirst: false }).range(offset, offset + PAGE_SIZE - 1);
+
+  const { data: page, error, count: total } = await wordsQuery;
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  const wordIds = (page || []).map((l) => l.word_id);
+  const { data: progress } = wordIds.length
+    ? await admin.from("user_progress").select("word_id, state, due_at").eq("user_id", user.id).in("word_id", wordIds)
+    : { data: [] };
   const progressByWordId = new Map((progress || []).map((p) => [p.word_id, p]));
 
-  const topicMap = new Map();
-  for (const l of layers) {
-    const topicKey = l.topic;
-    if (!topicMap.has(topicKey)) {
-      topicMap.set(topicKey, { key: topicKey, label: TOPIC_LABELS[topicKey] || topicKey, families: new Map() });
-    }
-    const topicEntry = topicMap.get(topicKey);
-
-    const familyKey = l.semantic_family || "Other";
-    if (!topicEntry.families.has(familyKey)) {
-      topicEntry.families.set(familyKey, { name: familyKey, words: [] });
-    }
-
+  const words = (page || []).map((l) => {
     const p = progressByWordId.get(l.word_id);
-    topicEntry.families.get(familyKey).words.push({
+    return {
       id: l.words.id,
       word: l.words.word,
       pos: l.words.pos,
@@ -61,22 +69,47 @@ export async function GET() {
       def_en: l.words.def_en,
       ex_en: l.words.ex_en,
       phonetic: l.words.phonetic,
+      topic: l.topic,
+      topicLabel: TOPIC_LABELS[l.topic] || l.topic,
       register: l.register,
       collocations: l.collocations || [],
       usage_notes: l.usage_notes,
       frequency: l.frequency,
       user_state: p?.state || null,
       due_at: p?.due_at || null,
-    });
+    };
+  });
+
+  const result = { words, total: total || 0 };
+
+  // ── Filter-pill counts — only computed on demand (first load / filter
+  // reset), not on every keystroke or page change, and done as lightweight
+  // head-only COUNT queries run in parallel rather than pulling full rows. ──
+  if (withCounts) {
+    const [examCountEntries, topicCountEntries] = await Promise.all([
+      Promise.all(
+        EXAM_GOALS.map(async (g) => {
+          const { count } = await admin
+            .from("word_layers")
+            .select("word_id, words!inner(level)", { count: "exact", head: true })
+            .not("topic", "is", null)
+            .in("words.level", LEVELS_FOR_EXAM[g.key] || []);
+          return [g.key, count || 0];
+        })
+      ),
+      Promise.all(
+        TOPICS.map(async (t) => {
+          const { count } = await admin
+            .from("word_layers")
+            .select("word_id", { count: "exact", head: true })
+            .eq("topic", t.key);
+          return [t.key, count || 0];
+        })
+      ),
+    ]);
+    result.examCounts = Object.fromEntries(examCountEntries);
+    result.topicCounts = Object.fromEntries(topicCountEntries);
   }
 
-  const topics = [...topicMap.values()].map((t) => ({
-    key: t.key,
-    label: t.label,
-    families: [...t.families.values()]
-      .map((f) => ({ ...f, words: f.words.sort((a, b) => (b.frequency || 0) - (a.frequency || 0)) }))
-      .sort((a, b) => b.words.length - a.words.length),
-  }));
-
-  return Response.json({ topics });
+  return Response.json(result);
 }
