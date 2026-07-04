@@ -20,6 +20,13 @@ create table if not exists spinner_interview_questions (
   created_at timestamptz not null default now()
 );
 
+create table if not exists spinner_deep_talk (
+  id bigserial primary key,
+  text text not null,
+  category text not null default 'self',
+  created_at timestamptz not null default now()
+);
+
 create table if not exists spinner_vocab (
   id bigserial primary key,
   word text not null,
@@ -36,7 +43,7 @@ create table if not exists spinner_history (
   id bigserial primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   item_id bigint not null,
-  item_type text not null, -- 'topic' | 'vocab' | 'interview'
+  item_type text not null, -- 'topic' | 'vocab' | 'interview' | 'deep_talk'
   spun_at timestamptz not null default now()
 );
 
@@ -49,5 +56,6 @@ create table if not exists spinner_preferences (
 
 create index if not exists spinner_topics_lang_diff_cat on spinner_topics (language, difficulty, category);
 create index if not exists spinner_interview_category on spinner_interview_questions (category);
+create index if not exists spinner_deep_talk_category on spinner_deep_talk (category);
 create index if not exists spinner_vocab_lang_diff on spinner_vocab (language, difficulty);
 create index if not exists spinner_history_user_type on spinner_history (user_id, item_type, spun_at);

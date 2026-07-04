@@ -34,6 +34,14 @@ export const INTERVIEW_CATEGORIES = [
   { code: "consulting", label: "💼 Top 50 Consulting" },
 ];
 
+export const DEEP_TALK_CATEGORIES = [
+  { code: "self", label: "🪞 Bản thân" },
+  { code: "relationships", label: "🤝 Mối quan hệ" },
+  { code: "purpose", label: "🎯 Mục tiêu sống" },
+  { code: "fears", label: "🌑 Nỗi sợ" },
+  { code: "philosophy", label: "💭 Triết lý sống" },
+];
+
 // Shared filter row for the speaking-practice spinner pages — built with
 // Wordly's existing Dropdown (src/components/ui/Dropdown.js), not the
 // reference project's custom dropdown markup/styling.
