@@ -79,11 +79,18 @@ export default function JournalPage() {
       </div>
 
       <main className="relative z-10 max-w-xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <BackButton label="Quay lại" />
-          <h1 className="text-3xl font-bold tracking-tight">📓 Journal</h1>
-          <div className="w-20" />
+        {/* Header — stacked on mobile (see vocabulary-chat/page.js for the
+            fixed-spacer-broke-on-device rationale); one row from md: up. */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between md:hidden">
+            <BackButton label="Quay lại" />
+          </div>
+          <div className="hidden md:flex md:items-center md:justify-between">
+            <BackButton label="Quay lại" />
+            <h1 className="text-3xl font-bold tracking-tight">📓 Journal</h1>
+            <div className="w-20" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-center mt-3 md:hidden">📓 Journal</h1>
         </div>
 
         {/* Add form */}
@@ -160,7 +167,7 @@ export default function JournalPage() {
                         <button
                           onClick={() => handleDelete(entry.id)}
                           disabled={deletingId === entry.id}
-                          className="w-7 h-7 rounded-xl flex items-center justify-center text-[--ink-soft] opacity-0 group-hover:opacity-100 hover:bg-[var(--error-soft)] hover:text-[var(--error)] transition-all disabled:opacity-30"
+                          className="w-7 h-7 rounded-xl flex items-center justify-center text-[--ink-soft] opacity-40 md:opacity-0 md:group-hover:opacity-100 active:opacity-100 hover:bg-[var(--error-soft)] hover:text-[var(--error)] transition-all disabled:opacity-30"
                         >
                           {deletingId === entry.id
                             ? <Loader2 size={13} className="animate-spin" />

@@ -2,13 +2,25 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
+// Long Part 2 cue-card sentences need to fit inside .reel-item's fixed
+// max-height (see globals.css) — every item must render at the same height
+// for the spin offset math below to land on the right one, so long text is
+// hard-truncated by character count here (plain, reliable) rather than via
+// CSS line-clamp on a nested span, which caused the reel to render visually
+// empty mid-spin on real devices (a -webkit-box child fighting the parent's
+// flex centering + font-size transition).
+function truncateText(text, max = 90) {
+  if (!text || text.length <= max) return text;
+  return text.slice(0, max - 1).trimEnd() + "…";
+}
+
 // Ported from the reference project's TopicSpinner.astro vanilla-DOM script.
 // Direct DOM manipulation (via refs) is kept for the strip's transform/transition,
 // matching the original — this is an animation-heavy "slot machine" effect that
 // doesn't benefit from React re-renders on every frame. Styling follows Wordly's
 // convention of inline style={{}} + CSS custom properties (see globals.css for
 // the .reel-item/.handle-arm class rules this component relies on).
-export default function ReelSpinner({ items, renderItem, onLanded, disabled = false }) {
+export default function ReelSpinner({ items, renderItem, onLanded, onSpinStart, disabled = false }) {
   const stripRef = useRef(null);
   const windowRef = useRef(null);
   const armRef = useRef(null);
@@ -36,7 +48,7 @@ export default function ReelSpinner({ items, renderItem, onLanded, disabled = fa
       const idx = ((centerIdx + i) % list.length + list.length) % list.length;
       const div = document.createElement("div");
       div.className = "reel-item";
-      div.textContent = renderItem(list[idx]);
+      div.textContent = truncateText(renderItem(list[idx]));
       strip.appendChild(div);
     }
     const h = getItemH();
@@ -55,7 +67,15 @@ export default function ReelSpinner({ items, renderItem, onLanded, disabled = fa
 
   const spin = useCallback(() => {
     if (isSpinning || disabled || itemsRef.current.length === 0) return;
-    const list = itemsRef.current;
+    // Let the parent commit the previous landed item into the excluded set
+    // *now* (start of this spin) rather than right after the previous spin
+    // landed — that's what keeps the just-landed item visible/spinnable
+    // until the user spins again, instead of vanishing immediately.
+    // onSpinStart can return a fresher item list synchronously (parent
+    // recomputes it inline, not via a state update we'd otherwise have to
+    // wait a render for) so this spin uses the up-to-date exclusion.
+    const freshList = onSpinStart?.();
+    const list = (freshList && freshList.length > 0) ? freshList : itemsRef.current;
     const strip = stripRef.current;
     if (!strip) return;
 
@@ -74,7 +94,7 @@ export default function ReelSpinner({ items, renderItem, onLanded, disabled = fa
     pool.forEach((item) => {
       const div = document.createElement("div");
       div.className = "reel-item";
-      div.textContent = renderItem(item);
+      div.textContent = truncateText(renderItem(item));
       strip.appendChild(div);
     });
 
@@ -116,7 +136,7 @@ export default function ReelSpinner({ items, renderItem, onLanded, disabled = fa
       onLanded?.(list[target]);
       setIsSpinning(false);
     }, duration + 100);
-  }, [isSpinning, disabled, renderItem, onLanded, getItemH, getWindowH]);
+  }, [isSpinning, disabled, renderItem, onLanded, onSpinStart, getItemH, getWindowH]);
 
   // ── Lever drag (desktop) ──
   useEffect(() => {
@@ -177,9 +197,8 @@ export default function ReelSpinner({ items, renderItem, onLanded, disabled = fa
       <div className="reel-assembly flex items-stretch w-full relative gap-3">
         <div
           ref={windowRef}
-          className="reel-window flex-1 min-w-0 mt-4 relative overflow-hidden rounded-2xl"
+          className="reel-window flex-1 min-w-0 mt-4 relative overflow-hidden rounded-2xl h-[340px] sm:h-[420px]"
           style={{
-            height: 420,
             background: "var(--surface)",
             WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
             maskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",

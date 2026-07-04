@@ -153,13 +153,24 @@ export default function VocabularyChatPage() {
       </div>
 
       <main className="relative z-10 max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <BackButton label="Quay lại" />
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+        {/* Header — stacked on mobile (back button its own row, title centered
+            below with nothing to collide with) since a fixed-width spacer can't
+            reliably balance a variable-width back button + title on narrow real
+            devices (confirmed broken on-device); one row again from md: up. */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between md:hidden">
+            <BackButton label="Quay lại" />
+          </div>
+          <div className="hidden md:flex md:items-center md:justify-between">
+            <BackButton label="Quay lại" />
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+              📚 Học từ mới
+            </h1>
+            <div className="w-20" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-center mt-3 md:hidden" style={{ color: "var(--ink)" }}>
             📚 Học từ mới
           </h1>
-          <div className="w-20" />
         </div>
 
         <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
@@ -269,7 +280,7 @@ function WordDetailModal({ word, onClose, onChat, onSpeak }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="rounded-[32px] p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto animate-slide-up relative"
+        className="rounded-[32px] p-5 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto animate-slide-up relative"
         style={{ background: "var(--surface-elevated)", border: "1.5px solid var(--line)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}
       >
         <button onClick={onClose}

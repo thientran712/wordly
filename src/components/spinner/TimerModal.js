@@ -84,14 +84,14 @@ export default function TimerModal({ open, onClose, defaultSeconds = 60, topicLa
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <div
-        className="relative w-full flex flex-col items-center animate-slide-up overflow-hidden"
+        className="relative w-full flex flex-col items-center animate-slide-up px-6 pt-8 pb-6 sm:px-10 sm:pt-10 sm:pb-8 overflow-y-auto"
         style={{
           maxWidth: 480,
+          maxHeight: "90vh",
           borderRadius: 40,
           background: "var(--card-bg)",
           border: "1px solid var(--card-border)",
           boxShadow: "0 32px 80px rgba(0,0,0,0.4)",
-          padding: "2.5rem 2.5rem 2rem",
         }}
       >
         {/* Decorative glow */}
@@ -129,14 +129,23 @@ export default function TimerModal({ open, onClose, defaultSeconds = 60, topicLa
           </span>
         </div>
 
-        {/* Topic */}
-        <p className="text-center font-bold leading-snug mb-6 px-2" style={{ color: "var(--ink)", fontSize: "1.375rem", maxWidth: 400 }}>
+        {/* Topic — clamped to 3 lines so a long Part 2 cue card doesn't push the
+            ring/controls below the fold on short viewports (iPhone SE-class);
+            the full text is still readable behind the reel/history panel, this
+            modal's job is the timer, not re-displaying the whole prompt. */}
+        <p
+          className="text-center font-bold leading-snug mb-4 sm:mb-6 px-2 overflow-hidden"
+          style={{
+            color: "var(--ink)", fontSize: "1.125rem", maxWidth: 400,
+            display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
+          }}
+        >
           {topicLabel || "—"}
         </p>
 
-        {/* Ring */}
-        <div className="relative flex items-center justify-center mb-6" style={{ width: 280, height: 280 }}>
-          <svg viewBox="0 0 260 260" className="absolute inset-0" style={{ transform: "rotate(-90deg)" }}>
+        {/* Ring — smaller on mobile so it doesn't crowd the card's padding on narrow viewports; back to full size at sm: and up */}
+        <div className="relative flex items-center justify-center mb-4 sm:mb-6 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px]">
+          <svg viewBox="0 0 260 260" className="absolute inset-0 w-full h-full" style={{ transform: "rotate(-90deg)" }}>
             <circle cx="130" cy="130" r="120" fill="none" stroke="var(--line)" strokeWidth="14" />
             <circle
               cx="130" cy="130" r="120" fill="none"
@@ -147,7 +156,7 @@ export default function TimerModal({ open, onClose, defaultSeconds = 60, topicLa
             />
           </svg>
           <div className="flex flex-col items-center">
-            <div className="font-black tabular-nums" style={{ color: "var(--ink)", fontSize: "4rem", letterSpacing: "-3px", lineHeight: 1 }}>
+            <div className="font-black tabular-nums text-[2.25rem] sm:text-[4rem]" style={{ color: "var(--ink)", letterSpacing: "-2px", lineHeight: 1 }}>
               {fmt(remaining)}
             </div>
             <span className="text-xs font-semibold mt-1" style={{ color: "var(--ink-ghost)" }}>
@@ -176,20 +185,25 @@ export default function TimerModal({ open, onClose, defaultSeconds = 60, topicLa
           </button>
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center gap-6">
+        {/* Controls — smaller buttons/gap on mobile to fit the narrower card, full
+            size at sm: and up. No trailing spacer: it used to add a div the same
+            width as the reset button to "balance" it visually, but that pushed
+            the whole row's center off the card's actual center (confirmed on
+            device) — centering just the two real buttons via justify-center on
+            the parent is what actually keeps them centered. */}
+        <div className="flex items-center justify-center gap-4 sm:gap-6">
           <button
             onClick={reset}
-            className="w-16 h-16 rounded-full flex items-center justify-center transition-all active:scale-90"
+            className="rounded-full flex items-center justify-center transition-all active:scale-90 w-14 h-14 sm:w-16 sm:h-16"
             style={{ background: "var(--hover-bg)", color: "var(--ink)" }}
           >
-            <RotateCcw size={22} />
+            <RotateCcw size={20} className="sm:hidden" />
+            <RotateCcw size={22} className="hidden sm:block" />
           </button>
           <button
             onClick={() => (running ? pause() : start())}
-            className="rounded-full flex items-center justify-center transition-all active:scale-90 hover:scale-105"
+            className="rounded-full flex items-center justify-center transition-all active:scale-90 hover:scale-105 w-[72px] h-[72px] sm:w-[84px] sm:h-[84px]"
             style={{
-              width: 84, height: 84,
               background: running
                 ? "linear-gradient(135deg, var(--electric-muted), var(--electric))"
                 : "linear-gradient(135deg, var(--electric), var(--electric-muted))",
@@ -197,9 +211,18 @@ export default function TimerModal({ open, onClose, defaultSeconds = 60, topicLa
               boxShadow: "0 8px 28px rgba(var(--electric-rgb),0.45)",
             }}
           >
-            {running ? <Pause size={30} /> : <Play size={30} style={{ marginLeft: 3 }} />}
+            {running ? (
+              <>
+                <Pause size={26} className="sm:hidden" />
+                <Pause size={30} className="hidden sm:block" />
+              </>
+            ) : (
+              <>
+                <Play size={26} style={{ marginLeft: 3 }} className="sm:hidden" />
+                <Play size={30} style={{ marginLeft: 3 }} className="hidden sm:block" />
+              </>
+            )}
           </button>
-          <div className="w-16" />
         </div>
       </div>
     </div>

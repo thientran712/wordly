@@ -1,6 +1,7 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import AppSidebar from "@/components/AppSidebar";
+import MainContent from "@/components/MainContent";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -36,9 +37,7 @@ export default function RootLayout({ children }) {
       <body style={{ fontFamily: "var(--font-jakarta)" }} suppressHydrationWarning>
         <div className="flex min-h-screen">
           <AppSidebar />
-          <div className="flex-1 min-w-0 pt-14 md:pt-0">
-            {children}
-          </div>
+          <MainContent>{children}</MainContent>
         </div>
       </body>
     </html>

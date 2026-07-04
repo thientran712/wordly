@@ -695,19 +695,23 @@ function PracticePageInner() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b flex-shrink-0" style={{ background: "var(--card-bg)", borderColor: "var(--divider)" }}>
+          {/* Back button — always visible (not just md:) so there's a way to
+              leave /practice on mobile; previously it was hidden below md:
+              with only the hamburger shown, which opens the session sidebar
+              but has no exit from the page itself. */}
+          <button
+            onClick={() => { if (typeof window !== "undefined" && window.history.length > 1) router.back(); else router.push("/"); }}
+            className="no-min-h w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90"
+            style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
+          >
+            <ArrowLeft size={16} />
+          </button>
           <button
             onClick={() => setSidebarOpen(v => !v)}
             className="no-min-h w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 md:hidden"
             style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
           >
             <Menu size={16} />
-          </button>
-          <button
-            onClick={() => { if (typeof window !== "undefined" && window.history.length > 1) router.back(); else router.push("/"); }}
-            className="no-min-h w-8 h-8 rounded-xl items-center justify-center transition-all active:scale-90 hidden md:flex"
-            style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
-          >
-            <ArrowLeft size={16} />
           </button>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-sm truncate" style={{ color: "var(--ink)" }}>
@@ -835,8 +839,14 @@ function PracticePageInner() {
           </div>
         </div>
 
-        {/* Fixed bottom controls */}
-        <div className="flex-shrink-0 border-t py-5" style={{ background: "var(--card-bg)", borderColor: "var(--divider)" }}>
+        {/* Fixed bottom controls — bottom padding adds the iPhone home-indicator
+            safe-area inset on top of the base 1.25rem (py-5) instead of replacing
+            it, so notched devices get extra clearance without losing the padding
+            everyone else already has. */}
+        <div
+          className="flex-shrink-0 border-t pt-5"
+          style={{ background: "var(--card-bg)", borderColor: "var(--divider)", paddingBottom: "max(1.25rem, calc(0.5rem + env(safe-area-inset-bottom)))" }}
+        >
           <div className="max-w-lg mx-auto px-4 flex flex-col items-center gap-3">
 
             {sessionState === "connecting" && (

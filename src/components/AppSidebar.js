@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Home, Mic, MessageCircle, NotebookPen, UserCog, Sparkles,
+  Languages, Mic, MessageCircle, NotebookPen, UserCog, Sparkles,
   Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Trang chủ", icon: Home },
+  { href: "/", label: "Translation", icon: Languages },
   { href: "/vocabulary-chat", label: "Học từ mới", icon: MessageCircle },
   { href: "/practice", label: "Chat với Alex", icon: Mic },
   { href: "/speak", label: "Luyện nói", icon: Sparkles },

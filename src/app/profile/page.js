@@ -223,11 +223,18 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Page header */}
-        <div className="flex items-center justify-between mb-8">
-          <BackButton label="Quay lại" />
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>👤 Hồ sơ</h1>
-          <div className="w-20" />
+        {/* Page header — stacked on mobile (see vocabulary-chat/page.js for the
+            fixed-spacer-broke-on-device rationale); one row from md: up. */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between md:hidden">
+            <BackButton label="Quay lại" />
+          </div>
+          <div className="hidden md:flex md:items-center md:justify-between">
+            <BackButton label="Quay lại" />
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>👤 Hồ sơ</h1>
+            <div className="w-20" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-center mt-3 md:hidden" style={{ color: "var(--ink)" }}>👤 Hồ sơ</h1>
         </div>
 
         {/* Account card */}

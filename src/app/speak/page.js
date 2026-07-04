@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ChevronDown, History, Trash2 } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import ReelSpinner from "@/components/spinner/ReelSpinner";
@@ -24,9 +24,20 @@ function pillStyle(active) {
 
 // Fetches + owns the spun-history list for one item_type, shared by every
 // mode so the history panel and the spin-pool exclusion logic stay in sync.
+//
+// The most-recently-landed item is tracked separately as `pendingId` and kept
+// OUT of `excludedIds` on purpose: it's already saved to history (so it shows
+// up in the history panel right away), but it stays visible/spinnable in the
+// wheel until the user spins again. `commitPending()` is called from
+// ReelSpinner's onSpinStart right as a new spin begins — it folds the pending
+// id into the real exclusion set and returns the up-to-date id set
+// synchronously, so that very spin already excludes it (not just the next
+// render after).
 function useSpinHistory(itemType) {
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [pendingId, setPendingId] = useState(null);
+  const pendingIdRef = useRef(null);
 
   const refresh = useCallback(() => {
     fetch(`/api/spinner/history?item_type=${itemType}`)
@@ -36,12 +47,18 @@ function useSpinHistory(itemType) {
   }, [itemType]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { pendingIdRef.current = pendingId; }, [pendingId]);
 
-  const excludedIds = useMemo(() => new Set(items.map((i) => i.id)), [items]);
+  const excludedIds = useMemo(() => {
+    const ids = new Set(items.map((i) => i.id));
+    if (pendingId != null) ids.delete(pendingId);
+    return ids;
+  }, [items, pendingId]);
 
   const logSpin = useCallback((id, label) => {
     if (!id) return;
     setItems((prev) => [{ id, label, spun_at: new Date().toISOString() }, ...prev]);
+    setPendingId(id);
     fetch("/api/spinner/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -49,8 +66,19 @@ function useSpinHistory(itemType) {
     }).catch(() => {});
   }, [itemType]);
 
+  // Called at the start of a new spin — folds the previously-pending id into
+  // the real exclusion set and hands back the fresh Set synchronously.
+  const commitPending = useCallback(() => {
+    if (pendingIdRef.current == null) return excludedIds;
+    const ids = new Set(excludedIds);
+    ids.add(pendingIdRef.current);
+    setPendingId(null);
+    return ids;
+  }, [excludedIds]);
+
   const removeFromHistory = useCallback((id) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
+    setPendingId((prev) => (prev === id ? null : prev));
     fetch("/api/spinner/history", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -58,7 +86,7 @@ function useSpinHistory(itemType) {
     }).catch(() => {});
   }, [itemType]);
 
-  return { items, loaded, excludedIds, logSpin, removeFromHistory };
+  return { items, loaded, excludedIds, logSpin, commitPending, removeFromHistory };
 }
 
 // Once an item has been spun, it's fully removed from the wheel (not just
@@ -129,16 +157,36 @@ export default function SpeakPage() {
       </div>
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-16">
-        {/* Back button is absolutely positioned so it sits on the same row as the
-            title without taking up flex space — the row below keeps the same
-            flex-1 + w-72 balance used by the spinner card underneath, so the
-            title/tabs stay centered on the card regardless of the back button. */}
-        <div className="relative flex items-start gap-5 mb-6">
-          <div className="absolute left-0 top-0">
-            <BackButton label="Quay lại" />
+        {/* Back button gets its own row below lg: (stacking, not absolute
+            positioning — a fixed-width offset can't reliably balance a
+            variable-width back button + title on narrow real devices,
+            confirmed broken on-device). From lg: up, back to one row with the
+            w-72 spacer balancing against the real history-panel column width. */}
+        <div className="lg:hidden flex items-center justify-between mb-3">
+          <BackButton label="Quay lại" />
+        </div>
+        <div className="flex flex-col items-center gap-3 mb-3 lg:hidden">
+          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+            🎙️ Luyện nói
+          </h1>
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            {MODES.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setMode(m.key)}
+                className="px-4 py-2 rounded-full text-sm font-bold hover:-translate-y-0.5 transition-all whitespace-nowrap"
+                style={pillStyle(mode === m.key)}
+              >
+                {m.label}
+              </button>
+            ))}
           </div>
+        </div>
+
+        <div className="hidden lg:flex items-start gap-5 mb-6">
+          <BackButton label="Quay lại" />
           <div className="flex-1 min-w-0 flex flex-col items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
               🎙️ Luyện nói
             </h1>
             <div className="flex items-center gap-2 flex-wrap justify-center">
@@ -154,7 +202,7 @@ export default function SpeakPage() {
               ))}
             </div>
           </div>
-          <div className="hidden lg:block w-72 flex-shrink-0" />
+          <div className="w-72 flex-shrink-0" />
         </div>
 
         {/* Keep all three mounted so spun state/position isn't lost when switching tabs */}
@@ -186,16 +234,22 @@ function TopicsMode() {
       .catch(() => setAllTopics([]));
   }, []);
 
-  const items = useMemo(() => {
-    let filtered = category ? allTopics.filter((t) => t.category === category) : allTopics;
-    if (filtered.length === 0) filtered = allTopics;
-    return excludeSpun(filtered, history.excludedIds);
-  }, [allTopics, category, history.excludedIds]);
+  const filteredPool = useMemo(() => {
+    const filtered = category ? allTopics.filter((t) => t.category === category) : allTopics;
+    return filtered.length > 0 ? filtered : allTopics;
+  }, [allTopics, category]);
+
+  const items = useMemo(
+    () => excludeSpun(filteredPool, history.excludedIds),
+    [filteredPool, history.excludedIds]
+  );
 
   const handleLanded = (item) => {
     setLanded(item);
     history.logSpin(item?.id, item?.text);
   };
+
+  const handleSpinStart = () => excludeSpun(filteredPool, history.commitPending());
 
   const timerSeconds = landed?.category === "part2" ? 120 : 60;
 
@@ -205,20 +259,28 @@ function TopicsMode() {
         className="flex-1 min-w-0 w-full rounded-2xl p-5 sm:p-6"
         style={{ background: "var(--surface-elevated)", border: "1.5px solid var(--line)" }}
       >
-        <p className="text-sm mb-5 text-center" style={{ color: "var(--ink-soft)" }}>
-          Quay để nhận một câu hỏi IELTS Speaking (Part 1–3), rồi luyện nói trong thời gian giới hạn.
-        </p>
+        {/* Subtitle + filter centered over just the reel-window's flex-1 share
+            (matching ReelSpinner's own internal split), not the whole card,
+            so they line up with the questions instead of the lever column. */}
+        <div className="flex w-full gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm mb-5 text-center" style={{ color: "var(--ink-soft)" }}>
+              Quay để nhận một câu hỏi IELTS Speaking (Part 1–3), rồi luyện nói trong thời gian giới hạn.
+            </p>
 
-        <FilterBar
-          showLanguage={false}
-          showDifficulty={false}
-          category={category}
-          onCategoryChange={setCategory}
-          categoryOptions={TOPIC_CATEGORIES}
-          categoryAllLabel="🎲 Ngẫu nhiên (Part 1–3)"
-        />
+            <FilterBar
+              showLanguage={false}
+              showDifficulty={false}
+              category={category}
+              onCategoryChange={setCategory}
+              categoryOptions={TOPIC_CATEGORIES}
+              categoryAllLabel="🎲 Ngẫu nhiên (Part 1–3)"
+            />
+          </div>
+          <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
+        </div>
 
-        <ReelSpinner items={items} renderItem={(t) => t.text} onLanded={handleLanded} />
+        <ReelSpinner items={items} renderItem={(t) => t.text} onLanded={handleLanded} onSpinStart={handleSpinStart} />
 
         {/* Same flex-1 + lever-width split as ReelSpinner's own button row, so
             this centers under the reel-window instead of the whole card. */}
@@ -281,26 +343,36 @@ function InterviewMode() {
     history.logSpin(item?.id, item?.text);
   };
 
+  const handleSpinStart = () => excludeSpun(allQuestions, history.commitPending());
+
   return (
     <div className="flex flex-col lg:flex-row gap-5 items-start">
       <div
         className="flex-1 min-w-0 w-full rounded-2xl p-5 sm:p-6"
         style={{ background: "var(--surface-elevated)", border: "1.5px solid var(--line)" }}
       >
-        <p className="text-sm mb-5 text-center" style={{ color: "var(--ink-soft)" }}>
-          Quay để nhận câu hỏi phỏng vấn, áp dụng framework gợi ý để trả lời có cấu trúc.
-        </p>
+        {/* Subtitle + filter centered over just the reel-window's flex-1 share,
+            matching ReelSpinner's own internal split — see TopicsMode's
+            identical wrapper for the full rationale. */}
+        <div className="flex w-full gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm mb-5 text-center" style={{ color: "var(--ink-soft)" }}>
+              Quay để nhận câu hỏi phỏng vấn, áp dụng framework gợi ý để trả lời có cấu trúc.
+            </p>
 
-        <FilterBar
-          showLanguage={false}
-          showDifficulty={false}
-          category={category}
-          onCategoryChange={(v) => setCategory(v || "behavioral")}
-          categoryOptions={INTERVIEW_CATEGORIES}
-          categoryAllLabel={undefined}
-        />
+            <FilterBar
+              showLanguage={false}
+              showDifficulty={false}
+              category={category}
+              onCategoryChange={(v) => setCategory(v || "behavioral")}
+              categoryOptions={INTERVIEW_CATEGORIES}
+              categoryAllLabel={undefined}
+            />
+          </div>
+          <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
+        </div>
 
-        <ReelSpinner items={items} renderItem={(q) => q.text} onLanded={handleLanded} />
+        <ReelSpinner items={items} renderItem={(q) => q.text} onLanded={handleLanded} onSpinStart={handleSpinStart} />
 
         {/* Same flex-1 + lever-width split as ReelSpinner's own button row, so
             this centers under the reel-window instead of the whole card. */}
@@ -401,11 +473,15 @@ function VocabMode() {
 
   useEffect(() => { fetchWords(language); }, [language, fetchWords]);
 
-  const items = useMemo(() => {
-    let filtered = allWords.filter((v) => !difficulty || v.difficulty === difficulty);
-    if (filtered.length === 0) filtered = allWords;
-    return excludeSpun(filtered, history.excludedIds);
-  }, [allWords, difficulty, history.excludedIds]);
+  const filteredPool = useMemo(() => {
+    const filtered = allWords.filter((v) => !difficulty || v.difficulty === difficulty);
+    return filtered.length > 0 ? filtered : allWords;
+  }, [allWords, difficulty]);
+
+  const items = useMemo(
+    () => excludeSpun(filteredPool, history.excludedIds),
+    [filteredPool, history.excludedIds]
+  );
 
   const savePrefs = (lang, diff) => {
     fetch("/api/spinner/preferences", {
@@ -420,24 +496,33 @@ function VocabMode() {
     history.logSpin(item?.id, item?.word);
   };
 
+  const handleSpinStart = () => excludeSpun(filteredPool, history.commitPending());
+
   return (
     <div className="flex flex-col lg:flex-row gap-5 items-start">
       <div
         className="flex-1 min-w-0 w-full rounded-2xl p-5 sm:p-6"
         style={{ background: "var(--surface-elevated)", border: "1.5px solid var(--line)" }}
       >
-        <p className="text-sm mb-5 text-center" style={{ color: "var(--ink-soft)" }}>
-          Quay để nhận một từ ngẫu nhiên, rồi thử dùng từ đó khi luyện nói.
-        </p>
+        {/* Subtitle + filter centered over just the reel-window's flex-1 share,
+            matching ReelSpinner's own internal split — see TopicsMode's
+            identical wrapper for the full rationale. */}
+        <div className="flex w-full gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm mb-5 text-center" style={{ color: "var(--ink-soft)" }}>
+              Quay để nhận một từ ngẫu nhiên, rồi thử dùng từ đó khi luyện nói.
+            </p>
 
-        <FilterBar
-          language={language}
-          onLanguageChange={(v) => { const l = v || "en"; setLanguage(l); savePrefs(l, difficulty); }}
-          difficulty={difficulty}
-          onDifficultyChange={(v) => { setDifficulty(v); savePrefs(language, v); }}
-        />
+            <FilterBar
+              showLanguage={false}
+              difficulty={difficulty}
+              onDifficultyChange={(v) => { setDifficulty(v); savePrefs(language, v); }}
+            />
+          </div>
+          <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
+        </div>
 
-        <ReelSpinner items={items} renderItem={(v) => v.word} onLanded={handleLanded} />
+        <ReelSpinner items={items} renderItem={(v) => v.word} onLanded={handleLanded} onSpinStart={handleSpinStart} />
 
         {/* Same flex-1 + lever-width split as ReelSpinner's own button row, so
             this centers under the reel-window instead of the whole card. */}
