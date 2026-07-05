@@ -369,17 +369,17 @@ button:not(:disabled):active {
    live in global CSS rather than inline styles. */
 .reel-item {
   width: 100%;
-  min-height: 140px;
-  max-height: 140px;
+  min-height: 100px;
+  max-height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   font-weight: 500;
   font-size: 1.05rem;
-  line-height: 1.45;
+  line-height: 1.4;
   color: var(--ink);
-  padding: 1.25rem 3rem;
+  padding: 0.75rem 3rem;
   user-select: none;
   overflow-wrap: break-word;
   overflow: hidden;
@@ -421,6 +421,6 @@ button:not(:disabled):active {
 .handle-arm.hint { animation: lever-hint 0.6s ease-in-out 3; }
 
 @media (max-width: 768px) {
-  .reel-item { min-height: 150px; max-height: 150px; padding: 1.25rem 1.5rem; }
+  .reel-item { min-height: 110px; max-height: 110px; padding: 0.75rem 1.5rem; }
   .reel-item.landed { font-size: 1.3rem; }
 }

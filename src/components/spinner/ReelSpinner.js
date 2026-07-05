@@ -198,25 +198,30 @@ export default function ReelSpinner({ items, renderItem, onLanded, onSpinStart, 
         <div
           ref={windowRef}
           className="reel-window flex-1 min-w-0 mt-4 relative overflow-hidden rounded-2xl h-[340px] sm:h-[420px]"
-          style={{
-            background: "var(--surface)",
-            WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
-            maskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
-            // Forces its own compositing layer so mobile Safari/Chrome don't
-            // drop the masked layer's paint mid-scroll (a known mask-image +
-            // scroll bug where the content behind the mask blanks out until
-            // scrolling stops) — this is what caused the landed question text
-            // to disappear briefly while scrolling the page.
-            transform: "translateZ(0)",
-            WebkitBackfaceVisibility: "hidden",
-          }}
+          style={{ background: "var(--surface)" }}
         >
+          {/* Fade-out top/bottom, as two solid-to-transparent overlay layers
+              instead of a mask-image on the window itself. mask-image caused
+              the reel text to blank out both mid-spin and mid-scroll on real
+              mobile devices (a known GPU-compositing bug where masked layers
+              drop their paint under animation/scroll pressure) — plain
+              overlay divs have no such interaction since they don't mask
+              anything, just paint over it. */}
+          <div
+            className="absolute top-0 left-0 w-full pointer-events-none"
+            style={{ height: 80, zIndex: 3, background: "linear-gradient(to bottom, var(--surface), transparent)" }}
+          />
+          <div
+            className="absolute bottom-0 left-0 w-full pointer-events-none"
+            style={{ height: 80, zIndex: 3, background: "linear-gradient(to top, var(--surface), transparent)" }}
+          />
+
           <div
             className="absolute top-1/2 left-1/2 pointer-events-none"
             style={{
               transform: "translate(-50%,-50%)",
               width: "88%",
-              height: 160,
+              height: 110,
               borderTop: "1px solid var(--line)",
               borderBottom: "1px solid var(--line)",
               zIndex: 2,
