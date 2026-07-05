@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { ChevronDown, History, Trash2 } from "lucide-react";
+import { History, Trash2 } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import ReelSpinner from "@/components/spinner/ReelSpinner";
 import TimerModal from "@/components/spinner/TimerModal";
@@ -11,7 +11,6 @@ const MODES = [
   { key: "topics", label: "IELTS Speaking" },
   { key: "interview", label: "Phỏng vấn" },
   { key: "deepTalk", label: "Deep Talk" },
-  { key: "vocab", label: "Từ vựng" },
 ];
 
 function pillStyle(active) {
@@ -100,6 +99,42 @@ function excludeSpun(pool, excludedIds) {
   return remaining.length > 0 ? remaining : pool;
 }
 
+// AI-generated vocab suggestions for the currently-landed question. Fetches
+// fresh every time (no caching, per user's choice — variety over reuse) so
+// spinning the same question twice yields different suggested words. Failure
+// just resolves to an empty array — this is a bonus feature that should
+// never block or error out the core spin/speak flow.
+function useVocabSuggestions() {
+  const [words, setWords] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const requestIdRef = useRef(0);
+
+  const fetchFor = useCallback((question, kind) => {
+    if (!question) { setWords([]); setLoading(false); return; }
+    const requestId = ++requestIdRef.current;
+    setLoading(true);
+    setWords([]);
+    fetch("/api/spinner/vocab-suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, kind }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (requestIdRef.current !== requestId) return; // stale response from a previous spin
+        setWords(d.words || []);
+      })
+      .catch(() => {
+        if (requestIdRef.current === requestId) setWords([]);
+      })
+      .finally(() => {
+        if (requestIdRef.current === requestId) setLoading(false);
+      });
+  }, []);
+
+  return { words, loading, fetchFor };
+}
+
 function HistoryPanel({ items, loaded, onRemove, emptyHint }) {
   return (
     <div
@@ -166,28 +201,13 @@ export default function SpeakPage() {
         <div className="lg:hidden flex items-center justify-between mb-3">
           <BackButton label="Quay lại" />
         </div>
-        <div className="flex flex-col items-center gap-3 mb-3 lg:hidden">
-          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
-            🎙️ Luyện nói
-          </h1>
-          <div className="flex items-center gap-2 flex-wrap justify-center">
-            {MODES.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setMode(m.key)}
-                className="px-4 py-2 rounded-full text-sm font-bold hover:-translate-y-0.5 transition-all whitespace-nowrap"
-                style={pillStyle(mode === m.key)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="hidden lg:flex items-start gap-5 mb-6">
-          <BackButton label="Quay lại" />
+        {/* Same flex-1 + lever-width split as the reel/filter/button rows inside
+            each mode's card, so the title+tabs center over the question column
+            itself instead of the whole card (which would skew them relative to
+            the lever column on the right). */}
+        <div className="flex w-full gap-3 mb-3 lg:hidden">
           <div className="flex-1 min-w-0 flex flex-col items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
               🎙️ Luyện nói
             </h1>
             <div className="flex items-center gap-2 flex-wrap justify-center">
@@ -203,6 +223,31 @@ export default function SpeakPage() {
               ))}
             </div>
           </div>
+          <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
+        </div>
+
+        <div className="hidden lg:flex items-start gap-5 mb-6">
+          <BackButton label="Quay lại" />
+          <div className="flex-1 min-w-0 flex gap-3">
+            <div className="flex-1 min-w-0 flex flex-col items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+                🎙️ Luyện nói
+              </h1>
+              <div className="flex items-center gap-2 flex-wrap justify-center">
+                {MODES.map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={() => setMode(m.key)}
+                    className="px-4 py-2 rounded-full text-sm font-bold hover:-translate-y-0.5 transition-all whitespace-nowrap"
+                    style={pillStyle(mode === m.key)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex-shrink-0" style={{ width: 56 }} />
+          </div>
           <div className="w-72 flex-shrink-0" />
         </div>
 
@@ -215,9 +260,6 @@ export default function SpeakPage() {
         </div>
         <div style={{ display: mode === "deepTalk" ? "block" : "none" }}>
           <DeepTalkMode />
-        </div>
-        <div style={{ display: mode === "vocab" ? "block" : "none" }}>
-          <VocabMode />
         </div>
       </main>
     </>
@@ -239,8 +281,8 @@ function TopicsMode() {
   const [category, setCategory] = useState(null);
   const [landed, setLanded] = useState(null);
   const [timerOpen, setTimerOpen] = useState(false);
-  const [openFramework, setOpenFramework] = useState(null);
   const history = useSpinHistory("topic");
+  const vocab = useVocabSuggestions();
 
   useEffect(() => {
     fetch("/api/spinner/topics?language=en")
@@ -261,9 +303,8 @@ function TopicsMode() {
 
   const handleLanded = (item) => {
     setLanded(item);
-    const fw = IELTS_FRAMEWORKS.find((f) => f.category === item?.category);
-    setOpenFramework(fw?.id || null);
     history.logSpin(item?.id, item?.text);
+    vocab.fetchFor(item?.text, "ielts");
   };
 
   const handleSpinStart = () => excludeSpun(filteredPool, history.commitPending());
@@ -315,51 +356,16 @@ function TopicsMode() {
           <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
         </div>
 
-        <div className="flex flex-col gap-2.5 mt-6">
-          {IELTS_FRAMEWORKS.map((fw) => {
-            const isOpen = openFramework === fw.id;
-            const isRecommended = landed?.category === fw.category;
-            return (
-              <div
-                key={fw.id}
-                className="rounded-2xl overflow-hidden transition-all"
-                style={{
-                  background: "var(--surface)",
-                  border: isRecommended ? "1.5px solid var(--electric)" : "1.5px solid var(--line)",
-                  boxShadow: isRecommended ? "0 4px 20px rgba(var(--electric-rgb),0.2)" : "none",
-                }}
-              >
-                <button
-                  onClick={() => setOpenFramework(isOpen ? null : fw.id)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 relative"
-                >
-                  <span className="font-bold text-base" style={{ color: isRecommended ? "var(--electric)" : "var(--ink)" }}>
-                    {fw.label}
-                  </span>
-                  {isRecommended && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--green-subtle)", color: "var(--electric)" }}>
-                      GỢI Ý
-                    </span>
-                  )}
-                  <ChevronDown
-                    size={16}
-                    className="absolute right-4"
-                    style={{ color: "var(--ink-soft)", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
-                  />
-                </button>
-                {isOpen && (
-                  <div className="px-4 pb-3.5 flex flex-col gap-1.5">
-                    {fw.steps.map((s, i) => (
-                      <p key={i} className="text-xs leading-relaxed" style={{ color: "var(--ink-soft)" }}>• {s}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <TimerModal open={timerOpen} onClose={() => setTimerOpen(false)} defaultSeconds={timerSeconds} topicLabel={landed?.text} />
+        <TimerModal
+          open={timerOpen}
+          onClose={() => setTimerOpen(false)}
+          defaultSeconds={timerSeconds}
+          topicLabel={landed?.text}
+          vocabWords={vocab.words}
+          vocabLoading={vocab.loading}
+          frameworks={IELTS_FRAMEWORKS}
+          recommendedFrameworkId={IELTS_FRAMEWORKS.find((f) => f.category === landed?.category)?.id}
+        />
       </div>
 
       <div className="w-full lg:w-72 flex-shrink-0">
@@ -375,6 +381,7 @@ function DeepTalkMode() {
   const [landed, setLanded] = useState(null);
   const [timerOpen, setTimerOpen] = useState(false);
   const history = useSpinHistory("deep_talk");
+  const vocab = useVocabSuggestions();
 
   const fetchQuestions = useCallback((cat) => {
     const params = cat ? `?category=${cat}` : "";
@@ -394,6 +401,7 @@ function DeepTalkMode() {
   const handleLanded = (item) => {
     setLanded(item);
     history.logSpin(item?.id, item?.text);
+    vocab.fetchFor(item?.text, "deep_talk");
   };
 
   const handleSpinStart = () => excludeSpun(allQuestions, history.commitPending());
@@ -443,7 +451,14 @@ function DeepTalkMode() {
           <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
         </div>
 
-        <TimerModal open={timerOpen} onClose={() => setTimerOpen(false)} defaultSeconds={90} topicLabel={landed?.text} />
+        <TimerModal
+          open={timerOpen}
+          onClose={() => setTimerOpen(false)}
+          defaultSeconds={90}
+          topicLabel={landed?.text}
+          vocabWords={vocab.words}
+          vocabLoading={vocab.loading}
+        />
       </div>
 
       <div className="w-full lg:w-72 flex-shrink-0">
@@ -465,8 +480,8 @@ function InterviewMode() {
   const [category, setCategory] = useState("behavioral");
   const [landed, setLanded] = useState(null);
   const [timerOpen, setTimerOpen] = useState(false);
-  const [openFramework, setOpenFramework] = useState(null);
   const history = useSpinHistory("interview");
+  const vocab = useVocabSuggestions();
 
   const fetchQuestions = useCallback((cat) => {
     fetch(`/api/spinner/interview?category=${cat}`)
@@ -484,8 +499,8 @@ function InterviewMode() {
 
   const handleLanded = (item) => {
     setLanded(item);
-    setOpenFramework(item?.framework || null);
     history.logSpin(item?.id, item?.text);
+    vocab.fetchFor(item?.text, "interview");
   };
 
   const handleSpinStart = () => excludeSpun(allQuestions, history.commitPending());
@@ -535,51 +550,16 @@ function InterviewMode() {
           <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
         </div>
 
-        <div className="flex flex-col gap-2.5">
-          {FRAMEWORKS.map((fw) => {
-            const isOpen = openFramework === fw.id;
-            const isRecommended = landed?.framework === fw.id;
-            return (
-              <div
-                key={fw.id}
-                className="rounded-2xl overflow-hidden transition-all"
-                style={{
-                  background: "var(--surface)",
-                  border: isRecommended ? "1.5px solid var(--electric)" : "1.5px solid var(--line)",
-                  boxShadow: isRecommended ? "0 4px 20px rgba(var(--electric-rgb),0.2)" : "none",
-                }}
-              >
-                <button
-                  onClick={() => setOpenFramework(isOpen ? null : fw.id)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 relative"
-                >
-                  <span className="font-bold text-base" style={{ color: isRecommended ? "var(--electric)" : "var(--ink)" }}>
-                    {fw.label}
-                  </span>
-                  {isRecommended && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--green-subtle)", color: "var(--electric)" }}>
-                      GỢI Ý
-                    </span>
-                  )}
-                  <ChevronDown
-                    size={16}
-                    className="absolute right-4"
-                    style={{ color: "var(--ink-soft)", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
-                  />
-                </button>
-                {isOpen && (
-                  <div className="px-4 pb-3.5 flex flex-col gap-1.5">
-                    {fw.steps.map((s, i) => (
-                      <p key={i} className="text-xs leading-relaxed" style={{ color: "var(--ink-soft)" }}>• {s}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <TimerModal open={timerOpen} onClose={() => setTimerOpen(false)} defaultSeconds={90} topicLabel={landed?.text} />
+        <TimerModal
+          open={timerOpen}
+          onClose={() => setTimerOpen(false)}
+          defaultSeconds={90}
+          topicLabel={landed?.text}
+          vocabWords={vocab.words}
+          vocabLoading={vocab.loading}
+          frameworks={FRAMEWORKS}
+          recommendedFrameworkId={landed?.framework}
+        />
       </div>
 
       <div className="w-full lg:w-72 flex-shrink-0">
@@ -589,132 +569,3 @@ function InterviewMode() {
   );
 }
 
-function VocabMode() {
-  const [allWords, setAllWords] = useState([]);
-  const [language, setLanguage] = useState("en");
-  const [difficulty, setDifficulty] = useState(null);
-  const [landed, setLanded] = useState(null);
-  const [timerOpen, setTimerOpen] = useState(false);
-  const history = useSpinHistory("vocab");
-
-  useEffect(() => {
-    fetch("/api/spinner/preferences")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.preferences) {
-          setLanguage(d.preferences.language || "en");
-          setDifficulty(d.preferences.difficulty === "random" ? null : d.preferences.difficulty);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const fetchWords = useCallback((lang) => {
-    fetch(`/api/spinner/vocab?language=${lang}`)
-      .then((r) => r.json())
-      .then((d) => setAllWords(d.words || []))
-      .catch(() => setAllWords([]));
-  }, []);
-
-  useEffect(() => { fetchWords(language); }, [language, fetchWords]);
-
-  const filteredPool = useMemo(() => {
-    const filtered = allWords.filter((v) => !difficulty || v.difficulty === difficulty);
-    return filtered.length > 0 ? filtered : allWords;
-  }, [allWords, difficulty]);
-
-  const items = useMemo(
-    () => excludeSpun(filteredPool, history.excludedIds),
-    [filteredPool, history.excludedIds]
-  );
-
-  const savePrefs = (lang, diff) => {
-    fetch("/api/spinner/preferences", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language: lang, difficulty: diff || "random" }),
-    }).catch(() => {});
-  };
-
-  const handleLanded = (item) => {
-    setLanded(item);
-    history.logSpin(item?.id, item?.word);
-  };
-
-  const handleSpinStart = () => excludeSpun(filteredPool, history.commitPending());
-
-  return (
-    <div className="flex flex-col lg:flex-row gap-5 items-start">
-      <div
-        className="flex-1 min-w-0 w-full rounded-2xl p-5 sm:p-6"
-        style={{ background: "var(--surface-elevated)", border: "1.5px solid var(--line)" }}
-      >
-        {/* Subtitle + filter centered over just the reel-window's flex-1 share,
-            matching ReelSpinner's own internal split — see TopicsMode's
-            identical wrapper for the full rationale. */}
-        <div className="flex w-full gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm mb-5 text-center" style={{ color: "var(--ink-soft)" }}>
-              Quay để nhận một từ ngẫu nhiên, rồi thử dùng từ đó khi luyện nói.
-            </p>
-
-            <FilterBar
-              showLanguage={false}
-              difficulty={difficulty}
-              onDifficultyChange={(v) => { setDifficulty(v); savePrefs(language, v); }}
-            />
-          </div>
-          <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
-        </div>
-
-        <ReelSpinner items={items} renderItem={(v) => v.word} onLanded={handleLanded} onSpinStart={handleSpinStart} />
-
-        {/* Same flex-1 + lever-width split as ReelSpinner's own button row, so
-            this centers under the reel-window instead of the whole card. */}
-        <div className="flex w-full gap-3 mt-3">
-          <div className="flex-1 min-w-0 flex justify-center">
-            <button
-              onClick={() => setTimerOpen(true)}
-              disabled={!landed}
-              className="px-6 py-2.5 rounded-full text-sm font-bold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ border: "1.5px solid var(--electric-border)", color: "var(--electric)", background: "transparent" }}
-            >
-              Bắt đầu hẹn giờ →
-            </button>
-          </div>
-          <div className="hidden md:block flex-shrink-0" style={{ width: 56 }} />
-        </div>
-
-        {landed && (
-          <div className="mt-5 p-5 rounded-2xl" style={{ background: "var(--surface)", border: "1.5px solid var(--line)" }}>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-xl font-bold" style={{ color: "var(--electric)" }}>{landed.word}</span>
-              {landed.pos && <span className="text-xs italic" style={{ color: "var(--ink-soft)" }}>{landed.pos}</span>}
-            </div>
-            <p className="text-sm mb-3" style={{ color: "var(--ink)" }}>{landed.definition}</p>
-
-            {landed.sentence && (
-              <div className="mb-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--sunshine-text)" }}>Ví dụ</p>
-                <p className="text-sm italic" style={{ color: "var(--ink-soft)" }}>&ldquo;{landed.sentence}&rdquo;</p>
-              </div>
-            )}
-
-            {landed.angle && (
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--sunshine-text)" }}>Gợi ý luyện nói</p>
-                <p className="text-sm" style={{ color: "var(--ink)" }}>{landed.angle}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <TimerModal open={timerOpen} onClose={() => setTimerOpen(false)} defaultSeconds={30} topicLabel={landed?.word} />
-      </div>
-
-      <div className="w-full lg:w-72 flex-shrink-0">
-        <HistoryPanel items={history.items} loaded={history.loaded} onRemove={history.removeFromHistory} />
-      </div>
-    </div>
-  );
-}
