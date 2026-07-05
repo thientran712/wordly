@@ -202,6 +202,13 @@ export default function ReelSpinner({ items, renderItem, onLanded, onSpinStart, 
             background: "var(--surface)",
             WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
             maskImage: "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
+            // Forces its own compositing layer so mobile Safari/Chrome don't
+            // drop the masked layer's paint mid-scroll (a known mask-image +
+            // scroll bug where the content behind the mask blanks out until
+            // scrolling stops) — this is what caused the landed question text
+            // to disappear briefly while scrolling the page.
+            transform: "translateZ(0)",
+            WebkitBackfaceVisibility: "hidden",
           }}
         >
           <div
