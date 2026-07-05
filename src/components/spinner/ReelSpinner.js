@@ -26,17 +26,29 @@ export default function ReelSpinner({ items, renderItem, onLanded, onSpinStart, 
   const armRef = useRef(null);
   const itemsRef = useRef(items);
   const currentIndexRef = useRef(0);
+  // Cached instead of re-queried from the DOM on every spin — .reel-item's
+  // height is a fixed CSS value (see globals.css), so it only actually
+  // changes at the sm: breakpoint, not per-spin. Querying it via
+  // offsetHeight forces a synchronous layout flush right as we're about to
+  // animate, which was contributing to the spin feeling janky.
+  const itemHRef = useRef(160);
+  const windowHRef = useRef(420);
   const [isSpinning, setIsSpinning] = useState(false);
   const [hasHinted, setHasHinted] = useState(false);
 
   useEffect(() => { itemsRef.current = items; }, [items]);
 
-  const getItemH = useCallback(() => {
+  const measure = useCallback(() => {
     const first = stripRef.current?.querySelector(".reel-item");
-    return first ? first.offsetHeight : 160;
+    if (first) itemHRef.current = first.offsetHeight;
+    if (windowRef.current) windowHRef.current = windowRef.current.clientHeight;
   }, []);
 
-  const getWindowH = useCallback(() => windowRef.current?.clientHeight || 420, []);
+  useEffect(() => {
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [measure]);
 
   const buildStrip = useCallback(() => {
     const strip = stripRef.current;
@@ -51,11 +63,12 @@ export default function ReelSpinner({ items, renderItem, onLanded, onSpinStart, 
       div.textContent = truncateText(renderItem(list[idx]));
       strip.appendChild(div);
     }
-    const h = getItemH();
-    const offset = -2 * h + (getWindowH() / 2 - h / 2);
+    measure();
+    const h = itemHRef.current;
+    const offset = -2 * h + (windowHRef.current / 2 - h / 2);
     strip.style.transition = "none";
     strip.style.transform = `translateY(${offset}px)`;
-  }, [renderItem, getItemH, getWindowH]);
+  }, [renderItem, measure]);
 
   useEffect(() => {
     if (items.length > 0) {
@@ -85,27 +98,43 @@ export default function ReelSpinner({ items, renderItem, onLanded, onSpinStart, 
     const target = Math.floor(Math.random() * list.length);
     currentIndexRef.current = target;
 
-    const spins = 12 + Math.floor(Math.random() * 8);
+    // Fewer items and a shorter spin than before — this was creating 17-24
+    // brand-new DOM nodes per spin and animating a ~1.4-1.9s transition over
+    // all of them (plus per-item transitions on the ones nearest the landed
+    // slot), which is what made the spin feel janky on real devices. 8-12
+    // full rotations is still visually a "slot machine" spin, just cheaper.
+    const spins = 8 + Math.floor(Math.random() * 5);
     const pool = [];
     for (let i = 0; i < spins + 5; i++) pool.push(list[Math.floor(Math.random() * list.length)]);
     pool[Math.floor(spins / 2)] = list[target];
 
+    // Build all nodes on a detached fragment and append once — avoids
+    // triggering a reflow per appendChild call (the previous loop appended
+    // directly to the live, already-laid-out strip element).
     strip.innerHTML = "";
+    const fragment = document.createDocumentFragment();
     pool.forEach((item) => {
       const div = document.createElement("div");
       div.className = "reel-item";
       div.textContent = truncateText(renderItem(item));
-      strip.appendChild(div);
+      fragment.appendChild(div);
     });
+    strip.appendChild(fragment);
 
     strip.style.transition = "none";
     strip.style.transform = "translateY(0px)";
 
+    // Height is cached (see `measure`) rather than re-read from the DOM here
+    // — reading offsetHeight this close to an animated transform forces a
+    // synchronous layout flush right as the browser is about to start
+    // compositing the spin, which was a second source of jank.
+    const h = itemHRef.current;
+    const windowH = windowHRef.current;
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const landedIdx = Math.floor(spins / 2);
-        const h = getItemH();
-        const offset = -landedIdx * h + (getWindowH() / 2 - h / 2);
+        const offset = -landedIdx * h + (windowH / 2 - h / 2);
         strip.style.transition = `transform ${0.08 * spins}s cubic-bezier(0.17,0.67,0.35,1)`;
         strip.style.transform = `translateY(${offset}px)`;
       });
@@ -136,7 +165,7 @@ export default function ReelSpinner({ items, renderItem, onLanded, onSpinStart, 
       onLanded?.(list[target]);
       setIsSpinning(false);
     }, duration + 100);
-  }, [isSpinning, disabled, renderItem, onLanded, onSpinStart, getItemH, getWindowH]);
+  }, [isSpinning, disabled, renderItem, onLanded, onSpinStart]);
 
   // ── Lever drag (desktop) ──
   useEffect(() => {
