@@ -10,10 +10,11 @@ import { createClient } from "@/lib/supabase-client";
 
 const NAV_ITEMS = [
   { href: "/", label: "Translation", icon: Languages },
-  { href: "/vocabulary-chat", label: "Học từ mới", icon: MessageCircle },
+  // Hidden from nav — page kept, just not linked. Re-add to unhide.
+  // { href: "/vocabulary-chat", label: "Học từ mới", icon: MessageCircle },
   { href: "/practice", label: "Chat với Alex", icon: Mic },
   { href: "/speak", label: "Luyện nói", icon: Sparkles },
-  { href: "/journal", label: "Nhật ký", icon: NotebookPen },
+  { href: "/journal", label: "Lưu English Quote", icon: NotebookPen },
   { href: "/profile", label: "Hồ sơ", icon: UserCog },
 ];
 

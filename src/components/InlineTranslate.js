@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Volume2, X, Loader2, Search, BookmarkPlus, BookmarkCheck, Sparkles } from "lucide-react";
+import { ArrowLeftRight, Volume2, X, Loader2, Search, Sparkles } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
 async function speak(text, lang = "en-US") {
@@ -66,6 +66,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   const suggestRef = useRef(null);
   const inputRef = useRef(null);
   const suppressSuggestRef = useRef(false);
+  const translateReqRef = useRef(0);
 
   const CHAR_LIMIT = 10000;
   const isOverLimit = input.length > CHAR_LIMIT;
@@ -128,11 +129,12 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
 
   // ── DeepL ──
   const translate = useCallback(async (text, dir) => {
+    const reqId = ++translateReqRef.current;
     if (!text.trim()) { setTranslated(""); return; }
     const key = `${dir}::${text.trim()}`;
     if (translateCache.has(key)) {
       const cached = translateCache.get(key);
-      setTranslated(cached);
+      if (reqId === translateReqRef.current) setTranslated(cached);
       return;
     }
     setIsTranslating(true);
@@ -150,32 +152,33 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
         if (translateCache.size > 100) translateCache.delete(translateCache.keys().next().value);
         trackEvent("translate", { direction: dir });
       }
+      // Bail if a newer translate() call has started since this one fired —
+      // otherwise a slow stale response can overwrite a faster, newer result.
+      if (reqId !== translateReqRef.current) return;
       setTranslated(result);
       setSaved(false); // reset saved state on new translation
     } catch {
-      setTranslated("Lỗi — thử lại sau");
+      if (reqId === translateReqRef.current) setTranslated("Lỗi — thử lại sau");
     } finally {
-      setIsTranslating(false);
+      if (reqId === translateReqRef.current) setIsTranslating(false);
     }
   }, []);
 
-  // ── Free Dictionary API ──
+  // ── AI dictionary (cached server-side in word_dictionary_cache) ──
   const loadWordDetail = useCallback(async (word) => {
     const key = word.toLowerCase();
     if (dictCache.has(key)) { setWordDetail(dictCache.get(key)); return; }
     setDetailLoading(true);
     try {
-      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(key)}`);
+      const res = await fetch("/api/dictionary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word: key }),
+      });
       if (!res.ok) { setWordDetail(null); return; }
       const data = await res.json();
-      const entry = Array.isArray(data) ? data[0] : null;
-      if (!entry) { setWordDetail(null); return; }
-      const phonetic = entry.phonetic || entry.phonetics?.find(p => p.text)?.text || "";
-      const meanings = (entry.meanings || []).map(m => ({
-        pos: m.partOfSpeech,
-        defs: m.definitions.slice(0, 3).map(d => ({ def: d.definition, example: d.example || "" })),
-      }));
-      const detail = { word, phonetic, meanings };
+      const detail = data.detail;
+      if (!detail) { setWordDetail(null); return; }
       dictCache.set(key, detail);
       if (dictCache.size > 50) dictCache.delete(dictCache.keys().next().value);
       setWordDetail(detail);
@@ -403,7 +406,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
               <button
                 onClick={handleSave}
                 disabled={saved}
-                className="no-min-h w-8 h-8 flex items-center justify-center rounded-xl active:scale-95 transition-all"
+                className="no-min-h px-2 h-8 rounded-xl text-[11px] font-bold active:scale-95 transition-all"
                 style={{
                   background: saved ? "var(--green-subtle)" : "var(--hover-bg)",
                   color: saved ? "var(--electric)" : "var(--ink-soft)",
@@ -411,7 +414,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
                 }}
                 title={saved ? "Đã lưu" : "Lưu vào lịch sử"}
               >
-                {saved ? <BookmarkCheck size={15} /> : <BookmarkPlus size={15} />}
+                {saved ? "Đã lưu" : "Lưu"}
               </button>
             )}
             {/* Ask AI — explain this word in a chat with Alex */}
@@ -474,6 +477,14 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
                   >
                     <Search size={12} style={{ color: isExact ? "var(--electric)" : "var(--ink-ghost)", flexShrink: 0 }} />
                     <span className="flex-1">{word}</span>
+                    {isExact && (
+                      <span
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: "var(--green-subtle)", color: "var(--electric)" }}
+                      >
+                        Xem nghĩa chi tiết
+                      </span>
+                    )}
                     <button
                       onMouseDown={e => e.preventDefault()}
                       onClick={e => { e.stopPropagation(); speak(word); }}

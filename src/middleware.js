@@ -39,7 +39,7 @@ export async function middleware(request) {
   const path = request.nextUrl.pathname;
   const isAuthPage = ["/login", "/signup", "/forgot-password", "/reset-password"].includes(path);
   const isApi = path.startsWith("/api/");
-  const isPublicApi = path.startsWith("/api/words") || path.startsWith("/api/translate") || path.startsWith("/api/spinner");
+  const isPublicApi = path.startsWith("/api/words") || path.startsWith("/api/translate") || path.startsWith("/api/spinner") || path.startsWith("/api/dictionary");
   const isCronApi = path.startsWith("/api/cron") || path.startsWith("/api/admin");
   const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback");
