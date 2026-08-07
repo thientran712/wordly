@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-client";
+import { trackEvent } from "@/lib/analytics";
 import { Mail, Lock, User, Loader2 } from "lucide-react";
 
 const inputStyle = {
@@ -38,10 +39,11 @@ export default function AuthForm({ mode = "login" }) {
         });
         if (error) throw error;
         if (data.user && !data.session) setSuccess("Kiểm tra email để xác minh tài khoản của bạn!");
-        else { router.push("/"); router.refresh(); }
+        else { trackEvent("sign_up", { method: "email" }); router.push("/"); router.refresh(); }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        trackEvent("login", { method: "email" });
         router.push("/"); router.refresh();
       }
     } catch (err) {
@@ -54,6 +56,7 @@ export default function AuthForm({ mode = "login" }) {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     const supabase = createClient();
+    trackEvent(mode === "signup" ? "sign_up" : "login", { method: "google" });
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },

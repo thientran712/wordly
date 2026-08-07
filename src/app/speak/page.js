@@ -6,6 +6,7 @@ import BackButton from "@/components/ui/BackButton";
 import ReelSpinner from "@/components/spinner/ReelSpinner";
 import TimerModal from "@/components/spinner/TimerModal";
 import FilterBar, { TOPIC_CATEGORIES, INTERVIEW_CATEGORIES, DEEP_TALK_CATEGORIES } from "@/components/spinner/FilterBar";
+import { trackEvent } from "@/lib/analytics";
 
 const MODES = [
   { key: "topics", label: "IELTS Speaking" },
@@ -59,6 +60,7 @@ function useSpinHistory(itemType) {
     if (!id) return;
     setItems((prev) => [{ id, label, spun_at: new Date().toISOString() }, ...prev]);
     setPendingId(id);
+    trackEvent("spin", { item_type: itemType });
     fetch("/api/spinner/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

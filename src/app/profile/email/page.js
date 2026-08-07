@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Bell, Loader2, Check, Plus, Trash2, Clock, Globe } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
+import { trackEvent } from "@/lib/analytics";
 
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
@@ -238,6 +239,7 @@ export default function EmailSettingsPage() {
       if (res.ok) {
         setSuccess(true);
         successTimerRef.current = setTimeout(() => setSuccess(false), 3000);
+        trackEvent("email_preferences_update", { enabled: emailEnabled, frequency });
       }
       else { const d = await res.json(); setError(d.error || "Lưu thất bại"); }
     } catch (e) { setError(e.message); }

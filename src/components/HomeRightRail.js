@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Flame, UserPlus, LogIn } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import { trackEvent } from "@/lib/analytics";
 
 export default function HomeRightRail({ isGuest }) {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function HomeRightRail({ isGuest }) {
     if (isGuest) return;
     fetch("/api/stats/streak")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data) setStreak(data.streak); })
+      .then((data) => { if (data) { setStreak(data.streak); trackEvent("streak_view", { streak: data.streak }); } })
       .catch(() => {});
   }, [isGuest]);
 

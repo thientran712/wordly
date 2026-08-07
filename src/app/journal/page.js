@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, BookMarked, Loader2 } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
+import { trackEvent } from "@/lib/analytics";
 
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
@@ -53,6 +54,7 @@ export default function JournalPage() {
         setEntries(prev => [data.entry, ...prev]);
         setContent("");
         contentRef.current?.focus();
+        trackEvent("journal_entry_create");
       }
     } finally {
       setIsAdding(false);

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftRight, Volume2, X, Loader2, Search, BookmarkPlus, BookmarkCheck, Sparkles } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 async function speak(text, lang = "en-US") {
   try {
@@ -147,6 +148,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
       if (result) {
         translateCache.set(key, result);
         if (translateCache.size > 100) translateCache.delete(translateCache.keys().next().value);
+        trackEvent("translate", { direction: dir });
       }
       setTranslated(result);
       setSaved(false); // reset saved state on new translation
@@ -238,6 +240,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     if (!input.trim() || !translated || saved || !isLoggedIn) return;
     setSaved(true);
     onTranslated?.();
+    trackEvent("save_word", { direction });
     fetch("/api/translate-history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

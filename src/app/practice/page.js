@@ -6,6 +6,7 @@ import {
   Mic, MicOff, ArrowLeft, Volume2, Loader2, PhoneOff,
   Plus, Trash2, Pencil, Check, X, MessageSquare, Menu, ChevronLeft, Send,
 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 const AVATAR_FRAMES = ["🧑‍🏫", "👨‍🏫"];
 
@@ -315,6 +316,7 @@ function PracticePageInner() {
     const session = data.session;
     setSessions(prev => [session, ...prev]);
     setActiveSessionId(session.id);
+    trackEvent("practice_session_start", { has_word_context: !!wordParam });
     return session.id;
   }, [wordParam, wordIdParam]);
   useEffect(() => { createSessionRef.current = createSession; }, [createSession]);
