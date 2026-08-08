@@ -2,25 +2,37 @@ import { createAdminClient } from "@/lib/supabase-admin";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-const PROMPT = (word) => `You are an American English dictionary. Give a concise, accurate entry for the word "${word}".
+const POS_VALUES = ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection"];
+
+const PROMPT = (word) => `You are an American and British English dictionary. Give a concise, accurate entry for the word "${word}".
+
+For each meaning, pick exactly ONE part of speech from this list: ${POS_VALUES.join(", ")}. Never combine multiple values or copy the list itself — "pos" must be a single word from that list.
 
 Return ONLY valid JSON, no markdown, no extra text, in this exact shape:
 {
-  "phonetic": "/IPA transcription, American English/",
+  "phonetic_us": "/IPA transcription, American English/",
+  "phonetic_uk": "/IPA transcription, British English/",
   "meanings": [
     {
-      "pos": "noun | verb | adjective | adverb | pronoun | preposition | conjunction | interjection",
+      "pos": "adjective",
       "defs": [
-        { "def": "concise dictionary-style definition, do not start with the word itself", "example": "one natural example sentence using the word" }
+        {
+          "def": "concise dictionary-style definition in English, do not start with the word itself",
+          "def_vi": "short Vietnamese TRANSLATION of def, a few Vietnamese words, not English, not a full sentence",
+          "example": "one natural example sentence using the word"
+        }
       ]
     }
   ]
 }
 
 Rules:
+- Each meaning in the array must have a DIFFERENT "pos" value — never repeat the same part of speech across meanings.
 - Include up to 3 of the most common meanings, ordered by frequency of use.
 - Each meaning has up to 2 definitions with one example each.
-- If "${word}" is not a real English word (typo, gibberish), return {"phonetic": "", "meanings": []}.`;
+- "def_vi" must be written in Vietnamese, e.g. for "resilient" (adjective) def_vi could be "kiên cường, dẻo dai".
+- If phonetic_us and phonetic_uk are identical, still return both.
+- If "${word}" is not a real English word (typo, gibberish), return {"phonetic_us": "", "phonetic_uk": "", "meanings": []}.`;
 
 export async function POST(request) {
   const { word } = await request.json();
@@ -33,11 +45,23 @@ export async function POST(request) {
 
   const { data: cached } = await supabase
     .from("word_dictionary_cache")
-    .select("word, phonetic, meanings")
+    .select("word, phonetic_us, phonetic_uk, meanings")
     .eq("word", key)
     .single();
 
-  if (cached) return Response.json({ detail: cached });
+  if (cached) {
+    return Response.json({
+      detail: {
+        word: cached.word,
+        phoneticUs: cached.phonetic_us,
+        phoneticUk: cached.phonetic_uk,
+        meanings: cached.meanings,
+        // Deterministic, not AI-reported — the 8B model's self-assessment
+        // of "are there more meanings?" was unreliable (e.g. "run" → false).
+        hasMoreMeanings: cached.meanings.length >= 3,
+      },
+    });
+  }
 
   const res = await fetch(GROQ_URL, {
     method: "POST",
@@ -66,18 +90,20 @@ export async function POST(request) {
     return Response.json({ error: "Failed to parse AI response" }, { status: 502 });
   }
 
-  const phonetic = parsed.phonetic || "";
+  const phoneticUs = parsed.phonetic_us || "";
+  const phoneticUk = parsed.phonetic_uk || "";
   const meanings = Array.isArray(parsed.meanings) ? parsed.meanings : [];
 
   if (meanings.length === 0) {
     return Response.json({ detail: null });
   }
 
-  const detail = { word: key, phonetic, meanings };
+  const row = { word: key, phonetic_us: phoneticUs, phonetic_uk: phoneticUk, meanings };
+  const detail = { word: key, phoneticUs, phoneticUk, meanings, hasMoreMeanings: meanings.length >= 3 };
 
   await supabase
     .from("word_dictionary_cache")
-    .upsert({ word: key, phonetic, meanings }, { onConflict: "word" });
+    .upsert(row, { onConflict: "word" });
 
   return Response.json({ detail });
 }

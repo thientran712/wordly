@@ -511,7 +511,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
                   <span className="text-xs">Đang tra từ điển...</span>
                 </div>
               ) : (
-                <WordDefinitions detail={wordDetail} />
+                <WordDefinitions detail={wordDetail} onAskAI={handleAskAI} />
               )}
             </div>
           )}
@@ -561,12 +561,15 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   );
 }
 
-function WordDefinitions({ detail }) {
-  const { phonetic, meanings } = detail;
+function WordDefinitions({ detail, onAskAI }) {
+  const { phoneticUs, phoneticUk, meanings, hasMoreMeanings } = detail;
   return (
     <div className="flex flex-col gap-3">
-      {phonetic && (
-        <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>{phonetic}</span>
+      {(phoneticUs || phoneticUk) && (
+        <div className="flex items-center gap-3 text-xs font-mono" style={{ color: "var(--ink-soft)" }}>
+          {phoneticUs && <span><span className="font-sans font-bold not-italic mr-1" style={{ color: "var(--ink-ghost)" }}>US</span>{phoneticUs}</span>}
+          {phoneticUk && <span><span className="font-sans font-bold not-italic mr-1" style={{ color: "var(--ink-ghost)" }}>UK</span>{phoneticUk}</span>}
+        </div>
       )}
       {meanings.map((m, mi) => {
         const s = posStyle(m.pos);
@@ -584,6 +587,7 @@ function WordDefinitions({ detail }) {
                   <span className="text-xs leading-relaxed" style={{ color: "var(--ink)" }}>
                     <span className="font-semibold mr-1" style={{ color: "var(--ink-soft)" }}>{di + 1}.</span>
                     {d.def}
+                    {d.def_vi && <span style={{ color: "var(--electric)" }}> — {d.def_vi}</span>}
                   </span>
                   {d.example && (
                     <span
@@ -603,6 +607,15 @@ function WordDefinitions({ detail }) {
         <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
           Không tìm thấy định nghĩa chi tiết.
         </p>
+      )}
+      {hasMoreMeanings && (
+        <button
+          onClick={onAskAI}
+          className="self-start text-[11px] font-semibold hover:underline"
+          style={{ color: "var(--electric)" }}
+        >
+          Từ này còn nhiều nghĩa khác — Nhấn Hỏi AI để biết thêm →
+        </button>
       )}
     </div>
   );
