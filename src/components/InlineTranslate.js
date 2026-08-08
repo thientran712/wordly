@@ -152,15 +152,18 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
         if (translateCache.size > 100) translateCache.delete(translateCache.keys().next().value);
         trackEvent("translate", { direction: dir });
       }
-      // Bail if a newer translate() call has started since this one fired —
+      // Bail on writing the result if a newer translate() call has started —
       // otherwise a slow stale response can overwrite a faster, newer result.
-      if (reqId !== translateReqRef.current) return;
-      setTranslated(result);
-      setSaved(false); // reset saved state on new translation
+      // isTranslating always clears below regardless of reqId, so a stale
+      // request finishing late can never leave the UI stuck on "Đang dịch...".
+      if (reqId === translateReqRef.current) {
+        setTranslated(result);
+        setSaved(false); // reset saved state on new translation
+      }
     } catch {
       if (reqId === translateReqRef.current) setTranslated("Lỗi — thử lại sau");
     } finally {
-      if (reqId === translateReqRef.current) setIsTranslating(false);
+      setIsTranslating(false);
     }
   }, []);
 
