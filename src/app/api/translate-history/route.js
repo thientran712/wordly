@@ -62,7 +62,7 @@ export async function PATCH(request) {
   if (existing) {
     const { error } = await admin
       .from("translate_history")
-      .update({ is_saved: true })
+      .update({ is_saved: true, saved_at: new Date().toISOString() })
       .eq("id", existing.id);
     if (error) return Response.json({ error: error.message }, { status: 500 });
     return Response.json({ success: true, id: existing.id });
