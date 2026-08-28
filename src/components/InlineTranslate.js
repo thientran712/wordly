@@ -61,12 +61,19 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   const [detailLoading, setDetailLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [saveToast, setSaveToast] = useState(null); // { word, isFirstTime } | null
+  const saveToastTimerRef = useRef(null);
+  const [showEmailInvite, setShowEmailInvite] = useState(false);
+  const [emailInviteBusy, setEmailInviteBusy] = useState(false);
+  const [emailEnabledToast, setEmailEnabledToast] = useState(false);
 
   const debounceRef = useRef(null);
   const suggestRef = useRef(null);
   const inputRef = useRef(null);
   const suppressSuggestRef = useRef(false);
   const translateReqRef = useRef(0);
+  const autoLogRef = useRef(null);
+  const autoLogSentRef = useRef(new Set()); // "direction::text" keys already auto-logged this session, avoid duplicate rows while translated text is stable
 
   const CHAR_LIMIT = 10000;
   const isOverLimit = input.length > CHAR_LIMIT;
@@ -212,6 +219,30 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     return () => clearTimeout(debounceRef.current);
   }, [input, direction, translate, isOverLimit]);
 
+  // Auto-log to history 10s after the user stops changing the input — separate,
+  // longer debounce than the translate one above so casual typing/edits don't
+  // spam rows. Every stable translation gets its own row (is_saved: false);
+  // the "Lưu" button later marks the matching row is_saved: true. Doesn't
+  // require picking a suggestion or single-word input — any translated text.
+  useEffect(() => {
+    if (autoLogRef.current) clearTimeout(autoLogRef.current);
+    if (!isLoggedIn || !input.trim() || !translated || isOverLimit) return;
+
+    const sourceText = input.trim();
+    const key = `${direction}::${sourceText}`;
+    autoLogRef.current = setTimeout(() => {
+      if (autoLogSentRef.current.has(key)) return;
+      autoLogSentRef.current.add(key);
+      fetch("/api/translate-history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_text: sourceText, translated_text: translated, direction, is_saved: false }),
+      }).catch(() => autoLogSentRef.current.delete(key));
+    }, 10000);
+
+    return () => clearTimeout(autoLogRef.current);
+  }, [input, translated, direction, isLoggedIn, isOverLimit]);
+
   const isSingleWord = (text) => /^\s*[a-zA-Z'-]+\s*$/.test(text);
 
   const pickSuggestion = (word) => {
@@ -245,13 +276,74 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   const handleSave = async () => {
     if (!input.trim() || !translated || saved || !isLoggedIn) return;
     setSaved(true);
-    onTranslated?.();
-    trackEvent("save_word", { direction });
-    fetch("/api/translate-history", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source_text: input.trim(), translated_text: translated, direction }),
-    }).catch(() => null);
+    const word = input.trim();
+    try {
+      const res = await fetch("/api/translate-history", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_text: word, translated_text: translated, direction }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      trackEvent("save_word", { direction });
+      showSaveToast(word);
+      onTranslated?.();
+    } catch {
+      setSaved(false);
+    }
+  };
+
+  const showSaveToast = (word) => {
+    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    let isFirstTime = false;
+    try {
+      isFirstTime = !localStorage.getItem("wordly-seen-save-explainer");
+      if (isFirstTime) localStorage.setItem("wordly-seen-save-explainer", "1");
+    } catch { /* localStorage unavailable — just skip the first-time variant */ }
+    setSaveToast({ word, isFirstTime });
+    saveToastTimerRef.current = setTimeout(() => {
+      setSaveToast(null);
+      // Right after the first-ever save toast finishes, invite the user to
+      // turn on email reminders — shown at most once ever, regardless of
+      // whether they accept, decline, or ignore it.
+      if (isFirstTime) {
+        try {
+          if (!localStorage.getItem("wordly-seen-email-invite")) {
+            localStorage.setItem("wordly-seen-email-invite", "1");
+            setShowEmailInvite(true);
+          }
+        } catch { /* localStorage unavailable — skip the invite */ }
+      }
+    }, isFirstTime ? 6000 : 2500);
+  };
+
+  const handleEnableEmailReminders = async () => {
+    setEmailInviteBusy(true);
+    try {
+      const prefRes = await fetch("/api/email-preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: true, frequency: "daily", custom_days: [] }),
+      });
+      if (!prefRes.ok) throw new Error("Failed to enable email preferences");
+      await fetch("/api/email-slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ send_time: "08:00" }),
+      });
+      trackEvent("email_invite_accepted");
+      setShowEmailInvite(false);
+      setEmailEnabledToast(true);
+      setTimeout(() => setEmailEnabledToast(false), 3000);
+    } catch {
+      setEmailInviteBusy(false); // leave the banner open so the user can retry
+      return;
+    }
+    setEmailInviteBusy(false);
+  };
+
+  const dismissEmailInvite = () => {
+    trackEvent("email_invite_dismissed");
+    setShowEmailInvite(false);
   };
 
   const handleAskAI = () => {
@@ -415,7 +507,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
                   color: saved ? "var(--electric)" : "var(--ink-soft)",
                   border: saved ? "1px solid var(--green-subtle-border)" : "1px solid transparent",
                 }}
-                title={saved ? "Đã lưu" : "Lưu vào lịch sử"}
+                title={saved ? "Đã lưu — sẽ được nhắc ôn tập qua email" : "Lưu để được nhắc ôn tập qua email"}
               >
                 {saved ? "Đã lưu" : "Lưu"}
               </button>
@@ -557,6 +649,109 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
         )}
 
       </div>
+
+      {/* ── Save toast — confirms the word was saved and explains the email tie-in ── */}
+      {saveToast && (
+        <div
+          className="fixed left-1/2 z-[300] -translate-x-1/2 flex items-start gap-2.5 px-4 py-3 rounded-2xl animate-fade-in"
+          style={{
+            bottom: "max(1.5rem, env(safe-area-inset-bottom))",
+            maxWidth: "min(90vw, 380px)",
+            background: "var(--card-bg)",
+            border: "1px solid var(--green-subtle-border)",
+            boxShadow: "0 12px 32px rgba(0,0,0,0.3)",
+          }}
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>
+              ✓ Đã lưu &ldquo;{saveToast.word}&rdquo;
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
+              {saveToast.isFirstTime
+                ? "Từ đã lưu sẽ được gửi nhắc ôn tập qua email theo lịch trình học của bạn."
+                : "Sẽ được nhắc ôn tập qua email."}
+            </p>
+          </div>
+          <button
+            onClick={() => setSaveToast(null)}
+            className="no-min-h p-1 rounded-lg flex-shrink-0"
+            style={{ color: "var(--ink-ghost)" }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Email invite banner — shown at most once ever, right after the first "Lưu" ── */}
+      {showEmailInvite && (
+        <div
+          className="fixed left-1/2 z-[300] -translate-x-1/2 flex flex-col gap-2.5 px-4 py-3.5 rounded-2xl animate-fade-in"
+          style={{
+            bottom: "max(1.5rem, env(safe-area-inset-bottom))",
+            maxWidth: "min(90vw, 380px)",
+            background: "var(--card-bg)",
+            border: "1px solid var(--green-subtle-border)",
+            boxShadow: "0 12px 32px rgba(0,0,0,0.3)",
+          }}
+        >
+          <div className="flex items-start gap-2.5">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>
+                📬 Nhận nhắc ôn tập mỗi ngày qua email?
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
+                Mặc định 8:00 sáng — có thể đổi giờ sau trong Cài đặt Email.
+              </p>
+            </div>
+            <button
+              onClick={dismissEmailInvite}
+              className="no-min-h p-1 rounded-lg flex-shrink-0"
+              style={{ color: "var(--ink-ghost)" }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={dismissEmailInvite}
+              disabled={emailInviteBusy}
+              className="flex-1 py-2 rounded-xl text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
+              style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
+            >
+              Không, cảm ơn
+            </button>
+            <button
+              onClick={handleEnableEmailReminders}
+              disabled={emailInviteBusy}
+              className="flex-1 py-2 rounded-xl text-xs font-bold active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+              style={{ background: "var(--electric)", color: "var(--on-electric)" }}
+            >
+              {emailInviteBusy ? <Loader2 size={13} className="animate-spin" /> : "Bật ngay →"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirmation toast after enabling email reminders from the invite ── */}
+      {emailEnabledToast && (
+        <div
+          className="fixed left-1/2 z-[300] -translate-x-1/2 px-4 py-3 rounded-2xl animate-fade-in"
+          style={{
+            bottom: "max(1.5rem, env(safe-area-inset-bottom))",
+            maxWidth: "min(90vw, 380px)",
+            background: "var(--card-bg)",
+            border: "1px solid var(--green-subtle-border)",
+            boxShadow: "0 12px 32px rgba(0,0,0,0.3)",
+          }}
+        >
+          <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>
+            ✓ Đã bật nhắc email lúc 8:00
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
+            Đổi giờ trong Cài đặt Email bất cứ lúc nào.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

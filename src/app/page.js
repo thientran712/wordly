@@ -5,6 +5,7 @@ import InlineTranslate from "@/components/InlineTranslate";
 import TranslateHistory from "@/components/TranslateHistory";
 import GuestBanner from "@/components/GuestBanner";
 import HomeRightRail from "@/components/HomeRightRail";
+import TranslateOnboarding from "@/components/TranslateOnboarding";
 
 export default function Home() {
   // Render optimistically as logged-in; flip to guest only if /api/profile says so.
@@ -28,6 +29,8 @@ export default function Home() {
   return (
     <>
       <div className="bg-blobs"><div className="blob blob-1" /><div className="blob blob-2" /><div className="blob blob-3" /><div className="blob blob-4" /></div>
+
+      <TranslateOnboarding />
 
       <main className="relative z-10 max-w-6xl mx-auto px-3 sm:px-5 py-6 flex gap-6 items-start">
         <div className="flex-1 min-w-0 max-w-2xl mx-auto space-y-3">

@@ -84,6 +84,7 @@ export async function selectEmailContent(supabase, userId, { lastEntryIds = [] }
       .select(TRANSLATE_FIELDS)
       .eq("user_id", userId)
       .eq("direction", "EN→VI")
+      .eq("is_saved", true) // only words the user explicitly saved — not every auto-logged translation
       .or(`state.eq.new,due_at.lte.${nowIso}`)
       .limit(200),
     supabase

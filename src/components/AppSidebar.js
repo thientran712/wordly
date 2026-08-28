@@ -13,7 +13,8 @@ const NAV_ITEMS = [
   // Hidden from nav — page kept, just not linked. Re-add to unhide.
   // { href: "/vocabulary-chat", label: "Học từ mới", icon: MessageCircle },
   { href: "/practice", label: "Chat với Alex", icon: Mic },
-  { href: "/speak", label: "Luyện nói", icon: Sparkles },
+  // Hidden from nav — page kept, just not linked. Re-add to unhide.
+  // { href: "/speak", label: "Luyện nói", icon: Sparkles },
   { href: "/journal", label: "Lưu English Quote", icon: NotebookPen },
   { href: "/profile", label: "Hồ sơ", icon: UserCog },
 ];

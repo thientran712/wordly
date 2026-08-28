@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { History, Trash2, X, Volume2, ChevronDown, Loader2 } from "lucide-react";
+import { History, Trash2, X, Volume2, ChevronDown, Loader2, BookmarkCheck } from "lucide-react";
 
 async function speak(text, lang = "en-US") {
   try {
@@ -240,6 +240,15 @@ function HistoryEntry({ entry, onDelete, onPick }) {
           >
             {direction}
           </span>
+          {entry.is_saved && (
+            <span
+              className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: "var(--green-subtle)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
+              title="Đã lưu — sẽ được nhắc ôn tập qua email"
+            >
+              <BookmarkCheck size={9} /> Đã lưu
+            </span>
+          )}
         </div>
         <span className="text-xs leading-snug" style={{ color: "var(--ink-soft)" }}>
           {translated}
