@@ -6,7 +6,7 @@
 **Cập nhật:** 2026-09-03
 **Branch:** `feat/b2b-multi-tenant` (chưa merge, chưa push)
 **Môi trường:** chỉ local — **chưa deploy production, chưa chạy migration ở đâu**
-**Test:** 96/96 pass · build sạch · lint sạch trên toàn bộ file mới
+**Test:** 96/96 pass (logic thuần) · build sạch · lint sạch trên toàn bộ file mới
 
 ---
 
@@ -15,12 +15,15 @@
 | Giai đoạn | Phạm vi | Backend | UI |
 |---|---|---|---|
 | **GĐ1** | Multi-tenant, lớp, dashboard GV, thư viện bài giảng | ✅ Xong | ✅ Xong |
-| **GĐ2** | Bài tập, quiz | ✅ Xong | ⬜ Chưa |
+| **GĐ1** | Mời thành viên, giao bộ từ | ✅ Xong | ✅ Xong |
+| **GĐ2** | Bài tập (tạo/làm/chấm) | ✅ Xong | ✅ Xong |
+| **GĐ2** | Quiz từ vựng | ✅ Xong | ✅ Xong |
+| **GĐ4** | Học phí, công nợ | ✅ Xong | ✅ Xong |
 | **GĐ3** | Báo cáo phụ huynh | 🟡 Mẫu email xong, thiếu job gửi | ⬜ Chưa |
 | **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⬜ Chờ quyết định | ⬜ Chưa |
-| **GĐ4** | Học phí, công nợ | ✅ Xong | ⬜ Chưa |
 | **GĐ4** | Chấm bài nói có audio | ⬜ Chưa | ⬜ Chưa |
 | **GĐ2** | Video upload trực tiếp | ⬜ Chờ quyết định dịch vụ | ⬜ Chưa |
+| — | Trang cài đặt tổ chức (org_settings, quota) | ⬜ Chưa có API | ⬜ Chưa |
 
 > ⚠️ **Toàn bộ SQL chưa chạy qua Postgres nào** — máy dev không có Docker.
 > Đây là rủi ro lớn nhất còn lại. Xem mục "Vướng mắc".
@@ -71,8 +74,14 @@ Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 
 ### UI
 
-`/org` (dashboard tổ chức), `/org/classes/[id]` (tab Tiến độ + Bài giảng),
-`/join` (nhập mã lớp), `LessonLibrary` component.
+**Trang:** `/org` (dashboard tổ chức, tab Lớp/Thành viên),
+`/org/classes/[id]` (tab Tiến độ · Bài giảng · Bài tập · Bộ từ · Học phí),
+`/join` (nhập mã lớp), `/quiz` (quiz từ vựng).
+
+**Component** (`src/components/org/`): `LessonLibrary`, `HomeworkPanel`,
+`TuitionPanel`, `MembersPanel`, `AssignmentsPanel`.
+
+Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện với staff.
 
 ### Inngest job
 
@@ -87,16 +96,14 @@ cron), `cleanupOrphanedFiles` (cron tuần), `syncStorageLimits` (cron ngày).
 
 ## Còn thiếu
 
-### UI chưa làm (backend đã sẵn)
+### UI chưa làm
 
-| Việc | API đã có |
+| Việc | Ghi chú |
 |---|---|
-| UI bài tập: tạo đề, làm bài, chấm | ✅ `/api/homework/*` |
-| UI quiz: chơi, xem kết quả, xếp hạng | ✅ `/api/quiz` |
-| UI học phí: tạo khoản, ghi thu, xem công nợ | ✅ `/api/tuition/*` |
-| UI mời thành viên | ✅ `/api/orgs/[id]/members` |
-| UI giao bộ từ vựng | ✅ `/api/classes/[id]/assignments` |
-| Trang cài đặt tổ chức (org_settings, quota) | ⬜ Chưa có API |
+| Trang cài đặt tổ chức | Cần thêm API cho `org_settings` + xem quota |
+| UI xem báo cáo phụ huynh | Chờ job gửi báo cáo |
+| Xếp hạng quiz trong lớp | `quiz_attempts` đã lưu, chưa có API tổng hợp |
+| Ghép đôi (match) trong bài tập | Backend đã chấm được, UI chưa dựng |
 
 ### Backend chưa làm
 
@@ -146,7 +153,7 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | 4 | **Cổng thanh toán** (VNPay/MoMo/Stripe) | Khuyến nghị: 1-3 khách đầu thu ngoài hệ thống |
 | 5 | **Dịch vụ video** (Cloudflare Stream/Mux/Bunny) | Khuyến nghị: dùng link YouTube/Drive trước |
 | 6 | **Credential iOS** trong `APIClient.swift` | Chuyển sang cấu hình ngoài trước khi commit `wordly-ios/` |
-| 7 | **Thứ tự làm UI** | Backend GĐ2-4 xong hết; nên làm UI nào trước? |
+| 7 | **Ưu tiên tiếp theo** | UI GĐ2-4 đã xong. Còn: cài đặt tổ chức, job báo cáo phụ huynh, email mời |
 
 ---
 
@@ -181,6 +188,9 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | `download: x ? false : false` — luôn false | Tự soát logic |
 | `reload()` reset trạng thái mở/đóng accordion | Tự soát UX |
 | Import `stripAnswers` không dùng trong quiz route | eslint |
+| `Date.now()` trong render path (React purity) | eslint |
+| `require()` trong client component (TuitionPanel) | Tự soát trước khi build |
+| `setState` đồng bộ trong effect khi chấm bài | eslint |
 
 ---
 
