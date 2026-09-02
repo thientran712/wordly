@@ -39,7 +39,28 @@ export async function middleware(request) {
   const path = request.nextUrl.pathname;
   const isAuthPage = ["/login", "/signup", "/forgot-password", "/reset-password"].includes(path);
   const isApi = path.startsWith("/api/");
-  const isPublicApi = path.startsWith("/api/words") || path.startsWith("/api/translate") || path.startsWith("/api/spinner") || path.startsWith("/api/dictionary");
+
+  // SECURITY: khớp CHÍNH XÁC, không dùng tiền tố.
+  //
+  // Trước đây dùng startsWith("/api/translate") nên nó khớp luôn
+  // /api/translate-history — một route chứa dữ liệu riêng tư — và
+  // startsWith("/api/words") khớp mọi thứ nằm dưới. Các route đó tự kiểm auth
+  // nên chưa thành sự cố, nhưng với multi-tenant thì một route lỡ thành public
+  // là rò dữ liệu chéo trung tâm. Danh sách tường minh loại bỏ rủi ro đó:
+  // thêm route mới sẽ mặc định là PROTECTED, phải khai báo mới thành public.
+  const PUBLIC_API_PATHS = new Set([
+    "/api/translate",
+    "/api/dictionary",
+    "/api/words/by-topic",
+    "/api/spinner/topics",
+    "/api/spinner/interview",
+    "/api/spinner/deep-talk",
+    "/api/spinner/vocab",
+    "/api/spinner/history",
+    "/api/spinner/preferences",
+  ]);
+  const isPublicApi = PUBLIC_API_PATHS.has(path);
+
   const isCronApi = path.startsWith("/api/cron") || path.startsWith("/api/admin");
   const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback");
