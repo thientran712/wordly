@@ -150,6 +150,182 @@ export const cleanupOrphanedFiles = inngest.createFunction(
   }
 );
 
+// ── Nạp bộ từ được giao vào hàng đợi học viên ───────────────────────────────
+//
+// Đây là chỗ B2B nối vào động cơ FSRS + email đã có: từ được giao được ghi
+// vào translate_history với is_saved=true, state='new'. Từ đó
+// select-word-for-email.js tự lo phần còn lại — học viên nhận qua email và
+// thấy trong app bằng đúng cơ chế hiện có, không cần code phân phối mới.
+//
+// Chạy khi giáo viên giao bài, VÀ chạy lại hằng ngày để nạp cho học viên mới
+// vào lớp sau khi bài đã giao.
+export const deliverAssignment = inngest.createFunction(
+  {
+    id: "deliver-assignment",
+    triggers: [
+      { event: "assignment/created" },
+      // Đồng bộ hằng ngày: bắt học viên mới vào lớp muộn
+      { cron: "0 1 * * *" },
+    ],
+    retries: 2,
+  },
+  async ({ event, step }) => {
+    // Chạy theo event thì chỉ xử lý một bài; chạy theo cron thì quét tất cả
+    // bài đang trong thời hạn.
+    const assignmentIds = await step.run("resolve-assignments", async () => {
+      const supabase = createAdminClient();
+
+      if (event?.data?.assignment_id) {
+        return [event.data.assignment_id];
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("class_assignments")
+        .select("id")
+        .lte("start_date", today)
+        .or(`end_date.is.null,end_date.gte.${today}`);
+      return (data || []).map((a) => a.id);
+    });
+
+    if (assignmentIds.length === 0) return { assignments: 0, delivered: 0 };
+
+    let delivered = 0;
+
+    for (const assignmentId of assignmentIds) {
+      const result = await step.run(`deliver-${assignmentId}`, async () => {
+        const supabase = createAdminClient();
+
+        const { data: assignment } = await supabase
+          .from("class_assignments")
+          .select("id, class_id, org_id, filter_level, filter_topic, explicit_word_ids, daily_count")
+          .eq("id", assignmentId)
+          .maybeSingle();
+
+        if (!assignment) return { delivered: 0 };
+
+        // ── Chọn từ theo tiêu chí ──
+        // Lưu tiêu chí (không phải danh sách cố định) nên học viên vào muộn
+        // vẫn nhận đúng bộ từ, và GV sửa tiêu chí là cả lớp cập nhật theo.
+        let words = [];
+
+        if (assignment.explicit_word_ids?.length > 0) {
+          const { data } = await supabase
+            .from("words")
+            .select("id, word, def_vi, def_en")
+            .in("id", assignment.explicit_word_ids);
+          words = data || [];
+        } else {
+          let query = supabase.from("words").select("id, word, def_vi, def_en");
+
+          if (assignment.filter_level) {
+            query = query.eq("level", assignment.filter_level);
+          }
+          if (assignment.filter_topic) {
+            // Chủ đề nằm ở word_layers — lấy word_id trước rồi lọc.
+            const { data: layers } = await supabase
+              .from("word_layers")
+              .select("word_id")
+              .eq("topic", assignment.filter_topic)
+              .limit(500);
+            const ids = (layers || []).map((l) => l.word_id);
+            if (ids.length === 0) return { delivered: 0 };
+            query = query.in("id", ids);
+          }
+
+          // Giới hạn số từ theo daily_count × 30 ngày — không nạp cả 7.5k từ
+          // vào hàng đợi của một học viên.
+          const { data } = await query.limit(assignment.daily_count * 30);
+          words = data || [];
+        }
+
+        if (words.length === 0) return { delivered: 0 };
+
+        // ── Học viên trong lớp ──
+        const { data: members } = await supabase
+          .from("class_members")
+          .select("membership_id, memberships!inner(id, user_id, status)")
+          .eq("class_id", assignment.class_id)
+          .eq("role_in_class", "student");
+
+        const students = (members || [])
+          .filter((m) => m.memberships?.user_id && m.memberships.status === "active")
+          .map((m) => ({ membership_id: m.membership_id, user_id: m.memberships.user_id }));
+
+        if (students.length === 0) return { delivered: 0 };
+
+        // ── Bỏ những từ đã nạp rồi (idempotency) ──
+        // Job này chạy hằng ngày nên phải chống nạp trùng, nếu không hàng đợi
+        // của học viên sẽ phình lên mỗi ngày.
+        const { data: alreadyDelivered } = await supabase
+          .from("assignment_deliveries")
+          .select("membership_id, word_id")
+          .eq("assignment_id", assignment.id);
+
+        const deliveredSet = new Set(
+          (alreadyDelivered || []).map((d) => `${d.membership_id}:${d.word_id}`)
+        );
+
+        const historyRows = [];
+        const deliveryRows = [];
+        const now = new Date().toISOString();
+
+        for (const student of students) {
+          for (const word of words) {
+            const key = `${student.membership_id}:${word.id}`;
+            if (deliveredSet.has(key)) continue;
+
+            historyRows.push({
+              user_id: student.user_id,
+              source_text: word.word,
+              translated_text: word.def_vi || word.def_en || word.word,
+              direction: "EN→VI",
+              // is_saved=true để từ này vào hàng đợi email (xem
+              // select-word-for-email.js: chỉ lấy từ đã lưu)
+              is_saved: true,
+              saved_at: now,
+              state: "new",
+            });
+
+            deliveryRows.push({
+              assignment_id: assignment.id,
+              membership_id: student.membership_id,
+              word_id: word.id,
+            });
+          }
+        }
+
+        if (historyRows.length === 0) return { delivered: 0 };
+
+        // Chèn theo lô để không vượt giới hạn payload.
+        const BATCH = 500;
+        for (let i = 0; i < historyRows.length; i += BATCH) {
+          const { error } = await supabase
+            .from("translate_history")
+            .insert(historyRows.slice(i, i + BATCH));
+          if (error) {
+            throw new Error(`Nạp từ thất bại: ${error.message}`);
+          }
+        }
+
+        // Ghi nhận đã nạp SAU khi chèn thành công — nếu ghi trước mà chèn
+        // lỗi thì lần sau sẽ tưởng đã nạp và bỏ qua vĩnh viễn.
+        for (let i = 0; i < deliveryRows.length; i += BATCH) {
+          await supabase
+            .from("assignment_deliveries")
+            .insert(deliveryRows.slice(i, i + BATCH));
+        }
+
+        return { delivered: historyRows.length };
+      });
+
+      delivered += result.delivered;
+    }
+
+    return { assignments: assignmentIds.length, delivered };
+  }
+);
+
 // ── Đồng bộ quota theo gói ──────────────────────────────────────────────────
 // Khi org đổi gói, hạn mức lưu trữ phải đổi theo. Chạy hằng ngày để bắt cả
 // trường hợp đổi gói bằng tay trên dashboard.
