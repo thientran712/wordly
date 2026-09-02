@@ -6,95 +6,147 @@
 **Cập nhật:** 2026-09-03
 **Branch:** `feat/b2b-multi-tenant` (chưa merge, chưa push)
 **Môi trường:** chỉ local — **chưa deploy production, chưa chạy migration ở đâu**
+**Test:** 96/96 pass · build sạch · lint sạch trên toàn bộ file mới
 
 ---
 
 ## Trạng thái tổng quan
 
-| Giai đoạn | Phạm vi | Trạng thái |
-|---|---|---|
-| **GĐ1** | Multi-tenant, lớp, dashboard GV, thư viện bài giảng | 🟡 ~80% — code xong, **chưa kiểm chứng trên DB thật** |
-| **GĐ2** | Bài tập/homework, quiz/game, video upload | ⬜ Chưa bắt đầu |
-| **GĐ3** | Thanh toán SaaS, báo cáo phụ huynh | ⬜ Chưa bắt đầu |
-| **GĐ4** | Học phí/công nợ, chấm bài nói | ⬜ Chưa bắt đầu |
+| Giai đoạn | Phạm vi | Backend | UI |
+|---|---|---|---|
+| **GĐ1** | Multi-tenant, lớp, dashboard GV, thư viện bài giảng | ✅ Xong | ✅ Xong |
+| **GĐ2** | Bài tập, quiz | ✅ Xong | ⬜ Chưa |
+| **GĐ3** | Báo cáo phụ huynh | 🟡 Mẫu email xong, thiếu job gửi | ⬜ Chưa |
+| **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⬜ Chờ quyết định | ⬜ Chưa |
+| **GĐ4** | Học phí, công nợ | ✅ Xong | ⬜ Chưa |
+| **GĐ4** | Chấm bài nói có audio | ⬜ Chưa | ⬜ Chưa |
+| **GĐ2** | Video upload trực tiếp | ⬜ Chờ quyết định dịch vụ | ⬜ Chưa |
+
+> ⚠️ **Toàn bộ SQL chưa chạy qua Postgres nào** — máy dev không có Docker.
+> Đây là rủi ro lớn nhất còn lại. Xem mục "Vướng mắc".
 
 ---
 
-## GĐ1 — chi tiết
+## Đã xây (chi tiết)
 
-### ✅ Đã xong và kiểm chứng được
+### Migration (9 file, `supabase/migrations/`)
 
-| Việc | Bằng chứng |
+| File | Nội dung |
 |---|---|
-| 6 migration multi-tenant | Cân bằng cú pháp OK — **chưa chạy qua Postgres** |
-| `org-context.js` — guard theo vai trò từ JWT | build + lint sạch |
-| `org-settings.js` — 3 cơ chế khả biến | build + lint sạch |
-| `material-validation.js` — validate tài liệu | **20/20 test pass** (TDD: RED→GREEN) |
-| API: `/api/orgs`, `/api/classes`, `/api/join` | build sạch |
-| API: `/api/classes/[id]/progress` | build sạch, `await params` đúng Next 16 |
-| API: `/api/materials`, `/api/materials/upload-url` | build + lint sạch |
-| UI: `/org`, `/org/classes/[id]`, `/join` | build sạch, dùng đúng design token |
-| Sidebar: mục "Trung tâm" hiện có điều kiện | build sạch |
-| 3 Inngest job (snapshot, dọn rác, sync quota) | build sạch |
-| Siết `middleware.js` → khớp route chính xác | build sạch |
-| Xoá `/api/debug/select-word` | đã xoá khỏi repo |
-| Test RLS 18 ca + chặn an toàn không cho chạy production | chạy thử: đúng là skip khi thấy host production |
-| Dọn credential iOS khỏi git history | `git log -- wordly-ios` = 0 |
+| `...000100_orgs_and_memberships` | organizations, memberships, **JWT hook**, RLS |
+| `...000200_classes` | classes, class_members, mã lớp, `join_class_by_code()` |
+| `...000300_org_customization` | org_settings, org_features, org_field_defs |
+| `...000400_progress_snapshots` | snapshot tiến độ, `user_streak_days()` |
+| `...000500_lesson_library` | class_sessions, lesson_materials, quota, Storage RLS |
+| `...000600_class_assignments` | giao bộ từ, assignment_deliveries |
+| `...000700_homework` | homework, homework_submissions |
+| `...000800_quiz` | quiz_attempts |
+| `...000900_tuition` | tuition_records, tuition_payments, view `tuition_balances` |
 
-### 🟡 Chưa kiểm chứng được (chặn kỹ thuật)
+### Thư viện logic (có test)
 
-**Migration SQL chưa chạy qua Postgres nào.** Máy dev không có Docker/psql nên
-chỉ kiểm được cân bằng `$$` và ngoặc. Lỗi cú pháp hoặc thứ tự phụ thuộc vẫn có
-thể còn. **Lần kiểm chứng thật đầu tiên sẽ là khi chủ dự án chạy
-`npx supabase start` + `db reset`.**
+| Module | Test | Chức năng |
+|---|---|---|
+| `material-validation.js` | 20 | Path traversal, link allowlist, giới hạn dung lượng |
+| `invite-validation.js` | 11 | Chuẩn hoá danh sách email mời |
+| `homework-grading.js` | 22 | Chấm tự động mcq/fill/match, lọc đáp án |
+| `quiz-generation.js` | 18 | Sinh câu hỏi, chấm quiz |
+| `tuition-calc.js` | 25 | Tính học phí, công nợ |
+| **Tổng** | **96** | |
 
-**Test RLS 18 ca chưa từng chạy thật** — cùng lý do trên.
+Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
+`org-context.js`, `org-settings.js`
 
-### ⬜ Còn thiếu ở GĐ1
+### API
+
+**GĐ1:** `/api/orgs`, `/api/orgs/[id]/members`, `/api/classes`,
+`/api/classes/[id]/progress`, `/api/classes/[id]/sessions`,
+`/api/classes/[id]/assignments`, `/api/join`, `/api/materials`,
+`/api/materials/upload-url`, `/api/materials/[id]/url`
+
+**GĐ2:** `/api/homework`, `/api/homework/[id]/submit`,
+`/api/homework/[id]/grade`, `/api/quiz`
+
+**GĐ4:** `/api/tuition`, `/api/tuition/payments`
+
+### UI
+
+`/org` (dashboard tổ chức), `/org/classes/[id]` (tab Tiến độ + Bài giảng),
+`/join` (nhập mã lớp), `LessonLibrary` component.
+
+### Inngest job
+
+`computeProgressSnapshots` (cron hằng ngày), `deliverAssignment` (event +
+cron), `cleanupOrphanedFiles` (cron tuần), `syncStorageLimits` (cron ngày).
+
+### Email
+
+`ParentReportEmail.js` — mẫu báo cáo phụ huynh, chỉ số liệu tiến độ.
+
+---
+
+## Còn thiếu
+
+### UI chưa làm (backend đã sẵn)
+
+| Việc | API đã có |
+|---|---|
+| UI bài tập: tạo đề, làm bài, chấm | ✅ `/api/homework/*` |
+| UI quiz: chơi, xem kết quả, xếp hạng | ✅ `/api/quiz` |
+| UI học phí: tạo khoản, ghi thu, xem công nợ | ✅ `/api/tuition/*` |
+| UI mời thành viên | ✅ `/api/orgs/[id]/members` |
+| UI giao bộ từ vựng | ✅ `/api/classes/[id]/assignments` |
+| Trang cài đặt tổ chức (org_settings, quota) | ⬜ Chưa có API |
+
+### Backend chưa làm
 
 | Việc | Ghi chú |
 |---|---|
-| UI thư viện bài giảng | API đã xong, thiếu màn hình upload/xem |
-| UI mời thành viên qua email | API `/api/orgs/[id]/members` chưa viết |
-| Trang cài đặt tổ chức | Sửa `org_settings`, xem quota |
-| UI giao bộ từ vựng | Bảng `class_assignments` đã có, thiếu API + UI |
-| Job nạp từ được giao vào hàng đợi FSRS | Thiết kế xong, chưa code |
-| Email mời thành viên | Dùng lại `send-email.js` + React Email |
+| Job gửi báo cáo phụ huynh định kỳ | Mẫu email xong, thiếu job + API cấu hình tần suất |
+| Email mời thành viên | Hiện chỉ tạo hàng `invited`, chưa gửi mail |
+| Chấm bài nói có audio (GĐ4) | Cần thiết kế lưu audio + quota riêng |
+| Video upload trực tiếp (GĐ2) | Chờ quyết định dịch vụ |
+| Thanh toán SaaS (GĐ3) | Chờ quyết định cổng |
+| Đẩy từ sai trong quiz vào hàng đợi ôn tập | `quiz_attempts.word_results` đã lưu, chưa dùng |
 
 ---
 
-## Vướng mắc đã biết
+## Vướng mắc
 
-### 1. `db reset` sẽ lỗi ở migration 000400
+### 1. 🔴 SQL chưa được kiểm chứng — rủi ro lớn nhất
 
-**Nguyên nhân:** migration tham chiếu `translate_history`, nhưng các bảng lõi
-của Wordly **không có `CREATE TABLE` trong repo** (xem `PRODUCT.md` mục 5) —
-chúng được tạo tay trên dashboard.
+9 migration chỉ được kiểm **cân bằng cú pháp** (`$$`, ngoặc). Không có
+Docker/psql trên máy dev nên **chưa chạy thật lần nào**. Có thể còn lỗi cú
+pháp, lỗi thứ tự phụ thuộc, hoặc lỗi tên cột.
 
-**Cách xử lý:** xem `docs/LOCAL-SETUP-B2B.md` mục 3.
-- Cách A (đúng lâu dài): dump baseline từ production vào `supabase/migrations/`
-- Cách B (nhanh): dùng `scripts/b2b-local-baseline.sql`
+96 test unit đều là **logic thuần**, không chạm DB. 18 test RLS chưa từng chạy.
 
-### 2. Hook JWT phải bật trước khi chạy migration
+**Lần kiểm chứng thật đầu tiên** = khi chạy `npx supabase start` + `db reset`.
 
-Nếu chạy migration mà hook chưa bật, `user_orgs` rỗng → mọi policy chặn hết →
-hệ thống trông như "không ai có quyền gì". Rất dễ chẩn đoán sai.
+### 2. `db reset` sẽ lỗi ở migration 000400
 
-- Local: đã cấu hình sẵn trong `supabase/config.toml`
-- Production: bật tay ở Dashboard → Auth → Hooks
+Tham chiếu `translate_history` — bảng lõi không có `CREATE TABLE` trong repo.
+Xem `docs/LOCAL-SETUP-B2B.md` mục 3 (Cách A: dump baseline; Cách B:
+`scripts/b2b-local-baseline.sql`).
+
+### 3. Hook JWT phải bật TRƯỚC khi chạy migration
+
+Không bật → `user_orgs` rỗng → mọi policy chặn hết → trông như "không ai có
+quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 
 ---
 
 ## Chờ chủ dự án quyết định
 
-| # | Việc | Vì sao cần quyết |
+| # | Việc | Vì sao |
 |---|---|---|
-| 1 | **Dump baseline schema từ production** | Cần connection string production. Chỉ đọc, không ghi. Đây là việc "số 0" — không có nó thì không tái tạo được DB |
-| 2 | **Bật custom access token hook** trên staging/production | Thao tác trên dashboard, tôi không làm được |
-| 3 | **Dựng môi trường staging** | Cần tạo project Supabase mới; tốn phí |
-| 4 | **Cổng thanh toán nào** (VNPay/MoMo/Stripe) | Ảnh hưởng GĐ3. Khuyến nghị: 1-3 khách đầu thu ngoài hệ thống |
-| 5 | **Dịch vụ video** (Cloudflare Stream/Mux/Bunny) | Ảnh hưởng GĐ2. Khuyến nghị: dùng link YouTube/Drive trước |
-| 6 | **Credential iOS** trong `APIClient.swift` | Cần chuyển sang cấu hình ngoài trước khi commit `wordly-ios/` |
+| 1 | **Dump baseline schema từ production** | Cần connection string. Chỉ đọc. Không có nó thì không tái tạo được DB |
+| 2 | **Bật custom access token hook** | Thao tác trên Supabase Dashboard |
+| 3 | **Dựng staging** | Cần tạo project Supabase mới, tốn phí |
+| 4 | **Cổng thanh toán** (VNPay/MoMo/Stripe) | Khuyến nghị: 1-3 khách đầu thu ngoài hệ thống |
+| 5 | **Dịch vụ video** (Cloudflare Stream/Mux/Bunny) | Khuyến nghị: dùng link YouTube/Drive trước |
+| 6 | **Credential iOS** trong `APIClient.swift` | Chuyển sang cấu hình ngoài trước khi commit `wordly-ios/` |
+| 7 | **Thứ tự làm UI** | Backend GĐ2-4 xong hết; nên làm UI nào trước? |
 
 ---
 
@@ -102,15 +154,18 @@ hệ thống trông như "không ai có quyền gì". Rất dễ chẩn đoán s
 
 | Quyết định | Lý do |
 |---|---|
-| Shared DB + shared schema + RLS theo `org_id` | Chi phí không tăng theo số khách, deploy 1 lần, đúng cách Supabase được thiết kế |
-| Ngữ cảnh org trong JWT (không query bảng) | Nhanh + tránh đệ quy vô hạn trong policy |
-| Dữ liệu học tập **không** mang `org_id` | HV giữ tiến độ khi rời trung tâm; GV thấy tiến độ chứ không đọc nhật ký cá nhân |
-| `memberships` là bảng trung tâm (không phải `students`) | Một người thuộc nhiều org với nhiều vai trò |
-| Vai trò `parent` có sẵn từ đầu | Thêm enum bây giờ miễn phí, sửa mô hình quyền sau rất đắt |
+| Shared DB + shared schema + RLS theo `org_id` | Chi phí không tăng theo số khách, deploy 1 lần |
+| Ngữ cảnh org trong JWT | Nhanh + tránh đệ quy vô hạn trong policy |
+| Dữ liệu học tập **không** mang `org_id` | HV giữ tiến độ khi rời trung tâm; GV thấy tiến độ chứ không đọc nhật ký |
+| `memberships` là bảng trung tâm | Một người thuộc nhiều org, nhiều vai trò |
 | Khả biến bằng dữ liệu, không bằng code riêng | Tránh `if (org === 'ABC')` và fork codebase |
-| Video: dùng link ngoài ở GĐ1 | Upload trực tiếp cần dịch vụ thứ ba, 3-4 tuần; link giải quyết 80% nhu cầu |
-| Quota lưu trữ làm ngay từ đầu | Lưu trữ là chi phí biến đổi lớn nhất, vượt cả AI |
-| Tạo org chỉ qua service role | Onboarding trung tâm là quy trình bán hàng có kiểm soát, không self-service |
+| Quota lưu trữ ngay từ đầu | Lưu trữ là chi phí biến đổi lớn nhất, vượt cả AI |
+| Tạo org chỉ qua service role | Onboarding là quy trình bán hàng có kiểm soát |
+| Câu hỏi homework lưu JSONB | 4 loại câu hỏi cấu trúc rất khác nhau |
+| Quiz KHÔNG lưu câu hỏi | Sinh từ kho từ sẵn có → chi phí ~0 |
+| Tiền là BIGINT đồng, không float | Cộng float làm sai số tiền |
+| `tuition_payments` bất biến | Sổ sách tài chính phải giữ nguyên lịch sử |
+| Giáo viên không xem học phí | Phân tách nghiệp vụ tài chính |
 
 ---
 
@@ -118,25 +173,27 @@ hệ thống trông như "không ai có quyền gì". Rất dễ chẩn đoán s
 
 | Lỗi | Cách phát hiện |
 |---|---|
-| Streak SQL sai dấu (gaps-and-islands) — mọi streak trả về 1 | Mô phỏng bằng JS, đối chiếu 8 ca với thuật toán app: 4 ca lệch |
+| Streak SQL sai dấu — mọi streak trả về 1 | Mô phỏng JS, đối chiếu 8 ca với thuật toán app |
 | `git add -A` đưa credential iOS vào git history | Kiểm `git diff --stat` sau commit |
-| `setState` đồng bộ trong `useEffect` ở `/org` | `npx eslint` |
-| Query `organizations` dùng sai cột (`org_id` thay vì `id`) | Đọc lại code |
-| Job dọn rác dùng `list()` không đệ quy → bỏ sót gần hết file | Tự soát lại logic |
+| `setState` đồng bộ trong `useEffect` | `npx eslint` |
+| Query `organizations` sai cột (`org_id` → `id`) | Đọc lại code |
+| Job dọn rác dùng `list()` không đệ quy → bỏ sót gần hết file | Tự soát logic |
+| `download: x ? false : false` — luôn false | Tự soát logic |
+| `reload()` reset trạng thái mở/đóng accordion | Tự soát UX |
+| Import `stripAnswers` không dùng trong quiz route | eslint |
 
 ---
 
-## Nợ kỹ thuật (từ PRODUCT.md, ưu tiên cho B2B)
+## Nợ kỹ thuật (từ PRODUCT.md)
 
-| # | Việc | Ưu tiên |
-|---|---|---|
-| 1 | Schema không tái tạo được từ repo | 🔴 |
-| 2 | `/api/translate`, `/api/dictionary` công khai không rate limit | 🔴 |
-| 3 | `params` không `await` ở `practice/sessions/[id]` (route **cũ**) | 🔴 |
-| 4 | Route cũ dùng service role bypass RLS | 🟡 |
-| 5 | `word_ai_content.word_id` là `int` nhưng `words.id` là UUID | 🟡 |
-| 6 | Workflow GitHub trỏ route `/api/cron/send-daily-emails` đã xoá | 🟡 |
-| 7 | Không có CI | 🟡 |
-
-Mục 3 tôi **chưa sửa** vì nằm ngoài phạm vi B2B — nhưng nó là bug thật, route
-đó đang filter `id = undefined`.
+| # | Việc | Ưu tiên | Trạng thái |
+|---|---|---|---|
+| 1 | Schema không tái tạo được từ repo | 🔴 | Chờ dump baseline |
+| 2 | `/api/translate`, `/api/dictionary` không rate limit | 🔴 | Chưa sửa |
+| 3 | `params` không `await` ở `practice/sessions/[id]` (route cũ) | 🔴 | Chưa sửa (ngoài phạm vi B2B) |
+| 4 | Route cũ dùng service role bypass RLS | 🟡 | Route mới đã dùng anon+RLS |
+| 5 | `word_ai_content.word_id` int vs `words.id` UUID | 🟡 | Chưa sửa |
+| 6 | Workflow GitHub trỏ route đã xoá | 🟡 | Chưa sửa |
+| 7 | Không có CI | 🟡 | Đã có `npm test`, chưa có workflow |
+| 8 | `/api/debug/select-word` dump dữ liệu | 🔴 | ✅ Đã xoá |
+| 9 | `middleware` khớp tiền tố lỏng | 🔴 | ✅ Đã siết |
