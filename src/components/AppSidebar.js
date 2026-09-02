@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Languages, Mic, MessageCircle, NotebookPen, UserCog, Sparkles,
-  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Building2,
+  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Building2, Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/practice", label: "Chat với Alex", icon: Mic },
   // Hidden from nav — page kept, just not linked. Re-add to unhide.
   // { href: "/speak", label: "Luyện nói", icon: Sparkles },
+  { href: "/quiz", label: "Quiz từ vựng", icon: Zap },
   { href: "/journal", label: "Lưu English Quote", icon: NotebookPen },
   { href: "/profile", label: "Hồ sơ", icon: UserCog },
 ];

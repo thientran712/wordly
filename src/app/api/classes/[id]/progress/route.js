@@ -71,6 +71,8 @@ export async function GET(request, { params }) {
       summary: { active: 0, stalled: 0, dropped: 0, total: 0 },
       students: [],
       can_manage: canManage,
+      role,
+      org_id: klass.org_id,
     });
   }
 
@@ -138,5 +140,7 @@ export async function GET(request, { params }) {
     students,
     thresholds: { active_max_days: activeMax, stalled_max_days: stalledMax },
     can_manage: canManage,
+    role,
+    org_id: klass.org_id,
   });
 }

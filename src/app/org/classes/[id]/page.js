@@ -9,10 +9,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Flame, BookMarked, Mail, AlertTriangle, BarChart3, FolderOpen } from "lucide-react";
+import {
+  Flame, BookMarked, Mail, AlertTriangle, BarChart3, FolderOpen,
+  ClipboardList, Wallet,
+} from "lucide-react";
 import Card from "@/components/ui/Card";
 import BackButton from "@/components/ui/BackButton";
 import LessonLibrary from "@/components/org/LessonLibrary";
+import HomeworkPanel from "@/components/org/HomeworkPanel";
+import TuitionPanel from "@/components/org/TuitionPanel";
 
 const STATE_CONFIG = {
   active: { label: "Đang học tốt", color: "var(--grass-text)", bg: "var(--grass-soft)", border: "var(--grass-border)", dot: "🟢" },
@@ -27,10 +32,19 @@ function formatLastActive(iso, inactiveDays) {
   return `${inactiveDays} ngày trước`;
 }
 
-const TABS = [
-  { key: "progress", label: "Tiến độ", icon: BarChart3 },
-  { key: "library", label: "Bài giảng", icon: FolderOpen },
-];
+// Tab "Học phí" CHỈ hiện với owner — giáo viên không được xem tiền
+// (RLS cũng chặn ở tầng DB, đây là để không hiện tab vô dụng).
+function tabsFor(role) {
+  const base = [
+    { key: "progress", label: "Tiến độ", icon: BarChart3 },
+    { key: "library", label: "Bài giảng", icon: FolderOpen },
+    { key: "homework", label: "Bài tập", icon: ClipboardList },
+  ];
+  if (role === "owner") {
+    base.push({ key: "tuition", label: "Học phí", icon: Wallet });
+  }
+  return base;
+}
 
 export default function ClassDetail() {
   const { id } = useParams();
@@ -97,9 +111,9 @@ export default function ClassDetail() {
         {summary.total} học viên
       </p>
 
-      {/* Tab: Tiến độ / Bài giảng */}
-      <div className="flex gap-1 mb-5 p-1 rounded-xl w-fit" style={{ background: "var(--surface)" }}>
-        {TABS.map((t) => {
+      {/* Tab điều hướng */}
+      <div className="flex gap-1 mb-5 p-1 rounded-xl w-fit overflow-x-auto max-w-full" style={{ background: "var(--surface)" }}>
+        {tabsFor(data.role).map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
           return (
@@ -121,6 +135,10 @@ export default function ClassDetail() {
 
       {tab === "library" ? (
         <LessonLibrary classId={id} isStaff={data.can_manage === true} />
+      ) : tab === "homework" ? (
+        <HomeworkPanel classId={id} isStaff={data.can_manage === true} />
+      ) : tab === "tuition" ? (
+        <TuitionPanel orgId={data.org_id} classId={id} />
       ) : (
       <>
       {/* Tổng quan 3 nhóm — thứ giáo viên cần thấy trước tiên */}
