@@ -7,12 +7,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Users, Plus, GraduationCap, Copy, Check } from "lucide-react";
+import { Building2, Users, Plus, GraduationCap, Copy, Check, UserCog } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
+import MembersPanel from "@/components/org/MembersPanel";
 
 const ROLE_LABELS = {
   owner: "Quản lý",
@@ -30,6 +31,7 @@ export default function OrgDashboard() {
   const [classes, setClasses] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState("");
+  const [view, setView] = useState("classes");
   const loadingClasses = classes === null;
 
   useEffect(() => {
@@ -131,12 +133,39 @@ export default function OrgDashboard() {
           </p>
         </div>
 
-        {isStaff && (
+        {isStaff && view === "classes" && (
           <Button icon={Plus} onClick={() => setShowCreate(true)} size="sm">
             Tạo lớp
           </Button>
         )}
       </div>
+
+      {/* Lớp / Thành viên — chỉ staff cần chuyển qua lại */}
+      {isStaff && (
+        <div className="flex gap-1 mb-4 p-1 rounded-xl w-fit" style={{ background: "var(--surface)" }}>
+          {[
+            { key: "classes", label: "Lớp học", icon: GraduationCap },
+            { key: "members", label: "Thành viên", icon: UserCog },
+          ].map((t) => {
+            const Icon = t.icon;
+            const active = view === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setView(t.key)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold no-min-h"
+                style={{
+                  background: active ? "var(--card-bg)" : "transparent",
+                  color: active ? "var(--electric)" : "var(--ink-soft)",
+                }}
+              >
+                <Icon size={14} />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {error && (
         <div
@@ -151,8 +180,11 @@ export default function OrgDashboard() {
         </div>
       )}
 
-      {/* Danh sách lớp */}
-      {loadingClasses ? (
+      {/* Thành viên */}
+      {view === "members" && activeOrg ? (
+        <MembersPanel orgId={activeOrg.id} isOwner={activeOrg.role === "owner"} />
+      ) : /* Danh sách lớp */
+      loadingClasses ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
             <div

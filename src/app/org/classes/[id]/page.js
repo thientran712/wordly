@@ -11,13 +11,14 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   Flame, BookMarked, Mail, AlertTriangle, BarChart3, FolderOpen,
-  ClipboardList, Wallet,
+  ClipboardList, Wallet, BookOpen,
 } from "lucide-react";
 import Card from "@/components/ui/Card";
 import BackButton from "@/components/ui/BackButton";
 import LessonLibrary from "@/components/org/LessonLibrary";
 import HomeworkPanel from "@/components/org/HomeworkPanel";
 import TuitionPanel from "@/components/org/TuitionPanel";
+import AssignmentsPanel from "@/components/org/AssignmentsPanel";
 
 const STATE_CONFIG = {
   active: { label: "Đang học tốt", color: "var(--grass-text)", bg: "var(--grass-soft)", border: "var(--grass-border)", dot: "🟢" },
@@ -39,6 +40,7 @@ function tabsFor(role) {
     { key: "progress", label: "Tiến độ", icon: BarChart3 },
     { key: "library", label: "Bài giảng", icon: FolderOpen },
     { key: "homework", label: "Bài tập", icon: ClipboardList },
+    { key: "vocab", label: "Bộ từ", icon: BookOpen },
   ];
   if (role === "owner") {
     base.push({ key: "tuition", label: "Học phí", icon: Wallet });
@@ -137,6 +139,8 @@ export default function ClassDetail() {
         <LessonLibrary classId={id} isStaff={data.can_manage === true} />
       ) : tab === "homework" ? (
         <HomeworkPanel classId={id} isStaff={data.can_manage === true} />
+      ) : tab === "vocab" ? (
+        <AssignmentsPanel classId={id} isStaff={data.can_manage === true} />
       ) : tab === "tuition" ? (
         <TuitionPanel orgId={data.org_id} classId={id} />
       ) : (
