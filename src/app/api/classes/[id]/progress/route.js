@@ -9,7 +9,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
+import { isUuid, getOrgRole, isStaffRole } from "@/lib/org-context";
 import { getOrgSettings } from "@/lib/org-settings";
 
 function daysSince(iso) {
@@ -43,6 +43,11 @@ export async function GET(request, { params }) {
   }
   if (!klass) return Response.json({ error: "Không tìm thấy lớp" }, { status: 404 });
 
+  // UI cần biết có được quản lý bài giảng không (hiện/ẩn nút upload).
+  // Tính ở server từ JWT thay vì để client suy đoán.
+  const role = await getOrgRole(klass.org_id);
+  const canManage = isStaffRole(role);
+
   // Danh sách học viên trong lớp
   const { data: members, error: memberErr } = await supabase
     .from("class_members")
@@ -65,6 +70,7 @@ export async function GET(request, { params }) {
       class: { id: klass.id, name: klass.name },
       summary: { active: 0, stalled: 0, dropped: 0, total: 0 },
       students: [],
+      can_manage: canManage,
     });
   }
 
@@ -131,5 +137,6 @@ export async function GET(request, { params }) {
     summary,
     students,
     thresholds: { active_max_days: activeMax, stalled_max_days: stalledMax },
+    can_manage: canManage,
   });
 }

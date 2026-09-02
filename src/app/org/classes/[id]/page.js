@@ -9,9 +9,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Flame, BookMarked, Mail, AlertTriangle } from "lucide-react";
+import { Flame, BookMarked, Mail, AlertTriangle, BarChart3, FolderOpen } from "lucide-react";
 import Card from "@/components/ui/Card";
 import BackButton from "@/components/ui/BackButton";
+import LessonLibrary from "@/components/org/LessonLibrary";
 
 const STATE_CONFIG = {
   active: { label: "Đang học tốt", color: "var(--grass-text)", bg: "var(--grass-soft)", border: "var(--grass-border)", dot: "🟢" },
@@ -26,21 +27,37 @@ function formatLastActive(iso, inactiveDays) {
   return `${inactiveDays} ngày trước`;
 }
 
+const TABS = [
+  { key: "progress", label: "Tiến độ", icon: BarChart3 },
+  { key: "library", label: "Bài giảng", icon: FolderOpen },
+];
+
 export default function ClassDetail() {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState("progress");
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
+
     fetch(`/api/classes/${id}/progress`)
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Không tải được dữ liệu");
         return d;
       })
-      .then(setData)
-      .catch((e) => setError(e.message));
+      .then((d) => {
+        if (!cancelled) setData(d);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e.message);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (error) {
@@ -76,10 +93,36 @@ export default function ClassDetail() {
       <h1 className="text-xl font-black mt-3 mb-1" style={{ color: "var(--ink)" }}>
         {data.class.name}
       </h1>
-      <p className="text-xs mb-5" style={{ color: "var(--ink-soft)" }}>
+      <p className="text-xs mb-4" style={{ color: "var(--ink-soft)" }}>
         {summary.total} học viên
       </p>
 
+      {/* Tab: Tiến độ / Bài giảng */}
+      <div className="flex gap-1 mb-5 p-1 rounded-xl w-fit" style={{ background: "var(--surface)" }}>
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold no-min-h"
+              style={{
+                background: active ? "var(--card-bg)" : "transparent",
+                color: active ? "var(--electric)" : "var(--ink-soft)",
+              }}
+            >
+              <Icon size={14} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "library" ? (
+        <LessonLibrary classId={id} isStaff={data.can_manage === true} />
+      ) : (
+      <>
       {/* Tổng quan 3 nhóm — thứ giáo viên cần thấy trước tiên */}
       <div className="grid grid-cols-3 gap-2 mb-5">
         {["active", "stalled", "dropped"].map((key) => {
@@ -213,6 +256,8 @@ export default function ClassDetail() {
         Số liệu cập nhật hằng ngày. Giáo viên xem được tiến độ học tập, không
         xem được nội dung ghi chú cá nhân của học viên.
       </p>
+      </>
+      )}
     </main>
   );
 }
