@@ -1,7 +1,7 @@
 import { getUserFast } from "@/lib/get-user-fast";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { callGroq } from "@/lib/ai-models";
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const TITLE_PROMPT = `Summarize the following conversation opener into a short chat title, 3-6 words, no quotes, no trailing punctuation, no emoji. Just the title text, nothing else.`;
 
@@ -19,21 +19,13 @@ export async function POST(request, { params }) {
 
   const transcript = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
 
-  const res = await fetch(GROQ_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
+  const { res } = await callGroq("fast", {
       messages: [
         { role: "system", content: TITLE_PROMPT },
         { role: "user", content: transcript },
       ],
-      temperature: 0.5,
-      max_tokens: 20,
-    }),
+    temperature: 0.5,
+    max_tokens: 20,
   });
 
   if (!res.ok) return Response.json({ error: "Title generation failed" }, { status: 500 });

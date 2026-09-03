@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase-admin";
+import { callGroq, parseJsonResponse } from "@/lib/ai-models";
 import { getUserFast } from "@/lib/get-user-fast";
 import {
   createRateLimiter,
@@ -14,7 +15,6 @@ import {
 const guestLimiter = createRateLimiter({ limit: 15, windowMs: 60_000 });
 const userLimiter = createRateLimiter({ limit: 40, windowMs: 60_000 });
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const POS_VALUES = ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection"];
 
@@ -82,23 +82,19 @@ export async function POST(request) {
     });
   }
 
-  const res = await fetch(GROQ_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
+  // Model đọc từ ai-models.js và tự chuyển model dự phòng nếu nhà cung cấp
+  // ngừng model — đã xảy ra 9/2026 khi Groq bỏ llama-3.1-8b-instant.
+  let res;
+  try {
+    ({ res } = await callGroq("fast", {
       messages: [{ role: "user", content: PROMPT(key) }],
       temperature: 0.3,
       max_tokens: 600,
       response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!res.ok) {
-    return Response.json({ error: `AI dictionary error: ${res.status}` }, { status: 502 });
+    }));
+  } catch (e) {
+    console.error("[api/dictionary] Groq lỗi:", e.message);
+    return Response.json({ error: "Từ điển AI tạm thời không khả dụng" }, { status: 502 });
   }
 
   const data = await res.json();
