@@ -101,9 +101,26 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 `cleanupOrphanedFiles` (cron tuần), `syncStorageLimits` (cron ngày),
 `sendParentReports` (cron CN, gác bởi feature flag).
 
+### AI (`src/lib/ai-models.js` — cấu hình TẬP TRUNG)
+
+| API | Chức năng |
+|---|---|
+| `/api/ai/generate-homework` | AI soạn đề bài tập theo chủ đề + trình độ |
+| `/api/ai/generate-speaking` | AI soạn đề nói format IELTS Part 1/2/3 |
+| `/api/ai/grade-essay` | AI chấm tự luận 4 tiêu chí + sửa lỗi |
+| `/api/ai/grade-speaking` | Whisper nghe audio → LLM chấm bài nói |
+
+**Model theo vai trò, không hardcode tên:** `fast` (qwen3.8-27b),
+`quality` (gpt-oss-120b), `transcribe` (whisper-large-v3-turbo).
+`callGroq()` tự chuyển model dự phòng khi nhà cung cấp ngừng model.
+
+**AI luôn kèm `confidence` + `needs_review`** — khi không chắc thì nói rõ
+để GV xem lại, không im lặng.
+
 ### Email
 
 `ParentReportEmail.js` — báo cáo phụ huynh, chỉ số liệu tiến độ.
+`OrgInviteEmail.js` — mời thành viên.
 `OrgInviteEmail.js` — mời thành viên, phân biệt đã/chưa có tài khoản.
 `send-org-email.js` — dùng chung transporter Gmail sẵn có, không thêm dịch vụ.
 
@@ -113,6 +130,7 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 
 | Việc | Ghi chú |
 |---|---|
+| 🔴 **DEPLOY bản sửa model AI lên production** | Tính năng AI đang LỖI trên prod cho tới khi deploy |
 | **2 migration mới CHƯA chạy production** | `20260904000100_guardian_links`, `20260904000200_speaking_review` — chạy trước khi dùng UI phụ huynh/bài nói |
 | Video upload trực tiếp (GĐ2) | ⏸ Chờ anh quyết dịch vụ (khuyến nghị: dùng link YouTube/Drive — đã làm xong) |
 | Thanh toán SaaS (GĐ3) | ⏸ Chờ anh quyết cổng (khuyến nghị: 1-3 khách đầu thu ngoài hệ thống) |
@@ -183,6 +201,8 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 
 | Lỗi | Cách phát hiện |
 |---|---|
+| 🔴 **Groq ngừng 2 model app đang dùng** → mọi tính năng AI lỗi trên production | Gọi thật API Groq khi rà soát cơ hội AI |
+| Model hardcode ở 5 file → 1 sự cố phải sửa 5 chỗ | Grep khi sửa lỗi trên |
 | Streak SQL sai dấu — mọi streak trả về 1 | Mô phỏng JS, đối chiếu 8 ca với thuật toán app |
 | `git add -A` đưa credential iOS vào git history | Kiểm `git diff --stat` sau commit |
 | `setState` đồng bộ trong `useEffect` | `npx eslint` |
