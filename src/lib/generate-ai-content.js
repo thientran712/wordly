@@ -1,3 +1,5 @@
+import { callGroq } from "@/lib/ai-models";
+
 
 const GOAL_CONTEXT = {
   toeic:    "professional and business environments, office settings, workplace communication",
@@ -85,42 +87,17 @@ export async function getOrGenerateWordContent(adminSupabase, { word_id, word, p
 
   const prompt = buildPrompt(word, pos || "", word_level || "", sl, learning_goal || "daily");
 
-  const callGroq = async () => {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.75,
-        max_tokens: 1500,
-        response_format: { type: "json_object" },
-      }),
-    });
-    if (res.status === 429) {
-      const retryAfter = parseInt(res.headers.get("retry-after") || "5", 10);
-      await new Promise(r => setTimeout(r, retryAfter * 1000));
-      throw Object.assign(new Error(`Groq API error: 429`), { retryable: true });
-    }
-    if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
-    return res;
-  };
-
   try {
-    let res;
-    try {
-      res = await callGroq();
-    } catch (e) {
-      if (e.retryable) {
-        console.warn("[generate-ai-content] 429 hit, retrying once...");
-        res = await callGroq();
-      } else {
-        throw e;
-      }
-    }
+    // callGroq() trong ai-models.js đã tự lo: chọn model theo vai trò,
+    // chuyển model dự phòng khi nhà cung cấp ngừng model, và thử lại khi
+    // gặp 429. Trước đây logic retry 429 viết riêng ở đây — giờ dùng chung.
+    const { res } = await callGroq("fast", {
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.75,
+      max_tokens: 1500,
+      response_format: { type: "json_object" },
+    });
+
     const data = await res.json();
     const parsed = JSON.parse(data.choices[0].message.content);
     if (!Array.isArray(parsed.meanings) || parsed.meanings.length === 0) throw new Error("Invalid shape");

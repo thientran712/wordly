@@ -1,7 +1,7 @@
 import { getUserFast } from "@/lib/get-user-fast";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { callGroq } from "@/lib/ai-models";
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 // Shared guardrails appended to every persona prompt — keeps Alex strictly
 // on-topic (English learning / practice) regardless of persona-specific goals.
@@ -158,19 +158,11 @@ export async function POST(request) {
     ? WORD_SYSTEM_PROMPT(word.trim())
     : SYSTEM_PROMPT + (await buildVocabContext(user, vocabularyContext));
 
-  const res = await fetch(GROQ_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+  const { res } = await callGroq("quality", {
       messages: [{ role: "system", content: systemPrompt }, ...messages],
-      temperature: 0.9,
-      max_tokens: hasWord ? 350 : 150,
-      stream: true,
-    }),
+    temperature: 0.9,
+    max_tokens: hasWord ? 350 : 150,
+    stream: true,
   });
 
   if (!res.ok) {

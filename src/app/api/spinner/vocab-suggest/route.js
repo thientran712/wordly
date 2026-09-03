@@ -1,6 +1,6 @@
 import { getUserFast } from "@/lib/get-user-fast";
+import { callGroq } from "@/lib/ai-models";
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 // Nuances the kind of vocabulary suggested per tab, without changing the
 // output shape — IELTS wants exam-safe vocab, interview wants professional
@@ -45,19 +45,11 @@ export async function POST(request) {
   const kindContext = KIND_CONTEXT[kind] || KIND_CONTEXT.ielts;
 
   try {
-    const res = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+    const { res } = await callGroq("fast", {
         messages: [{ role: "user", content: PROMPT(question.slice(0, 500), kindContext) }],
         temperature: 0.8,
         max_tokens: 400,
-        response_format: { type: "json_object" },
-      }),
+      response_format: { type: "json_object" },
     });
 
     if (!res.ok) return Response.json({ words: [] });
