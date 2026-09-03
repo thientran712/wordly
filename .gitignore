@@ -49,3 +49,6 @@ next-env.d.ts
 
 # Môi trường test local (URL + key của Supabase local)
 .env.test.local
+
+# File tạm của Supabase CLI
+supabase/.temp/
