@@ -6,6 +6,9 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const TITLE_PROMPT = `Summarize the following conversation opener into a short chat title, 3-6 words, no quotes, no trailing punctuation, no emoji. Just the title text, nothing else.`;
 
 export async function POST(request, { params }) {
+  // Next 16: params là Promise — phải await, nếu không params.id là
+  // undefined và query filter sai (bug đã tồn tại từ trước).
+  const { id } = await params;
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -43,7 +46,7 @@ export async function POST(request, { params }) {
   const { data: updated, error } = await supabase
     .from("practice_sessions")
     .update({ title })
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .select("id, title")
     .single();

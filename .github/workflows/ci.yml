@@ -1,0 +1,107 @@
+name: CI
+
+# Chạy tự động mỗi lần push hoặc mở PR — bắt lỗi trước khi lên production.
+on:
+  push:
+    branches: [main, "feat/**", "fix/**"]
+  pull_request:
+    branches: [main]
+
+# Huỷ lần chạy cũ khi push thêm commit vào cùng branch (tiết kiệm phút CI)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Test · Build · Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cài dependencies
+        run: npm ci
+
+      # Test logic thuần — không cần database, chạy được ở mọi môi trường.
+      # Test RLS (tests/rls/) tự bỏ qua vì không có Supabase local trong CI.
+      - name: Chạy test
+        run: npm test
+
+      # Lint CHỈ trên code B2B mới. Code B2C cũ có 17 lỗi tồn đọng từ trước
+      # (setState-in-effect, <img>...) — không sửa trong phạm vi này để tránh
+      # gây hồi quy cho phần đang phục vụ người dùng thật.
+      #
+      # Nếu lint cả `src` thì CI đỏ ngay từ đầu và mọi người sẽ học cách bỏ
+      # qua nó — một CI luôn đỏ còn tệ hơn không có CI.
+      #
+      # Việc dọn 17 lỗi cũ nằm trong nợ kỹ thuật (PROGRESS.md).
+      - name: Lint (code B2B mới)
+        run: |
+          npx eslint \
+            src/lib \
+            src/app/org src/app/join src/app/quiz \
+            src/components/org \
+            src/app/api/orgs src/app/api/classes src/app/api/join \
+            src/app/api/materials src/app/api/homework src/app/api/quiz \
+            src/app/api/tuition src/app/api/speaking \
+            src/inngest/org-functions.js src/emails src/middleware.js
+
+      # Build cần biến môi trường Supabase để Next.js prerender được.
+      # Dùng giá trị giả: build chỉ cần biến TỒN TẠI, không gọi thật.
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+        run: npx next build
+
+  # Cảnh báo nếu có migration mới chưa được ghi vào PROGRESS.md — tránh
+  # tình huống migration lên production mà tài liệu không phản ánh.
+  migration-check:
+    name: Kiểm tra tài liệu migration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Migration mới có được ghi vào PROGRESS.md?
+        run: |
+          base="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
+          new_migrations=$(git diff --name-only --diff-filter=A "$base" HEAD -- supabase/migrations/ || true)
+
+          if [ -z "$new_migrations" ]; then
+            echo "Không có migration mới."
+            exit 0
+          fi
+
+          echo "Migration mới:"
+          echo "$new_migrations"
+          echo
+
+          missing=0
+          for f in $new_migrations; do
+            name=$(basename "$f" .sql)
+            if grep -q "$name" PROGRESS.md; then
+              echo "  ✅ $name — đã có trong PROGRESS.md"
+            else
+              echo "  ⚠️  $name — CHƯA ghi vào PROGRESS.md"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" = "1" ]; then
+            echo
+            echo "Nhắc: ghi migration mới vào PROGRESS.md để phiên sau biết"
+            echo "cái nào đã/chưa chạy lên production."
+          fi
+          # Chỉ cảnh báo, không làm CI fail
+          exit 0
