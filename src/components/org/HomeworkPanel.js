@@ -10,8 +10,9 @@
 import { useEffect, useState } from "react";
 import {
   ClipboardList, Plus, Clock, CheckCircle2, AlertCircle,
-  Trash2, Pencil, Send, Award,
+  Trash2, Pencil, Send, Award, Sparkles, Loader2,
 } from "lucide-react";
+// AlertCircle dùng cho cảnh báo "AI không chắc, nên xem lại"
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -674,6 +675,23 @@ function GradeHomeworkModal({ hw, onClose, onGraded, onError }) {
 
           {current.grading.manual_max > 0 && (
             <>
+              {/* AI chấm tự luận — GV xem rồi sửa nếu cần trước khi lưu */}
+              <AiGradeEssay
+                homeworkId={hw.id}
+                submissionId={current.id}
+                onResult={(r) => {
+                  // Điền điểm gợi ý + gộp nhận xét, GV vẫn sửa được
+                  if (r.suggested_manual_score != null) {
+                    setManualScore(String(r.suggested_manual_score));
+                  }
+                  const fbs = Object.values(r.results || {})
+                    .map((x) => x.feedback)
+                    .filter(Boolean);
+                  if (fbs.length > 0) setFeedback(fbs.join("\n\n"));
+                }}
+                onError={onError}
+              />
+
               <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--ink-soft)" }}>
                 Điểm phần tự luận (tối đa {current.grading.manual_max})
               </label>
@@ -710,6 +728,248 @@ function GradeHomeworkModal({ hw, onClose, onGraded, onError }) {
         </>
       )}
     </Modal>
+  );
+}
+
+// AI chấm câu tự luận, đặt trong modal chấm bài.
+//
+// Trả về điểm gợi ý + nhận xét để GV điền sẵn rồi sửa. Nếu AI báo
+// needs_review (bài quá ngắn, lệch đề, viết tiếng Việt, hoặc AI không
+// chắc) thì hiện cảnh báo rõ — im lặng khi không chắc là điều tệ nhất
+// với việc chấm điểm.
+function AiGradeEssay({ homeworkId, submissionId, onResult, onError }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/ai/grade-essay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ homework_id: homeworkId, submission_id: submissionId }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "AI không chấm được");
+      setResult(d);
+      onResult(d);
+    } catch (e) {
+      onError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mb-3">
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        icon={busy ? Loader2 : Sparkles}
+        onClick={run}
+        disabled={busy}
+        fullWidth
+      >
+        {busy ? "AI đang chấm..." : result ? "AI chấm lại" : "Để AI chấm giúp"}
+      </Button>
+
+      {result?.needs_review && (
+        <div
+          className="mt-2 px-2.5 py-2 rounded-lg text-xs flex items-start gap-1.5"
+          style={{
+            background: "var(--sunshine-soft)",
+            border: "1px solid var(--sunshine-border)",
+            color: "var(--sunshine-dark)",
+          }}
+        >
+          <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
+          <span>{result.note}</span>
+        </div>
+      )}
+
+      {result && !result.needs_review && (
+        <p className="text-xs mt-2" style={{ color: "var(--ink-soft)" }}>
+          Đã điền điểm và nhận xét gợi ý. Bạn có thể sửa trước khi lưu.
+        </p>
+      )}
+
+      {/* Chi tiết sửa lỗi cho từng câu — giúp GV kiểm tra AI có chấm đúng */}
+      {result && Object.entries(result.results || {}).map(([qid, r]) =>
+        r.corrections?.length > 0 ? (
+          <div key={qid} className="mt-2 space-y-1">
+            {r.corrections.map((c, i) => (
+              <div
+                key={i}
+                className="px-2.5 py-1.5 rounded-lg text-xs"
+                style={{ background: "var(--surface)", border: "1px solid var(--card-border)" }}
+              >
+                <span style={{ color: "var(--error)" }}>{c.original}</span>
+                {" → "}
+                <span style={{ color: "var(--grass-text)" }}>{c.corrected}</span>
+                {c.why && (
+                  <div style={{ color: "var(--ink-ghost)" }}>{c.why}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : null
+      )}
+    </div>
+  );
+}
+
+// Thanh AI soạn đề — đặt trong modal tạo bài tập.
+//
+// Nguyên tắc: AI soạn NHÁP và NỐI THÊM vào câu GV đã gõ, không ghi đè.
+// GV luôn xem lại trước khi giao (nút giao bài vẫn phải bấm tay).
+function AiDraftBar({ classId, onDraft, onError }) {
+  const [open, setOpen] = useState(false);
+  const [topic, setTopic] = useState("");
+  const [level, setLevel] = useState("B1");
+  const [count, setCount] = useState(5);
+  const [types, setTypes] = useState(["mcq", "fill"]);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+
+  const toggleType = (t) =>
+    setTypes((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
+
+  const generate = async () => {
+    if (!topic.trim() || busy) return;
+    setBusy(true);
+    setNote("");
+    try {
+      const res = await fetch("/api/ai/generate-homework", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ class_id: classId, topic, level, count: Number(count), types }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "AI không soạn được đề");
+
+      onDraft(d.draft);
+      // Nói rõ nếu AI soạn ít hơn số yêu cầu — GV biết mà bổ sung
+      setNote(
+        d.generated < d.requested
+          ? `AI soạn được ${d.generated}/${d.requested} câu (một số câu bị loại vì sai định dạng). Bạn có thể soạn thêm.`
+          : `Đã thêm ${d.generated} câu. Hãy kiểm tra nội dung và đáp án trước khi giao.`
+      );
+    } catch (e) {
+      onError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold mb-3 no-min-h w-full justify-center"
+        style={{
+          background: "var(--green-subtle)",
+          color: "var(--electric)",
+          border: "1px dashed var(--green-subtle-border)",
+        }}
+      >
+        <Sparkles size={14} />
+        Để AI soạn đề giúp
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="px-3 py-3 rounded-xl mb-3"
+      style={{ background: "var(--green-subtle)", border: "1px solid var(--green-subtle-border)" }}
+    >
+      <div className="flex items-center gap-1.5 mb-2">
+        <Sparkles size={14} style={{ color: "var(--electric)" }} />
+        <span className="text-xs font-bold" style={{ color: "var(--electric)" }}>
+          AI soạn đề
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="ml-auto text-xs no-min-h"
+          style={{ color: "var(--ink-soft)" }}
+        >
+          Ẩn
+        </button>
+      </div>
+
+      <Input
+        value={topic}
+        onChange={(e) => setTopic(e.target.value)}
+        placeholder="Chủ đề, VD: thì hiện tại hoàn thành, từ vựng du lịch..."
+        maxLength={200}
+        className="mb-2"
+      />
+
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <select
+          value={level}
+          onChange={(e) => setLevel(e.target.value)}
+          className="px-2 py-2 rounded-xl text-xs appearance-none"
+          style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--ink)" }}
+        >
+          {["A1", "A2", "B1", "B2", "C1", "C2"].map((l) => (
+            <option key={l} value={l}>Trình độ {l}</option>
+          ))}
+        </select>
+        <select
+          value={count}
+          onChange={(e) => setCount(e.target.value)}
+          className="px-2 py-2 rounded-xl text-xs appearance-none"
+          style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--ink)" }}
+        >
+          {[3, 5, 8, 10, 15].map((n) => (
+            <option key={n} value={n}>{n} câu</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex gap-1 mb-3">
+        {[
+          { k: "mcq", l: "Trắc nghiệm" },
+          { k: "fill", l: "Điền từ" },
+          { k: "essay", l: "Tự luận" },
+        ].map((t) => (
+          <button
+            key={t.k}
+            type="button"
+            onClick={() => toggleType(t.k)}
+            className="flex-1 px-2 py-1.5 rounded-lg text-xs font-bold no-min-h"
+            style={{
+              background: types.includes(t.k) ? "var(--card-bg)" : "transparent",
+              color: types.includes(t.k) ? "var(--electric)" : "var(--ink-soft)",
+              border: `1px solid ${types.includes(t.k) ? "var(--electric)" : "var(--card-border)"}`,
+            }}
+          >
+            {t.l}
+          </button>
+        ))}
+      </div>
+
+      <Button
+        type="button"
+        size="sm"
+        onClick={generate}
+        disabled={!topic.trim() || types.length === 0 || busy}
+        fullWidth
+        icon={busy ? Loader2 : Sparkles}
+      >
+        {busy ? "AI đang soạn (~10 giây)..." : "Soạn đề"}
+      </Button>
+
+      {note && (
+        <p className="text-xs mt-2" style={{ color: "var(--ink-soft)" }}>
+          {note}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -860,6 +1120,14 @@ function CreateHomeworkModal({ classId, onClose, onCreated, onError }) {
             Câu hỏi ({questions.length}) · {totalPoints} điểm
           </span>
         </div>
+
+        {/* AI soạn nháp — GV vẫn sửa và duyệt trước khi giao */}
+        <AiDraftBar classId={classId} onDraft={(d) => {
+          if (d.title && !title.trim()) setTitle(d.title);
+          if (d.instructions && !instructions.trim()) setInstructions(d.instructions);
+          // Nối thêm vào câu đang có, không ghi đè công GV đã gõ
+          setQuestions((prev) => [...prev, ...d.questions]);
+        }} onError={onError} />
 
         <div className="flex gap-1 mb-3 flex-wrap">
           {Object.entries(TYPE_LABELS)

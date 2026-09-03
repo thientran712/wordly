@@ -8,7 +8,7 @@
 import { useEffect, useState, useRef } from "react";
 import {
   Mic, Square, Play, Pause, Upload, Clock, CheckCircle2,
-  Plus, Trash2, Award, AlertCircle,
+  Plus, Trash2, Award, AlertCircle, Sparkles, Loader2, FileText,
 } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -500,6 +500,24 @@ function GradeModal({ prompt, onClose, onGraded, onError }) {
             </div>
           ) : null}
 
+          {/* AI nghe audio (Whisper) rồi chấm — GV xem và sửa trước khi lưu */}
+          {!cur.audio_expired && (
+            <AiGradeSpeaking
+              promptId={prompt.id}
+              submissionId={cur.id}
+              onResult={(r) => {
+                // Điền điểm gợi ý; GV vẫn sửa được từng tiêu chí
+                if (r.scores) {
+                  for (const c of CRITERIA) {
+                    if (r.scores[c.key] != null) setVal(c.key, String(r.scores[c.key]));
+                  }
+                }
+                if (r.feedback) setVal("feedback", r.feedback);
+              }}
+              onError={onError}
+            />
+          )}
+
           <div className="grid grid-cols-2 gap-2 mb-3">
             {CRITERIA.map((c) => (
               <div key={c.key}>
@@ -546,9 +564,230 @@ function GradeModal({ prompt, onClose, onGraded, onError }) {
   );
 }
 
+// AI chấm bài nói: Whisper nghe audio → văn bản, rồi LLM chấm.
+//
+// PHẢI nói rõ giới hạn với GV: Whisper trả về văn bản, không đánh giá được
+// chất lượng âm thanh. Nên điểm phát âm chỉ là tham khảo — GV vẫn phải
+// nghe. Hiển thị cảnh báo này ngay cạnh kết quả, không giấu trong tài liệu.
+function AiGradeSpeaking({ promptId, submissionId, onResult, onError }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const [showTranscript, setShowTranscript] = useState(false);
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/ai/grade-speaking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt_id: promptId, submission_id: submissionId }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "AI không chấm được bài nói");
+      setResult(d);
+      if (d.scores) onResult(d);
+    } catch (e) {
+      onError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mb-3">
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        icon={busy ? Loader2 : Sparkles}
+        onClick={run}
+        disabled={busy}
+        fullWidth
+      >
+        {busy ? "AI đang nghe và chấm (~15 giây)..." : result ? "AI chấm lại" : "Để AI nghe và chấm giúp"}
+      </Button>
+
+      {result && (
+        <div className="mt-2 space-y-2">
+          {/* Cảnh báo giới hạn — hiện LUÔN, không chỉ khi needs_review */}
+          <div
+            className="px-2.5 py-2 rounded-lg text-xs flex items-start gap-1.5"
+            style={{
+              background: "var(--sunshine-soft)",
+              border: "1px solid var(--sunshine-border)",
+              color: "var(--sunshine-dark)",
+            }}
+          >
+            <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
+            <span>{result.pronunciation_warning}</span>
+          </div>
+
+          {result.needs_review && (
+            <div
+              className="px-2.5 py-2 rounded-lg text-xs"
+              style={{ background: "var(--error-soft)", border: "1px solid var(--error-border)", color: "var(--error)" }}
+            >
+              AI không chắc về bài này (bản ghi ngắn hoặc khó hiểu). Nên nghe
+              trực tiếp trước khi lưu điểm.
+            </div>
+          )}
+
+          {/* Số liệu khách quan giúp GV kiểm tra AI */}
+          <div className="flex items-center gap-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+            <span>{result.word_count} từ</span>
+            {result.wpm && <span>{result.wpm} từ/phút</span>}
+            <span>độ tin cậy: {result.confidence}</span>
+          </div>
+
+          {result.good_phrases?.length > 0 && (
+            <div className="text-xs">
+              <span className="font-semibold" style={{ color: "var(--grass-text)" }}>Dùng tốt: </span>
+              <span style={{ color: "var(--ink-soft)" }}>
+                {result.good_phrases.join(" · ")}
+              </span>
+            </div>
+          )}
+
+          {result.improvements?.length > 0 && (
+            <div className="space-y-1">
+              {result.improvements.map((im, i) => (
+                <div
+                  key={i}
+                  className="px-2.5 py-1.5 rounded-lg text-xs"
+                  style={{ background: "var(--surface)", border: "1px solid var(--card-border)" }}
+                >
+                  <span style={{ color: "var(--error)" }}>{im.said}</span>
+                  {" → "}
+                  <span style={{ color: "var(--grass-text)" }}>{im.better}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bản ghi đầy đủ — GV đối chiếu xem AI nghe đúng chưa */}
+          {result.transcript && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowTranscript((v) => !v)}
+                className="flex items-center gap-1 text-xs font-bold no-min-h"
+                style={{ color: "var(--electric)" }}
+              >
+                <FileText size={12} />
+                {showTranscript ? "Ẩn bản ghi" : "Xem bản ghi lời nói"}
+              </button>
+              {showTranscript && (
+                <p
+                  className="mt-1.5 px-2.5 py-2 rounded-lg text-xs"
+                  style={{ background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--card-border)" }}
+                >
+                  {result.transcript}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // Giáo viên tạo đề
 // ══════════════════════════════════════════════════════════════════════════
+
+// AI soạn đề nói theo format IELTS Part 1/2/3.
+// Format đề là ý tưởng (không bảo hộ bản quyền), chỉ nội dung cụ thể mới
+// được — nên AI sinh đề mới theo format là hợp pháp.
+function AiSpeakingDraft({ classId, onDraft, onError }) {
+  const [open, setOpen] = useState(false);
+  const [topic, setTopic] = useState("");
+  const [part, setPart] = useState("part2");
+  const [level, setLevel] = useState("B1");
+  const [busy, setBusy] = useState(false);
+  const [hints, setHints] = useState([]);
+
+  const generate = async () => {
+    if (!topic.trim() || busy) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/ai/generate-speaking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ class_id: classId, topic, part, level }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "AI không soạn được đề");
+      onDraft(d.draft);
+      setHints(d.draft.vocabulary_hints || []);
+    } catch (e) {
+      onError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold mb-3 no-min-h w-full justify-center"
+        style={{
+          background: "var(--green-subtle)",
+          color: "var(--electric)",
+          border: "1px dashed var(--green-subtle-border)",
+        }}
+      >
+        <Sparkles size={14} />
+        Để AI soạn đề nói giúp
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="px-3 py-3 rounded-xl mb-3"
+      style={{ background: "var(--green-subtle)", border: "1px solid var(--green-subtle-border)" }}
+    >
+      <div className="flex items-center gap-1.5 mb-2">
+        <Sparkles size={14} style={{ color: "var(--electric)" }} />
+        <span className="text-xs font-bold" style={{ color: "var(--electric)" }}>AI soạn đề nói</span>
+        <button type="button" onClick={() => setOpen(false)}
+          className="ml-auto text-xs no-min-h" style={{ color: "var(--ink-soft)" }}>Ẩn</button>
+      </div>
+
+      <Input value={topic} onChange={(e) => setTopic(e.target.value)}
+        placeholder="Chủ đề, VD: du lịch, công việc, sách..." maxLength={200} className="mb-2" />
+
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <select value={part} onChange={(e) => setPart(e.target.value)}
+          className="px-2 py-2 rounded-xl text-xs appearance-none"
+          style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--ink)" }}>
+          <option value="part1">Part 1 — cá nhân</option>
+          <option value="part2">Part 2 — cue card</option>
+          <option value="part3">Part 3 — thảo luận</option>
+        </select>
+        <select value={level} onChange={(e) => setLevel(e.target.value)}
+          className="px-2 py-2 rounded-xl text-xs appearance-none"
+          style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--ink)" }}>
+          {["A1","A2","B1","B2","C1","C2"].map((l) => <option key={l} value={l}>Trình độ {l}</option>)}
+        </select>
+      </div>
+
+      <Button type="button" size="sm" onClick={generate}
+        disabled={!topic.trim() || busy} fullWidth icon={busy ? Loader2 : Sparkles}>
+        {busy ? "AI đang soạn..." : "Soạn đề"}
+      </Button>
+
+      {hints.length > 0 && (
+        <p className="text-xs mt-2" style={{ color: "var(--ink-soft)" }}>
+          <strong>Từ vựng gợi ý:</strong> {hints.join(" · ")}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function CreatePromptModal({ classId, onClose, onCreated, onError }) {
   const [title, setTitle] = useState("");
@@ -589,6 +828,16 @@ function CreatePromptModal({ classId, onClose, onCreated, onError }) {
     <Modal onClose={onClose} maxWidth="26rem">
       <form onSubmit={submit}>
         <h2 className="text-base font-bold mb-4" style={{ color: "var(--ink)" }}>Tạo đề nói</h2>
+
+        <AiSpeakingDraft
+          classId={classId}
+          onDraft={(d) => {
+            setTitle(d.title || "");
+            setText(d.prompt_text || "");
+            if (d.max_seconds) setSeconds(d.max_seconds);
+          }}
+          onError={onError}
+        />
 
         <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--ink-soft)" }}>
           Tiêu đề
