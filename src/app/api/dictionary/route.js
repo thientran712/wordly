@@ -1,4 +1,18 @@
 import { createAdminClient } from "@/lib/supabase-admin";
+import { getUserFast } from "@/lib/get-user-fast";
+import {
+  createRateLimiter,
+  clientKeyFromRequest,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
+
+// Route CÔNG KHAI nên phải có rate limit: mỗi lần cache miss là một lượt
+// gọi Groq trả phí. Cache toàn cục giúp giảm nhiều, nhưng người gọi từ
+// điển liên tục với từ mới vẫn đốt được quota.
+//
+// Khách: 15 lượt/phút. Đã đăng nhập: 40 lượt/phút.
+const guestLimiter = createRateLimiter({ limit: 15, windowMs: 60_000 });
+const userLimiter = createRateLimiter({ limit: 40, windowMs: 60_000 });
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -35,6 +49,11 @@ Rules:
 - If "${word}" is not a real English word (typo, gibberish), return {"phonetic_us": "", "phonetic_uk": "", "meanings": []}.`;
 
 export async function POST(request) {
+  const user = await getUserFast();
+  const limiter = user ? userLimiter : guestLimiter;
+  const rl = limiter.check(clientKeyFromRequest(request, user?.id));
+  if (!rl.allowed) return rateLimitResponse(rl);
+
   const { word } = await request.json();
   if (!word || typeof word !== "string" || !word.trim()) {
     return Response.json({ error: "Missing word" }, { status: 400 });
