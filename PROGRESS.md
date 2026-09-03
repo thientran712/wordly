@@ -6,7 +6,7 @@
 **Cập nhật:** 2026-09-03
 **Branch:** `feat/b2b-multi-tenant` (chưa merge, chưa push)
 **Môi trường:** migration ĐÃ chạy production (2026-09-03) — xem mục "Đã kiểm chứng trên production"
-**Test:** 130/130 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
+**Test:** 144/144 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 
 ---
 
@@ -19,8 +19,8 @@
 | **GĐ2** | Bài tập (tạo/làm/chấm) | ✅ Xong | ✅ Xong |
 | **GĐ2** | Quiz từ vựng | ✅ Xong | ✅ Xong |
 | **GĐ4** | Học phí, công nợ | ✅ Xong | ✅ Xong |
-| **GĐ3** | Báo cáo phụ huynh + quan hệ phụ huynh–HV | ✅ Xong | — gửi qua email |
-| **GĐ4** | Chấm bài nói có audio | ✅ Xong | ⬜ Chưa |
+| **GĐ3** | Báo cáo phụ huynh + quan hệ phụ huynh–HV | ✅ Xong | ✅ Xong |
+| **GĐ4** | Chấm bài nói có audio | ✅ Xong | ✅ Xong |
 | **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⬜ Chờ quyết định | ⬜ Chưa |
 | **GĐ2** | Video upload trực tiếp | ⬜ Chờ quyết định dịch vụ | ⬜ Chưa |
 | — | Cài đặt tổ chức, quota | ✅ Xong | ✅ Xong |
@@ -61,7 +61,8 @@
 | `tuition-calc.js` | 25 | Tính học phí, công nợ |
 | `settings-validation.js` | 20 | Validate cấu hình tổ chức |
 | `guardian-links.js` | 14 | Quan hệ phụ huynh, phân giải người nhận báo cáo |
-| **Tổng** | **130** | |
+| `rate-limit.js` | 14 | Cửa sổ trượt, chống đốt quota API công khai |
+| **Tổng** | **144** | |
 
 Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 `org-context.js`, `org-settings.js`
@@ -84,8 +85,13 @@ Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 `/org/classes/[id]` (tab Tiến độ · Bài giảng · Bài tập · Bộ từ · Học phí),
 `/join` (nhập mã lớp), `/quiz` (quiz từ vựng).
 
-**Component** (`src/components/org/`): `LessonLibrary`, `HomeworkPanel`,
-`TuitionPanel`, `MembersPanel`, `AssignmentsPanel`.
+**Component** (`src/components/org/`): `OrgShell` (layout dùng chung),
+`LessonLibrary`, `HomeworkPanel`, `TuitionPanel`, `MembersPanel`,
+`AssignmentsPanel`, `QuizStatsPanel`, `SettingsPanel`, `GuardiansPanel`,
+`SpeakingPanel`.
+
+**Bố cục:** full-width (trần 1920px) cho bảng/dashboard; lưới auto-fill cho
+danh sách; giữ hẹp cho form và màn chơi quiz (nội dung đọc).
 
 Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện với staff.
 
@@ -107,13 +113,11 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 
 | Việc | Ghi chú |
 |---|---|
-| **2 migration mới CHƯA chạy production** | `20260904000100_guardian_links`, `20260904000200_speaking_review` |
-| UI quản lý phụ huynh | API `/api/orgs/[id]/guardians` đã xong, thiếu màn hình |
-| UI chấm bài nói | API `/api/speaking/*` đã xong, thiếu màn ghi âm + màn chấm |
-| Video upload trực tiếp (GĐ2) | ⏸ Chờ anh quyết dịch vụ (khuyến nghị: dùng link YouTube/Drive) |
+| **2 migration mới CHƯA chạy production** | `20260904000100_guardian_links`, `20260904000200_speaking_review` — chạy trước khi dùng UI phụ huynh/bài nói |
+| Video upload trực tiếp (GĐ2) | ⏸ Chờ anh quyết dịch vụ (khuyến nghị: dùng link YouTube/Drive — đã làm xong) |
 | Thanh toán SaaS (GĐ3) | ⏸ Chờ anh quyết cổng (khuyến nghị: 1-3 khách đầu thu ngoài hệ thống) |
-| Rate limit `/api/translate`, `/api/dictionary` | Nợ kỹ thuật 🔴 — đang công khai, ai cũng đốt được quota |
-| CI (GitHub Actions) | Chạy `npm test` + `next build` tự động |
+| 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
+| Rate limit dùng bộ nhớ tiến trình | Vercel nhiều instance → mỗi instance đếm riêng. Chặn được lạm dụng thô; muốn chính xác cần Redis/Upstash |
 
 ---
 
