@@ -562,6 +562,75 @@ export const sendParentReports = inngest.createFunction(
   }
 );
 
+// ── Dọn audio bài nói hết hạn ───────────────────────────────────────────────
+//
+// Audio bài nói đã chấm quá 90 ngày sẽ bị xoá, GIỮ LẠI điểm và nhận xét.
+// Không có cơ chế này thì dung lượng phình vô hạn theo thời gian — mỗi khoá
+// học mới lại cộng thêm, không bao giờ giảm.
+//
+// Trigger track_speaking_storage tự trả lại quota khi audio_deleted=true.
+export const cleanupExpiredSpeakingAudio = inngest.createFunction(
+  {
+    id: "cleanup-expired-speaking-audio",
+    triggers: [{ cron: "30 3 * * *" }], // 03:30 UTC hằng ngày
+    retries: 1,
+  },
+  async ({ step }) => {
+    const expired = await step.run("find-expired", async () => {
+      const supabase = createAdminClient();
+      const { data, error } = await supabase
+        .from("speaking_submissions")
+        .select("id, org_id, storage_path")
+        .eq("audio_deleted", false)
+        .not("audio_expires_at", "is", null)
+        .lt("audio_expires_at", new Date().toISOString())
+        .limit(500); // xử lý theo lô, tránh job chạy quá lâu
+
+      if (error) throw new Error(`Không tìm được bài hết hạn: ${error.message}`);
+      return data || [];
+    });
+
+    if (expired.length === 0) return { deleted: 0 };
+
+    const deleted = await step.run("delete-audio", async () => {
+      const supabase = createAdminClient();
+      let count = 0;
+
+      // Xoá blob theo lô 100 file
+      for (let i = 0; i < expired.length; i += 100) {
+        const batch = expired.slice(i, i + 100);
+        const paths = batch.map((r) => r.storage_path).filter(Boolean);
+
+        if (paths.length > 0) {
+          const { error: rmErr } = await supabase.storage
+            .from("speaking-submissions")
+            .remove(paths);
+          // Blob có thể đã bị xoá tay trước đó — vẫn đánh dấu để không quét lại
+          if (rmErr) {
+            console.error("[speaking-cleanup] xoá blob lỗi:", rmErr.message);
+          }
+        }
+
+        // Đánh dấu SAU khi xoá blob. Nếu đánh dấu trước mà xoá lỗi thì blob
+        // thành rác vĩnh viễn (không còn ai quét tới nó nữa).
+        const { error: updErr } = await supabase
+          .from("speaking_submissions")
+          .update({ audio_deleted: true })
+          .in("id", batch.map((r) => r.id));
+
+        if (updErr) {
+          console.error("[speaking-cleanup] đánh dấu lỗi:", updErr.message);
+        } else {
+          count += batch.length;
+        }
+      }
+      return count;
+    });
+
+    return { found: expired.length, deleted };
+  }
+);
+
 // ── Đồng bộ quota theo gói ──────────────────────────────────────────────────
 // Khi org đổi gói, hạn mức lưu trữ phải đổi theo. Chạy hằng ngày để bắt cả
 // trường hợp đổi gói bằng tay trên dashboard.

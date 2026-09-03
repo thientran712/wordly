@@ -7,6 +7,7 @@ import {
   syncStorageLimits,
   deliverAssignment,
   sendParentReports,
+  cleanupExpiredSpeakingAudio,
 } from "@/inngest/org-functions";
 
 export const { GET, POST, PUT } = serve({
@@ -22,5 +23,6 @@ export const { GET, POST, PUT } = serve({
     syncStorageLimits,
     deliverAssignment,
     sendParentReports,
+    cleanupExpiredSpeakingAudio,
   ],
 });
