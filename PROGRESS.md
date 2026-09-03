@@ -6,7 +6,7 @@
 **Cập nhật:** 2026-09-03
 **Branch:** `feat/b2b-multi-tenant` (chưa merge, chưa push)
 **Môi trường:** chỉ local — **chưa deploy production, chưa chạy migration ở đâu**
-**Test:** 96/96 pass (logic thuần) · build sạch · lint sạch trên toàn bộ file mới
+**Test:** 116/116 pass (logic thuần) · build sạch · lint sạch trên toàn bộ file mới
 
 ---
 
@@ -19,11 +19,14 @@
 | **GĐ2** | Bài tập (tạo/làm/chấm) | ✅ Xong | ✅ Xong |
 | **GĐ2** | Quiz từ vựng | ✅ Xong | ✅ Xong |
 | **GĐ4** | Học phí, công nợ | ✅ Xong | ✅ Xong |
-| **GĐ3** | Báo cáo phụ huynh | 🟡 Mẫu email xong, thiếu job gửi | ⬜ Chưa |
+| **GĐ3** | Báo cáo phụ huynh | ✅ Xong (job + email) | — gửi qua email |
 | **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⬜ Chờ quyết định | ⬜ Chưa |
 | **GĐ4** | Chấm bài nói có audio | ⬜ Chưa | ⬜ Chưa |
 | **GĐ2** | Video upload trực tiếp | ⬜ Chờ quyết định dịch vụ | ⬜ Chưa |
-| — | Trang cài đặt tổ chức (org_settings, quota) | ⬜ Chưa có API | ⬜ Chưa |
+| — | Cài đặt tổ chức, quota | ✅ Xong | ✅ Xong |
+| — | Email mời thành viên | ✅ Xong | ✅ Xong |
+| — | Xếp hạng quiz | ✅ Xong | ✅ Xong |
+| — | Ghép đôi (match) trong bài tập | ✅ Xong | ✅ Xong |
 
 > ⚠️ **Toàn bộ SQL chưa chạy qua Postgres nào** — máy dev không có Docker.
 > Đây là rủi ro lớn nhất còn lại. Xem mục "Vướng mắc".
@@ -55,7 +58,8 @@
 | `homework-grading.js` | 22 | Chấm tự động mcq/fill/match, lọc đáp án |
 | `quiz-generation.js` | 18 | Sinh câu hỏi, chấm quiz |
 | `tuition-calc.js` | 25 | Tính học phí, công nợ |
-| **Tổng** | **96** | |
+| `settings-validation.js` | 20 | Validate cấu hình tổ chức |
+| **Tổng** | **116** | |
 
 Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 `org-context.js`, `org-settings.js`
@@ -85,36 +89,28 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 
 ### Inngest job
 
-`computeProgressSnapshots` (cron hằng ngày), `deliverAssignment` (event +
-cron), `cleanupOrphanedFiles` (cron tuần), `syncStorageLimits` (cron ngày).
+`computeProgressSnapshots` (cron ngày), `deliverAssignment` (event + cron),
+`cleanupOrphanedFiles` (cron tuần), `syncStorageLimits` (cron ngày),
+`sendParentReports` (cron CN, gác bởi feature flag).
 
 ### Email
 
-`ParentReportEmail.js` — mẫu báo cáo phụ huynh, chỉ số liệu tiến độ.
+`ParentReportEmail.js` — báo cáo phụ huynh, chỉ số liệu tiến độ.
+`OrgInviteEmail.js` — mời thành viên, phân biệt đã/chưa có tài khoản.
+`send-org-email.js` — dùng chung transporter Gmail sẵn có, không thêm dịch vụ.
 
 ---
 
 ## Còn thiếu
 
-### UI chưa làm
-
 | Việc | Ghi chú |
 |---|---|
-| Trang cài đặt tổ chức | Cần thêm API cho `org_settings` + xem quota |
-| UI xem báo cáo phụ huynh | Chờ job gửi báo cáo |
-| Xếp hạng quiz trong lớp | `quiz_attempts` đã lưu, chưa có API tổng hợp |
-| Ghép đôi (match) trong bài tập | Backend đã chấm được, UI chưa dựng |
-
-### Backend chưa làm
-
-| Việc | Ghi chú |
-|---|---|
-| Job gửi báo cáo phụ huynh định kỳ | Mẫu email xong, thiếu job + API cấu hình tần suất |
-| Email mời thành viên | Hiện chỉ tạo hàng `invited`, chưa gửi mail |
+| **Bảng quan hệ phụ huynh–học viên** | Job báo cáo hiện gửi theo membership; cần bảng riêng để một phụ huynh theo nhiều con |
 | Chấm bài nói có audio (GĐ4) | Cần thiết kế lưu audio + quota riêng |
 | Video upload trực tiếp (GĐ2) | Chờ quyết định dịch vụ |
 | Thanh toán SaaS (GĐ3) | Chờ quyết định cổng |
 | Đẩy từ sai trong quiz vào hàng đợi ôn tập | `quiz_attempts.word_results` đã lưu, chưa dùng |
+| Quiz stats trong báo cáo phụ huynh | Email đã có chỗ, job chưa nạp số liệu quiz |
 
 ---
 
