@@ -41,6 +41,7 @@ function QuizInner() {
   const [answers, setAnswers] = useState({});
   const [picked, setPicked] = useState(null);
   const [result, setResult] = useState(null);
+  const [requeued, setRequeued] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [startedAt, setStartedAt] = useState(null);
@@ -111,6 +112,7 @@ function QuizInner() {
       if (!res.ok) throw new Error(d.error || "Không nộp được kết quả");
 
       setResult(d.result);
+      setRequeued(d.requeued_words || 0);
       setPhase("done");
       trackEvent("quiz_complete", { mode, percent: d.result?.percent });
     } catch (e) {
@@ -237,6 +239,20 @@ function QuizInner() {
               );
             })}
           </div>
+
+          {requeued > 0 && (
+            <div
+              className="px-3 py-2.5 rounded-xl mb-4 text-xs text-left"
+              style={{
+                background: "var(--green-subtle)",
+                border: "1px solid var(--green-subtle-border)",
+                color: "var(--ink)",
+              }}
+            >
+              <strong>{requeued} từ</strong> bạn trả lời sai đã được hẹn ôn lại
+              vào ngày mai — sẽ xuất hiện trong email nhắc học.
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button icon={RotateCcw} onClick={() => setPhase("setup")} fullWidth>

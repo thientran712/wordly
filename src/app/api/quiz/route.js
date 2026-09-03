@@ -237,5 +237,44 @@ export async function POST(request) {
     console.error("[api/quiz] không lưu được lượt chơi:", saveErr.message);
   }
 
-  return Response.json({ result });
+  // ── Đóng vòng lặp học tập: từ SAI được đẩy về hàng đợi ôn tập ──
+  //
+  // Trả lời sai nghĩa là chưa nhớ, nên hẹn ôn lại SỚM (1 ngày) thay vì chờ
+  // theo lịch giãn cách hiện tại. Đây là chỗ quiz nối vào động cơ email —
+  // select-word-for-email.js sẽ ưu tiên từ có due_at đã qua.
+  //
+  // Chỉ áp dụng cho từ thuộc translate_history của CHÍNH người dùng (từ họ
+  // đã lưu). Từ lấy từ kho chung `words` không có hàng riêng để cập nhật.
+  const wrongIds = Object.values(result.details)
+    .filter((d) => !d.correct && d.word_id)
+    .map((d) => d.word_id)
+    .filter(isUuid);
+
+  let requeued = 0;
+  if (wrongIds.length > 0) {
+    const dueSoon = new Date(Date.now() + 86400_000).toISOString(); // +1 ngày
+    const { data: updated, error: reqErr } = await supabase
+      .from("translate_history")
+      .update({ due_at: dueSoon, state: "relearning" })
+      .eq("user_id", user.id)
+      .in("id", wrongIds)
+      .eq("is_saved", true)
+      // Không kéo lùi từ đang hẹn SỚM hơn 1 ngày — tránh làm loãng hàng đợi
+      .or(`due_at.is.null,due_at.gt.${dueSoon}`)
+      .select("id");
+
+    if (reqErr) {
+      // Không làm request thất bại: người chơi đã có kết quả, việc hẹn ôn lại
+      // là phần thêm. Job đồng bộ hằng ngày vẫn chạy bình thường.
+      console.error("[api/quiz] không đẩy được từ sai vào hàng đợi:", reqErr.message);
+    } else {
+      requeued = (updated || []).length;
+    }
+  }
+
+  return Response.json({
+    result,
+    // Cho UI biết để nói với người học: "3 từ sai sẽ được ôn lại ngày mai"
+    requeued_words: requeued,
+  });
 }

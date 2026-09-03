@@ -376,16 +376,14 @@ export const sendParentReports = inngest.createFunction(
       const result = await step.run(`report-${org.id}`, async () => {
         const supabase = createAdminClient();
 
-        // Học viên trong org + phụ huynh của họ.
-        // Quan hệ phụ huynh–học viên chưa có bảng riêng (GĐ3 sau), nên hiện
-        // gửi cho chính email của học viên nếu vai trò là 'parent', hoặc cho
-        // học viên nếu không có phụ huynh. Đây là giới hạn đã biết.
+        // Chỉ lấy HỌC VIÊN; người nhận báo cáo được phân giải qua
+        // guardian_links (phụ huynh) — xem resolveReportRecipients().
         const { data: members } = await supabase
           .from("memberships")
-          .select("id, user_id, role, invited_email")
+          .select("id, user_id, invited_email")
           .eq("org_id", org.id)
           .eq("status", "active")
-          .in("role", ["student", "parent"]);
+          .eq("role", "student");
 
         if (!members?.length) return { sent: 0, skipped: 0 };
 
@@ -414,7 +412,69 @@ export const sendParentReports = inngest.createFunction(
 
         const { sendParentReportEmail } = await import("@/lib/send-org-email");
         const { getOrgSettings } = await import("@/lib/org-settings");
+        const { resolveReportRecipients } = await import("@/lib/guardian-links");
         const settings = await getOrgSettings(org.id);
+
+        // ── Người nhận báo cáo: qua guardian_links ──
+        // Một phụ huynh theo nhiều con, một học viên có thể có cả bố lẫn mẹ.
+        const { data: links } = await supabase
+          .from("guardian_links")
+          .select("student_membership_id, guardian_membership_id, receive_reports")
+          .eq("org_id", org.id)
+          .eq("receive_reports", true);
+
+        // Tra email của phụ huynh (một lượt, không N+1)
+        const guardianIds = [...new Set((links || []).map((l) => l.guardian_membership_id))];
+        const guardianEmail = new Map();
+        if (guardianIds.length > 0) {
+          const { data: gm } = await supabase
+            .from("memberships")
+            .select("id, user_id, invited_email")
+            .in("id", guardianIds);
+          for (const g of gm || []) {
+            let e = g.invited_email;
+            if (!e && g.user_id) {
+              const { data: au } = await supabase.auth.admin.getUserById(g.user_id);
+              e = au?.user?.email || null;
+            }
+            if (e) guardianEmail.set(g.id, e);
+          }
+        }
+
+        const linksWithEmail = (links || []).map((l) => ({
+          ...l,
+          email: guardianEmail.get(l.guardian_membership_id) || null,
+        }));
+
+        // ── Quiz stats 7 ngày để đưa vào báo cáo ──
+        const sinceIso = new Date(Date.now() - 7 * 86400_000).toISOString();
+        const { data: quizzes } = await supabase
+          .from("quiz_attempts")
+          .select("membership_id, correct, total")
+          .eq("org_id", org.id)
+          .gte("created_at", sinceIso);
+
+        const quizByMember = new Map();
+        for (const q of quizzes || []) {
+          if (!q.membership_id) continue;
+          const cur = quizByMember.get(q.membership_id) || { attempts: 0, correct: 0, total: 0 };
+          cur.attempts += 1;
+          cur.correct += Number(q.correct) || 0;
+          cur.total += Number(q.total) || 0;
+          quizByMember.set(q.membership_id, cur);
+        }
+
+        // ── Bài tập: đã nộp / tổng số được giao ──
+        const { data: hwSubs } = await supabase
+          .from("homework_submissions")
+          .select("membership_id, status")
+          .eq("org_id", org.id)
+          .in("status", ["submitted", "graded"]);
+
+        const hwByMember = new Map();
+        for (const h of hwSubs || []) {
+          hwByMember.set(h.membership_id, (hwByMember.get(h.membership_id) || 0) + 1);
+        }
 
         let localSent = 0;
         let localSkipped = 0;
@@ -427,13 +487,20 @@ export const sendParentReports = inngest.createFunction(
             continue;
           }
 
-          // Lấy email: ưu tiên invited_email, nếu không thì tra từ Auth
-          let email = m.invited_email;
-          if (!email && m.user_id) {
+          // Email của chính học viên (dùng khi không có phụ huynh nào)
+          let ownEmail = m.invited_email;
+          if (!ownEmail && m.user_id) {
             const { data: authUser } = await supabase.auth.admin.getUserById(m.user_id);
-            email = authUser?.user?.email || null;
+            ownEmail = authUser?.user?.email || null;
           }
-          if (!email) {
+
+          // Phân giải người nhận — logic có test riêng (guardian-links.test.mjs)
+          const { emails, reason } = resolveReportRecipients(
+            { membership_id: m.id, email: ownEmail },
+            linksWithEmail
+          );
+
+          if (emails.length === 0) {
             localSkipped++;
             continue;
           }
@@ -449,26 +516,39 @@ export const sendParentReports = inngest.createFunction(
               ? "stalled"
               : "dropped";
 
-          const res = await sendParentReportEmail({
-            to: email,
-            studentName: m.invited_email?.split("@")[0] || "Học viên",
-            className: "",
-            orgName: org.name,
-            periodLabel: "7 ngày qua",
-            state,
-            stats: {
-              words_saved: snap.words_saved || 0,
-              streak_days: snap.streak_days || 0,
-              active_days: activeDays.get(m.id)?.size || 0,
-              quiz_attempts: 0,
-              quiz_avg_percent: null,
-              homework_submitted: 0,
-              homework_total: 0,
-            },
-          });
+          const qz = quizByMember.get(m.id);
 
-          if (res.success) localSent++;
-          else localSkipped++;
+          const stats = {
+            words_saved: snap.words_saved || 0,
+            streak_days: snap.streak_days || 0,
+            active_days: activeDays.get(m.id)?.size || 0,
+            quiz_attempts: qz?.attempts || 0,
+            quiz_avg_percent:
+              qz && qz.total > 0 ? Math.round((qz.correct / qz.total) * 100) : null,
+            homework_submitted: hwByMember.get(m.id) || 0,
+            homework_total: hwByMember.get(m.id) || 0,
+          };
+
+          // Gửi cho từng người nhận (bố + mẹ có thể là 2 email khác nhau)
+          for (const to of emails) {
+            const res = await sendParentReportEmail({
+              to,
+              studentName: m.invited_email?.split("@")[0] || ownEmail?.split("@")[0] || "Học viên",
+              className: "",
+              orgName: org.name,
+              periodLabel: "7 ngày qua",
+              state,
+              stats,
+            });
+            if (res.success) localSent++;
+            else localSkipped++;
+          }
+
+          // reason='self' nghĩa là học viên chưa được gán phụ huynh nào —
+          // hữu ích khi cần rà soát dữ liệu trung tâm.
+          if (reason === "self") {
+            console.log(`[parent-reports] HV ${m.id} chưa có phụ huynh, gửi cho chính HV`);
+          }
         }
 
         return { sent: localSent, skipped: localSkipped };
