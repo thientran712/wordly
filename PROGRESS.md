@@ -6,7 +6,7 @@
 **Cập nhật:** 2026-09-03
 **Branch:** `feat/b2b-multi-tenant` (chưa merge, chưa push)
 **Môi trường:** migration ĐÃ chạy production (2026-09-03) — xem mục "Đã kiểm chứng trên production"
-**Test:** 116/116 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
+**Test:** 130/130 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 
 ---
 
@@ -19,9 +19,9 @@
 | **GĐ2** | Bài tập (tạo/làm/chấm) | ✅ Xong | ✅ Xong |
 | **GĐ2** | Quiz từ vựng | ✅ Xong | ✅ Xong |
 | **GĐ4** | Học phí, công nợ | ✅ Xong | ✅ Xong |
-| **GĐ3** | Báo cáo phụ huynh | ✅ Xong (job + email) | — gửi qua email |
+| **GĐ3** | Báo cáo phụ huynh + quan hệ phụ huynh–HV | ✅ Xong | — gửi qua email |
+| **GĐ4** | Chấm bài nói có audio | ✅ Xong | ⬜ Chưa |
 | **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⬜ Chờ quyết định | ⬜ Chưa |
-| **GĐ4** | Chấm bài nói có audio | ⬜ Chưa | ⬜ Chưa |
 | **GĐ2** | Video upload trực tiếp | ⬜ Chờ quyết định dịch vụ | ⬜ Chưa |
 | — | Cài đặt tổ chức, quota | ✅ Xong | ✅ Xong |
 | — | Email mời thành viên | ✅ Xong | ✅ Xong |
@@ -60,7 +60,8 @@
 | `quiz-generation.js` | 18 | Sinh câu hỏi, chấm quiz |
 | `tuition-calc.js` | 25 | Tính học phí, công nợ |
 | `settings-validation.js` | 20 | Validate cấu hình tổ chức |
-| **Tổng** | **116** | |
+| `guardian-links.js` | 14 | Quan hệ phụ huynh, phân giải người nhận báo cáo |
+| **Tổng** | **130** | |
 
 Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 `org-context.js`, `org-settings.js`
@@ -106,12 +107,13 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 
 | Việc | Ghi chú |
 |---|---|
-| **Bảng quan hệ phụ huynh–học viên** | Job báo cáo hiện gửi theo membership; cần bảng riêng để một phụ huynh theo nhiều con |
-| Chấm bài nói có audio (GĐ4) | Cần thiết kế lưu audio + quota riêng |
-| Video upload trực tiếp (GĐ2) | Chờ quyết định dịch vụ |
-| Thanh toán SaaS (GĐ3) | Chờ quyết định cổng |
-| Đẩy từ sai trong quiz vào hàng đợi ôn tập | `quiz_attempts.word_results` đã lưu, chưa dùng |
-| Quiz stats trong báo cáo phụ huynh | Email đã có chỗ, job chưa nạp số liệu quiz |
+| **2 migration mới CHƯA chạy production** | `20260904000100_guardian_links`, `20260904000200_speaking_review` |
+| UI quản lý phụ huynh | API `/api/orgs/[id]/guardians` đã xong, thiếu màn hình |
+| UI chấm bài nói | API `/api/speaking/*` đã xong, thiếu màn ghi âm + màn chấm |
+| Video upload trực tiếp (GĐ2) | ⏸ Chờ anh quyết dịch vụ (khuyến nghị: dùng link YouTube/Drive) |
+| Thanh toán SaaS (GĐ3) | ⏸ Chờ anh quyết cổng (khuyến nghị: 1-3 khách đầu thu ngoài hệ thống) |
+| Rate limit `/api/translate`, `/api/dictionary` | Nợ kỹ thuật 🔴 — đang công khai, ai cũng đốt được quota |
+| CI (GitHub Actions) | Chạy `npm test` + `next build` tự động |
 
 ---
 
