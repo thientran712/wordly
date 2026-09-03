@@ -5,8 +5,8 @@
 
 **Cập nhật:** 2026-09-03
 **Branch:** `feat/b2b-multi-tenant` (chưa merge, chưa push)
-**Môi trường:** chỉ local — **chưa deploy production, chưa chạy migration ở đâu**
-**Test:** 116/116 pass (logic thuần) · build sạch · lint sạch trên toàn bộ file mới
+**Môi trường:** migration ĐÃ chạy production (2026-09-03) — xem mục "Đã kiểm chứng trên production"
+**Test:** 116/116 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 
 ---
 
@@ -28,8 +28,9 @@
 | — | Xếp hạng quiz | ✅ Xong | ✅ Xong |
 | — | Ghép đôi (match) trong bài tập | ✅ Xong | ✅ Xong |
 
-> ⚠️ **Toàn bộ SQL chưa chạy qua Postgres nào** — máy dev không có Docker.
-> Đây là rủi ro lớn nhất còn lại. Xem mục "Vướng mắc".
+> ✅ **ĐÃ KIỂM CHỨNG TRÊN PRODUCTION (2026-09-03).** Toàn bộ 9 migration
+> chạy thành công, 13/13 bảng B2B tạo đủ, JWT hook đã bật và hoạt động,
+> RLS chặn đúng, dữ liệu người dùng nguyên vẹn. Xem mục dưới.
 
 ---
 
@@ -143,8 +144,8 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 
 | # | Việc | Vì sao |
 |---|---|---|
-| 1 | **Dump baseline schema từ production** | Cần connection string. Chỉ đọc. Không có nó thì không tái tạo được DB |
-| 2 | **Bật custom access token hook** | Thao tác trên Supabase Dashboard |
+| ~~1~~ | ~~Dump baseline schema~~ | ✅ XONG 2026-09-03 |
+| ~~2~~ | ~~Bật custom access token hook~~ | ✅ XONG 2026-09-03 |
 | 3 | **Dựng staging** | Cần tạo project Supabase mới, tốn phí |
 | 4 | **Cổng thanh toán** (VNPay/MoMo/Stripe) | Khuyến nghị: 1-3 khách đầu thu ngoài hệ thống |
 | 5 | **Dịch vụ video** (Cloudflare Stream/Mux/Bunny) | Khuyến nghị: dùng link YouTube/Drive trước |
