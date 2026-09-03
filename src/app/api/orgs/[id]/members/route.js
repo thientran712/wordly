@@ -131,9 +131,54 @@ export async function POST(request, { params }) {
     return Response.json({ error: "Không thêm được thành viên" }, { status: 500 });
   }
 
+  // ── Gửi email mời ──
+  // Gửi sau khi đã ghi DB thành công. Lỗi gửi mail KHÔNG làm request thất
+  // bại: thành viên đã được thêm, và họ vẫn vào được bằng mã lớp. Báo lại
+  // số gửi thành công để owner biết ai cần nhắc bằng cách khác.
+  let emailsSent = 0;
+  try {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .maybeSingle();
+
+    const { data: inviterProfile } = await supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const ROLE_LABELS = {
+      owner: "Quản lý",
+      teacher: "Giáo viên",
+      student: "Học viên",
+      parent: "Phụ huynh",
+    };
+
+    const { sendOrgInviteEmail } = await import("@/lib/send-org-email");
+
+    const results = await Promise.all(
+      rows.map((row) =>
+        sendOrgInviteEmail({
+          to: row.invited_email || emails.find((e) => byEmail.get(e) === row.user_id),
+          orgName: org?.name || "Trung tâm",
+          roleLabel: ROLE_LABELS[role] || role,
+          inviterName: inviterProfile?.name || "",
+          // Người đã có tài khoản chỉ cần đăng nhập lại (org context trong JWT)
+          hasAccount: !!row.user_id,
+        })
+      )
+    );
+    emailsSent = results.filter((r) => r.success).length;
+  } catch (e) {
+    console.error("[orgs/members] gửi email mời lỗi:", e.message);
+  }
+
   return Response.json(
     {
       invited: created.length,
+      emails_sent: emailsSent,
       members: created,
       skipped,
       invalid,

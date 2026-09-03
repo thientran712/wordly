@@ -6,6 +6,7 @@ import {
   cleanupOrphanedFiles,
   syncStorageLimits,
   deliverAssignment,
+  sendParentReports,
 } from "@/inngest/org-functions";
 
 export const { GET, POST, PUT } = serve({
@@ -20,5 +21,6 @@ export const { GET, POST, PUT } = serve({
     cleanupOrphanedFiles,
     syncStorageLimits,
     deliverAssignment,
+    sendParentReports,
   ],
 });

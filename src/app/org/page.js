@@ -7,13 +7,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Users, Plus, GraduationCap, Copy, Check, UserCog } from "lucide-react";
+import { Building2, Users, Plus, GraduationCap, Copy, Check, UserCog, Settings } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 import MembersPanel from "@/components/org/MembersPanel";
+import SettingsPanel from "@/components/org/SettingsPanel";
 
 const ROLE_LABELS = {
   owner: "Quản lý",
@@ -146,6 +147,7 @@ export default function OrgDashboard() {
           {[
             { key: "classes", label: "Lớp học", icon: GraduationCap },
             { key: "members", label: "Thành viên", icon: UserCog },
+            { key: "settings", label: "Cài đặt", icon: Settings },
           ].map((t) => {
             const Icon = t.icon;
             const active = view === t.key;
@@ -183,6 +185,8 @@ export default function OrgDashboard() {
       {/* Thành viên */}
       {view === "members" && activeOrg ? (
         <MembersPanel orgId={activeOrg.id} isOwner={activeOrg.role === "owner"} />
+      ) : view === "settings" && activeOrg ? (
+        <SettingsPanel orgId={activeOrg.id} isOwner={activeOrg.role === "owner"} />
       ) : /* Danh sách lớp */
       loadingClasses ? (
         <div className="space-y-3">

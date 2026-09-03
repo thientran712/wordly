@@ -326,6 +326,162 @@ export const deliverAssignment = inngest.createFunction(
   }
 );
 
+// ── Báo cáo phụ huynh định kỳ (GĐ3) ────────────────────────────────────────
+//
+// Gửi mỗi Chủ nhật 01:00 UTC (08:00 giờ VN thứ Hai là quá muộn cho báo cáo
+// tuần; sáng CN phụ huynh có thời gian đọc).
+//
+// Chỉ gửi SỐ LIỆU tiến độ — không có nội dung học tập cá nhân. Cùng nguyên
+// tắc quyền riêng tư như dashboard giáo viên.
+//
+// Bật/tắt theo feature flag `parent_reports` nên trung tâm gói Basic không
+// bị gửi email ngoài gói.
+export const sendParentReports = inngest.createFunction(
+  {
+    id: "send-parent-reports",
+    triggers: [
+      { cron: "0 1 * * 0" },            // CN 01:00 UTC
+      { event: "org/parent-reports.run" }, // kích hoạt tay để thử
+    ],
+    retries: 1,
+  },
+  async ({ event, step }) => {
+    const orgs = await step.run("load-orgs", async () => {
+      const supabase = createAdminClient();
+      const { isFeatureEnabled } = await import("@/lib/org-settings");
+
+      let query = supabase
+        .from("organizations")
+        .select("id, name")
+        .in("status", ["trial", "active"]);
+
+      if (event?.data?.org_id) query = query.eq("id", event.data.org_id);
+
+      const { data } = await query;
+
+      // Lọc theo feature flag — trung tâm chưa mua gói có báo cáo thì bỏ qua
+      const enabled = [];
+      for (const org of data || []) {
+        if (await isFeatureEnabled(org.id, "parent_reports")) enabled.push(org);
+      }
+      return enabled;
+    });
+
+    if (orgs.length === 0) return { orgs: 0, sent: 0 };
+
+    let sent = 0;
+    let skipped = 0;
+
+    for (const org of orgs) {
+      const result = await step.run(`report-${org.id}`, async () => {
+        const supabase = createAdminClient();
+
+        // Học viên trong org + phụ huynh của họ.
+        // Quan hệ phụ huynh–học viên chưa có bảng riêng (GĐ3 sau), nên hiện
+        // gửi cho chính email của học viên nếu vai trò là 'parent', hoặc cho
+        // học viên nếu không có phụ huynh. Đây là giới hạn đã biết.
+        const { data: members } = await supabase
+          .from("memberships")
+          .select("id, user_id, role, invited_email")
+          .eq("org_id", org.id)
+          .eq("status", "active")
+          .in("role", ["student", "parent"]);
+
+        if (!members?.length) return { sent: 0, skipped: 0 };
+
+        // Snapshot mới nhất trong 7 ngày
+        const since = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+        const membershipIds = members.map((m) => m.id);
+
+        const { data: snapshots } = await supabase
+          .from("student_progress_snapshots")
+          .select("membership_id, snapshot_date, words_saved, streak_days, last_active_at")
+          .in("membership_id", membershipIds)
+          .gte("snapshot_date", since)
+          .order("snapshot_date", { ascending: false });
+
+        const latest = new Map();
+        const activeDays = new Map();
+        for (const s of snapshots || []) {
+          if (!latest.has(s.membership_id)) latest.set(s.membership_id, s);
+          // Đếm số ngày có hoạt động trong tuần
+          if (s.last_active_at) {
+            const set = activeDays.get(s.membership_id) || new Set();
+            set.add(s.last_active_at.slice(0, 10));
+            activeDays.set(s.membership_id, set);
+          }
+        }
+
+        const { sendParentReportEmail } = await import("@/lib/send-org-email");
+        const { getOrgSettings } = await import("@/lib/org-settings");
+        const settings = await getOrgSettings(org.id);
+
+        let localSent = 0;
+        let localSkipped = 0;
+
+        for (const m of members) {
+          const snap = latest.get(m.id);
+          // Không có số liệu thì không gửi email rỗng — vô nghĩa với phụ huynh
+          if (!snap) {
+            localSkipped++;
+            continue;
+          }
+
+          // Lấy email: ưu tiên invited_email, nếu không thì tra từ Auth
+          let email = m.invited_email;
+          if (!email && m.user_id) {
+            const { data: authUser } = await supabase.auth.admin.getUserById(m.user_id);
+            email = authUser?.user?.email || null;
+          }
+          if (!email) {
+            localSkipped++;
+            continue;
+          }
+
+          const inactive = snap.last_active_at
+            ? Math.floor((Date.now() - new Date(snap.last_active_at).getTime()) / 86400_000)
+            : 999;
+
+          const state =
+            inactive <= settings.active_threshold_days
+              ? "active"
+              : inactive <= settings.stalled_threshold_days
+              ? "stalled"
+              : "dropped";
+
+          const res = await sendParentReportEmail({
+            to: email,
+            studentName: m.invited_email?.split("@")[0] || "Học viên",
+            className: "",
+            orgName: org.name,
+            periodLabel: "7 ngày qua",
+            state,
+            stats: {
+              words_saved: snap.words_saved || 0,
+              streak_days: snap.streak_days || 0,
+              active_days: activeDays.get(m.id)?.size || 0,
+              quiz_attempts: 0,
+              quiz_avg_percent: null,
+              homework_submitted: 0,
+              homework_total: 0,
+            },
+          });
+
+          if (res.success) localSent++;
+          else localSkipped++;
+        }
+
+        return { sent: localSent, skipped: localSkipped };
+      });
+
+      sent += result.sent;
+      skipped += result.skipped;
+    }
+
+    return { orgs: orgs.length, sent, skipped };
+  }
+);
+
 // ── Đồng bộ quota theo gói ──────────────────────────────────────────────────
 // Khi org đổi gói, hạn mức lưu trữ phải đổi theo. Chạy hằng ngày để bắt cả
 // trường hợp đổi gói bằng tay trên dashboard.

@@ -396,9 +396,12 @@ function DoHomeworkModal({ hw, onClose, onSubmitted, onError }) {
               )}
 
               {q.type === "match" && (
-                <p className="text-xs" style={{ color: "var(--ink-ghost)" }}>
-                  Dạng ghép đôi chưa hỗ trợ trên giao diện này.
-                </p>
+                <MatchAnswer
+                  question={q}
+                  value={answers[q.id] || {}}
+                  onChange={(v) => setAnswer(q.id, v)}
+                  disabled={readOnly}
+                />
               )}
             </div>
           </div>
@@ -421,6 +424,53 @@ function DoHomeworkModal({ hw, onClose, onSubmitted, onError }) {
         </Button>
       )}
     </Modal>
+  );
+}
+
+// Ghép đôi: học viên chọn đáp án bên phải cho từng mục bên trái.
+//
+// Đáp án đúng đã bị server lọc bỏ, nên `pairs` chỉ chứa danh sách mục bên
+// trái và các lựa chọn bên phải (đã xáo trộn khi giáo viên tạo đề).
+function MatchAnswer({ question, value, onChange, disabled }) {
+  const lefts = question.pairs?.lefts || [];
+  const rights = question.pairs?.rights || [];
+
+  if (lefts.length === 0 || rights.length === 0) {
+    return (
+      <p className="text-xs" style={{ color: "var(--ink-ghost)" }}>
+        Câu ghép đôi thiếu dữ liệu.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {lefts.map((left) => (
+        <div key={left} className="flex items-center gap-2">
+          <span
+            className="text-xs flex-1 min-w-0 truncate px-2.5 py-2 rounded-lg"
+            style={{ background: "var(--surface)", border: "1px solid var(--card-border)", color: "var(--ink)" }}
+          >
+            {left}
+          </span>
+          <span style={{ color: "var(--ink-ghost)" }}>→</span>
+          <select
+            value={value[left] || ""}
+            onChange={(e) => onChange({ ...value, [left]: e.target.value })}
+            disabled={disabled}
+            className="flex-1 min-w-0 px-2 py-2 rounded-lg text-xs appearance-none"
+            style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--ink)" }}
+          >
+            <option value="">— chọn —</option>
+            {rights.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -683,6 +733,10 @@ function CreateHomeworkModal({ classId, onClose, onCreated, onError }) {
       setQuestions((p) => [...p, { ...base, options: ["", ""], answer: 0 }]);
     } else if (type === "fill") {
       setQuestions((p) => [...p, { ...base, answer: "" }]);
+    } else if (type === "match") {
+      // matchRows là dạng làm việc trong UI; khi gửi lên sẽ chuyển thành
+      // answer: { left: right } + pairs: { lefts, rights } cho học viên.
+      setQuestions((p) => [...p, { ...base, matchRows: [{ left: "", right: "" }, { left: "", right: "" }] }]);
     } else {
       setQuestions((p) => [...p, base]);
     }
@@ -702,15 +756,39 @@ function CreateHomeworkModal({ classId, onClose, onCreated, onError }) {
 
     setSaving(true);
     try {
-      // Chuyển đáp án "fill" từ chuỗi "big / large" sang mảng, đúng định dạng
-      // mà homework-grading.js mong đợi (hỗ trợ nhiều đáp án đúng).
       const payloadQuestions = questions.map((q) => {
-        if (q.type !== "fill") return q;
-        const parts = String(q.answer || "")
-          .split("/")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        return { ...q, answer: parts.length > 1 ? parts : parts[0] || "" };
+        // "fill": chuỗi "big / large" → mảng, đúng định dạng mà
+        // homework-grading.js mong đợi (hỗ trợ nhiều đáp án đúng).
+        if (q.type === "fill") {
+          const parts = String(q.answer || "")
+            .split("/")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          return { ...q, answer: parts.length > 1 ? parts : parts[0] || "" };
+        }
+
+        // "match": matchRows (dạng UI) → answer { left: right } để chấm, kèm
+        // pairs.rights ĐÃ XÁO TRỘN để học viên không đoán được thứ tự đúng.
+        if (q.type === "match") {
+          const rows = (q.matchRows || []).filter((r) => r.left?.trim() && r.right?.trim());
+          const answer = {};
+          for (const r of rows) answer[r.left.trim()] = r.right.trim();
+
+          const rights = rows.map((r) => r.right.trim());
+          for (let i = rights.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [rights[i], rights[j]] = [rights[j], rights[i]];
+          }
+
+          const { matchRows, ...rest } = q;
+          return {
+            ...rest,
+            answer,
+            pairs: { lefts: rows.map((r) => r.left.trim()), rights },
+          };
+        }
+
+        return q;
       });
 
       const res = await fetch("/api/homework", {
@@ -784,7 +862,6 @@ function CreateHomeworkModal({ classId, onClose, onCreated, onError }) {
 
         <div className="flex gap-1 mb-3 flex-wrap">
           {Object.entries(TYPE_LABELS)
-            .filter(([k]) => k !== "match") // ghép đôi chưa hỗ trợ trên UI
             .map(([key, label]) => (
               <button
                 key={key}
@@ -894,6 +971,60 @@ function CreateHomeworkModal({ classId, onClose, onCreated, onError }) {
                   onChange={(e) => update(i, { answer: e.target.value })}
                   placeholder="Đáp án đúng (nhiều đáp án cách nhau bởi dấu /)"
                 />
+              )}
+
+              {q.type === "match" && (
+                <div className="space-y-1.5">
+                  {(q.matchRows || []).map((row, ri) => (
+                    <div key={ri} className="flex items-center gap-1.5">
+                      <Input
+                        value={row.left}
+                        onChange={(e) => {
+                          const rows = [...q.matchRows];
+                          rows[ri] = { ...rows[ri], left: e.target.value };
+                          update(i, { matchRows: rows });
+                        }}
+                        placeholder="Cột trái"
+                      />
+                      <span style={{ color: "var(--ink-ghost)" }}>→</span>
+                      <Input
+                        value={row.right}
+                        onChange={(e) => {
+                          const rows = [...q.matchRows];
+                          rows[ri] = { ...rows[ri], right: e.target.value };
+                          update(i, { matchRows: rows });
+                        }}
+                        placeholder="Cột phải"
+                      />
+                      {q.matchRows.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            update(i, { matchRows: q.matchRows.filter((_, x) => x !== ri) })
+                          }
+                          className="no-min-h w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
+                          style={{ color: "var(--ink-ghost)" }}
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update(i, { matchRows: [...(q.matchRows || []), { left: "", right: "" }] })
+                    }
+                    className="text-xs font-bold no-min-h"
+                    style={{ color: "var(--electric)" }}
+                  >
+                    + Thêm cặp
+                  </button>
+                  <p className="text-xs" style={{ color: "var(--ink-ghost)" }}>
+                    Cột phải sẽ được xáo trộn khi học viên làm bài. Ghép đúng
+                    toàn bộ mới được điểm.
+                  </p>
+                </div>
               )}
 
               {q.type === "essay" && (

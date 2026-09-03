@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   Flame, BookMarked, Mail, AlertTriangle, BarChart3, FolderOpen,
-  ClipboardList, Wallet, BookOpen,
+  ClipboardList, Wallet, BookOpen, Trophy,
 } from "lucide-react";
 import Card from "@/components/ui/Card";
 import BackButton from "@/components/ui/BackButton";
@@ -19,6 +19,7 @@ import LessonLibrary from "@/components/org/LessonLibrary";
 import HomeworkPanel from "@/components/org/HomeworkPanel";
 import TuitionPanel from "@/components/org/TuitionPanel";
 import AssignmentsPanel from "@/components/org/AssignmentsPanel";
+import QuizStatsPanel from "@/components/org/QuizStatsPanel";
 
 const STATE_CONFIG = {
   active: { label: "Đang học tốt", color: "var(--grass-text)", bg: "var(--grass-soft)", border: "var(--grass-border)", dot: "🟢" },
@@ -41,6 +42,7 @@ function tabsFor(role) {
     { key: "library", label: "Bài giảng", icon: FolderOpen },
     { key: "homework", label: "Bài tập", icon: ClipboardList },
     { key: "vocab", label: "Bộ từ", icon: BookOpen },
+    { key: "quiz", label: "Quiz", icon: Trophy },
   ];
   if (role === "owner") {
     base.push({ key: "tuition", label: "Học phí", icon: Wallet });
@@ -141,6 +143,8 @@ export default function ClassDetail() {
         <HomeworkPanel classId={id} isStaff={data.can_manage === true} />
       ) : tab === "vocab" ? (
         <AssignmentsPanel classId={id} isStaff={data.can_manage === true} />
+      ) : tab === "quiz" ? (
+        <QuizStatsPanel classId={id} />
       ) : tab === "tuition" ? (
         <TuitionPanel orgId={data.org_id} classId={id} />
       ) : (
