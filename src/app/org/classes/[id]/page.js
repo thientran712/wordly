@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   Flame, BookMarked, Mail, AlertTriangle, BarChart3, FolderOpen,
-  ClipboardList, Wallet, BookOpen, Trophy,
+  ClipboardList, Wallet, BookOpen, Trophy, Mic,
 } from "lucide-react";
 import Card from "@/components/ui/Card";
 import BackButton from "@/components/ui/BackButton";
@@ -20,6 +20,8 @@ import HomeworkPanel from "@/components/org/HomeworkPanel";
 import TuitionPanel from "@/components/org/TuitionPanel";
 import AssignmentsPanel from "@/components/org/AssignmentsPanel";
 import QuizStatsPanel from "@/components/org/QuizStatsPanel";
+import SpeakingPanel from "@/components/org/SpeakingPanel";
+import OrgShell, { OrgHeader, OrgTabs } from "@/components/org/OrgShell";
 
 const STATE_CONFIG = {
   active: { label: "Đang học tốt", color: "var(--grass-text)", bg: "var(--grass-soft)", border: "var(--grass-border)", dot: "🟢" },
@@ -43,6 +45,7 @@ function tabsFor(role) {
     { key: "homework", label: "Bài tập", icon: ClipboardList },
     { key: "vocab", label: "Bộ từ", icon: BookOpen },
     { key: "quiz", label: "Quiz", icon: Trophy },
+    { key: "speaking", label: "Bài nói", icon: Mic },
   ];
   if (role === "owner") {
     base.push({ key: "tuition", label: "Học phí", icon: Wallet });
@@ -80,62 +83,42 @@ export default function ClassDetail() {
 
   if (error) {
     return (
-      <main className="max-w-3xl mx-auto px-4 py-6">
+      <OrgShell>
         <BackButton fallbackHref="/org" label="Quay lại" />
         <Card padding="2rem" className="text-center mt-4">
           <AlertTriangle size={24} className="mx-auto mb-3" style={{ color: "var(--error)" }} />
           <p className="text-sm" style={{ color: "var(--ink-soft)" }}>{error}</p>
         </Card>
-      </main>
+      </OrgShell>
     );
   }
 
   if (!data) {
     return (
-      <main className="max-w-3xl mx-auto px-4 py-6">
+      <OrgShell>
         <BackButton fallbackHref="/org" label="Quay lại" />
         <div className="space-y-3 mt-4">
           <div className="h-24 rounded-2xl animate-pulse" style={{ background: "var(--hover-bg)" }} />
           <div className="h-64 rounded-2xl animate-pulse" style={{ background: "var(--hover-bg)" }} />
         </div>
-      </main>
+      </OrgShell>
     );
   }
 
   const { summary, students, thresholds } = data;
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-6">
+    <OrgShell>
       <BackButton fallbackHref="/org" label="Quay lại" />
 
-      <h1 className="text-xl font-black mt-3 mb-1" style={{ color: "var(--ink)" }}>
-        {data.class.name}
-      </h1>
-      <p className="text-xs mb-4" style={{ color: "var(--ink-soft)" }}>
-        {summary.total} học viên
-      </p>
-
-      {/* Tab điều hướng */}
-      <div className="flex gap-1 mb-5 p-1 rounded-xl w-fit overflow-x-auto max-w-full" style={{ background: "var(--surface)" }}>
-        {tabsFor(data.role).map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold no-min-h"
-              style={{
-                background: active ? "var(--card-bg)" : "transparent",
-                color: active ? "var(--electric)" : "var(--ink-soft)",
-              }}
-            >
-              <Icon size={14} />
-              {t.label}
-            </button>
-          );
-        })}
+      <div className="mt-3">
+        <OrgHeader
+          title={data.class.name}
+          subtitle={`${summary.total} học viên`}
+        />
       </div>
+
+      <OrgTabs tabs={tabsFor(data.role)} active={tab} onChange={setTab} />
 
       {tab === "library" ? (
         <LessonLibrary classId={id} isStaff={data.can_manage === true} />
@@ -145,12 +128,16 @@ export default function ClassDetail() {
         <AssignmentsPanel classId={id} isStaff={data.can_manage === true} />
       ) : tab === "quiz" ? (
         <QuizStatsPanel classId={id} />
+      ) : tab === "speaking" ? (
+        <SpeakingPanel classId={id} isStaff={data.can_manage === true} />
       ) : tab === "tuition" ? (
         <TuitionPanel orgId={data.org_id} classId={id} />
       ) : (
       <>
-      {/* Tổng quan 3 nhóm — thứ giáo viên cần thấy trước tiên */}
-      <div className="grid grid-cols-3 gap-2 mb-5">
+      {/* Tổng quan 3 nhóm — thứ giáo viên cần thấy trước tiên.
+          Giới hạn 3 cột và max-w để trên màn hình rộng thẻ không bị kéo dãn
+          thành dải dài vô nghĩa. */}
+      <div className="grid grid-cols-3 gap-3 mb-5 max-w-2xl">
         {["active", "stalled", "dropped"].map((key) => {
           const cfg = STATE_CONFIG[key];
           return (
@@ -159,10 +146,10 @@ export default function ClassDetail() {
               padding="0.875rem"
               style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}
             >
-              <div className="text-2xl font-black tabular-nums" style={{ color: cfg.color }}>
+              <div className="text-2xl sm:text-3xl font-black tabular-nums" style={{ color: cfg.color }}>
                 {summary[key]}
               </div>
-              <div className="text-xs font-semibold mt-0.5" style={{ color: cfg.color }}>
+              <div className="text-xs sm:text-sm font-semibold mt-0.5" style={{ color: cfg.color }}>
                 {cfg.label}
               </div>
             </Card>
@@ -200,15 +187,16 @@ export default function ClassDetail() {
           <div
             className="hidden sm:grid gap-2 px-4 py-2.5 text-xs font-semibold"
             style={{
-              gridTemplateColumns: "1fr auto auto auto auto",
+              gridTemplateColumns: "1fr auto auto auto auto auto",
               background: "var(--surface)",
               borderBottom: "1px solid var(--divider)",
               color: "var(--ink-soft)",
             }}
           >
             <div>Học viên</div>
-            <div className="w-14 text-center">Streak</div>
-            <div className="w-14 text-center">Từ</div>
+            <div className="w-16 text-center">Streak</div>
+            <div className="w-16 text-center">Từ đã lưu</div>
+            <div className="w-20 text-center">Cần ôn</div>
             <div className="w-20 text-center">Hoạt động</div>
             <div className="w-12 text-center">Mail</div>
           </div>
@@ -227,7 +215,7 @@ export default function ClassDetail() {
                 key={s.membership_id}
                 className="grid gap-2 px-4 py-3 items-center text-sm"
                 style={{
-                  gridTemplateColumns: "1fr auto auto auto auto",
+                  gridTemplateColumns: "1fr auto auto auto auto auto",
                   borderBottom: i < students.length - 1 ? "1px solid var(--divider)" : "none",
                 }}
               >
@@ -243,7 +231,7 @@ export default function ClassDetail() {
                 </div>
 
                 <div
-                  className="w-14 text-center tabular-nums flex items-center justify-center gap-0.5"
+                  className="w-16 text-center tabular-nums flex items-center justify-center gap-0.5"
                   style={{ color: s.streak_days > 0 ? "var(--sunshine-text)" : "var(--ink-ghost)" }}
                 >
                   {s.streak_days > 0 && <Flame size={12} />}
@@ -251,11 +239,20 @@ export default function ClassDetail() {
                 </div>
 
                 <div
-                  className="w-14 text-center tabular-nums flex items-center justify-center gap-0.5"
+                  className="w-16 text-center tabular-nums flex items-center justify-center gap-0.5"
                   style={{ color: "var(--ink-soft)" }}
                 >
                   <BookMarked size={12} />
                   {s.words_saved}
+                </div>
+
+                {/* Từ đang chờ ôn — GV biết học viên có tồn đọng bài không.
+                    API đã trả words_due từ trước nhưng chưa hiện. */}
+                <div
+                  className="w-20 text-center tabular-nums text-xs"
+                  style={{ color: s.words_due > 0 ? "var(--sunshine-text)" : "var(--ink-ghost)" }}
+                >
+                  {s.words_due > 0 ? `${s.words_due} từ` : "—"}
                 </div>
 
                 <div
@@ -284,6 +281,6 @@ export default function ClassDetail() {
       </p>
       </>
       )}
-    </main>
+    </OrgShell>
   );
 }

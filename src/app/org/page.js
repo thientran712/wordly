@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Users, Plus, GraduationCap, Copy, Check, UserCog, Settings } from "lucide-react";
+import { Building2, Users, Plus, GraduationCap, Copy, Check, UserCog, Settings, Users2 } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -15,6 +15,8 @@ import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 import MembersPanel from "@/components/org/MembersPanel";
 import SettingsPanel from "@/components/org/SettingsPanel";
+import GuardiansPanel from "@/components/org/GuardiansPanel";
+import OrgShell, { OrgHeader, OrgTabs, OrgGrid } from "@/components/org/OrgShell";
 
 const ROLE_LABELS = {
   owner: "Quản lý",
@@ -70,7 +72,7 @@ export default function OrgDashboard() {
   // ── Chưa thuộc trung tâm nào ──
   if (orgs !== null && orgs.length === 0) {
     return (
-      <main className="max-w-2xl mx-auto px-4 py-10">
+      <OrgShell variant="form" className="py-10">
         <Card elevated padding="2rem" className="text-center">
           <div
             className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
@@ -86,12 +88,12 @@ export default function OrgDashboard() {
           </p>
           <Button onClick={() => router.push("/join")}>Nhập mã lớp</Button>
         </Card>
-      </main>
+      </OrgShell>
     );
   }
 
   return (
-    <main className="max-w-5xl mx-auto px-4 py-6">
+    <OrgShell>
       {/* Chọn trung tâm — chỉ hiện khi thuộc nhiều nơi */}
       {orgs && orgs.length > 1 && (
         <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
@@ -115,58 +117,40 @@ export default function OrgDashboard() {
         </div>
       )}
 
-      {/* Tiêu đề */}
-      <div className="flex items-start justify-between gap-3 mb-5">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl font-black truncate" style={{ color: "var(--ink)" }}>
-              {activeOrg?.name || "Đang tải..."}
-            </h1>
+      <OrgHeader
+        title={activeOrg?.name || "Đang tải..."}
+        subtitle={loadingClasses ? "Đang tải..." : `${classes.length} lớp đang hoạt động`}
+        badges={
+          <>
             {activeOrg?.role && (
               <Badge tone={activeOrg.role === "owner" ? "accent" : "neutral"}>
                 {ROLE_LABELS[activeOrg.role] || activeOrg.role}
               </Badge>
             )}
             {activeOrg?.status === "trial" && <Badge tone="warning">Dùng thử</Badge>}
-          </div>
-          <p className="text-xs mt-1" style={{ color: "var(--ink-soft)" }}>
-            {loadingClasses ? "Đang tải..." : `${classes.length} lớp đang hoạt động`}
-          </p>
-        </div>
+          </>
+        }
+        actions={
+          isStaff && view === "classes" ? (
+            <Button icon={Plus} onClick={() => setShowCreate(true)} size="sm">
+              Tạo lớp
+            </Button>
+          ) : null
+        }
+      />
 
-        {isStaff && view === "classes" && (
-          <Button icon={Plus} onClick={() => setShowCreate(true)} size="sm">
-            Tạo lớp
-          </Button>
-        )}
-      </div>
-
-      {/* Lớp / Thành viên — chỉ staff cần chuyển qua lại */}
+      {/* Lớp / Thành viên / Phụ huynh / Cài đặt — chỉ staff cần chuyển qua lại */}
       {isStaff && (
-        <div className="flex gap-1 mb-4 p-1 rounded-xl w-fit" style={{ background: "var(--surface)" }}>
-          {[
+        <OrgTabs
+          active={view}
+          onChange={setView}
+          tabs={[
             { key: "classes", label: "Lớp học", icon: GraduationCap },
             { key: "members", label: "Thành viên", icon: UserCog },
+            { key: "guardians", label: "Phụ huynh", icon: Users2 },
             { key: "settings", label: "Cài đặt", icon: Settings },
-          ].map((t) => {
-            const Icon = t.icon;
-            const active = view === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setView(t.key)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold no-min-h"
-                style={{
-                  background: active ? "var(--card-bg)" : "transparent",
-                  color: active ? "var(--electric)" : "var(--ink-soft)",
-                }}
-              >
-                <Icon size={14} />
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
+          ]}
+        />
       )}
 
       {error && (
@@ -185,6 +169,8 @@ export default function OrgDashboard() {
       {/* Thành viên */}
       {view === "members" && activeOrg ? (
         <MembersPanel orgId={activeOrg.id} isOwner={activeOrg.role === "owner"} />
+      ) : view === "guardians" && activeOrg ? (
+        <GuardiansPanel orgId={activeOrg.id} isOwner={activeOrg.role === "owner"} />
       ) : view === "settings" && activeOrg ? (
         <SettingsPanel orgId={activeOrg.id} isOwner={activeOrg.role === "owner"} />
       ) : /* Danh sách lớp */
@@ -206,7 +192,7 @@ export default function OrgDashboard() {
           </p>
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <OrgGrid min="300px">
           {classes.map((c) => (
             <ClassCard
               key={c.id}
@@ -215,7 +201,7 @@ export default function OrgDashboard() {
               onOpen={() => router.push(`/org/classes/${c.id}`)}
             />
           ))}
-        </div>
+        </OrgGrid>
       )}
 
       {showCreate && activeOrg && (
@@ -229,7 +215,7 @@ export default function OrgDashboard() {
           onError={setError}
         />
       )}
-    </main>
+    </OrgShell>
   );
 }
 

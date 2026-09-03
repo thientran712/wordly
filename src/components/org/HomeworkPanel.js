@@ -103,7 +103,8 @@ export default function HomeworkPanel({ classId, isStaff }) {
           </p>
         </Card>
       ) : (
-        <div className="space-y-2">
+        // Lưới tự giãn để màn hình rộng thấy nhiều bài tập cùng lúc
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))" }}>
           {items.map((hw) => (
             <HomeworkCard
               key={hw.id}

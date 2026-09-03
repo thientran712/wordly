@@ -114,11 +114,13 @@ export default function SettingsPanel({ orgId, isOwner }) {
       : 0;
 
   return (
-    <div className="space-y-3">
+    // Màn hình rộng: xếp 2 cột để không phải cuộn dọc nhiều.
+    // items-start để các card không bị kéo cao bằng nhau.
+    <div className="grid gap-3 items-start" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))" }}>
       {error && (
         <div
           className="px-3 py-2 rounded-xl text-sm"
-          style={{ background: "var(--error-soft)", color: "var(--error)", border: "1px solid var(--error-border)" }}
+          style={{ background: "var(--error-soft)", color: "var(--error)", border: "1px solid var(--error-border)", gridColumn: "1 / -1" }}
         >
           {error}
         </div>
@@ -301,7 +303,7 @@ export default function SettingsPanel({ orgId, isOwner }) {
       </Card>
 
       {isOwner && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" style={{ gridColumn: "1 / -1" }}>
           <Button onClick={save} disabled={!dirty || saving}>
             {saving ? "Đang lưu..." : "Lưu cài đặt"}
           </Button>

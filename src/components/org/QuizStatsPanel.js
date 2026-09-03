@@ -128,7 +128,7 @@ export default function QuizStatsPanel({ classId }) {
       ) : (
         <>
           {/* Giáo viên: tổng quan + bảng xếp hạng */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-3 gap-3 mb-4 max-w-2xl">
             <Card padding="0.875rem">
               <div className="flex items-center gap-1 text-xs mb-1" style={{ color: "var(--ink-soft)" }}>
                 <Users size={11} /> Có chơi

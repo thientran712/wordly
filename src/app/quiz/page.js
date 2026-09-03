@@ -125,6 +125,7 @@ function QuizInner() {
   // ── Màn hình chọn chế độ ──
   if (phase === "setup") {
     return (
+      // Form ngắn → giữ hẹp, trải rộng sẽ thành dải trống hai bên nội dung
       <main className="max-w-md mx-auto px-4 py-10">
         <Card elevated padding="2rem">
           <div
@@ -186,7 +187,8 @@ function QuizInner() {
   if (phase === "done" && result) {
     const good = result.percent >= 70;
     return (
-      <main className="max-w-md mx-auto px-4 py-10">
+      // Rộng hơn màn chơi: phần xem lại câu sai chia 2 cột trên màn hình lớn
+      <main className="max-w-3xl mx-auto px-4 py-8">
         <Card elevated padding="2rem">
           <div
             className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
@@ -206,7 +208,10 @@ function QuizInner() {
           </p>
 
           {/* Xem lại câu sai — đây mới là phần giúp người học tiến bộ */}
-          <div className="space-y-1.5 mb-5 max-h-[40vh] overflow-y-auto pr-1">
+          <div
+            className="grid gap-1.5 mb-5 max-h-[45vh] overflow-y-auto pr-1 text-left"
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
+          >
             {questions.map((q, i) => {
               const d = result.details[q.id];
               if (!d) return null;
@@ -268,7 +273,10 @@ function QuizInner() {
   if (!current) return null;
 
   return (
-    <main className="max-w-md mx-auto px-4 py-6">
+    // Giữ hẹp CÓ CHỦ ĐÍCH: câu hỏi và đáp án là nội dung đọc. Trên màn hình
+    // rộng, nếu trải hết thì mắt phải quét ngang rất xa giữa các lựa chọn —
+    // chậm và mỏi. Đây là ngoại lệ hợp lý của nguyên tắc full-width.
+    <main className="max-w-2xl mx-auto px-4 py-6">
       {/* Tiến độ */}
       <div className="flex items-center gap-2 mb-4">
         <div

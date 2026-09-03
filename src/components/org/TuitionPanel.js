@@ -108,7 +108,7 @@ export default function TuitionPanel({ orgId, classId }) {
 
       {/* Tổng quan tài chính */}
       {summary && records.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-4 max-w-3xl">
           <Card padding="0.875rem">
             <div className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>Phải thu</div>
             <div className="text-sm font-black tabular-nums" style={{ color: "var(--ink)" }}>
@@ -165,7 +165,9 @@ export default function TuitionPanel({ orgId, classId }) {
           </p>
         </Card>
       ) : (
-        <div className="space-y-2">
+        // Lưới tự giãn: màn hình rộng hiện nhiều khoản cùng lúc thay vì
+        // một cột dài phải cuộn nhiều
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
           {records.map((r) => {
             const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.unpaid;
             return (

@@ -128,7 +128,7 @@ export default function MembersPanel({ orgId, isOwner }) {
                   </span>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
                   {items.map((m) => (
                     <div
                       key={m.id}

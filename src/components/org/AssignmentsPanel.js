@@ -82,7 +82,7 @@ export default function AssignmentsPanel({ classId, isStaff }) {
           </p>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
           {items.map((a) => {
             const topic = TOPICS.find((t) => t.key === a.filter_topic);
             return (
