@@ -57,8 +57,17 @@ export async function POST(request) {
   // nhập". Người đã đăng nhập vẫn nhận ra qua header nên vẫn được hạn mức
   // cao hơn (40/phút thay vì 15/phút).
   const user = await getUserFast({ publicRoute: true });
-  const limiter = user ? userLimiter : guestLimiter;
-  const rl = limiter.check(clientKeyFromRequest(request, user?.id));
+
+  // Bộ đếm POSTGRES, không phải RAM: mỗi request có thể vào một instance
+  // Vercel khác nhau nên bộ đếm trong RAM không chặn được gì (đã kiểm chứng
+  // trên production 4/9/2026 — xem rate-limit-db.js).
+  const rl = await checkRateLimitDb({
+    supabase: createAdminClient(),
+    scope: "dictionary",
+    clientKey: clientKeyFromRequest(request, user?.id),
+    limit: user ? USER_LIMIT : GUEST_LIMIT,
+    windowMs: WINDOW_MS,
+  });
   if (!rl.allowed) return rateLimitResponse(rl);
 
   const { word } = await request.json();
