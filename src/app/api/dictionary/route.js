@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { callGroq, parseJsonResponse } from "@/lib/ai-models";
 import { getUserFast } from "@/lib/get-user-fast";
@@ -49,7 +50,12 @@ Rules:
 - If "${word}" is not a real English word (typo, gibberish), return {"phonetic_us": "", "phonetic_uk": "", "meanings": []}.`;
 
 export async function POST(request) {
-  const user = await getUserFast();
+  // publicRoute: middleware KHÔNG set x-user-id cho khách, nên nếu không nói
+  // rõ đây là route công khai thì mọi lượt khách phải trả thêm một cú gọi
+  // mạng Supabase Auth (đo được 0.24-0.79s) chỉ để biết "đúng là chưa đăng
+  // nhập". Người đã đăng nhập vẫn nhận ra qua header nên vẫn được hạn mức
+  // cao hơn (40/phút thay vì 15/phút).
+  const user = await getUserFast({ publicRoute: true });
   const limiter = user ? userLimiter : guestLimiter;
   const rl = limiter.check(clientKeyFromRequest(request, user?.id));
   if (!rl.allowed) return rateLimitResponse(rl);
@@ -116,9 +122,22 @@ export async function POST(request) {
   const row = { word: key, phonetic_us: phoneticUs, phonetic_uk: phoneticUk, meanings };
   const detail = { word: key, phoneticUs, phoneticUk, meanings, hasMoreMeanings: meanings.length >= 3 };
 
-  await supabase
-    .from("word_dictionary_cache")
-    .upsert(row, { onConflict: "word" });
+  // Ghi cache KHÔNG chặn phản hồi: kết quả đã có sẵn trong tay, không có lý
+  // gì bắt người dùng chờ thêm một round-trip Supabase (đo được 0.29-0.8s)
+  // chỉ để lưu cho lượt sau.
+  //
+  // `after()` (next/server) là API chính thức của Next cho việc này: nó giữ
+  // function sống tới khi ghi xong nhưng phản hồi đã đi trước. Không dùng
+  // promise trần — serverless có thể đóng function giữa lúc ghi → mất cache.
+  //
+  // Lỗi ghi chỉ làm mất cache (lượt sau gọi AI lại), không làm sai kết quả
+  // đang trả — nên chỉ log, không để nó thành lỗi của người dùng.
+  after(async () => {
+    const { error } = await supabase
+      .from("word_dictionary_cache")
+      .upsert(row, { onConflict: "word" });
+    if (error) console.warn("[api/dictionary] ghi cache lỗi:", error.message);
+  });
 
   return Response.json({ detail });
 }
