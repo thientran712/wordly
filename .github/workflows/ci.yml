@@ -42,16 +42,12 @@ jobs:
       # qua nó — một CI luôn đỏ còn tệ hơn không có CI.
       #
       # Việc dọn 17 lỗi cũ nằm trong nợ kỹ thuật (PROGRESS.md).
-      - name: Lint (code B2B mới)
-        run: |
-          npx eslint \
-            src/lib \
-            src/app/org src/app/join src/app/quiz \
-            src/components/org \
-            src/app/api/orgs src/app/api/classes src/app/api/join \
-            src/app/api/materials src/app/api/homework src/app/api/quiz \
-            src/app/api/tuition src/app/api/speaking \
-            src/inngest/org-functions.js src/emails src/middleware.js
+      #
+      # Danh sách chỉ gồm đường dẫn CÓ THẬT trên nhánh này. eslint thoát mã 2
+      # khi một pattern không khớp file nào, nên liệt kê thư mục B2B chưa
+      # merge sẽ làm CI đỏ vì lý do không liên quan tới chất lượng code.
+      - name: Lint
+        run: npx eslint src/lib src/emails src/middleware.js
 
       # Build cần biến môi trường Supabase để Next.js prerender được.
       # Dùng giá trị giả: build chỉ cần biến TỒN TẠI, không gọi thật.
