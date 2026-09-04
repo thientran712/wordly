@@ -158,11 +158,9 @@ gemini-pro-latest trả 429 (hết quota).
 
 | Việc | Ghi chú |
 |---|---|
-| **2 migration mới CHƯA chạy production** | `20260904000100_guardian_links`, `20260904000200_speaking_review` — chạy trước khi dùng UI phụ huynh/bài nói |
 | Video upload trực tiếp (GĐ2) | ⏸ Chờ anh quyết dịch vụ (khuyến nghị: dùng link YouTube/Drive — đã làm xong) |
 | Thanh toán SaaS (GĐ3) | ⏸ Chờ anh quyết cổng (khuyến nghị: 1-3 khách đầu thu ngoài hệ thống) |
 | 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
-| Rate limit dùng bộ nhớ tiến trình | Vercel nhiều instance → mỗi instance đếm riêng. Chặn được lạm dụng thô; muốn chính xác cần Redis/Upstash |
 | **Toàn bộ B2B vẫn nằm trên `feat/b2b-multi-tenant`** | `main` chỉ có phần AI + rate limit (cherry-pick 4/9/2026). Khi merge B2B nhớ thêm lại đường dẫn B2B vào bước lint của CI và đổi glob `npm test` sang `tests/**` |
 
 ---
@@ -230,6 +228,8 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | Lỗi | Cách phát hiện |
 |---|---|
 | 🔴 **Groq ngừng 2 model app đang dùng** → mọi tính năng AI lỗi trên production | Gọi thật API Groq khi rà soát cơ hội AI |
+| 🔴 **Rate limit RAM không chặn được gì trên Vercel** | Gọi 18 lần trên prod → 0 lần chặn; 6 request vào 6 instance khác nhau |
+| Merge ghi đè phần sửa rate limit ở `dictionary/route.js` | Bảng đếm TRỐNG sau 20 lượt gọi → code không hề chạy |
 | Model hardcode ở 5 file → 1 sự cố phải sửa 5 chỗ | Grep khi sửa lỗi trên |
 | 🔴 **Bản sửa model nằm trên branch, `main` vẫn gọi model chết** → prod lỗi thêm dù đã có bản sửa | So `git log main..HEAD` khi kiểm tính năng |
 | **Prompt thẻ từ không yêu cầu pos khác nhau** → "run" trả 3 nghĩa đều `verb`, người học mất hẳn nghĩa danh từ | Chạy prompt thật 2 lượt/từ trên 6 từ đa nghĩa |
