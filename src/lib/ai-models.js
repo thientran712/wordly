@@ -9,6 +9,15 @@
 // Nên giờ mỗi vai trò có ladder xuyên nhà cung cấp — Gemini chính, Groq dự
 // phòng. Gemini lỗi/hết quota/quá tải thì tính năng vẫn chạy qua Groq.
 
+// ⚠️ KHÔNG đặt region châu Á cho Vercel function (vercel.json "regions").
+// Thử ngày 4/9/2026: đặt regions:["hkg1"] để gần Supabase (HKG) thì độ trễ
+// giảm thật, NHƯNG cả hai nhà cung cấp AI đều chặn IP outbound của region đó:
+//   Gemini → HTTP 400 "Please pass a valid API key" (dù key hoàn toàn đúng)
+//   Groq   → HTTP 403 "Forbidden"
+// Cùng key đó gọi từ VN hoặc từ iad1 (Mỹ) đều HTTP 200. Hệ quả: từ mới không
+// tra được (502), chỉ từ đã cache còn hoạt động. Đã rollback về region mặc
+// định. Muốn giảm độ trễ thì tối ưu chỗ khác, đừng đổi region.
+
 export const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 export const GROQ_TRANSCRIBE_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
