@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test --test-concurrency=1 tests/unit/*.test.mjs",
+    "test:watch": "node --test --watch tests/unit/*.test.mjs"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",
