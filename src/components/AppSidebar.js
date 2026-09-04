@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Languages, Mic, MessageCircle, NotebookPen, UserCog, Sparkles,
-  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu,
+  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Building2, Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
@@ -15,9 +15,14 @@ const NAV_ITEMS = [
   { href: "/practice", label: "Chat với Alex", icon: Mic },
   // Hidden from nav — page kept, just not linked. Re-add to unhide.
   // { href: "/speak", label: "Luyện nói", icon: Sparkles },
+  { href: "/quiz", label: "Quiz từ vựng", icon: Zap },
   { href: "/journal", label: "Lưu English Quote", icon: NotebookPen },
   { href: "/profile", label: "Hồ sơ", icon: UserCog },
 ];
+
+// Mục "Trung tâm" chỉ hiện với người thuộc ít nhất một tổ chức, nên không
+// nằm trong NAV_ITEMS tĩnh — người dùng B2C thường không thấy mục này.
+const ORG_NAV_ITEM = { href: "/org", label: "Trung tâm", icon: Building2 };
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -29,6 +34,7 @@ export default function AppSidebar() {
   const [theme, setTheme] = useState("dark");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
+  const [hasOrgs, setHasOrgs] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("wordly-theme") || "dark";
@@ -45,6 +51,13 @@ export default function AppSidebar() {
       .then((data) => {
         if (!data) return;
         setUserName(data.profile?.name || data.email?.split("@")[0] || "");
+
+        // Chỉ hỏi danh sách tổ chức khi đã biết là người dùng đã đăng nhập,
+        // để không thêm một request 401 vô ích cho khách.
+        fetch("/api/orgs")
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => setHasOrgs((d?.orgs?.length ?? 0) > 0))
+          .catch(() => {});
       })
       .catch(() => setIsGuest(true));
   }, []);
@@ -115,7 +128,7 @@ export default function AppSidebar() {
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => {
+          {(hasOrgs ? [...NAV_ITEMS, ORG_NAV_ITEM] : NAV_ITEMS).map((item) => {
             const active = item.href === "/profile"
               ? pathname === "/profile"
               : item.href === "/"
