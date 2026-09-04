@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Volume2, RotateCcw, Frown, Smile, Zap, EyeOff, Bookmark, BookmarkCheck } from "lucide-react";
+import { Volume2, RotateCcw, Frown, Smile, Zap, EyeOff, Bookmark, BookmarkCheck, RefreshCw } from "lucide-react";
+import { fetchWordContent } from "@/lib/word-content-client";
 
 const RATINGS = [
   { rating: 1, label: "Again", icon: RotateCcw, desc: "<10m", color: "var(--error)",        bg: "rgba(248,113,113,0.06)",  border: "rgba(248,113,113,0.2)",       hoverBg: "rgba(248,113,113,0.12)" },
@@ -25,6 +26,8 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
   const [isRating, setIsRating] = useState(false);
   const [hovered, setHovered] = useState(null);
   const [aiContent, setAiContent] = useState(null);
+  const [aiError, setAiError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [enterAnim, setEnterAnim] = useState(false);
@@ -36,29 +39,30 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
     return () => clearTimeout(t);
   }, [word?.id]);
 
+  // Huỷ request cũ khi đổi từ: nếu không, phản hồi của từ trước có thể về
+  // sau và ghi đè nội dung từ hiện tại — người học thấy nghĩa của từ khác.
   useEffect(() => {
     if (!word?.id) return;
+
+    const ctrl = new AbortController();
     setAiContent(null);
+    setAiError(null);
     setIsLoadingAI(true);
     setLoadingMsg(LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)]);
 
-    fetch("/api/ai/word-content", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        word_id: word.id,
-        word: word.word,
-        pos: word.pos,
-        word_level: word.level,
-        skill_level: skillLevel || "B1",
-        learning_goal: learningGoal || "daily",
-      }),
-    })
-      .then(r => r.json())
-      .then(data => { if (data.content) setAiContent(data.content); })
-      .catch(() => {})
-      .finally(() => setIsLoadingAI(false));
-  }, [word?.id]);
+    fetchWordContent(word, skillLevel, learningGoal, { signal: ctrl.signal })
+      .then(({ content, error, aborted }) => {
+        // Bị huỷ thì effect sau đã tiếp quản — không đụng vào state nữa.
+        if (aborted) return;
+        setAiContent(content);
+        setAiError(error);
+        setIsLoadingAI(false);
+      });
+
+    return () => ctrl.abort();
+    // skillLevel/learningGoal nằm trong dependency: đổi trình độ hay mục
+    // tiêu học thì nội dung phải tải lại, không giữ nội dung của mức cũ.
+  }, [word, skillLevel, learningGoal, retryCount]);
 
   const speakWord = () => {
     if (word.audio_url) {
@@ -188,6 +192,30 @@ export default function WordCard({ word, currentIndex, isBookmarked, onBookmark,
         {/* AI Content */}
         {isLoadingAI ? (
           <AILoadingSkeleton message={loadingMsg} />
+        ) : aiError ? (
+          /* Trước đây lỗi bị `.catch(() => {})` nuốt: người học chỉ thấy
+             định nghĩa ngắn, không biết AI lỗi và không có cách thử lại —
+             nên sự cố Groq ngừng model âm thầm suốt gần một tháng. */
+          <div
+            className="rounded-2xl px-5 py-4"
+            style={{ background: "var(--hover-bg)", border: "1px solid var(--input-border)" }}
+          >
+            <p className="text-sm font-medium mb-1" style={{ color: "var(--ink)" }}>{aiError}</p>
+            <p className="text-xs mb-3" style={{ color: "var(--ink-soft)" }}>
+              Định nghĩa cơ bản vẫn dùng được ở dưới.
+            </p>
+            <button
+              onClick={() => setRetryCount(c => c + 1)}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-colors"
+              style={{ background: "var(--electric)", color: "var(--on-electric)" }}
+            >
+              <RefreshCw size={14} />
+              Thử lại
+            </button>
+            {word.def_en && (
+              <p className="text-base leading-relaxed mt-4" style={{ color: "var(--ink)" }}>{word.def_en}</p>
+            )}
+          </div>
         ) : aiContent?.meanings?.length > 0 ? (
           <div className="space-y-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: "var(--ink-soft)" }}>
