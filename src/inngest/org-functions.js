@@ -562,6 +562,30 @@ export const sendParentReports = inngest.createFunction(
   }
 );
 
+// ── Dọn bộ đếm rate limit hết hạn ───────────────────────────────────────────
+//
+// Mỗi IP mỗi phút sinh một hàng, không dọn thì bảng phình vô hạn.
+// Chạy mỗi giờ vì hàng hết hạn rất nhanh (2 khung = 2 phút).
+export const cleanupRateLimitCounters = inngest.createFunction(
+  {
+    id: "cleanup-rate-limit-counters",
+    triggers: [{ cron: "15 * * * *" }],
+    retries: 1,
+  },
+  async ({ step }) => {
+    return await step.run("cleanup", async () => {
+      const supabase = createAdminClient();
+      const { data, error } = await supabase.rpc("cleanup_rate_limit_counters");
+      if (error) {
+        // Không throw: bảng phình là vấn đề chậm, không phải sự cố tức thì
+        console.error("[rate-limit-cleanup] lỗi:", error.message);
+        return { deleted: 0, error: error.message };
+      }
+      return { deleted: data ?? 0 };
+    });
+  }
+);
+
 // ── Dọn audio bài nói hết hạn ───────────────────────────────────────────────
 //
 // Audio bài nói đã chấm quá 90 ngày sẽ bị xoá, GIỮ LẠI điểm và nhận xét.

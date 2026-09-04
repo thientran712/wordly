@@ -2,19 +2,20 @@ import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { callGroq, parseJsonResponse } from "@/lib/ai-models";
 import { getUserFast } from "@/lib/get-user-fast";
-import {
-  createRateLimiter,
-  clientKeyFromRequest,
-  rateLimitResponse,
-} from "@/lib/rate-limit";
+import { clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
+import { checkRateLimitDb } from "@/lib/rate-limit-db";
 
 // Route CÔNG KHAI nên phải có rate limit: mỗi lần cache miss là một lượt
-// gọi Groq trả phí. Cache toàn cục giúp giảm nhiều, nhưng người gọi từ
-// điển liên tục với từ mới vẫn đốt được quota.
+// gọi Groq trả phí.
+//
+// Dùng bộ đếm POSTGRES, không phải bộ đếm trong RAM: đã kiểm chứng trên
+// production 4/9/2026 rằng bản RAM không chặn được gì (18 lượt gọi, 0 lần
+// bị chặn) vì mỗi request có thể vào một instance Vercel khác nhau.
 //
 // Khách: 15 lượt/phút. Đã đăng nhập: 40 lượt/phút.
-const guestLimiter = createRateLimiter({ limit: 15, windowMs: 60_000 });
-const userLimiter = createRateLimiter({ limit: 40, windowMs: 60_000 });
+const GUEST_LIMIT = 15;
+const USER_LIMIT = 40;
+const WINDOW_MS = 60_000;
 
 
 const POS_VALUES = ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection"];
