@@ -1,25 +1,31 @@
 import { getUserFast } from "@/lib/get-user-fast";
-import {
-  createRateLimiter,
-  clientKeyFromRequest,
-  rateLimitResponse,
-} from "@/lib/rate-limit";
+import { clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
+import { checkRateLimitDb } from "@/lib/rate-limit-db";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 // Route CÔNG KHAI (khách dùng được) nên phải có rate limit, nếu không ai
-// cũng đốt được quota DeepL. Giới hạn ở mức thoải mái cho người dùng thật
-// nhưng chặn script gọi liên tục.
+// cũng đốt được quota DeepL.
+//
+// Dùng bộ đếm POSTGRES: bản đếm trong RAM không hoạt động trên Vercel
+// (đã kiểm chứng trên production 4/9/2026 — xem rate-limit-db.js).
 //
 // Khách: 20 lượt/phút. Đã đăng nhập: 60 lượt/phút (dịch nhiều là bình thường).
-const guestLimiter = createRateLimiter({ limit: 20, windowMs: 60_000 });
-const userLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
+const GUEST_LIMIT = 20;
+const USER_LIMIT = 60;
+const WINDOW_MS = 60_000;
 
 // Giới hạn độ dài: DeepL tính phí theo ký tự, và UI đã chặn 10k ở client.
 const MAX_CHARS = 10_000;
 
 export async function POST(request) {
   const user = await getUserFast();
-  const limiter = user ? userLimiter : guestLimiter;
-  const rl = limiter.check(clientKeyFromRequest(request, user?.id));
+  const rl = await checkRateLimitDb({
+    supabase: createAdminClient(),
+    scope: "translate",
+    clientKey: clientKeyFromRequest(request, user?.id),
+    limit: user ? USER_LIMIT : GUEST_LIMIT,
+    windowMs: WINDOW_MS,
+  });
   if (!rl.allowed) return rateLimitResponse(rl);
 
   const { text, source = "EN", target = "VI" } = await request.json();

@@ -8,6 +8,7 @@ import {
   deliverAssignment,
   sendParentReports,
   cleanupExpiredSpeakingAudio,
+  cleanupRateLimitCounters,
 } from "@/inngest/org-functions";
 
 export const { GET, POST, PUT } = serve({
@@ -24,5 +25,6 @@ export const { GET, POST, PUT } = serve({
     deliverAssignment,
     sendParentReports,
     cleanupExpiredSpeakingAudio,
+    cleanupRateLimitCounters,
   ],
 });
