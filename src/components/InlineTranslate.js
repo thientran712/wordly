@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftRight, Volume2, X, Loader2, Search, Sparkles } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { lookupWord, normalizeWordKey } from "@/lib/dictionary-client";
 
 async function speak(text, lang = "en-US") {
   try {
@@ -59,6 +60,8 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
 
   const [wordDetail, setWordDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(null);
+  const [detailWord, setDetailWord] = useState("");
   const [saved, setSaved] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [saveToast, setSaveToast] = useState(null); // { word, isFirstTime } | null
@@ -175,28 +178,30 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   }, []);
 
   // ── AI dictionary (cached server-side in word_dictionary_cache) ──
+  // Trước đây mọi thất bại đều thành setWordDetail(null), và khối nghĩa từ
+  // chỉ hiện khi (detailLoading || wordDetail) — nên khi API lỗi cả khối
+  // BIẾN MẤT: người dùng bấm vào từ và không thấy gì xảy ra, không biết là
+  // lỗi hay từ đó không có nghĩa. Chính vì vô hình mà sự cố Groq ngừng model
+  // không ai báo. Giờ tách rõ: lỗi thì hiện thông báo + nút thử lại.
   const loadWordDetail = useCallback(async (word) => {
-    const key = word.toLowerCase();
+    const key = normalizeWordKey(word);
+    if (!key) return;
+
+    setDetailWord(key);
+    setDetailError(null);
+
     if (dictCache.has(key)) { setWordDetail(dictCache.get(key)); return; }
+
     setDetailLoading(true);
-    try {
-      const res = await fetch("/api/dictionary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word: key }),
-      });
-      if (!res.ok) { setWordDetail(null); return; }
-      const data = await res.json();
-      const detail = data.detail;
-      if (!detail) { setWordDetail(null); return; }
+    const { detail, error, notFound } = await lookupWord(key);
+
+    if (detail) {
       dictCache.set(key, detail);
       if (dictCache.size > 50) dictCache.delete(dictCache.keys().next().value);
-      setWordDetail(detail);
-    } catch {
-      setWordDetail(null);
-    } finally {
-      setDetailLoading(false);
     }
+    setWordDetail(detail);
+    setDetailError(error || (notFound ? `Không tìm thấy "${key}" trong từ điển.` : null));
+    setDetailLoading(false);
   }, []);
 
   // Suggestions debounce
@@ -595,12 +600,23 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
           )}
 
           {/* Word definitions — desktop only here (mobile renders below output panel) */}
-          {(detailLoading || wordDetail) && (
+          {(detailLoading || wordDetail || detailError) && (
             <div className="hidden sm:block border-t px-4 py-3" style={{ borderColor: "var(--divider)" }}>
               {detailLoading ? (
                 <div className="flex items-center gap-2" style={{ color: "var(--electric)" }}>
                   <Loader2 size={13} className="animate-spin" />
                   <span className="text-xs">Đang tra từ điển...</span>
+                </div>
+              ) : detailError ? (
+                <div>
+                  <p className="text-xs mb-2" style={{ color: "var(--ink-soft)" }}>{detailError}</p>
+                  <button
+                    onClick={() => { dictCache.delete(detailWord); loadWordDetail(detailWord); }}
+                    className="text-xs font-bold underline"
+                    style={{ color: "var(--electric)" }}
+                  >
+                    Thử lại
+                  </button>
                 </div>
               ) : (
                 <WordDefinitions detail={wordDetail} onAskAI={handleAskAI} />
@@ -635,13 +651,24 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
         </div>
 
         {/* Word definitions — mobile only, appears after translation output */}
-        {(detailLoading || wordDetail) && (
+        {(detailLoading || wordDetail || detailError) && (
           <div className="sm:hidden border-t px-4 py-3" style={{ borderColor: "var(--divider)" }}>
             {detailLoading ? (
               <div className="flex items-center gap-2" style={{ color: "var(--electric)" }}>
                 <Loader2 size={13} className="animate-spin" />
                 <span className="text-xs">Đang tra từ điển...</span>
               </div>
+            ) : detailError ? (
+                <div>
+                  <p className="text-xs mb-2" style={{ color: "var(--ink-soft)" }}>{detailError}</p>
+                  <button
+                    onClick={() => { dictCache.delete(detailWord); loadWordDetail(detailWord); }}
+                    className="text-xs font-bold underline"
+                    style={{ color: "var(--electric)" }}
+                  >
+                    Thử lại
+                  </button>
+                </div>
             ) : (
               <WordDefinitions detail={wordDetail} />
             )}
