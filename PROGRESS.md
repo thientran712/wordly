@@ -3,10 +3,20 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-**Cập nhật:** 2026-09-03
-**Branch:** `feat/b2b-multi-tenant` (chưa merge, chưa push)
+**Cập nhật:** 2026-09-04
+**Branch:** `feat/b2b-multi-tenant` (B2B chưa merge) — phần AI + rate limit ĐÃ cherry-pick lên `main` và deploy
 **Môi trường:** migration ĐÃ chạy production (2026-09-03) — xem mục "Đã kiểm chứng trên production"
-**Test:** 144/144 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
+**Test:** 169/169 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
+
+### Deploy 4/9/2026 — sự cố AI đã hết
+
+Cherry-pick 3 commit lên `main` (KHÔNG kèm migration, thuần code):
+`rate limit + CI` → `sửa model Groq chết` → `Gemini chính + sửa nghĩa trùng pos`,
+kèm 2 commit sửa CI. CI xanh, **chủ dự án xác nhận production chạy ổn**.
+
+Sự cố gốc kéo dài lâu hơn cần thiết vì bản sửa nằm trên branch mà `main`
+không có — từ nay kiểm tính năng thì phải so `git log main..HEAD`, đừng chỉ
+đọc code trên branch đang làm.
 
 ---
 
@@ -110,9 +120,27 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 | `/api/ai/grade-essay` | AI chấm tự luận 4 tiêu chí + sửa lỗi |
 | `/api/ai/grade-speaking` | Whisper nghe audio → LLM chấm bài nói |
 
-**Model theo vai trò, không hardcode tên:** `fast` (qwen3.8-27b),
-`quality` (gpt-oss-120b), `transcribe` (whisper-large-v3-turbo).
-`callGroq()` tự chuyển model dự phòng khi nhà cung cấp ngừng model.
+**Model theo vai trò, ladder XUYÊN NHÀ CUNG CẤP** (Gemini chính, Groq dự
+phòng) — `src/lib/ai-models.js`:
+
+| Vai trò | Thứ tự thử |
+|---|---|
+| `fast` | gemini-flash-lite-latest → gemini-2.5-flash → *(Groq)* qwen3.8-27b → compound-mini |
+| `quality` | gemini-2.5-flash → gemini-3.5-flash → *(Groq)* gpt-oss-120b → qwen3.8-27b |
+| `transcribe` | whisper-large-v3-turbo → whisper-large-v3 (**giữ ở Groq** — Gemini không có endpoint transcription tương thích) |
+
+`callAI()` tự tụt bậc khi model lỗi/404/429/503, và tụt sang nhà cung cấp
+khác khi cả Gemini hỏng. `callGroq` là alias giữ lại để 9 chỗ gọi không phải
+sửa.
+
+**Vì sao dùng endpoint tương thích OpenAI của Gemini**
+(`/v1beta/openai/chat/completions`): shape `choices[0]` giữ nguyên, kể cả
+SSE streaming của chat Alex → đổi nhà cung cấp mà không sửa call site nào.
+
+**Model bị LOẠI có lý do** (đo tay 4/9/2026, có test khoá lại):
+gemini-3-flash-preview ~15.8s và gemini-3.8-flash ~17.9s là model *thinking*,
+quá chậm cho thẻ từ vựng; gemini-2.5-pro trả 404 (không mở cho user mới);
+gemini-pro-latest trả 429 (hết quota).
 
 **AI luôn kèm `confidence` + `needs_review`** — khi không chắc thì nói rõ
 để GV xem lại, không im lặng.
@@ -130,12 +158,12 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 
 | Việc | Ghi chú |
 |---|---|
-| 🔴 **DEPLOY bản sửa model AI lên production** | Tính năng AI đang LỖI trên prod cho tới khi deploy |
 | **2 migration mới CHƯA chạy production** | `20260904000100_guardian_links`, `20260904000200_speaking_review` — chạy trước khi dùng UI phụ huynh/bài nói |
 | Video upload trực tiếp (GĐ2) | ⏸ Chờ anh quyết dịch vụ (khuyến nghị: dùng link YouTube/Drive — đã làm xong) |
 | Thanh toán SaaS (GĐ3) | ⏸ Chờ anh quyết cổng (khuyến nghị: 1-3 khách đầu thu ngoài hệ thống) |
 | 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
 | Rate limit dùng bộ nhớ tiến trình | Vercel nhiều instance → mỗi instance đếm riêng. Chặn được lạm dụng thô; muốn chính xác cần Redis/Upstash |
+| **Toàn bộ B2B vẫn nằm trên `feat/b2b-multi-tenant`** | `main` chỉ có phần AI + rate limit (cherry-pick 4/9/2026). Khi merge B2B nhớ thêm lại đường dẫn B2B vào bước lint của CI và đổi glob `npm test` sang `tests/**` |
 
 ---
 
@@ -203,6 +231,10 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 |---|---|
 | 🔴 **Groq ngừng 2 model app đang dùng** → mọi tính năng AI lỗi trên production | Gọi thật API Groq khi rà soát cơ hội AI |
 | Model hardcode ở 5 file → 1 sự cố phải sửa 5 chỗ | Grep khi sửa lỗi trên |
+| 🔴 **Bản sửa model nằm trên branch, `main` vẫn gọi model chết** → prod lỗi thêm dù đã có bản sửa | So `git log main..HEAD` khi kiểm tính năng |
+| **Prompt thẻ từ không yêu cầu pos khác nhau** → "run" trả 3 nghĩa đều `verb`, người học mất hẳn nghĩa danh từ | Chạy prompt thật 2 lượt/từ trên 6 từ đa nghĩa |
+| Lỗi AI bị `.catch(() => {})` ở WordCard nuốt → thẻ trống nghĩa, không báo gì | Đọc code khi truy nguyên sự cố |
+| CI mới giả định code B2B có trên `main` (thiếu script `test`, lint trỏ thư mục không tồn tại) | CI đỏ sau khi cherry-pick |
 | Streak SQL sai dấu — mọi streak trả về 1 | Mô phỏng JS, đối chiếu 8 ca với thuật toán app |
 | `git add -A` đưa credential iOS vào git history | Kiểm `git diff --stat` sau commit |
 | `setState` đồng bộ trong `useEffect` | `npx eslint` |
@@ -222,11 +254,11 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | # | Việc | Ưu tiên | Trạng thái |
 |---|---|---|---|
 | 1 | Schema không tái tạo được từ repo | 🔴 | Chờ dump baseline |
-| 2 | `/api/translate`, `/api/dictionary` không rate limit | 🔴 | Chưa sửa |
+| 2 | `/api/translate`, `/api/dictionary` không rate limit | 🔴 | ✅ Đã sửa, đã lên production |
 | 3 | `params` không `await` ở `practice/sessions/[id]` (route cũ) | 🔴 | Chưa sửa (ngoài phạm vi B2B) |
 | 4 | Route cũ dùng service role bypass RLS | 🟡 | Route mới đã dùng anon+RLS |
 | 5 | `word_ai_content.word_id` int vs `words.id` UUID | 🟡 | Chưa sửa |
-| 6 | Workflow GitHub trỏ route đã xoá | 🟡 | Chưa sửa |
-| 7 | Không có CI | 🟡 | Đã có `npm test`, chưa có workflow |
+| 6 | Workflow GitHub trỏ route đã xoá | 🟡 | ✅ Đã xoá `daily-email.yml` (cron đã chuyển sang Inngest) |
+| 7 | Không có CI | 🟡 | ✅ Workflow CI đã chạy xanh trên `main` |
 | 8 | `/api/debug/select-word` dump dữ liệu | 🔴 | ✅ Đã xoá |
 | 9 | `middleware` khớp tiền tố lỏng | 🔴 | ✅ Đã siết |
