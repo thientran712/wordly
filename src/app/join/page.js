@@ -74,9 +74,16 @@ export default function JoinPage() {
           <h1 className="text-lg font-bold mb-1" style={{ color: "var(--ink)" }}>
             Đã tham gia lớp!
           </h1>
-          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+          <p className="text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
             {joined?.class_name}
           </p>
+
+          {/* Trước đây màn hình dừng ở đây, học viên phải tự mò menu để tìm
+              lớp vừa vào — đứt gãy hành trình ngay lúc họ hào hứng nhất.
+              Giờ dẫn thẳng vào lớp. */}
+          <Button onClick={() => router.push("/org")} fullWidth>
+            Vào lớp học
+          </Button>
         </Card>
       </main>
     );

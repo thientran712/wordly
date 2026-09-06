@@ -99,7 +99,9 @@ export default function LessonLibrary({ classId, isStaff }) {
       {sessions.length === 0 ? (
         <Card padding="1.5rem" className="text-center">
           <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-            {isStaff ? "Chưa có buổi học nào." : "Giáo viên chưa đăng bài giảng."}
+            {isStaff
+              ? "Chưa có buổi học nào. Tạo buổi học rồi tải slide, audio hoặc video bài giảng lên."
+              : "Giáo viên chưa đăng bài giảng."}
           </p>
         </Card>
       ) : (

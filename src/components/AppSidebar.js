@@ -4,25 +4,38 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Languages, Mic, MessageCircle, NotebookPen, UserCog, Sparkles,
-  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Building2, Zap,
+  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Building2, Zap, GraduationCap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-client";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Translation", icon: Languages },
-  // Hidden from nav — page kept, just not linked. Re-add to unhide.
-  // { href: "/vocabulary-chat", label: "Học từ mới", icon: MessageCircle },
-  { href: "/practice", label: "Chat với Alex", icon: Mic },
-  // Hidden from nav — page kept, just not linked. Re-add to unhide.
-  // { href: "/speak", label: "Luyện nói", icon: Sparkles },
-  { href: "/quiz", label: "Quiz từ vựng", icon: Zap },
-  { href: "/journal", label: "Lưu English Quote", icon: NotebookPen },
-  { href: "/profile", label: "Hồ sơ", icon: UserCog },
+// Menu chia NHÓM có tiêu đề — quy ước quen thuộc của mọi ứng dụng quản lý
+// (Gmail, Notion, Linear đều làm vậy). Trước đây tất cả nằm phẳng một danh
+// sách, trộn tính năng học cá nhân với tính năng trung tâm nên khó quét mắt.
+//
+// Tên mục dùng TIẾNG VIỆT nhất quán — trước đây "Translation" đứng lẫn giữa
+// các mục tiếng Việt, gây cảm giác chắp vá.
+const NAV_GROUPS = [
+  {
+    title: "Học tập",
+    items: [
+      { href: "/", label: "Dịch & tra từ", icon: Languages },
+      { href: "/practice", label: "Luyện nói với Alex", icon: Mic },
+      { href: "/quiz", label: "Quiz từ vựng", icon: Zap },
+      { href: "/journal", label: "Sổ tay câu hay", icon: NotebookPen },
+    ],
+  },
 ];
 
-// Mục "Trung tâm" chỉ hiện với người thuộc ít nhất một tổ chức, nên không
-// nằm trong NAV_ITEMS tĩnh — người dùng B2C thường không thấy mục này.
-const ORG_NAV_ITEM = { href: "/org", label: "Trung tâm", icon: Building2 };
+// Nhóm "Trung tâm" chỉ hiện với người thuộc ít nhất một tổ chức.
+// Học viên và giáo viên/chủ trung tâm thấy MỤC KHÁC NHAU: học viên vào
+// thẳng "Lớp của tôi" (ngôn ngữ của người học), staff vào "Quản lý trung
+// tâm" (ngôn ngữ của người vận hành). Cùng một trang /org nhưng nhãn khác
+// nhau cho đúng vai trò — tránh bắt học viên hiểu từ "quản lý".
+const ORG_NAV_STAFF = { href: "/org", label: "Quản lý trung tâm", icon: Building2 };
+const ORG_NAV_STUDENT = { href: "/org", label: "Lớp của tôi", icon: GraduationCap };
+
+// Mục tài khoản luôn nằm cuối, tách khỏi các nhóm nội dung — quy ước chuẩn.
+const ACCOUNT_ITEM = { href: "/profile", label: "Hồ sơ", icon: UserCog };
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -31,16 +44,31 @@ export default function AppSidebar() {
 
   const [isGuest, setIsGuest] = useState(false);
   const [userName, setUserName] = useState("");
-  const [theme, setTheme] = useState("dark");
+  // Khởi tạo LAZY từ localStorage thay vì setState trong effect. Phải trả
+  // "dark" khi render trên server (không có window) để HTML server và client
+  // khớp nhau — lệch sẽ gây hydration mismatch.
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return "dark";
+    try {
+      return localStorage.getItem("wordly-theme") || "dark";
+    } catch {
+      // Trình duyệt chặn localStorage (chế độ riêng tư, thiết lập bảo mật)
+      return "dark";
+    }
+  });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
   const [hasOrgs, setHasOrgs] = useState(false);
+  // Vai trò trong tổ chức quyết định NHÃN menu (không phải quyền truy cập —
+  // quyền do RLS + trang /org tự kiểm). Chỉ để hiện đúng ngôn ngữ cho từng
+  // đối tượng: học viên thấy "Lớp của tôi", staff thấy "Quản lý trung tâm".
+  const [isOrgStaff, setIsOrgStaff] = useState(false);
 
+  // Chỉ ĐỒNG BỘ ra DOM, không setState — state đã có giá trị đúng từ lúc
+  // khởi tạo. Chạy lại khi theme đổi để nút toggle có tác dụng.
   useEffect(() => {
-    const saved = localStorage.getItem("wordly-theme") || "dark";
-    setTheme(saved);
-    document.documentElement.setAttribute("data-theme", saved);
-  }, []);
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -56,7 +84,14 @@ export default function AppSidebar() {
         // để không thêm một request 401 vô ích cho khách.
         fetch("/api/orgs")
           .then((r) => (r.ok ? r.json() : null))
-          .then((d) => setHasOrgs((d?.orgs?.length ?? 0) > 0))
+          .then((d) => {
+            const orgs = d?.orgs ?? [];
+            setHasOrgs(orgs.length > 0);
+            // Là staff nếu owner/teacher ở BẤT KỲ tổ chức nào — người vừa
+            // dạy ở trung tâm này vừa học ở trung tâm khác vẫn thấy nhãn
+            // quản lý, vì đó là vai trò "cao" hơn.
+            setIsOrgStaff(orgs.some((o) => o.role === "owner" || o.role === "teacher"));
+          })
           .catch(() => {});
       })
       .catch(() => setIsGuest(true));
@@ -69,9 +104,13 @@ export default function AppSidebar() {
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("wordly-theme", next);
-    document.documentElement.setAttribute("data-theme", next);
+    setTheme(next); // effect ở trên tự đồng bộ data-theme ra DOM
+    try {
+      localStorage.setItem("wordly-theme", next);
+    } catch {
+      // Trình duyệt chặn ghi (chế độ riêng tư) — đổi giao diện vẫn có tác
+      // dụng trong phiên này, chỉ không nhớ được cho lần sau.
+    }
   };
 
   const handleLogout = async () => {
@@ -81,6 +120,16 @@ export default function AppSidebar() {
   };
 
   if (isAuthPage) return null;
+
+  // Ghép nhóm động: "Trung tâm" chỉ xuất hiện khi người dùng thuộc tổ chức,
+  // và nhãn đổi theo vai trò. Nhóm "Tài khoản" luôn ở cuối.
+  const navGroups = [
+    ...NAV_GROUPS,
+    ...(hasOrgs
+      ? [{ title: "Trung tâm", items: [isOrgStaff ? ORG_NAV_STAFF : ORG_NAV_STUDENT] }]
+      : []),
+    { title: "Tài khoản", items: [ACCOUNT_ITEM] },
+  ];
 
   return (
     <>
@@ -128,44 +177,46 @@ export default function AppSidebar() {
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-1">
-          {(hasOrgs ? [...NAV_ITEMS, ORG_NAV_ITEM] : NAV_ITEMS).map((item) => {
-            const active = item.href === "/profile"
-              ? pathname === "/profile"
-              : item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.href}
-                onClick={() => { router.push(item.href); setMobileOpen(false); }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all"
-                title={item.label}
-                style={{
-                  background: active ? "var(--green-subtle)" : "transparent",
-                  color: active ? "var(--electric)" : "var(--ink-soft)",
-                  border: active ? "1.5px solid var(--green-subtle-border)" : "1.5px solid transparent",
-                }}
-                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--hover-bg)"; }}
-                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
-              >
-                <Icon size={20} strokeWidth={active ? 2.5 : 2} className="flex-shrink-0" />
-                {!isPractice && <span className="truncate">{item.label}</span>}
-              </button>
-            );
-          })}
+          {/* Nhóm nội dung — mỗi nhóm có tiêu đề nhỏ để mắt quét nhanh.
+              Ở chế độ rail hẹp (/practice) ẩn tiêu đề, chỉ còn icon. */}
+          {navGroups.map((group) => (
+            <div key={group.title} className="flex flex-col gap-1">
+              {!isPractice && (
+                <div
+                  className="px-3 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider"
+                  style={{ color: "var(--ink-ghost)" }}
+                >
+                  {group.title}
+                </div>
+              )}
+              {group.items.map((item) => (
+                <NavButton
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                  isPractice={isPractice}
+                  onNavigate={() => { router.push(item.href); setMobileOpen(false); }}
+                />
+              ))}
+            </div>
+          ))}
 
+          {/* Ghi chú nhanh — hành động, không phải trang, nên tách khỏi các
+              nhóm điều hướng bằng đường kẻ mảnh. */}
           {!isPractice && (
-            <button
-              onClick={() => setIsJournalOpen(true)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all"
-              style={{ color: "var(--ink-soft)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-bg)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-            >
-              <Plus size={20} className="flex-shrink-0" />
-              <span className="truncate">Ghi chú nhanh</span>
-            </button>
+            <>
+              <div className="mx-3 my-2 border-t" style={{ borderColor: "var(--divider)" }} />
+              <button
+                onClick={() => setIsJournalOpen(true)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all"
+                style={{ color: "var(--ink-soft)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-bg)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <Plus size={20} className="flex-shrink-0" />
+                <span className="truncate">Ghi chú nhanh</span>
+              </button>
+            </>
           )}
         </nav>
 
@@ -318,5 +369,37 @@ function JournalSheet({ isOpen, onClose }) {
         </form>
       </div>
     </>
+  );
+}
+
+// Một mục điều hướng. Tách riêng để logic "đang ở trang nào" không lặp lại
+// và để nhóm nav ở trên đọc gọn.
+function NavButton({ item, pathname, isPractice, onNavigate }) {
+  // Trang chủ "/" và "/profile" phải so KHỚP CHÍNH XÁC — nếu dùng
+  // startsWith thì "/" khớp mọi trang, và "/profile" sẽ sáng cả khi đang
+  // ở "/profile/email".
+  const active =
+    item.href === "/" || item.href === "/profile"
+      ? pathname === item.href
+      : pathname.startsWith(item.href);
+
+  const Icon = item.icon;
+
+  return (
+    <button
+      onClick={onNavigate}
+      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all"
+      title={item.label}
+      style={{
+        background: active ? "var(--green-subtle)" : "transparent",
+        color: active ? "var(--electric)" : "var(--ink-soft)",
+        border: active ? "1.5px solid var(--green-subtle-border)" : "1.5px solid transparent",
+      }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--hover-bg)"; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+    >
+      <Icon size={20} strokeWidth={active ? 2.5 : 2} className="flex-shrink-0" />
+      {!isPractice && <span className="truncate">{item.label}</span>}
+    </button>
   );
 }

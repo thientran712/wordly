@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase-server";
 import { getUserFast } from "@/lib/get-user-fast";
 import { isUuid, getOrgRole, isStaffRole } from "@/lib/org-context";
 import { getOrgSettings } from "@/lib/org-settings";
+import { filterProgressForViewer } from "@/lib/progress-privacy";
 
 function daysSince(iso) {
   if (!iso) return Infinity;
@@ -134,10 +135,23 @@ export async function GET(request, { params }) {
   // Người cần chú ý nhất lên đầu: bỏ lâu nhất trước.
   students.sort((a, b) => (b.inactive_days ?? 0) - (a.inactive_days ?? 0));
 
+  // QUYỀN RIÊNG TƯ: học viên chỉ được thấy dữ liệu của CHÍNH MÌNH, không
+  // thấy bạn học. Trước đây API trả toàn bộ danh sách cho bất kỳ ai vào
+  // được lớp — xem src/lib/progress-privacy.js để hiểu vì sao nghiêm trọng.
+  const viewerMembership = (members || []).find(
+    (m) => m.memberships?.user_id === user.id
+  );
+  const visible = filterProgressForViewer({
+    students,
+    summary,
+    role,
+    viewerMembershipId: viewerMembership?.membership_id ?? null,
+  });
+
   return Response.json({
     class: { id: klass.id, name: klass.name },
-    summary,
-    students,
+    summary: visible.summary,
+    students: visible.students,
     thresholds: { active_max_days: activeMax, stalled_max_days: stalledMax },
     can_manage: canManage,
     role,

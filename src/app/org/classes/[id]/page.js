@@ -36,9 +36,28 @@ function formatLastActive(iso, inactiveDays) {
   return `${inactiveDays} ngày trước`;
 }
 
-// Tab "Học phí" CHỈ hiện với owner — giáo viên không được xem tiền
-// (RLS cũng chặn ở tầng DB, đây là để không hiện tab vô dụng).
+// Tab khác nhau theo vai trò, và THỨ TỰ cũng khác — không chỉ ẩn/hiện.
+//
+// Giáo viên/chủ trung tâm mở lớp để XEM AI ĐANG THẾ NÀO → "Tiến độ" đứng
+// đầu. Học viên mở lớp để HỌC → "Bài giảng" đứng đầu, vì tiến độ cả lớp
+// không phải việc của họ (và bảng đó vốn thiết kế cho người dạy).
+//
+// Tab "Học phí" CHỈ owner — giáo viên không được xem tiền (RLS cũng chặn ở
+// tầng DB, đây là để không hiện tab vô dụng).
+// Tab "Bộ từ" là công cụ GIAO bài của GV, học viên không cần thấy.
 function tabsFor(role) {
+  const isStaff = role === "owner" || role === "teacher";
+
+  if (!isStaff) {
+    return [
+      { key: "library", label: "Bài giảng", icon: FolderOpen },
+      { key: "homework", label: "Bài tập", icon: ClipboardList },
+      { key: "speaking", label: "Bài nói", icon: Mic },
+      { key: "quiz", label: "Quiz", icon: Trophy },
+      { key: "progress", label: "Tiến độ của tôi", icon: BarChart3 },
+    ];
+  }
+
   const base = [
     { key: "progress", label: "Tiến độ", icon: BarChart3 },
     { key: "library", label: "Bài giảng", icon: FolderOpen },
@@ -57,7 +76,9 @@ export default function ClassDetail() {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState("progress");
+  // null = chưa biết vai trò. Đặt tab mặc định SAU khi tải xong data, vì
+  // tab đầu tiên khác nhau theo vai trò (staff: Tiến độ, học viên: Bài giảng).
+  const [tab, setTab] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -70,7 +91,11 @@ export default function ClassDetail() {
         return d;
       })
       .then((d) => {
-        if (!cancelled) setData(d);
+        if (cancelled) return;
+        setData(d);
+        // Mở đúng tab đầu tiên của vai trò — học viên không nên rơi vào
+        // bảng tiến độ cả lớp (vốn dành cho người dạy).
+        setTab((current) => current ?? tabsFor(d.role)[0]?.key ?? "library");
       })
       .catch((e) => {
         if (!cancelled) setError(e.message);
@@ -114,7 +139,15 @@ export default function ClassDetail() {
       <div className="mt-3">
         <OrgHeader
           title={data.class.name}
-          subtitle={`${summary.total} học viên`}
+          subtitle={
+            // Học viên chỉ thấy dữ liệu của chính mình (API đã lọc), nên
+            // "N học viên" là câu vô nghĩa với họ.
+            data.can_manage
+              ? `${summary.total} học viên`
+              : data.class?.name
+              ? "Tiến độ học tập của bạn"
+              : ""
+          }
         />
       </div>
 
@@ -193,7 +226,7 @@ export default function ClassDetail() {
               color: "var(--ink-soft)",
             }}
           >
-            <div>Học viên</div>
+            <div>{data.can_manage ? "Học viên" : "Tiến độ"}</div>
             <div className="w-16 text-center">Streak</div>
             <div className="w-16 text-center">Từ đã lưu</div>
             <div className="w-20 text-center">Cần ôn</div>
@@ -205,10 +238,13 @@ export default function ClassDetail() {
             const cfg = STATE_CONFIG[s.state];
             // Chưa có tên hiển thị: profiles thuộc dữ liệu cá nhân, GV chỉ
             // thấy số liệu tiến độ. Dùng mã HV nội bộ nếu trung tâm có đặt.
-            const label =
-              s.custom_fields?.student_code ||
-              s.custom_fields?.ma_hv ||
-              `Học viên ${i + 1}`;
+            // Học viên xem trang này chỉ thấy DÒNG CỦA CHÍNH MÌNH (API đã
+            // lọc), nên nhãn "Học viên 1" là kỳ lạ — gọi thẳng là "Bạn".
+            const label = !data.can_manage
+              ? "Bạn"
+              : s.custom_fields?.student_code ||
+                s.custom_fields?.ma_hv ||
+                `Học viên ${i + 1}`;
 
             return (
               <div
