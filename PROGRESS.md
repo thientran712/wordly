@@ -7,6 +7,7 @@
 **Branch:** `main` = B2B + rate limit Postgres + 4 API AI + video upload R2 — TẤT CẢ ĐÃ MERGE (commit `19a9bdc`) và deploy production.
 **Môi trường:** TOÀN BỘ 14/14 migration đã chạy production (chủ dự án chạy `20260906000100` qua SQL Editor 6/9). R2: bucket `wordly-videos` tạo xong, 5 biến môi trường đã điền vào Vercel, kết nối đã kiểm chứng thật (upload/xác minh/xoá thành công với credential thật).
 **Test:** 231/231 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
+**Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
 ### Deploy 4/9/2026 — B2B + sự cố AI đều đã xong
 
@@ -165,7 +166,6 @@ gemini-pro-latest trả 429 (hết quota).
 |---|---|
 | Thanh toán SaaS (GĐ3) | ⏸ Anh quyết 6/9: dùng VNPay, để sau — chưa làm |
 | 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
-| **Bật `video_upload` cho org cụ thể muốn dùng thử** | Mặc định chỉ bật gói Pro+. Bật tay qua `org_features` — lệnh SQL trong `docs/R2-SETUP.md` Bước 7 |
 | Chưa test luồng video ĐẦU-CUỐI qua UI thật | Đã kiểm chứng: kết nối R2 (upload/xác minh/xoá), migration, biến môi trường. CHƯA kiểm bằng cách thật sự bấm upload video trong app với tài khoản GV — nên làm trước khi thông báo cho khách |
 
 ---
