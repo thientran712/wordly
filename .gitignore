@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ngoại lệ: file mẫu chỉ chứa placeholder, PHẢI được commit (quy tắc bảo
+# mật ATLAS: checked-in .env.example với giá trị giả)
+!.env.example
 
 # vercel
 .vercel

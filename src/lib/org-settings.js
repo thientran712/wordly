@@ -45,12 +45,13 @@ export const FEATURES = {
   quiz_games: "Quiz & game",              // GĐ2
   parent_reports: "Báo cáo phụ huynh",   // GĐ3
   tuition: "Quản lý học phí",             // GĐ4
+  video_upload: "Video bài giảng",        // GĐ2 — R2, chi phí ~0 nhờ egress-free
 };
 
 // Gói dịch vụ → feature bật sẵn. Đây là bảng giá dưới dạng code.
 export const PLAN_FEATURES = {
   basic: ["progress_dashboard", "vocabulary_assignments"],
-  pro: ["progress_dashboard", "vocabulary_assignments", "lesson_library", "homework", "quiz_games"],
+  pro: ["progress_dashboard", "vocabulary_assignments", "lesson_library", "homework", "quiz_games", "video_upload"],
   enterprise: Object.keys(FEATURES),
 };
 
