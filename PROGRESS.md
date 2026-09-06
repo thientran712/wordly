@@ -3,20 +3,21 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-**Cập nhật:** 2026-09-04
-**Branch:** `feat/b2b-multi-tenant` (B2B chưa merge) — phần AI + rate limit ĐÃ cherry-pick lên `main` và deploy
-**Môi trường:** migration ĐÃ chạy production (2026-09-03) — xem mục "Đã kiểm chứng trên production"
-**Test:** 169/169 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
+**Cập nhật:** 2026-09-06
+**Branch:** `main` = B2B ĐÃ MERGE ĐẦY ĐỦ (commit `f72fd37`, 4/9/2026) + rate limit Postgres + 4 API AI cho GV. `feat/video-r2-upload` đang làm video, chưa merge.
+**Môi trường:** toàn bộ migration tới `20260904001000` ĐÃ chạy production. Migration `20260906000100` (video R2) CHƯA chạy.
+**Test:** 231/231 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 
-### Deploy 4/9/2026 — sự cố AI đã hết
+### Deploy 4/9/2026 — B2B + sự cố AI đều đã xong
 
-Cherry-pick 3 commit lên `main` (KHÔNG kèm migration, thuần code):
-`rate limit + CI` → `sửa model Groq chết` → `Gemini chính + sửa nghĩa trùng pos`,
-kèm 2 commit sửa CI. CI xanh, **chủ dự án xác nhận production chạy ổn**.
+`feat/b2b-multi-tenant` (32 commit) đã MERGE HẲN vào `main`, không phải
+cherry-pick nữa. Kèm theo: sửa sự cố Groq ngừng 2 model (mọi tính năng AI
+từng lỗi trên production), rate limit chuyển từ đếm RAM (không hoạt động
+trên Vercel — đã kiểm chứng bằng cách gọi API thật) sang đếm Postgres
+(đã kiểm chứng: 25 request đồng thời → cho qua đúng 15, chặn 10).
 
-Sự cố gốc kéo dài lâu hơn cần thiết vì bản sửa nằm trên branch mà `main`
-không có — từ nay kiểm tính năng thì phải so `git log main..HEAD`, đừng chỉ
-đọc code trên branch đang làm.
+Từ nay `main` là nguồn sự thật duy nhất cho trạng thái B2B — không còn
+tình trạng "code đã viết nhưng nằm trên branch khác main".
 
 ---
 
@@ -31,22 +32,23 @@ không có — từ nay kiểm tính năng thì phải so `git log main..HEAD`, 
 | **GĐ4** | Học phí, công nợ | ✅ Xong | ✅ Xong |
 | **GĐ3** | Báo cáo phụ huynh + quan hệ phụ huynh–HV | ✅ Xong | ✅ Xong |
 | **GĐ4** | Chấm bài nói có audio | ✅ Xong | ✅ Xong |
-| **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⬜ Chờ quyết định | ⬜ Chưa |
-| **GĐ2** | Video upload trực tiếp | ⬜ Chờ quyết định dịch vụ | ⬜ Chưa |
+| **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⏸ Để sau (anh quyết 6/9) | ⬜ Chưa |
+| **GĐ2** | Video upload trực tiếp (Cloudflare R2) | ✅ Xong (branch `feat/video-r2-upload`, chưa merge) | ✅ Xong |
 | — | Cài đặt tổ chức, quota | ✅ Xong | ✅ Xong |
 | — | Email mời thành viên | ✅ Xong | ✅ Xong |
 | — | Xếp hạng quiz | ✅ Xong | ✅ Xong |
 | — | Ghép đôi (match) trong bài tập | ✅ Xong | ✅ Xong |
 
-> ✅ **ĐÃ KIỂM CHỨNG TRÊN PRODUCTION (2026-09-03).** Toàn bộ 9 migration
-> chạy thành công, 13/13 bảng B2B tạo đủ, JWT hook đã bật và hoạt động,
-> RLS chặn đúng, dữ liệu người dùng nguyên vẹn. Xem mục dưới.
+> ✅ **ĐÃ KIỂM CHỨNG TRÊN PRODUCTION (2026-09-03, tiếp tục cập nhật tới 6/9).**
+> 13/14 migration đã chạy thành công (còn migration video 20260906000100
+> chưa chạy), JWT hook đã bật và hoạt động, RLS chặn đúng, dữ liệu người
+> dùng nguyên vẹn. Xem mục dưới.
 
 ---
 
 ## Đã xây (chi tiết)
 
-### Migration (9 file, `supabase/migrations/`)
+### Migration (14 file, `supabase/migrations/`)
 
 | File | Nội dung |
 |---|---|
@@ -85,7 +87,10 @@ Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 `/api/materials/upload-url`, `/api/materials/[id]/url`
 
 **GĐ2:** `/api/homework`, `/api/homework/[id]/submit`,
-`/api/homework/[id]/grade`, `/api/quiz`
+`/api/homework/[id]/grade`, `/api/quiz`,
+`/api/materials/video-upload-url`, `/api/materials/video`,
+`/api/materials/[id]/video-url` (video R2 — xem `src/lib/video-validation.js`
++ `src/lib/r2-client.js`)
 
 **GĐ4:** `/api/tuition`, `/api/tuition/payments`
 
@@ -158,24 +163,25 @@ gemini-pro-latest trả 429 (hết quota).
 
 | Việc | Ghi chú |
 |---|---|
-| Video upload trực tiếp (GĐ2) | ⏸ Chờ anh quyết dịch vụ (khuyến nghị: dùng link YouTube/Drive — đã làm xong) |
-| Thanh toán SaaS (GĐ3) | ⏸ Chờ anh quyết cổng (khuyến nghị: 1-3 khách đầu thu ngoài hệ thống) |
+| **Merge `feat/video-r2-upload` vào `main`** | Backend + UI đã xong, đã test/build/lint sạch. Chưa merge vì cần anh đăng ký Cloudflare trước (xem dưới) |
+| **Đăng ký Cloudflare + chạy migration video** | Bắt buộc trước khi tính năng video hoạt động thật — làm theo `docs/R2-SETUP.md` (7 bước, ~10 phút, miễn phí không cần thẻ) |
+| Thanh toán SaaS (GĐ3) | ⏸ Anh quyết 6/9: dùng VNPay, để sau — chưa làm |
 | 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
-| **Toàn bộ B2B vẫn nằm trên `feat/b2b-multi-tenant`** | `main` chỉ có phần AI + rate limit (cherry-pick 4/9/2026). Khi merge B2B nhớ thêm lại đường dẫn B2B vào bước lint của CI và đổi glob `npm test` sang `tests/**` |
 
 ---
 
 ## Vướng mắc
 
-### 1. 🔴 SQL chưa được kiểm chứng — rủi ro lớn nhất
+### 1. Migration video (`20260906000100`) CHƯA chạy production
 
-9 migration chỉ được kiểm **cân bằng cú pháp** (`$$`, ngoặc). Không có
-Docker/psql trên máy dev nên **chưa chạy thật lần nào**. Có thể còn lỗi cú
-pháp, lỗi thứ tự phụ thuộc, hoặc lỗi tên cột.
+13/14 migration đã chạy production và được kiểm chứng thật (owner xác
+nhận chạy xong 4-6/9/2026; rate limit còn được kiểm bằng cách gọi RPC
+thật trên production — xem lịch sử commit). Chỉ còn migration video mới
+nhất chưa chạy — đã kiểm cân bằng cú pháp (`$$`, ngoặc) nhưng CHƯA qua
+Postgres thật (không có Docker/psql trên máy dev).
 
-96 test unit đều là **logic thuần**, không chạm DB. 18 test RLS chưa từng chạy.
-
-**Lần kiểm chứng thật đầu tiên** = khi chạy `npx supabase start` + `db reset`.
+231 test unit đều là **logic thuần**, không chạm DB. Test RLS chưa từng
+chạy (không có Supabase local).
 
 ### 2. `db reset` sẽ lỗi ở migration 000400
 
@@ -197,10 +203,10 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | ~~1~~ | ~~Dump baseline schema~~ | ✅ XONG 2026-09-03 |
 | ~~2~~ | ~~Bật custom access token hook~~ | ✅ XONG 2026-09-03 |
 | 3 | **Dựng staging** | Cần tạo project Supabase mới, tốn phí |
-| 4 | **Cổng thanh toán** (VNPay/MoMo/Stripe) | Khuyến nghị: 1-3 khách đầu thu ngoài hệ thống |
-| 5 | **Dịch vụ video** (Cloudflare Stream/Mux/Bunny) | Khuyến nghị: dùng link YouTube/Drive trước |
+| ~~4~~ | ~~Cổng thanh toán~~ | ✅ QUYẾT 6/9: dùng VNPay, làm SAU (không phải bây giờ) |
+| ~~5~~ | ~~Dịch vụ video~~ | ✅ QUYẾT 6/9: Cloudflare R2 (miễn phí, egress-free) — đã code xong, chờ anh đăng ký tài khoản |
 | 6 | **Credential iOS** trong `APIClient.swift` | Chuyển sang cấu hình ngoài trước khi commit `wordly-ios/` |
-| 7 | **Ưu tiên tiếp theo** | UI GĐ2-4 đã xong. Còn: cài đặt tổ chức, job báo cáo phụ huynh, email mời |
+| 7 | **Đăng ký Cloudflare R2** | Theo `docs/R2-SETUP.md` — cần làm TRƯỚC khi merge nhánh video |
 
 ---
 
