@@ -100,7 +100,9 @@ export default function HomeworkPanel({ classId, isStaff }) {
         <Card padding="1.5rem" className="text-center">
           <ClipboardList size={26} className="mx-auto mb-2" style={{ color: "var(--ink-ghost)" }} />
           <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-            {isStaff ? "Chưa có bài tập nào." : "Giáo viên chưa giao bài tập."}
+            {isStaff
+              ? "Chưa có bài tập nào. Bấm \"Tạo bài tập\" để giao bài đầu tiên — có thể để AI soạn đề giúp."
+              : "Giáo viên chưa giao bài tập."}
           </p>
         </Card>
       ) : (

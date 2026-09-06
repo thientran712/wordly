@@ -119,7 +119,17 @@ export default function OrgDashboard() {
 
       <OrgHeader
         title={activeOrg?.name || "Đang tải..."}
-        subtitle={loadingClasses ? "Đang tải..." : `${classes.length} lớp đang hoạt động`}
+        subtitle={
+          loadingClasses
+            ? "Đang tải..."
+            : isStaff
+            ? `${classes.length} lớp đang hoạt động`
+            // Học viên đọc câu này, nên dùng ngôn ngữ của người học chứ
+            // không phải của người quản lý ("lớp đang hoạt động").
+            : classes.length > 0
+            ? `Bạn đang học ${classes.length} lớp`
+            : "Bạn chưa được xếp vào lớp nào"
+        }
         badges={
           <>
             {activeOrg?.role && (

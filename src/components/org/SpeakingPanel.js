@@ -89,7 +89,9 @@ export default function SpeakingPanel({ classId, isStaff }) {
         <Card padding="1.5rem" className="text-center">
           <Mic size={26} className="mx-auto mb-2" style={{ color: "var(--ink-ghost)" }} />
           <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-            {isStaff ? "Chưa có đề nói nào." : "Giáo viên chưa giao bài nói."}
+            {isStaff
+              ? "Chưa có đề nói nào. Tạo đề để học viên ghi âm nộp — AI có thể nghe và chấm giúp."
+              : "Giáo viên chưa giao bài nói."}
           </p>
         </Card>
       ) : (
