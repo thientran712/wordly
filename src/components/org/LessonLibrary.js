@@ -8,7 +8,7 @@
 import { useEffect, useState, useRef } from "react";
 import {
   FileText, Music, Link2, Upload, Trash2, Plus, ExternalLink,
-  ChevronDown, ChevronRight, Download, Eye, HardDrive,
+  ChevronDown, ChevronRight, Download, Eye, HardDrive, Video,
 } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -16,7 +16,10 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 
-const KIND_ICON = { document: FileText, audio: Music, link: Link2, video: Link2 };
+// video có 2 nguồn: link ngoài (YouTube/Drive, đã hỗ trợ từ trước) hoặc
+// upload trực tiếp lên R2 (provider='r2'). Cả hai đều kind='video' nên
+// phân biệt bằng material.provider khi cần, còn icon dùng chung.
+const KIND_ICON = { document: FileText, audio: Music, link: Link2, video: Video };
 
 function formatBytes(n) {
   if (!n) return "";
@@ -199,13 +202,20 @@ function MaterialRow({ material, isStaff, onDeleted, onError }) {
   const [busy, setBusy] = useState(false);
   const Icon = KIND_ICON[material.kind] || FileText;
 
+  // Video upload trực tiếp (R2) dùng route riêng vì blob không nằm trong
+  // Supabase Storage — /api/materials/[id]/url không biết cách phát nó.
+  const isR2Video = material.kind === "video" && material.provider === "r2";
+
   const open = async (download = false) => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/materials/${material.id}/url${download ? "?download=1" : ""}`);
+      const endpoint = isR2Video
+        ? `/api/materials/${material.id}/video-url`
+        : `/api/materials/${material.id}/url${download ? "?download=1" : ""}`;
+      const res = await fetch(endpoint);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Không mở được tài liệu");
-      window.open(data.url, "_blank", "noopener,noreferrer");
+      window.open(data.playback_url || data.url, "_blank", "noopener,noreferrer");
     } catch (e) {
       onError(e.message);
     } finally {
@@ -370,12 +380,13 @@ function NewSessionModal({ classId, onClose, onCreated, onError }) {
 }
 
 function UploadModal({ session, onClose, onDone, onError }) {
-  const [mode, setMode] = useState("file"); // file | link
+  const [mode, setMode] = useState("file"); // file | link | video
   const [title, setTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [allowDownload, setAllowDownload] = useState(true);
   const [progress, setProgress] = useState(null);
   const fileRef = useRef(null);
+  const videoRef = useRef(null);
 
   const submitFile = async (e) => {
     e.preventDefault();
@@ -432,6 +443,81 @@ function UploadModal({ session, onClose, onDone, onError }) {
     }
   };
 
+  // Đọc thời lượng video TRƯỚC khi upload — server cần con số này để chặn
+  // video quá dài (video-validation.js), và trình duyệt đọc được metadata
+  // này rất nhanh vì chỉ cần vài KB đầu file, không cần tải hết.
+  const readVideoDuration = (file) =>
+    new Promise((resolve, reject) => {
+      const el = document.createElement("video");
+      el.preload = "metadata";
+      el.onloadedmetadata = () => {
+        URL.revokeObjectURL(el.src);
+        resolve(el.duration);
+      };
+      el.onerror = () => {
+        URL.revokeObjectURL(el.src);
+        reject(new Error("Không đọc được thông tin video. File có thể bị lỗi."));
+      };
+      el.src = URL.createObjectURL(file);
+    });
+
+  const submitVideo = async (e) => {
+    e.preventDefault();
+    const file = videoRef.current?.files?.[0];
+    if (!file) return onError("Chưa chọn video");
+
+    setProgress("Đang đọc thông tin video...");
+    try {
+      const duration = await readVideoDuration(file);
+
+      // Bước 1: xin signed URL (server kiểm quyền + quota 2 lớp: hạn mức
+      // org VÀ trần chung hệ thống R2 free tier)
+      setProgress("Đang xin quyền upload...");
+      const urlRes = await fetch("/api/materials/video-upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: session.id,
+          mime_type: file.type,
+          size_bytes: file.size,
+          duration_seconds: duration,
+        }),
+      });
+      const urlData = await urlRes.json();
+      if (!urlRes.ok) throw new Error(urlData.error || "Không xin được quyền upload");
+
+      // Bước 2: upload TRỰC TIẾP lên R2, không qua server của mình
+      setProgress("Đang tải video lên (có thể mất vài phút)...");
+      const putRes = await fetch(urlData.upload_url, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("Tải video lên thất bại");
+
+      // Bước 3: đăng ký — server xác minh dung lượng THẬT từ R2
+      setProgress("Đang lưu...");
+      const regRes = await fetch("/api/materials/video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: session.id,
+          title: title.trim() || file.name,
+          video_key: urlData.video_key,
+          duration_seconds: duration,
+          allow_download: allowDownload,
+        }),
+      });
+      const regData = await regRes.json();
+      if (!regRes.ok) throw new Error(regData.error || "Không lưu được video");
+
+      onDone();
+    } catch (err) {
+      onError(err.message);
+      setProgress(null);
+    }
+  };
+
   const submitLink = async (e) => {
     e.preventDefault();
     if (!linkUrl.trim() || !title.trim()) return;
@@ -468,6 +554,7 @@ function UploadModal({ session, onClose, onDone, onError }) {
       <div className="flex gap-1 mb-4 p-1 rounded-xl" style={{ background: "var(--surface)" }}>
         {[
           { key: "file", label: "Tải file lên" },
+          { key: "video", label: "Video" },
           { key: "link", label: "Đính link" },
         ].map((t) => (
           <button
@@ -530,6 +617,59 @@ function UploadModal({ session, onClose, onDone, onError }) {
           <div className="flex gap-2">
             <Button type="submit" disabled={!!progress} fullWidth>
               {progress || "Tải lên"}
+            </Button>
+            {!progress && (
+              <Button type="button" variant="secondary" onClick={onClose}>
+                Huỷ
+              </Button>
+            )}
+          </div>
+        </form>
+      ) : mode === "video" ? (
+        <form onSubmit={submitVideo}>
+          <input
+            ref={videoRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime"
+            disabled={!!progress}
+            className="w-full text-xs mb-3"
+            style={{ color: "var(--ink-soft)" }}
+          />
+
+          <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--ink-soft)" }}>
+            Tên hiển thị <span style={{ color: "var(--ink-ghost)" }}>(mặc định lấy tên file)</span>
+          </label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={300}
+            disabled={!!progress}
+            className="mb-3"
+          />
+
+          <label className="flex items-center gap-2 mb-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={allowDownload}
+              onChange={(e) => setAllowDownload(e.target.checked)}
+              disabled={!!progress}
+            />
+            <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
+              Cho học viên tải về
+            </span>
+          </label>
+
+          <div
+            className="flex items-start gap-1.5 text-xs mb-4 px-2.5 py-2 rounded-xl"
+            style={{ background: "var(--surface)", color: "var(--ink-ghost)" }}
+          >
+            <HardDrive size={13} className="flex-shrink-0 mt-0.5" />
+            <span>Video tối đa 2GB, 90 phút. Định dạng mp4/webm/mov. Tải lên có thể mất vài phút tuỳ dung lượng.</span>
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="submit" disabled={!!progress} fullWidth>
+              {progress || "Tải video lên"}
             </Button>
             {!progress && (
               <Button type="button" variant="secondary" onClick={onClose}>

@@ -8,6 +8,7 @@ import { isUuid } from "@/lib/org-context";
 // isAllowedLink có test riêng, gồm ca chống lừa subdomain
 // ("youtube.com.evil.com") và chặn javascript:/data:
 import { isAllowedLink } from "@/lib/material-validation";
+import { deleteObject } from "@/lib/r2-client";
 
 export async function POST(request) {
   const user = await getUserFast();
@@ -26,9 +27,10 @@ export async function POST(request) {
     return Response.json({ error: "session_id không hợp lệ" }, { status: 400 });
   }
   if (!["document", "audio", "link"].includes(kind)) {
-    // 'video' chưa mở ở GĐ1 — cần dịch vụ transcode/streaming (GĐ2)
+    // 'video' upload trực tiếp giờ đi qua /api/materials/video (R2), không
+    // qua route này — route này chỉ giữ document/audio/link.
     return Response.json(
-      { error: "kind phải là 'document', 'audio' hoặc 'link'. Video upload trực tiếp chưa hỗ trợ — dùng link YouTube/Drive." },
+      { error: "kind phải là 'document', 'audio' hoặc 'link'. Video upload dùng /api/materials/video." },
       { status: 400 }
     );
   }
@@ -158,11 +160,12 @@ export async function DELETE(request) {
 
   const supabase = await createClient();
 
-  // Lấy storage_path TRƯỚC khi xoá hàng — sau khi xoá thì không còn đường
-  // nào biết blob nằm ở đâu, và nó sẽ thành rác vĩnh viễn.
+  // Lấy thông tin blob TRƯỚC khi xoá hàng — sau khi xoá thì không còn
+  // đường nào biết blob nằm ở đâu, và nó sẽ thành rác vĩnh viễn (Supabase
+  // Storage lẫn R2 đều có job dọn rác riêng, nhưng tốt hơn là dọn ngay).
   const { data: material } = await supabase
     .from("lesson_materials")
-    .select("id, storage_path")
+    .select("id, storage_path, provider, provider_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -170,15 +173,25 @@ export async function DELETE(request) {
     return Response.json({ error: "Không tìm thấy tài liệu" }, { status: 404 });
   }
 
-  // RLS chặn nếu không có quyền. Trigger tự trừ bytes_used.
+  // RLS chặn nếu không có quyền. Trigger tự trừ bytes_used/org_video_usage.
   const { error: delErr } = await supabase.from("lesson_materials").delete().eq("id", id);
   if (delErr) {
     console.error("[api/materials] lỗi xoá:", delErr.message);
     return Response.json({ error: "Không xoá được tài liệu" }, { status: 500 });
   }
 
-  // Xoá blob sau khi DB đã xoá thành công.
-  if (material.storage_path) {
+  // Xoá blob sau khi DB đã xoá thành công — video (R2) và tài liệu/audio
+  // (Supabase Storage) nằm ở hai nơi khác nhau.
+  if (material.provider === "r2" && material.provider_id) {
+    try {
+      await deleteObject(material.provider_id);
+    } catch (e) {
+      // Không làm request thất bại: DB đã xoá xong, phần user quan tâm đã
+      // hoàn tất. Blob còn lại trên R2 vẫn tính vào quota cho tới khi dọn
+      // tay — chấp nhận được vì đây là trường hợp hiếm (lỗi mạng tới R2).
+      console.error("[api/materials] xoá blob R2 lỗi, cần dọn tay:", e.message, material.provider_id);
+    }
+  } else if (material.storage_path) {
     const admin = createAdminClient();
     const { error: rmErr } = await admin.storage
       .from("lesson-materials")

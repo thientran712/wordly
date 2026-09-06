@@ -16,6 +16,8 @@
     "db:reset": "supabase db reset"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
     "@ricky0123/vad-web": "^0.0.30",
