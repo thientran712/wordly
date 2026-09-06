@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  Wallet, Plus, AlertTriangle, CheckCircle2, Clock, Receipt,
+  Wallet, Plus, AlertTriangle, CheckCircle2, Clock, Receipt, CreditCard, Loader2,
 } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -227,14 +227,23 @@ export default function TuitionPanel({ orgId, classId }) {
                 )}
 
                 {r.status !== "paid" && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Receipt}
-                    onClick={() => setPaying(r)}
-                  >
-                    Ghi nhận thu tiền
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={Receipt}
+                      onClick={() => setPaying(r)}
+                    >
+                      Ghi nhận thu tiền
+                    </Button>
+                    {/* Nút cho học viên/phụ huynh tự thanh toán online.
+                        Chỉ hiện nếu org đã bật VNPay (kiểm ở PayVnpayButton
+                        qua API — 409 thì tự ẩn). */}
+                    <PayVnpayButton
+                      tuitionRecordId={r.tuition_record_id}
+                      onError={setError}
+                    />
+                  </div>
                 )}
               </Card>
             );
@@ -268,6 +277,50 @@ export default function TuitionPanel({ orgId, classId }) {
         />
       )}
     </div>
+  );
+}
+
+// Nút cho học viên/phụ huynh tự thanh toán online. Không tự kiểm tra org
+// đã bật VNPay hay chưa TRƯỚC khi bấm — để đơn giản, cứ để API trả 409 nếu
+// chưa bật, rồi hiện thông báo. Tránh gọi thêm 1 API riêng chỉ để "kiểm
+// điều kiện hiện nút", đổi lại UX là bấm xong mới biết chưa bật (chấp nhận
+// được vì đây không phải luồng chính, chỉ 1 click).
+function PayVnpayButton({ tuitionRecordId, onError }) {
+  const [loading, setLoading] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+
+  if (unavailable) return null; // đã thử và biết org chưa bật → ẩn hẳn
+
+  const pay = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/tuition/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tuition_record_id: tuitionRecordId }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        if (res.status === 409 && d.error?.includes("chưa bật")) {
+          setUnavailable(true);
+          return;
+        }
+        throw new Error(d.error || "Không tạo được link thanh toán");
+      }
+      // Redirect NGAY trong tab hiện tại — đây là luồng thanh toán, không
+      // phải điều hướng phụ, nên không mở tab mới (dễ bị chặn popup, và
+      // người dùng có thể quên tab gốc rồi thanh toán trùng).
+      window.location.href = d.payment_url;
+    } catch (e) {
+      onError(e.message);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button size="sm" icon={loading ? Loader2 : CreditCard} onClick={pay} disabled={loading}>
+      {loading ? "Đang tạo link..." : "Thanh toán online"}
+    </Button>
   );
 }
 

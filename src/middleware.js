@@ -58,6 +58,12 @@ export async function middleware(request) {
     "/api/spinner/vocab",
     "/api/spinner/history",
     "/api/spinner/preferences",
+    // VNPay gọi 2 route này TRỰC TIẾP (không qua trình duyệt người dùng,
+    // không có JWT) — return khi redirect người dùng về, IPN server-to-
+    // server. Cả hai tự xác minh chữ ký VNPay trong code, không dựa vào
+    // JWT auth của hệ thống.
+    "/api/tuition/vnpay-return",
+    "/api/tuition/vnpay-ipn",
   ]);
   const isPublicApi = PUBLIC_API_PATHS.has(path);
 

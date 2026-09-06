@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Settings, HardDrive, Check, Sparkles, Lock } from "lucide-react";
 import Card from "@/components/ui/Card";
+import VnpayConfigCard from "@/components/org/VnpayConfigCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
@@ -301,6 +302,8 @@ export default function SettingsPanel({ orgId, isOwner }) {
           Liên hệ Wordly để nâng gói và mở thêm tính năng.
         </p>
       </Card>
+
+      {isOwner && <VnpayConfigCard orgId={orgId} />}
 
       {isOwner && (
         <div className="flex items-center gap-2" style={{ gridColumn: "1 / -1" }}>
