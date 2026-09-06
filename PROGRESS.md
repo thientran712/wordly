@@ -3,9 +3,9 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-**Cập nhật:** 2026-09-06
-**Branch:** `main` = B2B ĐÃ MERGE ĐẦY ĐỦ (commit `f72fd37`, 4/9/2026) + rate limit Postgres + 4 API AI cho GV. `feat/video-r2-upload` đang làm video, chưa merge.
-**Môi trường:** toàn bộ migration tới `20260904001000` ĐÃ chạy production. Migration `20260906000100` (video R2) CHƯA chạy.
+**Cập nhật:** 2026-09-06 (deploy video R2)
+**Branch:** `main` = B2B + rate limit Postgres + 4 API AI + video upload R2 — TẤT CẢ ĐÃ MERGE (commit `19a9bdc`) và deploy production.
+**Môi trường:** migration tới `20260904001000` ĐÃ chạy production. Migration `20260906000100` (video R2) **CHƯA chạy** — code đã deploy nhưng tính năng chưa hoạt động thật, xem "Chờ chủ dự án quyết định".
 **Test:** 231/231 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 
 ### Deploy 4/9/2026 — B2B + sự cố AI đều đã xong
@@ -33,7 +33,7 @@ tình trạng "code đã viết nhưng nằm trên branch khác main".
 | **GĐ3** | Báo cáo phụ huynh + quan hệ phụ huynh–HV | ✅ Xong | ✅ Xong |
 | **GĐ4** | Chấm bài nói có audio | ✅ Xong | ✅ Xong |
 | **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⏸ Để sau (anh quyết 6/9) | ⬜ Chưa |
-| **GĐ2** | Video upload trực tiếp (Cloudflare R2) | ✅ Xong (branch `feat/video-r2-upload`, chưa merge) | ✅ Xong |
+| **GĐ2** | Video upload trực tiếp (Cloudflare R2) | ✅ Deploy xong · ⏸ CHƯA hoạt động thật (chờ R2 + migration) | ✅ Xong |
 | — | Cài đặt tổ chức, quota | ✅ Xong | ✅ Xong |
 | — | Email mời thành viên | ✅ Xong | ✅ Xong |
 | — | Xếp hạng quiz | ✅ Xong | ✅ Xong |
@@ -163,8 +163,7 @@ gemini-pro-latest trả 429 (hết quota).
 
 | Việc | Ghi chú |
 |---|---|
-| **Merge `feat/video-r2-upload` vào `main`** | Backend + UI đã xong, đã test/build/lint sạch. Chưa merge vì cần anh đăng ký Cloudflare trước (xem dưới) |
-| **Đăng ký Cloudflare + chạy migration video** | Bắt buộc trước khi tính năng video hoạt động thật — làm theo `docs/R2-SETUP.md` (7 bước, ~10 phút, miễn phí không cần thẻ) |
+| 🔴 **Đăng ký Cloudflare + chạy migration video** — CHƯA HOẠT ĐỘNG THẬT | Code đã merge + deploy 6/9 nhưng tính năng chưa dùng được: chưa có credential R2 trong Vercel, migration `20260906000100` chưa chạy (đã kiểm chứng: bảng `org_video_usage` không tồn tại trên production — HTTP 404). Làm theo `docs/R2-SETUP.md` (7 bước, ~10 phút, miễn phí không cần thẻ) |
 | Thanh toán SaaS (GĐ3) | ⏸ Anh quyết 6/9: dùng VNPay, để sau — chưa làm |
 | 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
 
@@ -204,7 +203,7 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | ~~2~~ | ~~Bật custom access token hook~~ | ✅ XONG 2026-09-03 |
 | 3 | **Dựng staging** | Cần tạo project Supabase mới, tốn phí |
 | ~~4~~ | ~~Cổng thanh toán~~ | ✅ QUYẾT 6/9: dùng VNPay, làm SAU (không phải bây giờ) |
-| ~~5~~ | ~~Dịch vụ video~~ | ✅ QUYẾT 6/9: Cloudflare R2 (miễn phí, egress-free) — đã code xong, chờ anh đăng ký tài khoản |
+| 5 | **Đăng ký Cloudflare R2** | Đã QUYẾT 6/9 dùng R2, đã merge+deploy code, nhưng ANH VẪN CẦN đăng ký tài khoản + điền biến môi trường + chạy migration — theo `docs/R2-SETUP.md` |
 | 6 | **Credential iOS** trong `APIClient.swift` | Chuyển sang cấu hình ngoài trước khi commit `wordly-ios/` |
 | 7 | **Đăng ký Cloudflare R2** | Theo `docs/R2-SETUP.md` — cần làm TRƯỚC khi merge nhánh video |
 
