@@ -3,10 +3,10 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-**Cập nhật:** 2026-09-06 (video R2 HOẠT ĐỘNG THẬT trên production)
-**Branch:** `main` = B2B + rate limit Postgres + 4 API AI + video upload R2 — TẤT CẢ ĐÃ MERGE (commit `19a9bdc`) và deploy production.
+**Cập nhật:** 2026-09-07 (VNPay + tái cấu trúc UX — đã deploy)
+**Branch:** `main` = TOÀN BỘ 10/10 module đã merge và deploy (commit `1ef3fd0`). Không còn branch nào chờ merge.
 **Môi trường:** TOÀN BỘ 14/14 migration đã chạy production (chủ dự án chạy `20260906000100` qua SQL Editor 6/9). R2: bucket `wordly-videos` tạo xong, 5 biến môi trường đã điền vào Vercel, kết nối đã kiểm chứng thật (upload/xác minh/xoá thành công với credential thật).
-**Test:** 231/231 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
+**Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
 ### Deploy 4/9/2026 — B2B + sự cố AI đều đã xong
@@ -33,7 +33,7 @@ tình trạng "code đã viết nhưng nằm trên branch khác main".
 | **GĐ4** | Học phí, công nợ | ✅ Xong | ✅ Xong |
 | **GĐ3** | Báo cáo phụ huynh + quan hệ phụ huynh–HV | ✅ Xong | ✅ Xong |
 | **GĐ4** | Chấm bài nói có audio | ✅ Xong | ✅ Xong |
-| **GĐ3** | Thanh toán SaaS (cổng thanh toán) | ⏸ Để sau (anh quyết 6/9) | ⬜ Chưa |
+| **GĐ3** | Thanh toán VNPay | ✅ Deploy xong · ⏸ chờ migration + credential | ✅ Xong |
 | **GĐ2** | Video upload trực tiếp (Cloudflare R2) | ✅ HOẠT ĐỘNG THẬT trên production | ✅ Xong |
 | — | Cài đặt tổ chức, quota | ✅ Xong | ✅ Xong |
 | — | Email mời thành viên | ✅ Xong | ✅ Xong |
@@ -164,7 +164,8 @@ gemini-pro-latest trả 429 (hết quota).
 
 | Việc | Ghi chú |
 |---|---|
-| Thanh toán SaaS (GĐ3) | ⏸ Anh quyết 6/9: dùng VNPay, để sau — chưa làm |
+| 🔴 **Chạy migration VNPay + nhập credential** | `20260907000100_vnpay_payment.sql` CHƯA chạy (kiểm chứng: bảng `vnpay_transactions` trả HTTP 404 trên production). Sau đó vào /org → Cài đặt nhập TMN Code + Hash Secret. Tới lúc đó nút "Thanh toán online" tự ẩn, không ảnh hưởng tính năng khác |
+| Chưa test luồng VNPay với giao dịch thật | Đã test 20/20 unit test (gồm mọi ca giả mạo chữ ký, sửa amount sau ký), nhưng CHƯA gọi VNPay thật — thử với TMN Code đoán bị từ chối đúng (lỗi 72 = TMN Code không tồn tại), cần credential thật |
 | 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
 | Chưa test luồng video ĐẦU-CUỐI qua UI thật | Đã kiểm chứng: kết nối R2 (upload/xác minh/xoá), migration, biến môi trường. CHƯA kiểm bằng cách thật sự bấm upload video trong app với tài khoản GV — nên làm trước khi thông báo cho khách |
 
