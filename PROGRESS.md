@@ -164,7 +164,7 @@ gemini-pro-latest trả 429 (hết quota).
 
 | Việc | Ghi chú |
 |---|---|
-| **Nhập credential VNPay** | Migration ĐÃ chạy (cả `20260907000100` lẫn bản vá `20260907000200`), Vault đã kiểm chứng end-to-end. Còn lại: vào /org → Cài đặt nhập TMN Code + Hash Secret. Tới lúc đó nút "Thanh toán online" tự ẩn, không ảnh hưởng tính năng khác |
+| **Nhập credential VNPay thật** | 3 migration đã chạy (`100`, `200` sửa cột Vault, `300` tự dọn secret). Đã kiểm chứng end-to-end trên production: lưu/đọc/ký/xác minh/tự dọn khi xoá — tất cả đúng. Còn lại: vào /org → Cài đặt nhập TMN Code + Hash Secret THẬT. Tới lúc đó nút "Thanh toán online" tự ẩn |
 | Chưa test luồng VNPay với giao dịch thật | Đã test 20/20 unit test (gồm mọi ca giả mạo chữ ký, sửa amount sau ký), nhưng CHƯA gọi VNPay thật — thử với TMN Code đoán bị từ chối đúng (lỗi 72 = TMN Code không tồn tại), cần credential thật |
 | 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
 | Chưa test luồng video ĐẦU-CUỐI qua UI thật | Đã kiểm chứng: kết nối R2 (upload/xác minh/xoá), migration, biến môi trường. CHƯA kiểm bằng cách thật sự bấm upload video trong app với tài khoản GV — nên làm trước khi thông báo cho khách |
