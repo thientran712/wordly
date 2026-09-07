@@ -33,7 +33,7 @@ tình trạng "code đã viết nhưng nằm trên branch khác main".
 | **GĐ4** | Học phí, công nợ | ✅ Xong | ✅ Xong |
 | **GĐ3** | Báo cáo phụ huynh + quan hệ phụ huynh–HV | ✅ Xong | ✅ Xong |
 | **GĐ4** | Chấm bài nói có audio | ✅ Xong | ✅ Xong |
-| **GĐ3** | Thanh toán VNPay | ✅ Deploy xong · ⏸ chờ migration + credential | ✅ Xong |
+| **GĐ3** | Thanh toán VNPay | ✅ Deploy + migration xong · ⏸ chờ credential | ✅ Xong |
 | **GĐ2** | Video upload trực tiếp (Cloudflare R2) | ✅ HOẠT ĐỘNG THẬT trên production | ✅ Xong |
 | — | Cài đặt tổ chức, quota | ✅ Xong | ✅ Xong |
 | — | Email mời thành viên | ✅ Xong | ✅ Xong |
@@ -164,7 +164,7 @@ gemini-pro-latest trả 429 (hết quota).
 
 | Việc | Ghi chú |
 |---|---|
-| 🔴 **Chạy migration VNPay + nhập credential** | `20260907000100_vnpay_payment.sql` CHƯA chạy (kiểm chứng: bảng `vnpay_transactions` trả HTTP 404 trên production). Sau đó vào /org → Cài đặt nhập TMN Code + Hash Secret. Tới lúc đó nút "Thanh toán online" tự ẩn, không ảnh hưởng tính năng khác |
+| **Nhập credential VNPay** | Migration ĐÃ chạy (cả `20260907000100` lẫn bản vá `20260907000200`), Vault đã kiểm chứng end-to-end. Còn lại: vào /org → Cài đặt nhập TMN Code + Hash Secret. Tới lúc đó nút "Thanh toán online" tự ẩn, không ảnh hưởng tính năng khác |
 | Chưa test luồng VNPay với giao dịch thật | Đã test 20/20 unit test (gồm mọi ca giả mạo chữ ký, sửa amount sau ký), nhưng CHƯA gọi VNPay thật — thử với TMN Code đoán bị từ chối đúng (lỗi 72 = TMN Code không tồn tại), cần credential thật |
 | 17 lỗi lint tồn đọng ở code B2C cũ | CI chỉ lint code B2B; dọn code cũ là việc riêng, tránh hồi quy |
 | Chưa test luồng video ĐẦU-CUỐI qua UI thật | Đã kiểm chứng: kết nối R2 (upload/xác minh/xoá), migration, biến môi trường. CHƯA kiểm bằng cách thật sự bấm upload video trong app với tài khoản GV — nên làm trước khi thông báo cho khách |
@@ -235,6 +235,8 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | Lỗi | Cách phát hiện |
 |---|---|
 | 🔴 **Groq ngừng 2 model app đang dùng** → mọi tính năng AI lỗi trên production | Gọi thật API Groq khi rà soát cơ hội AI |
+| 🔴 **get_vnpay_secret trả chuỗi mã hoá thay vì Hash Secret** → mọi giao dịch VNPay sẽ bị từ chối | Thực nghiệm trên production: lưu secret rồi đọc lại, thấy base64 thay vì giá trị gốc. Nguyên nhân: câu SQL kiểm chứng schema của tôi có `LIMIT 1` nên chỉ thấy cột đầu khớp |
+| 🔴 **API tiến độ lộ dữ liệu học tập của bạn cùng lớp** | Rà soát UI, đọc kỹ API trả gì cho từng vai trò |
 | 🔴 **Rate limit RAM không chặn được gì trên Vercel** | Gọi 18 lần trên prod → 0 lần chặn; 6 request vào 6 instance khác nhau |
 | Merge ghi đè phần sửa rate limit ở `dictionary/route.js` | Bảng đếm TRỐNG sau 20 lượt gọi → code không hề chạy |
 | Model hardcode ở 5 file → 1 sự cố phải sửa 5 chỗ | Grep khi sửa lỗi trên |
