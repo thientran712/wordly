@@ -104,10 +104,13 @@ AS $$
 DECLARE
   v_secret TEXT;
 BEGIN
-  -- Cột thật trong vault.decrypted_secrets tên là `secret` (đã kiểm chứng
-  -- trên Supabase production 7/9/2026 qua information_schema.columns —
-  -- KHÔNG phải `decrypted_secret` như tên view có thể gợi ý nhầm).
-  SELECT secret INTO v_secret
+  -- View vault.decrypted_secrets có CẢ HAI cột:
+  --   secret            = chuỗi đã MÃ HOÁ (không dùng được để ký)
+  --   decrypted_secret  = giá trị THẬT đã giải mã  ← cần cột này
+  -- Đã kiểm chứng bằng thực nghiệm trên production 7/9/2026: lưu secret
+  -- "SELFTEST_SECRET_12345678" rồi đọc lại, cột `secret` trả về chuỗi
+  -- base64 mã hoá, không phải giá trị gốc.
+  SELECT decrypted_secret INTO v_secret
   FROM vault.decrypted_secrets ds
   JOIN org_payment_configs c ON c.hash_secret_id = ds.id
   WHERE c.org_id = p_org_id;
