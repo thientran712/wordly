@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
+import { createClient as createSupabaseJs } from "@supabase/supabase-js";
+import { getCachedJwks } from "@/lib/jwks-cache";
 
 export async function middleware(request) {
   let response = NextResponse.next({ request });
@@ -19,10 +21,39 @@ export async function middleware(request) {
     }
   );
 
-  // getClaims() verifies the JWT locally (no network round-trip) when the project
-  // uses asymmetric signing keys; it transparently falls back to a getUser() network
-  // call for legacy HS256 secrets, so it's never less correct than getUser().
-  const { data: claimsData, error: authError } = await supabase.auth.getClaims();
+  // ═══════════════════════════════════════════════════════════════════════
+  // PHÁT HIỆN 7/9/2026: getClaims() verify JWT bằng JWKS, nhưng cache JWKS
+  // của GoTrueClient chỉ sống trong RAM của 1 instance. Trên Vercel
+  // serverless, cold start liên tục làm cache đó gần như luôn miss — MỌI
+  // request (middleware chạy ở mọi request) phải gọi mạng tới
+  // /.well-known/jwks.json, đo thực tế 150-330ms. Đây là nguyên nhân chính
+  // khiến module B2B chậm (mỗi trang gọi 3-5 API song song, mỗi API tự trả
+  // giá network này một lần).
+  //
+  // Sửa: lấy JWKS từ cache Postgres (dùng chung mọi instance, TTL 1 giờ —
+  // JWKS gần như không đổi) rồi truyền vào getClaims(jwt, { keys }).
+  // getClaims() tự bỏ qua bước fetch mạng khi key cần dùng đã có sẵn
+  // trong `keys` — xem GoTrueClient.fetchJwk(). Vẫn dùng ĐÚNG hàm verify
+  // của SDK, chỉ tiêm JWKS vào thay vì để nó tự gọi mạng mỗi lần.
+  let jwks = null;
+  try {
+    const admin = createSupabaseJs(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    jwks = await getCachedJwks(admin, `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1`);
+  } catch (e) {
+    // Cache lỗi (DB down, mạng lỗi cả 2 lớp) → jwks=null, getClaims() bên
+    // dưới tự fallback về hành vi CŨ (tự gọi mạng). Không làm mất khả năng
+    // đăng nhập của người dùng chỉ vì cache tạm thời hỏng.
+    console.error("[middleware] lỗi cache JWKS, dùng fallback:", e.message);
+  }
+
+  const { data: claimsData, error: authError } = await supabase.auth.getClaims(
+    undefined,
+    jwks ? { keys: jwks.keys } : undefined
+  );
   const claims = claimsData?.claims || null;
   const userId = claims?.sub || null;
   const userEmail = claims?.email || null;

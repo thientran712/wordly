@@ -123,13 +123,18 @@ export default function AppSidebar() {
 
   // Ghép nhóm động: "Trung tâm" chỉ xuất hiện khi người dùng thuộc tổ chức,
   // và nhãn đổi theo vai trò. Nhóm "Tài khoản" luôn ở cuối.
-  const navGroups = [
-    ...NAV_GROUPS,
-    ...(hasOrgs
-      ? [{ title: "Trung tâm", items: [isOrgStaff ? ORG_NAV_STAFF : ORG_NAV_STUDENT] }]
-      : []),
-    { title: "Tài khoản", items: [ACCOUNT_ITEM] },
-  ];
+  // Thứ tự nhóm phụ thuộc VAI TRÒ, không cố định: owner/teacher đặt
+  // "Trung tâm" LÊN ĐẦU vì đó là công việc chính của họ trên hệ thống —
+  // đăng nhập vào là để quản lý trung tâm, không phải để tự học. Học viên
+  // (hoặc người không thuộc trung tâm nào) vẫn thấy "Học tập" trước vì đó
+  // là lý do chính họ dùng Wordly.
+  const orgGroup = hasOrgs
+    ? [{ title: "Trung tâm", items: [isOrgStaff ? ORG_NAV_STAFF : ORG_NAV_STUDENT] }]
+    : [];
+
+  const navGroups = isOrgStaff
+    ? [...orgGroup, ...NAV_GROUPS, { title: "Tài khoản", items: [ACCOUNT_ITEM] }]
+    : [...NAV_GROUPS, ...orgGroup, { title: "Tài khoản", items: [ACCOUNT_ITEM] }];
 
   return (
     <>
