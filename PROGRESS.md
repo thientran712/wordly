@@ -3,7 +3,7 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-**Cập nhật:** 2026-09-07 (VNPay + tái cấu trúc UX — đã deploy)
+**Cập nhật:** 2026-09-08 (Sửa hiệu năng B2B + table/pagination toàn hệ thống — đã kiểm chứng)
 **Branch:** `main` = TOÀN BỘ 10/10 module đã merge và deploy (commit `1ef3fd0`). Không còn branch nào chờ merge.
 **Môi trường:** TOÀN BỘ 14/14 migration đã chạy production (chủ dự án chạy `20260906000100` qua SQL Editor 6/9). R2: bucket `wordly-videos` tạo xong, 5 biến môi trường đã điền vào Vercel, kết nối đã kiểm chứng thật (upload/xác minh/xoá thành công với credential thật).
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
@@ -39,17 +39,22 @@ tình trạng "code đã viết nhưng nằm trên branch khác main".
 | — | Email mời thành viên | ✅ Xong | ✅ Xong |
 | — | Xếp hạng quiz | ✅ Xong | ✅ Xong |
 | — | Ghép đôi (match) trong bài tập | ✅ Xong | ✅ Xong |
+| — | Cache JWKS (hiệu năng auth) | ✅ HOẠT ĐỘNG THẬT — trang chủ 2s→0.34s | — |
+| — | DataTable + pagination (6/6 khu vực) | — | ✅ Xong |
 
-> ✅ **ĐÃ KIỂM CHỨNG TRÊN PRODUCTION (2026-09-03, tiếp tục cập nhật tới 6/9).**
-> 13/14 migration đã chạy thành công (còn migration video 20260906000100
-> chưa chạy), JWT hook đã bật và hoạt động, RLS chặn đúng, dữ liệu người
-> dùng nguyên vẹn. Xem mục dưới.
+> ✅ **ĐÃ KIỂM CHỨNG TRÊN PRODUCTION (2026-09-03, tiếp tục cập nhật tới 8/9).**
+> Toàn bộ 18 migration (baseline + 17 migration B2B) đã chạy thành công,
+> JWT hook đã bật và hoạt động,
+> RLS chặn đúng, dữ liệu người dùng nguyên vẹn. Cache JWKS đã kiểm chứng
+> đo được thật: trang chủ ổn định ~0.32-0.35s (trước ~1.9-2.3s) qua 5 lần
+> gọi liên tiếp, đăng nhập vẫn hoạt động đúng sau khi đổi middleware. Xem
+> mục dưới.
 
 ---
 
 ## Đã xây (chi tiết)
 
-### Migration (14 file, `supabase/migrations/`)
+### Migration (18 file, `supabase/migrations/`)
 
 | File | Nội dung |
 |---|---|
@@ -227,6 +232,8 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | Tiền là BIGINT đồng, không float | Cộng float làm sai số tiền |
 | `tuition_payments` bất biến | Sổ sách tài chính phải giữ nguyên lịch sử |
 | Giáo viên không xem học phí | Phân tách nghiệp vụ tài chính |
+| Cache JWKS trong Postgres (không tự viết verify JWT thay `getClaims()`) | Đọc kỹ code SDK trước khi sửa: `fetchJwk()` tự bỏ qua gọi mạng khi key có sẵn trong `options.keys` — giữ nguyên hàm verify + khả năng auto-refresh token của SDK, chỉ đổi tốc độ, không đổi hành vi auth |
+| DataTable dùng chung + phân trang CLIENT-SIDE (không sửa API thêm limit/offset) | Số lượng thực tế nhỏ (một lớp hiếm khi quá vài trăm HV); tránh đổi hợp đồng API chỉ để làm UI, có thể chuyển server-side sau nếu một danh sách phình lớn |
 
 ---
 
@@ -237,6 +244,7 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | 🔴 **Groq ngừng 2 model app đang dùng** → mọi tính năng AI lỗi trên production | Gọi thật API Groq khi rà soát cơ hội AI |
 | 🔴 **get_vnpay_secret trả chuỗi mã hoá thay vì Hash Secret** → mọi giao dịch VNPay sẽ bị từ chối | Thực nghiệm trên production: lưu secret rồi đọc lại, thấy base64 thay vì giá trị gốc. Nguyên nhân: câu SQL kiểm chứng schema của tôi có `LIMIT 1` nên chỉ thấy cột đầu khớp |
 | 🔴 **API tiến độ lộ dữ liệu học tập của bạn cùng lớp** | Rà soát UI, đọc kỹ API trả gì cho từng vai trò |
+| 🔴 **Module B2B chậm (~2s/trang) vì middleware gọi mạng verify JWT mỗi request** | Đọc code SDK, phát hiện cache JWKS chỉ sống trong RAM 1 instance — mất khi Vercel cold start |
 | 🔴 **Rate limit RAM không chặn được gì trên Vercel** | Gọi 18 lần trên prod → 0 lần chặn; 6 request vào 6 instance khác nhau |
 | Merge ghi đè phần sửa rate limit ở `dictionary/route.js` | Bảng đếm TRỐNG sau 20 lượt gọi → code không hề chạy |
 | Model hardcode ở 5 file → 1 sự cố phải sửa 5 chỗ | Grep khi sửa lỗi trên |
