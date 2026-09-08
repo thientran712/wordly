@@ -16,7 +16,9 @@ import Badge from "@/components/ui/Badge";
 import MembersPanel from "@/components/org/MembersPanel";
 import SettingsPanel from "@/components/org/SettingsPanel";
 import GuardiansPanel from "@/components/org/GuardiansPanel";
-import OrgShell, { OrgHeader, OrgTabs, OrgGrid } from "@/components/org/OrgShell";
+import OrgShell, { OrgHeader, OrgTabs } from "@/components/org/OrgShell";
+import DataTable from "@/components/ui/DataTable";
+import { usePagination } from "@/lib/use-pagination";
 
 const ROLE_LABELS = {
   owner: "Quản lý",
@@ -194,24 +196,8 @@ export default function OrgDashboard() {
             />
           ))}
         </div>
-      ) : classes.length === 0 ? (
-        <Card padding="2rem" className="text-center">
-          <GraduationCap size={28} className="mx-auto mb-3" style={{ color: "var(--ink-ghost)" }} />
-          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-            {isStaff ? "Chưa có lớp nào. Tạo lớp đầu tiên để bắt đầu." : "Bạn chưa được thêm vào lớp nào."}
-          </p>
-        </Card>
       ) : (
-        <OrgGrid min="300px">
-          {classes.map((c) => (
-            <ClassCard
-              key={c.id}
-              klass={c}
-              isStaff={isStaff}
-              onOpen={() => router.push(`/org/classes/${c.id}`)}
-            />
-          ))}
-        </OrgGrid>
+        <ClassesTable classes={classes} isStaff={isStaff} onOpen={(id) => router.push(`/org/classes/${id}`)} />
       )}
 
       {showCreate && activeOrg && (
@@ -229,11 +215,76 @@ export default function OrgDashboard() {
   );
 }
 
-function ClassCard({ klass, isStaff, onOpen }) {
+function ClassesTable({ classes, isStaff, onOpen }) {
+  const { pageItems, pagination } = usePagination(classes, 10);
+
+  const columns = [
+    {
+      key: "name",
+      label: "Lớp học",
+      render: (c) => (
+        <button
+          onClick={() => onOpen(c.id)}
+          className="text-left font-bold text-sm no-min-h hover:underline"
+          style={{ color: "var(--ink)" }}
+        >
+          {c.name}
+        </button>
+      ),
+    },
+    {
+      key: "description",
+      label: "Mô tả",
+      hideOnMobile: true,
+      render: (c) => (
+        <span className="line-clamp-1 text-xs" style={{ color: "var(--ink-soft)" }}>
+          {c.description || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "member_count",
+      label: "Học viên",
+      className: "text-center",
+      render: (c) => (
+        <span className="flex items-center justify-center gap-1 tabular-nums" style={{ color: "var(--ink-soft)" }}>
+          <Users size={13} /> {c.member_count}
+        </span>
+      ),
+    },
+  ];
+
+  if (isStaff) {
+    columns.push({
+      key: "join_code",
+      label: "Mã lớp",
+      render: (c) => (c.join_code ? <JoinCodeChip klass={c} /> : "—"),
+    });
+  }
+
+  return (
+    <DataTable
+      columns={columns}
+      rows={pageItems}
+      empty={{
+        icon: GraduationCap,
+        title: isStaff ? "Chưa có lớp nào" : "Bạn chưa được thêm vào lớp nào",
+        description: isStaff ? 'Bấm "Tạo lớp" phía trên để bắt đầu.' : undefined,
+      }}
+      pagination={classes.length > 10 ? pagination : undefined}
+      actions={(c) => (
+        <Button size="sm" variant="secondary" onClick={() => onOpen(c.id)}>
+          Mở lớp
+        </Button>
+      )}
+    />
+  );
+}
+
+function JoinCodeChip({ klass }) {
   const [copied, setCopied] = useState(false);
 
-  const copyCode = async (e) => {
-    e.stopPropagation();
+  const copyCode = async () => {
     try {
       await navigator.clipboard.writeText(klass.join_code);
       setCopied(true);
@@ -244,49 +295,22 @@ function ClassCard({ klass, isStaff, onOpen }) {
   };
 
   return (
-    <Card
-      elevated
-      className="cursor-pointer transition-transform hover:scale-[1.01]"
-      onClick={onOpen}
+    <button
+      onClick={copyCode}
+      className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-mono font-bold no-min-h"
+      style={{
+        background: "var(--green-subtle)",
+        color: "var(--electric)",
+        border: "1px solid var(--green-subtle-border)",
+      }}
+      title="Bấm để copy mã lớp"
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-bold text-sm truncate" style={{ color: "var(--ink)" }}>
-          {klass.name}
-        </h3>
-        <div
-          className="flex items-center gap-1 text-xs flex-shrink-0"
-          style={{ color: "var(--ink-soft)" }}
-        >
-          <Users size={13} />
-          {klass.member_count}
-        </div>
-      </div>
-
-      {klass.description && (
-        <p className="text-xs mb-3 line-clamp-2" style={{ color: "var(--ink-soft)" }}>
-          {klass.description}
-        </p>
-      )}
-
-      {isStaff && klass.join_code && (
-        <button
-          onClick={copyCode}
-          className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-mono font-bold no-min-h"
-          style={{
-            background: "var(--green-subtle)",
-            color: "var(--electric)",
-            border: "1px solid var(--green-subtle-border)",
-          }}
-          title="Bấm để copy mã lớp"
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-          {klass.join_code}
-          <span className="font-sans font-normal" style={{ color: "var(--ink-ghost)" }}>
-            · {klass.join_code_uses}/{klass.join_code_max_uses}
-          </span>
-        </button>
-      )}
-    </Card>
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {klass.join_code}
+      <span className="font-sans font-normal" style={{ color: "var(--ink-ghost)" }}>
+        · {klass.join_code_uses}/{klass.join_code_max_uses}
+      </span>
+    </button>
   );
 }
 

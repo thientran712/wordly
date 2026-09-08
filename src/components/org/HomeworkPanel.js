@@ -18,6 +18,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
+import DataTable from "@/components/ui/DataTable";
+import { usePagination } from "@/lib/use-pagination";
 
 const TYPE_LABELS = {
   mcq: "Trắc nghiệm",
@@ -96,29 +98,7 @@ export default function HomeworkPanel({ classId, isStaff }) {
         </Button>
       )}
 
-      {items.length === 0 ? (
-        <Card padding="1.5rem" className="text-center">
-          <ClipboardList size={26} className="mx-auto mb-2" style={{ color: "var(--ink-ghost)" }} />
-          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-            {isStaff
-              ? "Chưa có bài tập nào. Bấm \"Tạo bài tập\" để giao bài đầu tiên — có thể để AI soạn đề giúp."
-              : "Giáo viên chưa giao bài tập."}
-          </p>
-        </Card>
-      ) : (
-        // Lưới tự giãn để màn hình rộng thấy nhiều bài tập cùng lúc
-        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))" }}>
-          {items.map((hw) => (
-            <HomeworkCard
-              key={hw.id}
-              hw={hw}
-              isStaff={isStaff}
-              onDo={() => setDoing(hw)}
-              onGrade={() => setGrading(hw)}
-            />
-          ))}
-        </div>
-      )}
+      <HomeworkTable items={items} isStaff={isStaff} onDo={setDoing} onGrade={setGrading} />
 
       {showCreate && (
         <CreateHomeworkModal
@@ -156,90 +136,106 @@ export default function HomeworkPanel({ classId, isStaff }) {
   );
 }
 
-function HomeworkCard({ hw, isStaff, onDo, onGrade }) {
-  const sub = hw.my_submission;
-  const overdue = hw.due_at && new Date(hw.due_at) < new Date();
+function HomeworkTable({ items, isStaff, onDo, onGrade }) {
+  const { pageItems, pagination } = usePagination(items, 10);
 
-  return (
-    <Card elevated>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-sm truncate" style={{ color: "var(--ink)" }}>
-            {hw.title}
-          </h3>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span
-              className="text-xs flex items-center gap-1"
-              style={{ color: overdue && !sub ? "var(--error)" : "var(--ink-soft)" }}
-            >
-              <Clock size={11} />
-              {formatDue(hw.due_at)}
-            </span>
-            <span className="text-xs" style={{ color: "var(--ink-ghost)" }}>
-              {hw.questions?.length || 0} câu · {hw.total_points} điểm
-            </span>
+  const columns = [
+    {
+      key: "title",
+      label: "Bài tập",
+      render: (hw) => (
+        <div>
+          <div className="font-bold text-sm" style={{ color: "var(--ink)" }}>{hw.title}</div>
+          <div className="text-xs" style={{ color: "var(--ink-ghost)" }}>
+            {hw.questions?.length || 0} câu · {hw.total_points} điểm
           </div>
         </div>
-
-        {hw.status === "draft" && <Badge tone="warning">Nháp</Badge>}
-        {hw.status === "closed" && <Badge tone="neutral">Đã đóng</Badge>}
-      </div>
-
-      {hw.instructions && (
-        <p className="text-xs mb-3 line-clamp-2" style={{ color: "var(--ink-soft)" }}>
-          {hw.instructions}
-        </p>
-      )}
-
-      {isStaff ? (
-        <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
-            {hw.counts?.submitted || 0} chờ chấm · {hw.counts?.graded || 0} đã chấm
+      ),
+    },
+    {
+      key: "due_at",
+      label: "Hạn nộp",
+      hideOnMobile: true,
+      render: (hw) => {
+        const overdue = hw.due_at && new Date(hw.due_at) < new Date();
+        return (
+          <span
+            className="text-xs flex items-center gap-1 whitespace-nowrap"
+            style={{ color: overdue && !hw.my_submission ? "var(--error)" : "var(--ink-soft)" }}
+          >
+            <Clock size={11} /> {formatDue(hw.due_at)}
           </span>
-          <Button size="sm" variant="secondary" icon={Award} onClick={onGrade} className="ml-auto">
+        );
+      },
+    },
+    {
+      key: "status",
+      label: "Trạng thái",
+      render: (hw) => {
+        if (hw.status === "draft") return <Badge tone="warning">Nháp</Badge>;
+        if (hw.status === "closed") return <Badge tone="neutral">Đã đóng</Badge>;
+
+        if (isStaff) {
+          return (
+            <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
+              {hw.counts?.submitted || 0} chờ chấm · {hw.counts?.graded || 0} đã chấm
+            </span>
+          );
+        }
+
+        const sub = hw.my_submission;
+        const overdue = hw.due_at && new Date(hw.due_at) < new Date();
+        if (sub?.status === "graded") {
+          return (
+            <span className="text-xs font-bold flex items-center gap-1" style={{ color: "var(--grass-text)" }}>
+              <CheckCircle2 size={13} /> {sub.total_score}/{hw.total_points} điểm
+            </span>
+          );
+        }
+        if (sub?.status === "submitted") {
+          return (
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--sunshine-text)" }}>
+              <Clock size={13} /> Đã nộp, chờ chấm
+              {sub.is_late && <Badge tone="error">Muộn</Badge>}
+            </span>
+          );
+        }
+        if (overdue && !hw.allow_late) {
+          return (
+            <span className="text-xs flex items-center gap-1" style={{ color: "var(--error)" }}>
+              <AlertCircle size={13} /> Quá hạn
+            </span>
+          );
+        }
+        return <span className="text-xs" style={{ color: "var(--ink-ghost)" }}>Chưa làm</span>;
+      },
+    },
+  ];
+
+  return (
+    <DataTable
+      columns={columns}
+      rows={pageItems}
+      empty={{
+        icon: ClipboardList,
+        title: isStaff ? "Chưa có bài tập nào" : "Giáo viên chưa giao bài tập",
+        description: isStaff ? 'Bấm "Tạo bài tập" để giao bài đầu tiên — có thể để AI soạn đề giúp.' : undefined,
+      }}
+      pagination={items.length > 10 ? pagination : undefined}
+      actions={(hw) =>
+        isStaff ? (
+          <Button size="sm" variant="secondary" icon={Award} onClick={() => onGrade(hw)}>
             Chấm bài
           </Button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          {sub?.status === "graded" ? (
-            <>
-              <span
-                className="text-xs font-bold flex items-center gap-1"
-                style={{ color: "var(--grass-text)" }}
-              >
-                <CheckCircle2 size={13} />
-                {sub.total_score}/{hw.total_points} điểm
-              </span>
-              <Button size="sm" variant="ghost" onClick={onDo} className="ml-auto">
-                Xem lại
-              </Button>
-            </>
-          ) : sub?.status === "submitted" ? (
-            <>
-              <span className="text-xs flex items-center gap-1" style={{ color: "var(--sunshine-text)" }}>
-                <Clock size={13} />
-                Đã nộp, chờ chấm
-              </span>
-              {sub.is_late && <Badge tone="error">Nộp muộn</Badge>}
-            </>
-          ) : (
-            <>
-              {overdue && !hw.allow_late ? (
-                <span className="text-xs flex items-center gap-1" style={{ color: "var(--error)" }}>
-                  <AlertCircle size={13} />
-                  Đã quá hạn, không nộp được
-                </span>
-              ) : (
-                <Button size="sm" icon={Send} onClick={onDo}>
-                  {sub?.status === "in_progress" ? "Tiếp tục làm" : "Làm bài"}
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      )}
-    </Card>
+        ) : hw.my_submission?.status === "graded" ? (
+          <Button size="sm" variant="ghost" onClick={() => onDo(hw)}>Xem lại</Button>
+        ) : hw.due_at && new Date(hw.due_at) < new Date() && !hw.allow_late && hw.my_submission?.status !== "submitted" ? null : (
+          <Button size="sm" icon={Send} onClick={() => onDo(hw)}>
+            {hw.my_submission?.status === "in_progress" ? "Tiếp tục" : hw.my_submission?.status === "submitted" ? "Xem" : "Làm bài"}
+          </Button>
+        )
+      }
+    />
   );
 }
 
