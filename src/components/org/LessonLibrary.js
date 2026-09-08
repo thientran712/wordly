@@ -15,6 +15,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
+import { Pagination } from "@/components/ui/DataTable";
+import { usePagination } from "@/lib/use-pagination";
 
 // video có 2 nguồn: link ngoài (YouTube/Drive, đã hỗ trợ từ trước) hoặc
 // upload trực tiếp lên R2 (provider='r2'). Cả hai đều kind='video' nên
@@ -105,8 +107,56 @@ export default function LessonLibrary({ classId, isStaff }) {
           </p>
         </Card>
       ) : (
-        <div className="space-y-2">
-          {sessions.map((s) => {
+        <SessionsAccordion
+          sessions={sessions}
+          expanded={expanded}
+          toggle={toggle}
+          isStaff={isStaff}
+          reload={reload}
+          setError={setError}
+          setUploadTarget={setUploadTarget}
+        />
+      )}
+
+      {showNewSession && (
+        <NewSessionModal
+          classId={classId}
+          onClose={() => setShowNewSession(false)}
+          onCreated={() => {
+            setShowNewSession(false);
+            reload();
+          }}
+          onError={setError}
+        />
+      )}
+
+      {uploadTarget && (
+        <UploadModal
+          session={uploadTarget}
+          onClose={() => setUploadTarget(null)}
+          onDone={() => {
+            setUploadTarget(null);
+            reload();
+          }}
+          onError={setError}
+        />
+      )}
+    </div>
+  );
+}
+
+// Danh sách buổi học vẫn là ACCORDION (mở/đóng để xem tài liệu bên trong),
+// KHÔNG chuyển sang bảng phẳng — đây là điều hướng phân cấp (buổi học chứa
+// tài liệu), khác bản chất với danh sách phẳng như bài tập/thành viên.
+// Vẫn thêm PHÂN TRANG cho chính danh sách buổi học vì một lớp học dài kỳ
+// dễ có hàng chục buổi (dữ liệu demo đã có 12 buổi/lớp).
+function SessionsAccordion({ sessions, expanded, toggle, isStaff, reload, setError, setUploadTarget }) {
+  const { pageItems, pagination } = usePagination(sessions, 8);
+
+  return (
+    <div>
+      <div className="space-y-2">
+        {pageItems.map((s) => {
             const open = expanded.has(s.id);
             return (
               <Card key={s.id} elevated padding="0" className="overflow-hidden">
@@ -169,33 +219,9 @@ export default function LessonLibrary({ classId, isStaff }) {
                 )}
               </Card>
             );
-          })}
-        </div>
-      )}
-
-      {showNewSession && (
-        <NewSessionModal
-          classId={classId}
-          onClose={() => setShowNewSession(false)}
-          onCreated={() => {
-            setShowNewSession(false);
-            reload();
-          }}
-          onError={setError}
-        />
-      )}
-
-      {uploadTarget && (
-        <UploadModal
-          session={uploadTarget}
-          onClose={() => setUploadTarget(null)}
-          onDone={() => {
-            setUploadTarget(null);
-            reload();
-          }}
-          onError={setError}
-        />
-      )}
+        })}
+      </div>
+      {sessions.length > 8 && <Pagination {...pagination} />}
     </div>
   );
 }
