@@ -1,17 +1,25 @@
 "use client";
 
-// Quản lý thành viên tổ chức — chỉ owner mời/xoá.
+// Quản lý thành viên tổ chức — 4 tab theo vai trò, mỗi tab một bảng riêng.
 //
-// Hai luồng vào tổ chức: mời qua email (danh sách có sẵn) và mã lớp (GV đọc
-// trên lớp). Panel này lo luồng thứ nhất.
+// Trước đây gộp cả 4 nhóm thành card rời rạc trong 1 danh sách dài — với
+// vài chục thành viên (trung tâm thật dễ đạt tới) thì tràn trang không
+// kiểm soát được. Tách theo tab: mỗi vai trò một bảng, phân trang riêng,
+// nút mời mặc định đúng vai trò của tab đang mở.
+//
+// Hai luồng vào tổ chức: mời qua email (danh sách có sẵn) và mã lớp (GV
+// đọc trên lớp). Panel này lo luồng thứ nhất.
 
 import { useEffect, useState } from "react";
-import { UserPlus, Trash2, Mail, ShieldCheck, GraduationCap, Users } from "lucide-react";
+import { UserPlus, Trash2, Mail, ShieldCheck, GraduationCap, Users, UserRound } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
+import DataTable from "@/components/ui/DataTable";
+import { OrgTabs } from "@/components/org/OrgShell";
+import { usePagination } from "@/lib/use-pagination";
 
 const ROLE_LABELS = {
   owner: "Quản lý",
@@ -24,13 +32,18 @@ const ROLE_ICONS = {
   owner: ShieldCheck,
   teacher: GraduationCap,
   student: Users,
-  parent: Users,
+  parent: UserRound,
 };
+
+// Chỉ 3 vai trò này mời được qua email — owner được gán lúc tạo tổ chức,
+// không mời thêm qua đây (tránh nhiều owner ngoài ý muốn).
+const INVITABLE_ROLES = ["teacher", "student", "parent"];
 
 export default function MembersPanel({ orgId, isOwner }) {
   const [members, setMembers] = useState(null);
   const [error, setError] = useState("");
   const [showInvite, setShowInvite] = useState(false);
+  const [tab, setTab] = useState("owner");
 
   const reload = () => {
     fetch(`/api/orgs/${orgId}/members`)
@@ -87,10 +100,18 @@ export default function MembersPanel({ orgId, isOwner }) {
     );
   }
 
-  // Nhóm theo vai trò để dễ đọc khi trung tâm có nhiều người
-  const grouped = ["owner", "teacher", "student", "parent"]
-    .map((role) => ({ role, items: members.filter((m) => m.role === role) }))
-    .filter((g) => g.items.length > 0);
+  const byRole = {
+    owner: members.filter((m) => m.role === "owner"),
+    teacher: members.filter((m) => m.role === "teacher"),
+    student: members.filter((m) => m.role === "student"),
+    parent: members.filter((m) => m.role === "parent"),
+  };
+
+  const tabs = ["owner", "teacher", "student", "parent"].map((r) => ({
+    key: r,
+    label: `${ROLE_LABELS[r]} (${byRole[r].length})`,
+    icon: ROLE_ICONS[r],
+  }));
 
   return (
     <div>
@@ -103,75 +124,20 @@ export default function MembersPanel({ orgId, isOwner }) {
         </div>
       )}
 
-      {isOwner && (
+      <OrgTabs tabs={tabs} active={tab} onChange={setTab} />
+
+      {isOwner && INVITABLE_ROLES.includes(tab) && (
         <Button icon={UserPlus} size="sm" onClick={() => setShowInvite(true)} className="mb-3">
-          Mời thành viên
+          Mời {ROLE_LABELS[tab].toLowerCase()}
         </Button>
       )}
 
-      {members.length === 0 ? (
-        <Card padding="1.5rem" className="text-center">
-          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-            Chưa có thành viên nào.
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {grouped.map(({ role, items }) => {
-            const Icon = ROLE_ICONS[role];
-            return (
-              <div key={role}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Icon size={13} style={{ color: "var(--ink-soft)" }} />
-                  <span className="text-xs font-bold" style={{ color: "var(--ink-soft)" }}>
-                    {ROLE_LABELS[role]} ({items.length})
-                  </span>
-                </div>
-
-                <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
-                  {items.map((m) => (
-                    <div
-                      key={m.id}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
-                      style={{ background: "var(--surface)", border: "1px solid var(--card-border)" }}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm truncate" style={{ color: "var(--ink)" }}>
-                          {m.custom_fields?.student_code ||
-                            m.invited_email ||
-                            `Thành viên ${m.id.slice(0, 8)}`}
-                        </div>
-                        {m.status === "invited" && (
-                          <span className="text-xs" style={{ color: "var(--sunshine-text)" }}>
-                            Chờ nhận lời mời
-                          </span>
-                        )}
-                      </div>
-
-                      {m.status === "invited" && <Badge tone="warning">Đã mời</Badge>}
-
-                      {isOwner && (
-                        <button
-                          onClick={() => remove(m)}
-                          className="no-min-h w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ color: "var(--error)" }}
-                          title="Xoá khỏi trung tâm"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <RoleTable role={tab} items={byRole[tab]} isOwner={isOwner} onRemove={remove} />
 
       {showInvite && (
         <InviteModal
           orgId={orgId}
+          defaultRole={INVITABLE_ROLES.includes(tab) ? tab : "student"}
           onClose={() => setShowInvite(false)}
           onDone={() => {
             setShowInvite(false);
@@ -184,9 +150,69 @@ export default function MembersPanel({ orgId, isOwner }) {
   );
 }
 
-function InviteModal({ orgId, onClose, onDone, onError }) {
+function RoleTable({ role, items, isOwner, onRemove }) {
+  const { pageItems, pagination } = usePagination(items, 10);
+  const Icon = ROLE_ICONS[role];
+
+  const columns = [
+    {
+      key: "name",
+      label: "Tên / Email",
+      render: (m) =>
+        m.custom_fields?.student_code || m.invited_email || `Thành viên ${m.id.slice(0, 8)}`,
+    },
+    {
+      key: "status",
+      label: "Trạng thái",
+      render: (m) =>
+        m.status === "invited" ? (
+          <Badge tone="warning">Chờ nhận lời mời</Badge>
+        ) : (
+          <Badge tone="accent">Hoạt động</Badge>
+        ),
+    },
+    {
+      key: "created_at",
+      label: "Tham gia",
+      className: "whitespace-nowrap",
+      render: (m) => new Date(m.created_at).toLocaleDateString("vi-VN"),
+    },
+  ];
+
+  return (
+    <DataTable
+      columns={columns}
+      rows={pageItems}
+      empty={{
+        icon: Icon,
+        title: `Chưa có ${ROLE_LABELS[role].toLowerCase()} nào`,
+        description:
+          role === "student" || role === "teacher" || role === "parent"
+            ? `Bấm "Mời ${ROLE_LABELS[role].toLowerCase()}" phía trên để thêm.`
+            : undefined,
+      }}
+      pagination={items.length > 10 ? pagination : undefined}
+      actions={
+        isOwner && role !== "owner"
+          ? (m) => (
+              <button
+                onClick={() => onRemove(m)}
+                className="no-min-h w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ color: "var(--error)" }}
+                title="Xoá khỏi trung tâm"
+              >
+                <Trash2 size={13} />
+              </button>
+            )
+          : undefined
+      }
+    />
+  );
+}
+
+function InviteModal({ orgId, defaultRole, onClose, onDone, onError }) {
   const [emails, setEmails] = useState("");
-  const [role, setRole] = useState("student");
+  const [role, setRole] = useState(defaultRole);
   const [saving, setSaving] = useState(false);
   const [report, setReport] = useState(null);
 
