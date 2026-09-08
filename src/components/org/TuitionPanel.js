@@ -15,6 +15,8 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 import { formatVnd, calculateTuition, TUITION_MODELS } from "@/lib/tuition-calc";
+import DataTable from "@/components/ui/DataTable";
+import { usePagination } from "@/lib/use-pagination";
 
 const MODEL_LABELS = {
   per_course: "Theo khoá",
@@ -157,99 +159,7 @@ export default function TuitionPanel({ orgId, classId }) {
         Thêm khoản học phí
       </Button>
 
-      {records.length === 0 ? (
-        <Card padding="1.5rem" className="text-center">
-          <Wallet size={26} className="mx-auto mb-2" style={{ color: "var(--ink-ghost)" }} />
-          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-            Chưa có khoản học phí nào.
-          </p>
-        </Card>
-      ) : (
-        // Lưới tự giãn: màn hình rộng hiện nhiều khoản cùng lúc thay vì
-        // một cột dài phải cuộn nhiều
-        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
-          {records.map((r) => {
-            const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.unpaid;
-            return (
-              <Card key={r.tuition_record_id} elevated>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-sm truncate" style={{ color: "var(--ink)" }}>
-                      {r.title}
-                    </h3>
-                    {r.due_date && (
-                      <span
-                        className="text-xs flex items-center gap-1 mt-0.5"
-                        style={{ color: r.is_overdue ? "var(--error)" : "var(--ink-soft)" }}
-                      >
-                        <Clock size={11} />
-                        Hạn {new Date(r.due_date).toLocaleDateString("vi-VN")}
-                        {r.is_overdue && " · quá hạn"}
-                      </span>
-                    )}
-                  </div>
-                  <Badge
-                    tone={r.status === "paid" ? "accent" : r.status === "partial" ? "warning" : "error"}
-                  >
-                    {cfg.label}
-                  </Badge>
-                </div>
-
-                {/* Số tiền — hiển thị rõ từng khoản, không gộp */}
-                <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                  <div>
-                    <div style={{ color: "var(--ink-ghost)" }}>Phải thu</div>
-                    <div className="font-bold tabular-nums" style={{ color: "var(--ink)" }}>
-                      {formatVnd(r.total_due)}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ color: "var(--ink-ghost)" }}>Đã thu</div>
-                    <div className="font-bold tabular-nums" style={{ color: "var(--grass-text)" }}>
-                      {formatVnd(r.paid)}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ color: "var(--ink-ghost)" }}>Còn nợ</div>
-                    <div
-                      className="font-bold tabular-nums"
-                      style={{ color: r.outstanding > 0 ? "var(--error)" : "var(--ink-soft)" }}
-                    >
-                      {formatVnd(r.outstanding)}
-                    </div>
-                  </div>
-                </div>
-
-                {r.overpaid > 0 && (
-                  <p className="text-xs mb-2" style={{ color: "var(--sunshine-text)" }}>
-                    Đã đóng thừa {formatVnd(r.overpaid)}
-                  </p>
-                )}
-
-                {r.status !== "paid" && (
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      icon={Receipt}
-                      onClick={() => setPaying(r)}
-                    >
-                      Ghi nhận thu tiền
-                    </Button>
-                    {/* Nút cho học viên/phụ huynh tự thanh toán online.
-                        Chỉ hiện nếu org đã bật VNPay (kiểm ở PayVnpayButton
-                        qua API — 409 thì tự ẩn). */}
-                    <PayVnpayButton
-                      tuitionRecordId={r.tuition_record_id}
-                      onError={setError}
-                    />
-                  </div>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      <TuitionTable records={records} onPay={setPaying} setError={setError} />
 
       {showCreate && (
         <CreateTuitionModal
@@ -285,6 +195,95 @@ export default function TuitionPanel({ orgId, classId }) {
 // chưa bật, rồi hiện thông báo. Tránh gọi thêm 1 API riêng chỉ để "kiểm
 // điều kiện hiện nút", đổi lại UX là bấm xong mới biết chưa bật (chấp nhận
 // được vì đây không phải luồng chính, chỉ 1 click).
+function TuitionTable({ records, onPay, setError }) {
+  const { pageItems, pagination } = usePagination(records, 10);
+
+  const columns = [
+    {
+      key: "title",
+      label: "Khoản học phí",
+      render: (r) => (
+        <div>
+          <div className="font-bold text-sm" style={{ color: "var(--ink)" }}>{r.title}</div>
+          {r.due_date && (
+            <span
+              className="text-xs flex items-center gap-1 mt-0.5"
+              style={{ color: r.is_overdue ? "var(--error)" : "var(--ink-ghost)" }}
+            >
+              <Clock size={11} />
+              Hạn {new Date(r.due_date).toLocaleDateString("vi-VN")}
+              {r.is_overdue && " · quá hạn"}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "total_due",
+      label: "Phải thu",
+      className: "text-right tabular-nums whitespace-nowrap",
+      render: (r) => formatVnd(r.total_due),
+    },
+    {
+      key: "paid",
+      label: "Đã thu",
+      className: "text-right tabular-nums whitespace-nowrap",
+      render: (r) => <span style={{ color: "var(--grass-text)" }}>{formatVnd(r.paid)}</span>,
+    },
+    {
+      key: "outstanding",
+      label: "Còn nợ",
+      className: "text-right tabular-nums whitespace-nowrap",
+      render: (r) => (
+        <span style={{ color: r.outstanding > 0 ? "var(--error)" : "var(--ink-soft)" }}>
+          {formatVnd(r.outstanding)}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      label: "Trạng thái",
+      render: (r) => {
+        const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.unpaid;
+        return (
+          <div>
+            <Badge tone={r.status === "paid" ? "accent" : r.status === "partial" ? "warning" : "error"}>
+              {cfg.label}
+            </Badge>
+            {r.overpaid > 0 && (
+              <div className="text-xs mt-1" style={{ color: "var(--sunshine-text)" }}>
+                Đóng thừa {formatVnd(r.overpaid)}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
+  return (
+    <DataTable
+      columns={columns}
+      rows={pageItems}
+      rowKey={(r) => r.tuition_record_id}
+      empty={{ icon: Wallet, title: "Chưa có khoản học phí nào" }}
+      pagination={records.length > 10 ? pagination : undefined}
+      actions={(r) =>
+        r.status !== "paid" ? (
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" variant="secondary" icon={Receipt} onClick={() => onPay(r)}>
+              Ghi thu
+            </Button>
+            {/* Chỉ hiện nếu org đã bật VNPay (kiểm ở PayVnpayButton qua
+                API — 409 thì tự ẩn). */}
+            <PayVnpayButton tuitionRecordId={r.tuition_record_id} onError={setError} />
+          </div>
+        ) : null
+      }
+    />
+  );
+}
+
 function PayVnpayButton({ tuitionRecordId, onError }) {
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
