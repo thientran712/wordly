@@ -15,6 +15,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
+import DataTable from "@/components/ui/DataTable";
+import { usePagination } from "@/lib/use-pagination";
 
 const CRITERIA = [
   { key: "score_fluency", label: "Lưu loát" },
@@ -85,79 +87,12 @@ export default function SpeakingPanel({ classId, isStaff }) {
         </Button>
       )}
 
-      {prompts.length === 0 ? (
-        <Card padding="1.5rem" className="text-center">
-          <Mic size={26} className="mx-auto mb-2" style={{ color: "var(--ink-ghost)" }} />
-          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-            {isStaff
-              ? "Chưa có đề nói nào. Tạo đề để học viên ghi âm nộp — AI có thể nghe và chấm giúp."
-              : "Giáo viên chưa giao bài nói."}
-          </p>
-        </Card>
-      ) : (
-        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))" }}>
-          {prompts.map((p) => (
-            <Card key={p.id} elevated>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-bold text-sm truncate" style={{ color: "var(--ink)" }}>
-                    {p.title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1 text-xs" style={{ color: "var(--ink-soft)" }}>
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} />
-                      {p.max_seconds}s
-                    </span>
-                    {p.due_at && (
-                      <span>Hạn {new Date(p.due_at).toLocaleDateString("vi-VN")}</span>
-                    )}
-                  </div>
-                </div>
-                {p.status === "draft" && <Badge tone="warning">Nháp</Badge>}
-              </div>
-
-              <p className="text-xs mb-3" style={{ color: "var(--ink-soft)" }}>
-                {p.prompt_text}
-              </p>
-
-              {isStaff ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
-                    {p.counts?.submitted || 0} chờ chấm · {p.counts?.graded || 0} đã chấm
-                  </span>
-                  <Button size="sm" variant="secondary" icon={Award}
-                    onClick={() => setGrading(p)} className="ml-auto">
-                    Chấm bài
-                  </Button>
-                </div>
-              ) : p.my_submission?.status === "graded" ? (
-                <div>
-                  <span className="text-xs font-bold flex items-center gap-1" style={{ color: "var(--grass-text)" }}>
-                    <CheckCircle2 size={13} />
-                    Điểm: {p.my_submission.score_overall ?? "—"}
-                  </span>
-                  {p.my_submission.feedback && (
-                    <p className="text-xs mt-1.5 px-2.5 py-2 rounded-lg"
-                      style={{ background: "var(--green-subtle)", color: "var(--ink)" }}>
-                      <strong>Nhận xét:</strong> {p.my_submission.feedback}
-                    </p>
-                  )}
-                </div>
-              ) : p.my_submission?.status === "submitted" ? (
-                <span className="text-xs flex items-center gap-1" style={{ color: "var(--sunshine-text)" }}>
-                  <Clock size={13} />
-                  Đã nộp, chờ giáo viên chấm
-                  {p.my_submission.is_late && " (nộp muộn)"}
-                </span>
-              ) : (
-                <Button size="sm" icon={Mic} onClick={() => setRecording(p)}>
-                  Ghi âm bài nói
-                </Button>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
+      <SpeakingTable
+        prompts={prompts}
+        isStaff={isStaff}
+        onGrade={setGrading}
+        onRecord={setRecording}
+      />
 
       {showCreate && (
         <CreatePromptModal classId={classId} onClose={() => setShowCreate(false)}
@@ -180,6 +115,96 @@ export default function SpeakingPanel({ classId, isStaff }) {
 // ══════════════════════════════════════════════════════════════════════════
 // Học viên ghi âm
 // ══════════════════════════════════════════════════════════════════════════
+
+function SpeakingTable({ prompts, isStaff, onGrade, onRecord }) {
+  const { pageItems, pagination } = usePagination(prompts, 10);
+
+  const columns = [
+    {
+      key: "title",
+      label: "Đề nói",
+      render: (p) => (
+        <div>
+          <div className="font-bold text-sm" style={{ color: "var(--ink)" }}>{p.title}</div>
+          <div className="text-xs line-clamp-1" style={{ color: "var(--ink-ghost)" }}>{p.prompt_text}</div>
+        </div>
+      ),
+    },
+    {
+      key: "max_seconds",
+      label: "Thời lượng",
+      hideOnMobile: true,
+      className: "whitespace-nowrap",
+      render: (p) => (
+        <span className="flex items-center gap-1 text-xs" style={{ color: "var(--ink-soft)" }}>
+          <Clock size={11} /> {p.max_seconds}s
+          {p.due_at && <span> · Hạn {new Date(p.due_at).toLocaleDateString("vi-VN")}</span>}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      label: "Trạng thái",
+      render: (p) => {
+        if (p.status === "draft") return <Badge tone="warning">Nháp</Badge>;
+        if (isStaff) {
+          return (
+            <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
+              {p.counts?.submitted || 0} chờ chấm · {p.counts?.graded || 0} đã chấm
+            </span>
+          );
+        }
+        if (p.my_submission?.status === "graded") {
+          return (
+            <div>
+              <span className="text-xs font-bold flex items-center gap-1" style={{ color: "var(--grass-text)" }}>
+                <CheckCircle2 size={13} /> Điểm: {p.my_submission.score_overall ?? "—"}
+              </span>
+              {p.my_submission.feedback && (
+                <p className="text-xs mt-1 line-clamp-2" style={{ color: "var(--ink-soft)" }}>
+                  {p.my_submission.feedback}
+                </p>
+              )}
+            </div>
+          );
+        }
+        if (p.my_submission?.status === "submitted") {
+          return (
+            <span className="text-xs flex items-center gap-1" style={{ color: "var(--sunshine-text)" }}>
+              <Clock size={13} /> Đã nộp, chờ chấm
+              {p.my_submission.is_late && <Badge tone="error">Muộn</Badge>}
+            </span>
+          );
+        }
+        return <span className="text-xs" style={{ color: "var(--ink-ghost)" }}>Chưa ghi âm</span>;
+      },
+    },
+  ];
+
+  return (
+    <DataTable
+      columns={columns}
+      rows={pageItems}
+      empty={{
+        icon: Mic,
+        title: isStaff ? "Chưa có đề nói nào" : "Giáo viên chưa giao bài nói",
+        description: isStaff ? "Tạo đề để học viên ghi âm nộp — AI có thể nghe và chấm giúp." : undefined,
+      }}
+      pagination={prompts.length > 10 ? pagination : undefined}
+      actions={(p) =>
+        isStaff ? (
+          <Button size="sm" variant="secondary" icon={Award} onClick={() => onGrade(p)}>
+            Chấm bài
+          </Button>
+        ) : p.my_submission?.status === "graded" || p.my_submission?.status === "submitted" ? null : (
+          <Button size="sm" icon={Mic} onClick={() => onRecord(p)}>
+            Ghi âm
+          </Button>
+        )
+      }
+    />
+  );
+}
 
 function RecordModal({ prompt, onClose, onDone, onError }) {
   const [state, setState] = useState("idle"); // idle | recording | recorded | uploading
