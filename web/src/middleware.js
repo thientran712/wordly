@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseJs } from "@supabase/supabase-js";
 import { getCachedJwks } from "@/lib/auth/jwks-cache";
 import { bearerToForward } from "@/lib/auth/bearer-auth";
+import { getClaimsSafely } from "@/lib/auth/safe-get-claims";
 
 export async function middleware(request) {
   let response = NextResponse.next({ request });
@@ -59,7 +60,10 @@ export async function middleware(request) {
     authorizationHeader: request.headers.get("authorization"),
   });
 
-  const { data: claimsData, error: authError } = await supabase.auth.getClaims(
+  // getClaimsSafely: getClaims() THROW với JWT thiếu `exp` → không bắt thì
+  // middleware sập, trả 500 thay vì 401 (đo trên Preview 6/10/2026).
+  const { data: claimsData, error: authError } = await getClaimsSafely(
+    supabase.auth,
     bearerToken ?? undefined,
     jwks ? { keys: jwks.keys } : undefined
   );
