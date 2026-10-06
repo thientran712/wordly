@@ -52,6 +52,9 @@ struct HomeView: View {
                         NavigationLink { JournalView() } label: {
                             ActionCard(title: "Sổ tay câu hay", subtitle: "Ghi lại câu muốn nhớ", systemImage: "book.closed.fill", color: WordlyColors.duoPurple)
                         }
+                        NavigationLink { TopicVocabularyView() } label: {
+                            ActionCard(title: "Từ vựng theo chủ đề", subtitle: "IELTS, TOEIC, 12 chủ đề", systemImage: "square.grid.2x2.fill", color: WordlyColors.grass)
+                        }
                     }
                     .buttonStyle(.plain)
                     if !vm.savedWords.isEmpty { savedWordsSection }
