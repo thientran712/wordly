@@ -1,6 +1,6 @@
-import { createAdminClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { inngest } from "@/inngest/client";
-import { getUserFast } from "@/lib/get-user-fast";
+import { getUserFast } from "@/lib/auth/get-user-fast";
 
 export async function GET() {
   const user = await getUserFast();

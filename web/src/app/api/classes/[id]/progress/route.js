@@ -7,11 +7,11 @@
 // Lợi ích kèm theo: query một bảng nhỏ đã tổng hợp thay vì join vào bảng
 // lịch sử hàng triệu dòng.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid, getOrgRole, isStaffRole } from "@/lib/org-context";
-import { getOrgSettings } from "@/lib/org-settings";
-import { filterProgressForViewer } from "@/lib/progress-privacy";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid, getOrgRole, isStaffRole } from "@/lib/org/org-context";
+import { getOrgSettings } from "@/lib/org/org-settings";
+import { filterProgressForViewer } from "@/lib/org/progress-privacy";
 
 function daysSince(iso) {
   if (!iso) return Infinity;

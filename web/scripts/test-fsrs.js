@@ -4,7 +4,7 @@ import {
   cardToDb, 
   predictRetrievability,
   Rating 
-} from '../src/lib/fsrs.js';
+} from '../src/lib/learning/fsrs.js';
 
 console.log('🧪 Testing FSRS wrapper...\n');
 

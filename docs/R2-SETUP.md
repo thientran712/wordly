@@ -90,6 +90,6 @@ ON CONFLICT (org_id, feature_key) DO UPDATE SET enabled = true;
 - Mỗi trung tâm có hạn mức riêng mặc định 1GB (đủ ~4-5 video 30 phút
   720p). Chỉnh trong bảng `org_video_usage.bytes_limit` nếu cần nhiều hơn.
 - Video giới hạn 2GB/file, 90 phút — chặn ở cả client lẫn server
-  (`web/src/lib/video-validation.js`).
+  (`web/src/lib/storage/video-validation.js`).
 - Không transcode — phát trực tiếp file gốc bằng thẻ `<video>`. Định dạng
   hỗ trợ: mp4, webm, mov (quicktime).

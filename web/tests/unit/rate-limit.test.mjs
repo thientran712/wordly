@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import {
   createRateLimiter,
   clientKeyFromRequest,
-} from "../../src/lib/rate-limit.js";
+} from "../../src/lib/security/rate-limit.js";
 
 describe("createRateLimiter", () => {
   let limiter;

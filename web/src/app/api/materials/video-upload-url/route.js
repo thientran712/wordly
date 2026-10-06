@@ -6,13 +6,13 @@
 //   2. Client PUT trực tiếp lên R2 (không qua server Vercel)
 //   3. Client báo xong     → POST /api/materials/video (xác minh dung lượng thật)
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { requireFeature } from "@/lib/org-settings";
-import { validateVideoUpload, buildVideoKey, isNearSystemCap } from "@/lib/video-validation";
-import { createSignedUploadUrl } from "@/lib/r2-client";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { requireFeature } from "@/lib/org/org-settings";
+import { validateVideoUpload, buildVideoKey, isNearSystemCap } from "@/lib/storage/video-validation";
+import { createSignedUploadUrl } from "@/lib/storage/r2-client";
 
 export async function POST(request) {
   const user = await getUserFast();

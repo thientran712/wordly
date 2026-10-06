@@ -1,10 +1,10 @@
 // GET  /api/classes?org_id=... — danh sách lớp
 // POST /api/classes             — tạo lớp mới (owner hoặc teacher)
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { requireStaff, requireOrgRole, isUuid } from "@/lib/org-context";
-import { getOrgSetting } from "@/lib/org-settings";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { requireStaff, requireOrgRole, isUuid } from "@/lib/org/org-context";
+import { getOrgSetting } from "@/lib/org/org-settings";
 
 // Bộ ký tự bỏ các cặp dễ đọc lẫn (0/O, 1/I/L) — mã lớp thường được đọc to
 // trên lớp hoặc viết lên bảng nên phải chống nghe/đọc sai.

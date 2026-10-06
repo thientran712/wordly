@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Search, MessageCircle, Volume2, X } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import Dropdown from "@/components/ui/Dropdown";
-import { EXAM_GOALS } from "@/lib/exam-goals";
-import { TOPICS } from "@/lib/topic-classifier";
+import { EXAM_GOALS } from "@/lib/learning/exam-goals";
+import { TOPICS } from "@/lib/ai/topic-classifier";
 
 // Same server-side Google Cloud TTS used by translation (InlineTranslate.js) —
 // much better quality than the browser's built-in speechSynthesis, which is

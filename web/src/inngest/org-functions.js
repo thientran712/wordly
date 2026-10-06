@@ -5,7 +5,7 @@
 // của hệ thống.
 
 import { inngest } from "./client";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ── Snapshot tiến độ hằng ngày ──────────────────────────────────────────────
 //
@@ -348,7 +348,7 @@ export const sendParentReports = inngest.createFunction(
   async ({ event, step }) => {
     const orgs = await step.run("load-orgs", async () => {
       const supabase = createAdminClient();
-      const { isFeatureEnabled } = await import("@/lib/org-settings");
+      const { isFeatureEnabled } = await import("@/lib/org/org-settings");
 
       let query = supabase
         .from("organizations")
@@ -410,9 +410,9 @@ export const sendParentReports = inngest.createFunction(
           }
         }
 
-        const { sendParentReportEmail } = await import("@/lib/send-org-email");
-        const { getOrgSettings } = await import("@/lib/org-settings");
-        const { resolveReportRecipients } = await import("@/lib/guardian-links");
+        const { sendParentReportEmail } = await import("@/lib/email/send-org-email");
+        const { getOrgSettings } = await import("@/lib/org/org-settings");
+        const { resolveReportRecipients } = await import("@/lib/org/guardian-links");
         const settings = await getOrgSettings(org.id);
 
         // ── Người nhận báo cáo: qua guardian_links ──
@@ -666,7 +666,7 @@ export const syncStorageLimits = inngest.createFunction(
   async ({ step }) => {
     const updated = await step.run("sync", async () => {
       const supabase = createAdminClient();
-      const { PLAN_STORAGE_LIMITS } = await import("@/lib/org-settings");
+      const { PLAN_STORAGE_LIMITS } = await import("@/lib/org/org-settings");
 
       const { data: orgs } = await supabase.from("organizations").select("id, plan");
       if (!orgs?.length) return 0;

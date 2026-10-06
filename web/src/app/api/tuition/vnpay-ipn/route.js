@@ -12,8 +12,8 @@
 // IDEMPOTENT: kiểm status hiện tại TRƯỚC khi update — gọi IPN trùng lặp
 // (VNPay có thể gọi lại) không được tạo thêm bản ghi tuition_payments.
 
-import { createAdminClient } from "@/lib/supabase-admin";
-import { verifyIpnSignature, vndFromVnpAmount } from "@/lib/vnpay";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyIpnSignature, vndFromVnpAmount } from "@/lib/tuition/vnpay";
 
 const IPN_RESPONSE = {
   ok: { RspCode: "00", Message: "Confirm Success" },

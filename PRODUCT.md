@@ -204,7 +204,7 @@ Mỗi email gửi đi gồm **2 từ vựng + 1 quote**.
 
 #### 3.2.2. Thuật toán chọn nội dung
 
-`web/src/lib/select-word-for-email.js` dùng thuật toán 2 mức ưu tiên:
+`web/src/lib/email/select-word-for-email.js` dùng thuật toán 2 mức ưu tiên:
 
 ```
 Ưu tiên 1: DUE  — state ≠ 'new' và due_at đã qua
@@ -227,7 +227,7 @@ Sau mỗi lần gửi, `due_at = now + INTERVALS[review_count]`. Lần gửi đ�
 sau, lần 2 → 3 ngày, ... đến bucket cuối giữ nguyên 90 ngày vô hạn.
 
 > **Lưu ý kỹ thuật — hai hệ SRS song song:** Hệ thống email dùng **lịch cố định**
-> này chứ không dùng thuật toán FSRS. Thư viện `ts-fsrs` (`web/src/lib/fsrs.js`,
+> này chứ không dùng thuật toán FSRS. Thư viện `ts-fsrs` (`web/src/lib/learning/fsrs.js`,
 > cấu hình `requestRetention: 0.90`, `maximumInterval: 365`, `enableFuzz: true`)
 > tồn tại đầy đủ nhưng **không được import bởi bất kỳ file nào trong `web/src/`** —
 > đã kiểm chứng bằng grep. Hai hệ dùng chung các cột DB (`state`, `stability`,
@@ -1048,7 +1048,7 @@ phép `corrected_cefr`. Có `TEST_MODE=1` để smoke test rẻ và resume qua
 
 ### 11.3. Phân loại chủ đề
 
-`web/src/lib/topic-classifier.js` dùng **rule-based** (không phải AI) — khớp từ khoá
+`web/src/lib/ai/topic-classifier.js` dùng **rule-based** (không phải AI) — khớp từ khoá
 trong định nghĩa tiếng Anh để gán 1 trong 12 chủ đề:
 
 > Business & Strategy · Technology & AI · Law & Finance · Health & Medicine ·
@@ -1061,7 +1061,7 @@ với chi phí API bằng 0**. Thứ tự rule quan trọng — chủ đề cụ
 
 ### 11.4. Ánh xạ mục tiêu thi cử
 
-`web/src/lib/exam-goals.js` suy ra mục tiêu thi từ level CEFR (thuần derived, không
+`web/src/lib/learning/exam-goals.js` suy ra mục tiêu thi từ level CEFR (thuần derived, không
 có cột DB):
 
 | CEFR | Mục tiêu |

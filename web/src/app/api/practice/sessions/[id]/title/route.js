@@ -1,6 +1,6 @@
-import { getUserFast } from "@/lib/get-user-fast";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { callGroq } from "@/lib/ai-models";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { callGroq } from "@/lib/ai/ai-models";
 
 
 const TITLE_PROMPT = `Summarize the following conversation opener into a short chat title, 3-6 words, no quotes, no trailing punctuation, no emoji. Just the title text, nothing else.`;

@@ -3,12 +3,12 @@
 // Cùng nguyên tắc bảo mật như /api/materials (tài liệu): KHÔNG tin dung
 // lượng client gửi — xác minh lại bằng HeadObject trên R2 trước khi ghi DB.
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { verifyUploadedObject, deleteObject } from "@/lib/r2-client";
-import { VIDEO_MAX_BYTES } from "@/lib/video-validation";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { verifyUploadedObject, deleteObject } from "@/lib/storage/r2-client";
+import { VIDEO_MAX_BYTES } from "@/lib/storage/video-validation";
 
 export async function POST(request) {
   const user = await getUserFast();

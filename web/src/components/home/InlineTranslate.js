@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftRight, Volume2, X, Loader2, Search, Sparkles } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
-import { lookupWord, normalizeWordKey } from "@/lib/dictionary-client";
+import { lookupWord, normalizeWordKey } from "@/lib/ai/dictionary-client";
 
 async function speak(text, lang = "en-US") {
   try {

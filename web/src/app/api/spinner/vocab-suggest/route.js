@@ -1,5 +1,5 @@
-import { getUserFast } from "@/lib/get-user-fast";
-import { callGroq } from "@/lib/ai-models";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { callGroq } from "@/lib/ai/ai-models";
 
 
 // Nuances the kind of vocabulary suggested per tab, without changing the

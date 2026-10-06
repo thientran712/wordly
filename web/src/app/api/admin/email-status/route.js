@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase-admin";
-import { validateCronSecret } from "@/lib/validate-cron-secret";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { validateCronSecret } from "@/lib/auth/validate-cron-secret";
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");

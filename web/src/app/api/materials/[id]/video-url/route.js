@@ -8,10 +8,10 @@
 // nếu là thành viên org sở hữu buổi học. Route này chỉ phát URL SAU KHI
 // query đã qua được RLS.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { getPlaybackUrl } from "@/lib/r2-client";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { getPlaybackUrl } from "@/lib/storage/r2-client";
 
 export async function GET(request, { params }) {
   const { id } = await params; // Next 16: params là Promise

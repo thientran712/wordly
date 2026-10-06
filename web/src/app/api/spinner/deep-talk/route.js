@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Public — matches /api/words* and /api/translate*, guests can browse and
 // spin without an account.

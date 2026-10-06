@@ -10,7 +10,7 @@ import {
   stripAnswers,
   normalizeTextAnswer,
   computeTotalPoints,
-} from "../../src/lib/homework-grading.js";
+} from "../../src/lib/learning/homework-grading.js";
 
 const mcq = {
   id: "q1",

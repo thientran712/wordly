@@ -6,7 +6,7 @@ import {
   Languages, Mic, MessageCircle, NotebookPen, UserCog, Sparkles,
   Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Building2, Zap, GraduationCap,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase-client";
+import { createClient } from "@/lib/supabase/client";
 
 // Menu chia NHÓM có tiêu đề — quy ước quen thuộc của mọi ứng dụng quản lý
 // (Gmail, Notion, Linear đều làm vậy). Trước đây tất cả nằm phẳng một danh

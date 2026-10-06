@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
-import { bearerToForward } from "@/lib/bearer-auth";
+import { bearerToForward } from "@/lib/auth/bearer-auth";
 
 export async function createClient() {
   const cookieStore = await cookies();

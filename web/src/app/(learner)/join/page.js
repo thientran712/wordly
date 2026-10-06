@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Ticket, Check } from "lucide-react";
-import { createClient } from "@/lib/supabase-client";
+import { createClient } from "@/lib/supabase/client";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";

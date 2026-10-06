@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase-client";
+import { createClient } from "@/lib/supabase/client";
 import { Lock, Loader2, Check, Eye, EyeOff } from "lucide-react";
 
 export default function ResetPasswordPage() {

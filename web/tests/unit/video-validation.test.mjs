@@ -14,7 +14,7 @@ import {
   VIDEO_MAX_BYTES,
   VIDEO_MAX_SECONDS,
   SYSTEM_CAP_BYTES,
-} from "../../src/lib/video-validation.js";
+} from "../../src/lib/storage/video-validation.js";
 
 describe("validateVideoUpload", () => {
   test("chấp nhận video hợp lệ", () => {

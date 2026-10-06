@@ -1,7 +1,7 @@
-import { getUserFast } from "@/lib/get-user-fast";
-import { clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
-import { checkRateLimitDb } from "@/lib/rate-limit-db";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
+import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Route CÔNG KHAI (khách dùng được) nên phải có rate limit, nếu không ai
 // cũng đốt được quota DeepL.

@@ -10,7 +10,7 @@ import {
   buildQuizQuestions,
   pickDistractors,
   QUIZ_MODES,
-} from "../../src/lib/quiz-generation.js";
+} from "../../src/lib/learning/quiz-generation.js";
 
 const words = [
   { id: "w1", word: "abandon", def_vi: "bỏ rơi", def_en: "to leave", level: "B2" },

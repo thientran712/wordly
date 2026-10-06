@@ -1,10 +1,10 @@
 // GET  /api/speaking?class_id= — danh sách đề nói (kèm bài nộp của mình)
 // POST /api/speaking            — tạo đề nói (staff)
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid, getOrgRole, isStaffRole } from "@/lib/org-context";
-import { requireFeature } from "@/lib/org-settings";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid, getOrgRole, isStaffRole } from "@/lib/org/org-context";
+import { requireFeature } from "@/lib/org/org-settings";
 
 export async function GET(request) {
   const user = await getUserFast();

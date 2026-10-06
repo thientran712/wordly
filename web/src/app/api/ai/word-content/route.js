@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getOrGenerateWordContent } from "@/lib/generate-ai-content";
-import { getUserFast } from "@/lib/get-user-fast";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getOrGenerateWordContent } from "@/lib/ai/generate-ai-content";
+import { getUserFast } from "@/lib/auth/get-user-fast";
 
 const SELECT_FIELDS = "meanings, synonyms";
 

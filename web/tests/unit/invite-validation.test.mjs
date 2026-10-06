@@ -9,7 +9,7 @@ import {
   parseInviteList,
   isValidOrgRole,
   MAX_INVITES_PER_REQUEST,
-} from "../../src/lib/invite-validation.js";
+} from "../../src/lib/org/invite-validation.js";
 
 describe("isValidOrgRole", () => {
   test("chấp nhận vai trò hợp lệ", () => {

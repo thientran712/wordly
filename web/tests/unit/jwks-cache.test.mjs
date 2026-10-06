@@ -6,7 +6,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { isJwksStale, JWKS_TTL_MS } from "../../src/lib/jwks-cache.js";
+import { isJwksStale, JWKS_TTL_MS } from "../../src/lib/auth/jwks-cache.js";
 
 describe("isJwksStale", () => {
   test("mới cache → chưa cũ", () => {

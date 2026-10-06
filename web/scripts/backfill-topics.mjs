@@ -7,7 +7,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
-import { classifyTopic } from "../src/lib/topic-classifier.js";
+import { classifyTopic } from "../src/lib/ai/topic-classifier.js";
 
 const env = readFileSync(new URL("../.env.local", import.meta.url), "utf-8");
 const getEnv = (key) => env.match(new RegExp(`^${key}=(.+)$`, "m"))?.[1]?.trim();

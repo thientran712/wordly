@@ -1,9 +1,9 @@
 // GET  /api/classes/[id]/sessions — danh sách buổi học kèm tài liệu
 // POST /api/classes/[id]/sessions — tạo buổi học
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
 
 export async function GET(request, { params }) {
   const { id: classId } = await params;

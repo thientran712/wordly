@@ -1,5 +1,5 @@
-import { callGroq } from "@/lib/ai-models";
-import { buildWordContentPrompt, dedupeMeaningsByPos } from "@/lib/word-content-prompt";
+import { callGroq } from "@/lib/ai/ai-models";
+import { buildWordContentPrompt, dedupeMeaningsByPos } from "@/lib/ai/word-content-prompt";
 
 
 export async function getOrGenerateWordContent(adminSupabase, { word_id, word, pos, word_level, skill_level, learning_goal }) {

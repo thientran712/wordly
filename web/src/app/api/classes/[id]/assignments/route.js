@@ -5,10 +5,10 @@
 // nguồn nạp vào hàng đợi ôn tập mà select-word-for-email.js đã xử lý sẵn —
 // học viên nhận qua email và thấy trong app bằng đúng cơ chế FSRS hiện có.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { requireFeature } from "@/lib/org-settings";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { requireFeature } from "@/lib/org/org-settings";
 import { inngest } from "@/inngest/client";
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];

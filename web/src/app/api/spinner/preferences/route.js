@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
 
 // Guests get null (client falls back to in-memory defaults) instead of 401,
 // so the same fetch call works whether logged in or not.

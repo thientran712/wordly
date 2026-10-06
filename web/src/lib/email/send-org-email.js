@@ -6,8 +6,8 @@
 
 import nodemailer from "nodemailer";
 import { render } from "@react-email/render";
-import OrgInviteEmail from "@/emails/OrgInviteEmail";
-import ParentReportEmail from "@/emails/ParentReportEmail";
+import OrgInviteEmail from "@/lib/email/templates/OrgInviteEmail";
+import ParentReportEmail from "@/lib/email/templates/ParentReportEmail";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",

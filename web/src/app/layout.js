@@ -1,8 +1,8 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-import AppSidebar from "@/components/AppSidebar";
-import MainContent from "@/components/MainContent";
+import AppSidebar from "@/components/layout/AppSidebar";
+import MainContent from "@/components/layout/MainContent";
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 

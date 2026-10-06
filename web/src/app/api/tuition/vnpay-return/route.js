@@ -11,8 +11,8 @@
 // Route này VẪN xác minh chữ ký (không tin dữ liệu URL) để tránh hiện sai
 // thông báo cho người dùng, nhưng không ghi DB gì ở đây.
 
-import { createAdminClient } from "@/lib/supabase-admin";
-import { verifyReturnSignature } from "@/lib/vnpay";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyReturnSignature } from "@/lib/tuition/vnpay";
 
 export async function GET(request) {
   const url = new URL(request.url);

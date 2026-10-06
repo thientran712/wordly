@@ -14,7 +14,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { filterProgressForViewer } from "../../src/lib/progress-privacy.js";
+import { filterProgressForViewer } from "../../src/lib/org/progress-privacy.js";
 
 const STUDENTS = [
   { membership_id: "m-self", words_saved: 100, streak_days: 5, state: "active" },

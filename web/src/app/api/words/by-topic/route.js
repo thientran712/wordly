@@ -1,7 +1,7 @@
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { EXAM_GOALS, examGoalsForLevel } from "@/lib/exam-goals";
-import { TOPICS } from "@/lib/topic-classifier";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { EXAM_GOALS, examGoalsForLevel } from "@/lib/learning/exam-goals";
+import { TOPICS } from "@/lib/ai/topic-classifier";
 
 const TOPIC_LABELS = Object.fromEntries(TOPICS.map((t) => [t.key, t.label]));
 const ALL_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];

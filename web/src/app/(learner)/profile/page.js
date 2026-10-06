@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { User, Mail, Target, BookOpen, Loader2, Check, KeyRound, Eye, EyeOff, X } from "lucide-react";
-import { createClient } from "@/lib/supabase-client";
+import { createClient } from "@/lib/supabase/client";
 import BackButton from "@/components/ui/BackButton";
 
 const LEVEL_LABELS = {

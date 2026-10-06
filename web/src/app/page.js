@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import InlineTranslate from "@/components/InlineTranslate";
-import TranslateHistory from "@/components/TranslateHistory";
-import GuestBanner from "@/components/GuestBanner";
-import HomeRightRail from "@/components/HomeRightRail";
-import TranslateOnboarding from "@/components/TranslateOnboarding";
+import InlineTranslate from "@/components/home/InlineTranslate";
+import TranslateHistory from "@/components/home/TranslateHistory";
+import GuestBanner from "@/components/home/GuestBanner";
+import HomeRightRail from "@/components/home/HomeRightRail";
+import TranslateOnboarding from "@/components/home/TranslateOnboarding";
 
 export default function Home() {
   // Render optimistically as logged-in; flip to guest only if /api/profile says so.

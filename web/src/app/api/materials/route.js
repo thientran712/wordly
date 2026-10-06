@@ -1,14 +1,14 @@
 // POST   /api/materials      — đăng ký tài liệu sau khi upload xong (hoặc link ngoài)
 // DELETE /api/materials?id=  — xoá tài liệu (xoá cả blob để hoàn quota)
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
 // isAllowedLink có test riêng, gồm ca chống lừa subdomain
 // ("youtube.com.evil.com") và chặn javascript:/data:
-import { isAllowedLink } from "@/lib/material-validation";
-import { deleteObject } from "@/lib/r2-client";
+import { isAllowedLink } from "@/lib/storage/material-validation";
+import { deleteObject } from "@/lib/storage/r2-client";
 
 export async function POST(request) {
   const user = await getUserFast();

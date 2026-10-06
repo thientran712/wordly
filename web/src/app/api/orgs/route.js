@@ -5,9 +5,9 @@
 // Đây là chính sách mới cho mọi route B2B — service role chỉ dành cho
 // Inngest job và admin nội bộ.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { getUserOrgs } from "@/lib/org-context";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { getUserOrgs } from "@/lib/org/org-context";
 
 export async function GET() {
   const user = await getUserFast();

@@ -6,10 +6,10 @@
 // Nếu để bucket public thì tài liệu của trung tâm A ai có link cũng xem được
 // — không chấp nhận được với B2B.
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
 
 const SIGNED_URL_TTL_SECONDS = 3600; // 1 giờ
 

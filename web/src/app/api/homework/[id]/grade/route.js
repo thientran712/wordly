@@ -1,10 +1,10 @@
 // GET   /api/homework/[id]/grade — danh sách bài nộp để giáo viên chấm
 // PATCH /api/homework/[id]/grade — chấm điểm phần tự luận + nhận xét
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { gradeSubmission } from "@/lib/homework-grading";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { gradeSubmission } from "@/lib/learning/homework-grading";
 
 export async function GET(request, { params }) {
   const { id: homeworkId } = await params;

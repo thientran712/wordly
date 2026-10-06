@@ -1,4 +1,4 @@
-import { getUserFast } from "@/lib/get-user-fast";
+import { getUserFast } from "@/lib/auth/get-user-fast";
 import { createSign } from "crypto";
 
 const TTS_URL = "https://texttospeech.googleapis.com/v1/text:synthesize";

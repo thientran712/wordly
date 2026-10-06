@@ -21,6 +21,19 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 
 `.env.local` và `.env.test.local` phải nằm trong `web/`.
 
+**Cấu trúc `web/src`:**
+
+| Thư mục | Nội dung |
+|---|---|
+| `app/(auth)`, `app/(learner)`, `app/(org)` | Trang theo nhóm người dùng — route group, **không** thêm vào URL |
+| `app/api/` | API — là hợp đồng với app iOS, đổi đường dẫn = vỡ app |
+| `components/ui`, `layout`, `home`, `auth`, `org`, `spinner` | UI dùng chung / khung trang / trang chủ / theo tính năng |
+| `lib/supabase`, `auth`, `security` | Client Supabase, nhận diện người dùng (cookie + Bearer), rate limit |
+| `lib/ai`, `org`, `learning`, `tuition`, `storage`, `email` | Logic theo domain — logic thuần đặt ở đây để test được |
+| `inngest/`, `middleware.js` | Job nền; middleware bắt buộc ở `src/` |
+
+Thêm file mới: đặt theo domain, import bằng alias `@/`.
+
 ---
 
 ## 1. Quy tắc tuyệt đối
@@ -41,7 +54,7 @@ một khách vì thấy dữ liệu khách khác là mất toàn bộ uy tín. N
 
 - Mọi bảng có dữ liệu tenant **phải** bật RLS, không có ngoại lệ
 - Mọi bảng mới **phải** có test cô lập chéo org trước khi coi là xong
-- Dùng `supabase-server` (anon + RLS) làm mặc định; `createAdminClient()`
+- Dùng `lib/supabase/server` (anon + RLS) làm mặc định; `createAdminClient()`
   chỉ cho Inngest job và script admin
 
 ---

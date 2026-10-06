@@ -1,6 +1,6 @@
-import { getUserFast } from "@/lib/get-user-fast";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { callGroq } from "@/lib/ai-models";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { callGroq } from "@/lib/ai/ai-models";
 
 
 // Shared guardrails appended to every persona prompt — keeps Alex strictly

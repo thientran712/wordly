@@ -1,8 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseJs } from "@supabase/supabase-js";
-import { getCachedJwks } from "@/lib/jwks-cache";
-import { bearerToForward } from "@/lib/bearer-auth";
+import { getCachedJwks } from "@/lib/auth/jwks-cache";
+import { bearerToForward } from "@/lib/auth/bearer-auth";
 
 export async function middleware(request) {
   let response = NextResponse.next({ request });

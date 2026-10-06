@@ -8,13 +8,13 @@
 // thì chỉ suy đoán gián tiếp (qua tốc độ nói, từ đệm, câu bỏ dở) — không
 // thay được tai người. Phản hồi ghi rõ điều này để GV không tin quá mức.
 
-import { getUserFast } from "@/lib/get-user-fast";
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { isUuid } from "@/lib/org-context";
-import { getOrgSetting } from "@/lib/org-settings";
-import { callGroq, transcribeAudio, parseJsonResponse } from "@/lib/ai-models";
-import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isUuid } from "@/lib/org/org-context";
+import { getOrgSetting } from "@/lib/org/org-settings";
+import { callGroq, transcribeAudio, parseJsonResponse } from "@/lib/ai/ai-models";
+import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 
 // Whisper + LLM là 2 lượt gọi nên đắt hơn, giới hạn chặt hơn
 const limiter = createRateLimiter({ limit: 20, windowMs: 300_000 });

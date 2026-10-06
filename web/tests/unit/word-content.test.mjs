@@ -13,7 +13,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { buildWordContentPrompt, dedupeMeaningsByPos } from "../../src/lib/word-content-prompt.js";
+import { buildWordContentPrompt, dedupeMeaningsByPos } from "../../src/lib/ai/word-content-prompt.js";
 
 describe("buildWordContentPrompt", () => {
   const prompt = buildWordContentPrompt("run", "verb", "A1", "B1", "daily");

@@ -6,11 +6,11 @@
 // Điểm sai ảnh hưởng học viên thật và uy tín trung tâm — im lặng khi không
 // chắc là điều tệ nhất.
 
-import { getUserFast } from "@/lib/get-user-fast";
-import { createClient } from "@/lib/supabase-server";
-import { isUuid } from "@/lib/org-context";
-import { callGroq, parseJsonResponse } from "@/lib/ai-models";
-import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { createClient } from "@/lib/supabase/server";
+import { isUuid } from "@/lib/org/org-context";
+import { callGroq, parseJsonResponse } from "@/lib/ai/ai-models";
+import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 
 const limiter = createRateLimiter({ limit: 30, windowMs: 300_000 });
 

@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Public — same reasoning as /api/spinner/topics.
 export async function GET(request) {

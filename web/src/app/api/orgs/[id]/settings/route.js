@@ -1,18 +1,18 @@
 // GET   /api/orgs/[id]/settings — cấu hình + feature + quota
 // PATCH /api/orgs/[id]/settings — sửa cấu hình (chỉ owner)
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { requireOwner, requireOrgRole } from "@/lib/org-context";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { requireOwner, requireOrgRole } from "@/lib/org/org-context";
 import {
   getOrgSettings,
   getOrgFeatures,
   setOrgSetting,
   FEATURES,
   PLAN_STORAGE_LIMITS,
-} from "@/lib/org-settings";
-import { validateSettingsPatch, SETTING_SCHEMA } from "@/lib/settings-validation";
+} from "@/lib/org/org-settings";
+import { validateSettingsPatch, SETTING_SCHEMA } from "@/lib/org/settings-validation";
 
 export async function GET(request, { params }) {
   const { id: orgId } = await params;

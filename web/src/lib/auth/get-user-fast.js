@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
-import { createClient } from "@/lib/supabase-server";
-import { userFromHeaders, shouldVerifyOverNetwork } from "@/lib/user-identity";
+import { createClient } from "@/lib/supabase/server";
+import { userFromHeaders, shouldVerifyOverNetwork } from "@/lib/auth/user-identity";
 
 // Returns the authenticated user WITHOUT a network round-trip to Supabase Auth
 // when possible. The middleware already validated the session and forwarded the

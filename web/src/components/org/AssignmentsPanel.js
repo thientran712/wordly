@@ -13,7 +13,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
-import { TOPICS } from "@/lib/topic-classifier";
+import { TOPICS } from "@/lib/ai/topic-classifier";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 

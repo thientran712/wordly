@@ -1,7 +1,7 @@
-import { createAdminClient } from "@/lib/supabase-admin";
-import { sendDailyWordEmail } from "@/lib/send-email";
-import { selectEmailContent } from "@/lib/select-word-for-email";
-import { getUserFast } from "@/lib/get-user-fast";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendDailyWordEmail } from "@/lib/email/send-email";
+import { selectEmailContent } from "@/lib/email/select-word-for-email";
+import { getUserFast } from "@/lib/auth/get-user-fast";
 
 export async function POST() {
   const user = await getUserFast();

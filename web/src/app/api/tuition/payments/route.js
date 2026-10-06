@@ -4,10 +4,10 @@
 // không grant UPDATE/DELETE. Sổ sách tài chính phải giữ nguyên lịch sử —
 // nhập sai thì ghi phiếu điều chỉnh, không sửa quá khứ.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { requireOwner, isUuid } from "@/lib/org-context";
-import { computeBalance } from "@/lib/tuition-calc";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { requireOwner, isUuid } from "@/lib/org/org-context";
+import { computeBalance } from "@/lib/tuition/tuition-calc";
 
 const PAYMENT_METHODS = ["cash", "bank_transfer", "card", "ewallet", "other"];
 

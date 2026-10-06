@@ -14,7 +14,7 @@ import {
   windowStartFor,
   decideFromCount,
   buildBucketKey,
-} from "../../src/lib/rate-limit-db.js";
+} from "../../src/lib/security/rate-limit-db.js";
 
 describe("windowStartFor — chia thời gian thành khung cố định", () => {
   test("hai thời điểm trong CÙNG khung trả về cùng mốc", () => {

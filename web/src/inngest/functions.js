@@ -1,7 +1,7 @@
 import { inngest } from "./client";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { sendDailyWordEmail } from "@/lib/send-email";
-import { selectEmailContent, EMAIL_INTERVALS } from "@/lib/select-word-for-email";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendDailyWordEmail } from "@/lib/email/send-email";
+import { selectEmailContent, EMAIL_INTERVALS } from "@/lib/email/select-word-for-email";
 
 // Validate a timezone string; fall back to Asia/Ho_Chi_Minh if invalid/empty.
 function safeTimezone(tz) {

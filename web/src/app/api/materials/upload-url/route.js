@@ -12,18 +12,18 @@
 // Quota được kiểm ở ĐÂY (bước 2) và xác minh lại ở bước 5. Không tin số
 // client gửi lên — nếu tin, client sửa số là vượt quota tuỳ ý.
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { requireFeature } from "@/lib/org-settings";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { requireFeature } from "@/lib/org/org-settings";
 // Logic kiểm tra nằm ở lib để test được không cần DB
 // (tests/unit/material-validation.test.mjs — 20 ca, gồm path traversal).
 import {
   safeFileName,
   validateMaterialSize,
   isAllowedMime,
-} from "@/lib/material-validation";
+} from "@/lib/storage/material-validation";
 
 export async function POST(request) {
   const user = await getUserFast();

@@ -11,7 +11,7 @@ import {
   isAllowedLink,
   validateMaterialSize,
   MAX_BYTES,
-} from "../../src/lib/material-validation.js";
+} from "../../src/lib/storage/material-validation.js";
 
 describe("safeFileName", () => {
   test("giữ tên file thường và phần mở rộng", () => {

@@ -14,7 +14,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
-import { formatVnd, calculateTuition, TUITION_MODELS } from "@/lib/tuition-calc";
+import { formatVnd, calculateTuition, TUITION_MODELS } from "@/lib/tuition/tuition-calc";
 import DataTable from "@/components/ui/DataTable";
 import { usePagination } from "@/lib/use-pagination";
 

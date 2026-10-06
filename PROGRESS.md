@@ -33,7 +33,7 @@ tình trạng "code đã viết nhưng nằm trên branch khác main".
 
 | Việc | Bằng chứng |
 |---|---|
-| Web nhận `Authorization: Bearer` (app iOS không có cookie) — `web/src/lib/bearer-auth.js`, middleware + `supabase-server` | 12 test mới, `npm test` 285/285 (trong `web/`), build sạch, eslint sạch. Dev server: không token / token rác / JWT tự ký giả → đều 401 |
+| Web nhận `Authorization: Bearer` (app iOS không có cookie) — `web/src/lib/auth/bearer-auth.js`, middleware + `supabase-server` | 12 test mới, `npm test` 285/285 (trong `web/`), build sạch, eslint sạch. Dev server: không token / token rác / JWT tự ký giả → đều 401 |
 | App iOS vào git tại `mobile/ios/`; credential ở `Config/Secrets.xcconfig` (gitignore) | `git check-ignore` xác nhận; không còn key thật trong file được commit |
 | Xcode project sinh bằng XcodeGen (`mobile/ios/project.yml`) | `xcodebuild` → BUILD SUCCEEDED (app + widget), chạy được trên simulator tới màn đăng nhập |
 | Sửa 2 lỗi cú pháp, struct trùng ở widget, Practice đọc text stream (web không còn trả JSON `{reply}`) | build pass |
@@ -41,6 +41,19 @@ tình trạng "code đã viết nhưng nằm trên branch khác main".
 **Chưa kiểm chứng:** đăng nhập thật + gọi API với token thật (cần tài khoản; production chưa có bản sửa Bearer). Không có test Swift (chưa có test target).
 **Đã quyết (6/10):** bỏ tab "My Words" trên iOS cho khớp web (web đã xoá tính năng này ở redesign 3/7) — iOS còn 4 tab: Dịch, Journal, Luyện nói, Hồ sơ. Xoá `Package.swift` (thừa, XcodeGen thay thế). Build vẫn SUCCEEDED.
 **Thứ tự merge:** đổi Root Directory Vercel = `web` → merge `chore/monorepo-structure` → merge `feat/ios-mobile-api`.
+
+### 6/10/2026 — Cấu trúc lại `web/src` theo domain (branch `refactor/web-src-structure`, xếp TRÊN `feat/ios-mobile-api`, CHƯA push)
+
+`lib/` chia theo domain (supabase, auth, security, ai, org, learning, tuition, storage, email), component trang chủ vào `components/home` + `layout`, trang vào route group `(auth)`/`(learner)`/`(org)`. Xoá code chết: TranslateWidget, WordCard, word-content-client, data/vocabulary, jwt-verify (+ 2 file test).
+
+| Kiểm chứng | Kết quả |
+|---|---|
+| Danh sách route của `next build` trước/sau | **78 route giống hệt** (cả kiểu render) — URL không đổi |
+| `npm test` | 265/265 (285 − 20 test của 2 file test bị xoá cùng code chết) |
+| Lint phạm vi CI / lint toàn bộ src+tests+scripts | sạch / 12 lỗi cũ, **trước và sau như nhau** |
+| Rename | 58 file `git mv`, 272 dòng import viết lại bằng codemod |
+
+Đã sửa đường dẫn lint trong `.github/workflows/ci.yml` (commit riêng). **Thứ tự merge:** Vercel Root Directory = `web` → `chore/monorepo-structure` → `feat/ios-mobile-api` → `refactor/web-src-structure`.
 
 ---
 
@@ -117,8 +130,8 @@ Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 **GĐ2:** `/api/homework`, `/api/homework/[id]/submit`,
 `/api/homework/[id]/grade`, `/api/quiz`,
 `/api/materials/video-upload-url`, `/api/materials/video`,
-`/api/materials/[id]/video-url` (video R2 — xem `web/src/lib/video-validation.js`
-+ `web/src/lib/r2-client.js`)
+`/api/materials/[id]/video-url` (video R2 — xem `web/src/lib/storage/video-validation.js`
++ `web/src/lib/storage/r2-client.js`)
 
 **GĐ4:** `/api/tuition`, `/api/tuition/payments`
 
@@ -144,7 +157,7 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 `cleanupOrphanedFiles` (cron tuần), `syncStorageLimits` (cron ngày),
 `sendParentReports` (cron CN, gác bởi feature flag).
 
-### AI (`web/src/lib/ai-models.js` — cấu hình TẬP TRUNG)
+### AI (`web/src/lib/ai/ai-models.js` — cấu hình TẬP TRUNG)
 
 | API | Chức năng |
 |---|---|
@@ -154,7 +167,7 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 | `/api/ai/grade-speaking` | Whisper nghe audio → LLM chấm bài nói |
 
 **Model theo vai trò, ladder XUYÊN NHÀ CUNG CẤP** (Gemini chính, Groq dự
-phòng) — `web/src/lib/ai-models.js`:
+phòng) — `web/src/lib/ai/ai-models.js`:
 
 | Vai trò | Thứ tự thử |
 |---|---|

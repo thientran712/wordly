@@ -7,7 +7,7 @@
 // Đây là câu trả lời cho "mỗi trung tâm có nhu cầu hơi khác nhau": khác biệt
 // được giải bằng DỮ LIỆU, không phải bằng code riêng cho từng khách.
 
-import { createAdminClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ── Giá trị mặc định ────────────────────────────────────────────────────────
 // Trung tâm mới hoạt động ngay với bộ này; chỉ ghi vào DB khi họ muốn khác.

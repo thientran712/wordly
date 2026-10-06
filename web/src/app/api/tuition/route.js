@@ -4,11 +4,11 @@
 // Nghiệp vụ tài chính: mọi số tiền được tính LẠI ở server bằng
 // tuition-calc.js (đã có 25 test), không tin số client gửi.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { requireOwner, requireOrgRole, isUuid } from "@/lib/org-context";
-import { requireFeature } from "@/lib/org-settings";
-import { calculateTuition, TUITION_MODELS } from "@/lib/tuition-calc";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { requireOwner, requireOrgRole, isUuid } from "@/lib/org/org-context";
+import { requireFeature } from "@/lib/org/org-settings";
+import { calculateTuition, TUITION_MODELS } from "@/lib/tuition/tuition-calc";
 
 export async function GET(request) {
   const user = await getUserFast();

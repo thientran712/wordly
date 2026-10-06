@@ -1,15 +1,15 @@
 // GET  /api/homework?class_id= — danh sách bài tập
 // POST /api/homework            — tạo bài tập (staff)
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid, getOrgRole, isStaffRole } from "@/lib/org-context";
-import { requireFeature } from "@/lib/org-settings";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid, getOrgRole, isStaffRole } from "@/lib/org/org-context";
+import { requireFeature } from "@/lib/org/org-settings";
 import {
   stripAnswers,
   computeTotalPoints,
   QUESTION_TYPES,
-} from "@/lib/homework-grading";
+} from "@/lib/learning/homework-grading";
 
 /** Kiểm tra mảng câu hỏi do giáo viên gửi lên. */
 function validateQuestions(questions) {

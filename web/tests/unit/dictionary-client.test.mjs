@@ -18,7 +18,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { lookupWord, normalizeWordKey } from "../../src/lib/dictionary-client.js";
+import { lookupWord, normalizeWordKey } from "../../src/lib/ai/dictionary-client.js";
 
 const okDetail = (detail) => ({ ok: true, json: async () => ({ detail }) });
 

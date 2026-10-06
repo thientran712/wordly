@@ -4,12 +4,12 @@
 // hộ bản quyền — chỉ nội dung cụ thể mới được. Nên AI sinh đề mới theo đúng
 // format là hợp pháp, khác với việc copy đề Cambridge.
 
-import { getUserFast } from "@/lib/get-user-fast";
-import { createClient } from "@/lib/supabase-server";
-import { isUuid } from "@/lib/org-context";
-import { requireFeature } from "@/lib/org-settings";
-import { callGroq, parseJsonResponse } from "@/lib/ai-models";
-import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { createClient } from "@/lib/supabase/server";
+import { isUuid } from "@/lib/org/org-context";
+import { requireFeature } from "@/lib/org/org-settings";
+import { callGroq, parseJsonResponse } from "@/lib/ai/ai-models";
+import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 
 const limiter = createRateLimiter({ limit: 10, windowMs: 300_000 });
 

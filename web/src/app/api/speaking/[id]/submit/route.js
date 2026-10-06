@@ -5,10 +5,10 @@
 //
 // Truyền ?action=upload-url để lấy signed URL trước.
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
 
 const ALLOWED_MIME = ["audio/webm", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav"];
 const MAX_BYTES = 15 * 1024 * 1024; // 15MB — dư cho 5 phút audio nén

@@ -16,7 +16,7 @@ import {
   formatVnpAmount,
   formatVnpDate,
   vndFromVnpAmount,
-} from "../../src/lib/vnpay.js";
+} from "../../src/lib/tuition/vnpay.js";
 
 const CONFIG = {
   tmnCode: "DEMO_TMN",

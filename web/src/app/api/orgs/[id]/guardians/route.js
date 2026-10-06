@@ -3,10 +3,10 @@
 // PATCH  /api/orgs/[id]/guardians — bật/tắt nhận báo cáo
 // DELETE /api/orgs/[id]/guardians?link_id= — xoá liên kết (owner)
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { requireOwner, requireOrgRole, isUuid } from "@/lib/org-context";
-import { validateGuardianLink, RELATIONSHIP_LABELS } from "@/lib/guardian-links";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { requireOwner, requireOrgRole, isUuid } from "@/lib/org/org-context";
+import { validateGuardianLink, RELATIONSHIP_LABELS } from "@/lib/org/guardian-links";
 
 export async function GET(request, { params }) {
   const { id: orgId } = await params;

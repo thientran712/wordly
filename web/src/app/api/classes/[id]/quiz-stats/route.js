@@ -4,9 +4,9 @@
 // học viên chỉ thấy lượt của chính mình). Tổng hợp ở đây thay vì tạo view
 // SQL vì cần lọc theo khoảng thời gian linh hoạt.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid, getOrgRole, isStaffRole } from "@/lib/org-context";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid, getOrgRole, isStaffRole } from "@/lib/org/org-context";
 
 const PERIODS = { week: 7, month: 30, all: null };
 

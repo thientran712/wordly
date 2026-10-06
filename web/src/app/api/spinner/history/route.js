@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
 
 const CONTENT_TABLE = {
   topic: { table: "spinner_topics", label: "text" },

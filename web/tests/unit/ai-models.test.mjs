@@ -12,7 +12,7 @@
 
 import { test, describe, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { MODELS, PROVIDERS, callAI, callGroq } from "../../src/lib/ai-models.js";
+import { MODELS, PROVIDERS, callAI, callGroq } from "../../src/lib/ai/ai-models.js";
 
 const realFetch = globalThis.fetch;
 

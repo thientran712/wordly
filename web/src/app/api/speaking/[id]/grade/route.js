@@ -1,11 +1,11 @@
 // GET   /api/speaking/[id]/grade — danh sách bài nói để GV chấm (kèm link nghe)
 // PATCH /api/speaking/[id]/grade — chấm điểm 4 tiêu chí + nhận xét
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { getOrgSetting } from "@/lib/org-settings";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { getOrgSetting } from "@/lib/org/org-settings";
 
 const AUDIO_URL_TTL = 3600; // 1 giờ, đủ cho một buổi chấm bài
 

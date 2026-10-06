@@ -17,7 +17,7 @@ import {
   extractBearerToken,
   hasCookieSession,
   bearerToForward,
-} from "../../src/lib/bearer-auth.js";
+} from "../../src/lib/auth/bearer-auth.js";
 
 const JWT = "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJ1MSJ9.c2lnbmF0dXJl";
 

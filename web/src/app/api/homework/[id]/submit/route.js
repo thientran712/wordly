@@ -3,10 +3,10 @@
 // Chấm tự động phần khách quan ngay khi nộp; phần tự luận chờ giáo viên.
 // Chấm ở SERVER, không bao giờ tin điểm client gửi lên.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { gradeSubmission } from "@/lib/homework-grading";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { gradeSubmission } from "@/lib/learning/homework-grading";
 
 export async function POST(request, { params }) {
   const { id: homeworkId } = await params;

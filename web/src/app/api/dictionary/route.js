@@ -1,9 +1,9 @@
 import { after } from "next/server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { callGroq, parseJsonResponse } from "@/lib/ai-models";
-import { getUserFast } from "@/lib/get-user-fast";
-import { clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
-import { checkRateLimitDb } from "@/lib/rate-limit-db";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { callGroq, parseJsonResponse } from "@/lib/ai/ai-models";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
+import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
 
 // Route CÔNG KHAI nên phải có rate limit: mỗi lần cache miss là một lượt
 // gọi Groq trả phí.

@@ -2,11 +2,11 @@
 // POST   /api/orgs/[id]/members  — mời thành viên qua email
 // DELETE /api/orgs/[id]/members?membership_id= — xoá thành viên
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { requireOwner, requireOrgRole, isUuid } from "@/lib/org-context";
-import { parseInviteList, isValidOrgRole } from "@/lib/invite-validation";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { requireOwner, requireOrgRole, isUuid } from "@/lib/org/org-context";
+import { parseInviteList, isValidOrgRole } from "@/lib/org/invite-validation";
 
 export async function GET(request, { params }) {
   const { id: orgId } = await params;  // Next 16: params là Promise
@@ -156,7 +156,7 @@ export async function POST(request, { params }) {
       parent: "Phụ huynh",
     };
 
-    const { sendOrgInviteEmail } = await import("@/lib/send-org-email");
+    const { sendOrgInviteEmail } = await import("@/lib/email/send-org-email");
 
     const results = await Promise.all(
       rows.map((row) =>

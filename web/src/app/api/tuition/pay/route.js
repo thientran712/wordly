@@ -3,12 +3,12 @@
 // Người gọi: học viên/phụ huynh (RLS đã cho họ xem khoản của mình), hoặc
 // owner (đang đứng ra thu hộ). Trả về URL để redirect sang VNPay.
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { buildPaymentUrl } from "@/lib/vnpay";
-import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { buildPaymentUrl } from "@/lib/tuition/vnpay";
+import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 
 // Tạo giao dịch tốn 1 lượt gọi VNPay + ghi DB — giới hạn vừa phải để
 // tránh spam tạo hàng loạt giao dịch pending vô ích.

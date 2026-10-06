@@ -9,7 +9,7 @@
 // báo rõ ràng cho người dùng; RLS mới là thứ thực sự chặn ở tầng database.
 
 import { headers } from "next/headers";
-import { createClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase/server";
 
 export const ORG_ROLES = ["owner", "teacher", "student", "parent"];
 const STAFF_ROLES = ["owner", "teacher"];

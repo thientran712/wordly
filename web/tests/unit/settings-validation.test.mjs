@@ -10,7 +10,7 @@ import {
   validateSetting,
   validateSettingsPatch,
   SETTING_SCHEMA,
-} from "../../src/lib/settings-validation.js";
+} from "../../src/lib/org/settings-validation.js";
 
 describe("validateSetting — ngưỡng ngày", () => {
   test("nhận số nguyên trong khoảng", () => {

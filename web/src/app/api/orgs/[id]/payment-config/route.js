@@ -6,10 +6,10 @@
 // thống. Hash Secret không bao giờ đi qua tay client sau khi lưu: route
 // PUT nhận nó một lần để lưu vào Vault (mã hoá), route GET không trả lại.
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid, requireOwner } from "@/lib/org-context";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid, requireOwner } from "@/lib/org/org-context";
 
 export async function GET(request, { params }) {
   const { id: orgId } = await params;

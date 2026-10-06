@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { render } from "@react-email/render";
-import DailyWordEmail from "@/emails/DailyWordEmail";
+import DailyWordEmail from "@/lib/email/templates/DailyWordEmail";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",

@@ -10,7 +10,7 @@ import {
   computeBalance,
   formatVnd,
   TUITION_MODELS,
-} from "../../src/lib/tuition-calc.js";
+} from "../../src/lib/tuition/tuition-calc.js";
 
 describe("formatVnd", () => {
   test("định dạng số tiền theo kiểu Việt Nam", () => {

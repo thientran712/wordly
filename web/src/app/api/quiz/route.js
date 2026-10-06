@@ -4,11 +4,11 @@
 // Câu hỏi được sinh từ kho từ vựng sẵn có, KHÔNG lưu vào DB — chi phí gần
 // bằng 0, không gọi AI, không phải soạn nội dung.
 
-import { createClient } from "@/lib/supabase-server";
-import { createAdminClient } from "@/lib/supabase-admin";
-import { getUserFast } from "@/lib/get-user-fast";
-import { isUuid } from "@/lib/org-context";
-import { buildQuizQuestions, scoreQuiz, QUIZ_MODES } from "@/lib/quiz-generation";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { isUuid } from "@/lib/org/org-context";
+import { buildQuizQuestions, scoreQuiz, QUIZ_MODES } from "@/lib/learning/quiz-generation";
 
 const MAX_QUESTIONS = 20;
 const DEFAULT_QUESTIONS = 10;

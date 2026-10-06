@@ -16,7 +16,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { userFromHeaders, shouldVerifyOverNetwork } from "../../src/lib/user-identity.js";
+import { userFromHeaders, shouldVerifyOverNetwork } from "../../src/lib/auth/user-identity.js";
 
 const H = (obj) => ({ get: (k) => obj[k] ?? null });
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-client";
+import { createClient } from "@/lib/supabase/client";
 import { Mail, Loader2, ArrowLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {

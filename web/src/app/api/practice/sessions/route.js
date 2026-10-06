@@ -1,5 +1,5 @@
-import { getUserFast } from "@/lib/get-user-fast";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request) {
   const user = await getUserFast();

@@ -6,13 +6,13 @@
 // Nguyên tắc: AI soạn NHÁP, GV luôn xem và sửa trước khi giao. Không tự
 // động giao bài cho học viên.
 
-import { getUserFast } from "@/lib/get-user-fast";
-import { createClient } from "@/lib/supabase-server";
-import { isUuid } from "@/lib/org-context";
-import { requireFeature } from "@/lib/org-settings";
-import { callGroq, parseJsonResponse } from "@/lib/ai-models";
-import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/rate-limit";
-import { QUESTION_TYPES } from "@/lib/homework-grading";
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { createClient } from "@/lib/supabase/server";
+import { isUuid } from "@/lib/org/org-context";
+import { requireFeature } from "@/lib/org/org-settings";
+import { callGroq, parseJsonResponse } from "@/lib/ai/ai-models";
+import { createRateLimiter, clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
+import { QUESTION_TYPES } from "@/lib/learning/homework-grading";
 
 // Soạn đề tốn nhiều token nên giới hạn chặt hơn các API khác
 const limiter = createRateLimiter({ limit: 10, windowMs: 300_000 }); // 10 lượt / 5 phút

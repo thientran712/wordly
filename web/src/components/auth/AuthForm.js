@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-client";
+import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { Mail, Lock, User, Loader2 } from "lucide-react";
 

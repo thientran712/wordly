@@ -5,8 +5,8 @@
 // tăng bộ đếm PHẢI nguyên tử. Chia nhỏ ở tầng ứng dụng sẽ có khe hở race
 // khi cả lớp nhập mã cùng lúc.
 
-import { createClient } from "@/lib/supabase-server";
-import { getUserFast } from "@/lib/get-user-fast";
+import { createClient } from "@/lib/supabase/server";
+import { getUserFast } from "@/lib/auth/get-user-fast";
 
 // Thông báo tiếng Việt cho từng mã lỗi từ hàm SQL.
 const ERROR_MESSAGES = {

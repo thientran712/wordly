@@ -15,7 +15,7 @@ import {
   resolveReportRecipients,
   validateGuardianLink,
   GUARDIAN_RELATIONSHIPS,
-} from "../../src/lib/guardian-links.js";
+} from "../../src/lib/org/guardian-links.js";
 
 describe("validateGuardianLink", () => {
   test("nhận quan hệ hợp lệ", () => {
