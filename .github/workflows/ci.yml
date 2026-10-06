@@ -64,16 +64,17 @@ jobs:
       # qua nó — một CI luôn đỏ còn tệ hơn không có CI.
       #
       # Việc dọn 17 lỗi cũ nằm trong nợ kỹ thuật (PROGRESS.md).
+      # src/emails đã chuyển vào src/lib/email/templates (nằm trong src/lib).
       - name: Lint (code B2B mới)
         run: |
           npx eslint \
             src/lib \
-            src/app/org src/app/join src/app/quiz \
+            "src/app/(org)/org" "src/app/(learner)/join" "src/app/(learner)/quiz" \
             src/components/org \
             src/app/api/orgs src/app/api/classes src/app/api/join \
             src/app/api/materials src/app/api/homework src/app/api/quiz \
             src/app/api/tuition src/app/api/speaking \
-            src/inngest/org-functions.js src/emails src/middleware.js
+            src/inngest/org-functions.js src/middleware.js
 
       # Build cần biến môi trường Supabase để Next.js prerender được.
       # Dùng giá trị giả: build chỉ cần biến TỒN TẠI, không gọi thật.
