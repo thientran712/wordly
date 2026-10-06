@@ -1,0 +1,41 @@
+{
+  "name": "wordly",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "node --test --test-concurrency=1 tests/**/*.test.mjs",
+    "test:rls": "node --test --test-concurrency=1 tests/rls/*.test.mjs",
+    "test:watch": "node --test --watch tests/**/*.test.mjs",
+    "db:new": "supabase --workdir .. migration new",
+    "db:push": "supabase --workdir .. db push",
+    "db:diff": "supabase --workdir .. db diff",
+    "db:reset": "supabase --workdir .. db reset"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.8",
+    "@ricky0123/vad-web": "^0.0.30",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
+    "inngest": "^4.4.0",
+    "jose": "^6.2.12",
+    "lucide-react": "^1.14.0",
+    "next": "16.2.6",
+    "nodemailer": "^8.0.7",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "ts-fsrs": "^5.3.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4"
+  }
+}

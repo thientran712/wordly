@@ -113,7 +113,7 @@ không thể sao chép, vì nó đòi hỏi hiểu văn hoá ngôn ngữ bản �
 | Học từ mới (Vocab chat) | `/vocabulary-chat` | 🚧 Ẩn khỏi nav | ❌ Cần đăng nhập |
 
 > **Ghi chú:** `/speak` và `/vocabulary-chat` đã được xây dựng đầy đủ nhưng
-> hiện bị comment out khỏi sidebar (`src/components/AppSidebar.js:14,17`) —
+> hiện bị comment out khỏi sidebar (`web/src/components/AppSidebar.js:14,17`) —
 > code vẫn chạy được nếu truy cập trực tiếp URL.
 
 ---
@@ -204,7 +204,7 @@ Mỗi email gửi đi gồm **2 từ vựng + 1 quote**.
 
 #### 3.2.2. Thuật toán chọn nội dung
 
-`src/lib/select-word-for-email.js` dùng thuật toán 2 mức ưu tiên:
+`web/src/lib/email/select-word-for-email.js` dùng thuật toán 2 mức ưu tiên:
 
 ```
 Ưu tiên 1: DUE  — state ≠ 'new' và due_at đã qua
@@ -227,9 +227,9 @@ Sau mỗi lần gửi, `due_at = now + INTERVALS[review_count]`. Lần gửi đ�
 sau, lần 2 → 3 ngày, ... đến bucket cuối giữ nguyên 90 ngày vô hạn.
 
 > **Lưu ý kỹ thuật — hai hệ SRS song song:** Hệ thống email dùng **lịch cố định**
-> này chứ không dùng thuật toán FSRS. Thư viện `ts-fsrs` (`src/lib/fsrs.js`,
+> này chứ không dùng thuật toán FSRS. Thư viện `ts-fsrs` (`web/src/lib/learning/fsrs.js`,
 > cấu hình `requestRetention: 0.90`, `maximumInterval: 365`, `enableFuzz: true`)
-> tồn tại đầy đủ nhưng **không được import bởi bất kỳ file nào trong `src/`** —
+> tồn tại đầy đủ nhưng **không được import bởi bất kỳ file nào trong `web/src/`** —
 > đã kiểm chứng bằng grep. Hai hệ dùng chung các cột DB (`state`, `stability`,
 > `difficulty`, `due_at`) nhưng khác nhau về toán học. Trên thực tế chỉ lịch cố
 > định đang chạy; `fsrs.js` là code chết chờ luồng review chấm điểm
@@ -341,7 +341,7 @@ Từ tin nhắn thứ hai trở đi, quay về quy tắc 1–2 câu.
 Điểm kỹ thuật nổi bật: người dùng **không cần bấm nút micro**.
 
 - Thư viện `@ricky0123/vad-web` chạy model **Silero VAD** (ONNX) ngay trên trình duyệt
-- Model được self-host trong `public/` (`silero_vad_v5.onnx`, `silero_vad_legacy.onnx`)
+- Model được self-host trong `web/public/` (`silero_vad_v5.onnx`, `silero_vad_legacy.onnx`)
 - ONNX Runtime WASM cũng self-host (`ort-wasm-simd-threaded.wasm`)
 - Cấu hình `numThreads = 1` để tương thích môi trường serverless/Vercel
 
@@ -510,7 +510,7 @@ Codebase thể hiện sự chú trọng rõ rệt vào tốc độ:
 > `user_progress` — **không có `CREATE TABLE` ở bất kỳ đâu trong repo**; chúng
 > được tạo trực tiếp trên dashboard Supabase. Cấu trúc mô tả bên dưới được tái
 > dựng từ các câu `ALTER TABLE`, khoá ngoại, cột trong seed `INSERT` và lời gọi
-> `.select()/.insert()` trong `src/`.
+> `.select()/.insert()` trong `web/src/`.
 >
 > Hệ quả: **không thể tái tạo database này từ repo**. Đây là rủi ro vận hành
 > nghiêm trọng nhất của dự án.
@@ -672,7 +672,7 @@ tên constraint do Postgres tự sinh khác nhau giữa các môi trường.
 
 ## 6. API surface
 
-28 route handlers dưới `src/app/api/`.
+28 route handlers dưới `web/src/app/api/`.
 
 ### 6.1. Công khai (guest dùng được)
 
@@ -861,7 +861,7 @@ brand colors into CSS design tokens") — đổi theme không cần sửa compon
 
 ### 9.3. Thư viện UI
 
-`src/components/ui/`: `Button`, `Card`, `Input`, `Modal`, `Dropdown`, `Badge`,
+`web/src/components/ui/`: `Button`, `Card`, `Input`, `Modal`, `Dropdown`, `Badge`,
 `BackButton`.
 
 ### 9.4. Kỹ thuật mobile — các sửa lỗi thực chiến
@@ -905,7 +905,7 @@ Sidebar (`AppSidebar.js`) — thu gọn được, responsive mobile với overla
 
 ## 10. Ứng dụng iOS
 
-Native SwiftUI app tại `wordly-ios/` — **~5.000 dòng Swift**.
+Native SwiftUI app tại `mobile/ios/` (trước đây `wordly-ios/`) — **~5.000 dòng Swift**. Cập nhật 6/10/2026: đã có Xcode project (XcodeGen), credential tách ra xcconfig, đã vào git — xem `mobile/ios/README.md`. Bảng vấn đề dưới đây là hiện trạng TRƯỚC đợt sửa đó.
 
 ### 10.1. Cấu trúc
 
@@ -986,8 +986,8 @@ lộ ra client, nên mức độ thấp *với điều kiện* RLS được bậ
 
 | Nguồn | JSON | Sinh ra SQL | File |
 |---|---|---|---|
-| **Oxford 5000** | 5.944 mục | 5.902 dòng INSERT | `scripts/oxford-5000.json` |
-| **GRE word list** | 2.478 mục | 2.478 dòng INSERT | `scripts/gre-words.json` |
+| **Oxford 5000** | 5.944 mục | 5.902 dòng INSERT | `web/scripts/oxford-5000.json` |
+| **GRE word list** | 2.478 mục | 2.478 dòng INSERT | `web/scripts/gre-words.json` |
 | **Tổng** | | **8.380 dòng INSERT** | |
 
 Sau khi khử trùng lặp bằng `ON CONFLICT (word) DO NOTHING` (Oxford có nhiều mục
@@ -1048,7 +1048,7 @@ phép `corrected_cefr`. Có `TEST_MODE=1` để smoke test rẻ và resume qua
 
 ### 11.3. Phân loại chủ đề
 
-`src/lib/topic-classifier.js` dùng **rule-based** (không phải AI) — khớp từ khoá
+`web/src/lib/ai/topic-classifier.js` dùng **rule-based** (không phải AI) — khớp từ khoá
 trong định nghĩa tiếng Anh để gán 1 trong 12 chủ đề:
 
 > Business & Strategy · Technology & AI · Law & Finance · Health & Medicine ·
@@ -1061,7 +1061,7 @@ với chi phí API bằng 0**. Thứ tự rule quan trọng — chủ đề cụ
 
 ### 11.4. Ánh xạ mục tiêu thi cử
 
-`src/lib/exam-goals.js` suy ra mục tiêu thi từ level CEFR (thuần derived, không
+`web/src/lib/learning/exam-goals.js` suy ra mục tiêu thi từ level CEFR (thuần derived, không
 có cột DB):
 
 | CEFR | Mục tiêu |
@@ -1113,12 +1113,12 @@ Sắp theo mức độ ưu tiên xử lý:
 | 2 | **API trả phí không auth** | `/api/translate`, `/api/dictionary` công khai, không rate limit, không giới hạn độ dài | 🔴 |
 | 3 | **`params` không `await`** | Trong `practice/sessions/[id]/route.js` (cả 3 method) và `.../title/route.js`. Next 16 biến `params` thành Promise → `params.id` là `undefined`, truy vấn filter sai. **Đã kiểm chứng bằng đọc mã** | 🔴 |
 | 4 | **Xung đột kiểu `word_id`** | `word_ai_content.word_id` khai báo `int`, còn `word_layers.word_id` là `UUID` FK tới `words(id)`. Không có FK nên sai lệch âm thầm. **Đã kiểm chứng** | 🟡 |
-| 5 | **Workflow trỏ route đã xoá** | `.github/workflows/daily-email.yml` gọi `/api/cron/send-daily-emails` — thư mục `src/app/api/cron/` **không tồn tại**. Dispatch sẽ 404. **Đã kiểm chứng** | 🟡 |
+| 5 | **Workflow trỏ route đã xoá** | `.github/workflows/daily-email.yml` gọi `/api/cron/send-daily-emails` — thư mục `web/src/app/api/cron/` **không tồn tại**. Dispatch sẽ 404. **Đã kiểm chứng** | 🟡 |
 | 6 | **Hai hệ SRS song song** | `fsrs.js` không được import ở đâu; email dùng lịch cố định. Dùng chung cột DB, khác toán học | 🟡 |
 | 7 | **`/api/email/test` lệch luồng production** | Gửi mail nhưng **không ghi `email_log`** và **không advance `due_at`** → test gửi trùng nội dung và vô hình với cơ chế khử trùng 12h | 🟡 |
 | 8 | **`admin/email-status` đọc schema chết** | Báo cáo dựa trên `email_preferences.last_sent_at` / `last_sent_word_id`, nhưng pipeline hiện ghi vào `email_log`. Dashboard sẽ hiện mọi user là missed/pending | 🟡 |
 | 9 | **RLS thiếu** | `spinner_history`, `spinner_preferences` chứa dữ liệu người dùng, không bật RLS | 🟡 |
-| 10 | **Code chết** | `WordCard.js` (367 dòng) và `TranslateWidget.js` (455 dòng) không được import ở đâu; `TranslateWidget` còn gọi 2 route đã xoá (`/api/words/suggest`, `/api/words/lookup`). `transcribeAudio()` trong practice được định nghĩa nhưng không gọi. `src/data/vocabulary.js` chỉ còn 1 dòng emoji không ai dùng. **Đã kiểm chứng** | 🟢 |
+| 10 | **Code chết** | `WordCard.js` (367 dòng) và `TranslateWidget.js` (455 dòng) không được import ở đâu; `TranslateWidget` còn gọi 2 route đã xoá (`/api/words/suggest`, `/api/words/lookup`). `transcribeAudio()` trong practice được định nghĩa nhưng không gọi. `web/src/data/vocabulary.js` chỉ còn 1 dòng emoji không ai dùng. **Đã kiểm chứng** | 🟢 |
 | 11 | **Trùng lặp `speak()`** | Helper TTS lặp gần như nguyên văn ở 5 file | 🟢 |
 | 12 | **Không có auth context** | 3 component độc lập cùng fetch `/api/profile` mỗi lần load để đoán trạng thái đăng nhập | 🟢 |
 | 13 | **Tính năng ẩn** | `/speak`, `/vocabulary-chat` hoàn chỉnh nhưng bị comment khỏi nav | 🟢 |
@@ -1139,12 +1139,13 @@ Sắp theo mức độ ưu tiên xử lý:
 > phải dựng lại từ repo.
 
 ```bash
-# 1. Cài dependencies
+# 1. Cài dependencies (web app nằm trong web/)
+cd web
 npm install
 
-# 2. Tạo .env.local với các biến ở mục 7.2
+# 2. Tạo web/.env.local với các biến ở mục 7.2
 
-# 3. Chạy migrations trên Supabase SQL Editor theo thứ tự:
+# 3. Chạy migrations trên Supabase SQL Editor theo thứ tự (file ở gốc repo):
 #    supabase/word_ai_content*.sql
 #    migrations/email-core-upgrade.sql
 #    migrations/unified-review-queue.sql
@@ -1155,15 +1156,15 @@ npm install
 #    migrations/translate-history-auto-save.sql
 
 # 4. Seed từ vựng (tuỳ chọn)
-#    Chạy scripts/oxford-*.sql và scripts/gre-*.sql
+#    Chạy web/scripts/oxford-*.sql và web/scripts/gre-*.sql
 
-# 5. Khởi động
+# 5. Khởi động (từ web/)
 npm run dev     # http://localhost:3000
 ```
 
 > ⚠️ **Trước khi viết code:** đọc `AGENTS.md` — phiên bản Next.js trong dự án
 > này có breaking changes so với tài liệu phổ biến. Tham khảo
-> `node_modules/next/dist/docs/`.
+> `web/node_modules/next/dist/docs/`.
 
 ---
 

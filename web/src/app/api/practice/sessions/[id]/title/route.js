@@ -1,0 +1,48 @@
+import { getUserFast } from "@/lib/auth/get-user-fast";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { callGroq } from "@/lib/ai/ai-models";
+
+
+const TITLE_PROMPT = `Summarize the following conversation opener into a short chat title, 3-6 words, no quotes, no trailing punctuation, no emoji. Just the title text, nothing else.`;
+
+export async function POST(request, { params }) {
+  // Next 16: params là Promise — phải await, nếu không params.id là
+  // undefined và query filter sai (bug đã tồn tại từ trước).
+  const { id } = await params;
+  const user = await getUserFast();
+  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { messages } = await request.json();
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return Response.json({ error: "Missing messages" }, { status: 400 });
+  }
+
+  const transcript = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
+
+  const { res } = await callGroq("fast", {
+      messages: [
+        { role: "system", content: TITLE_PROMPT },
+        { role: "user", content: transcript },
+      ],
+    temperature: 0.5,
+    max_tokens: 20,
+  });
+
+  if (!res.ok) return Response.json({ error: "Title generation failed" }, { status: 500 });
+
+  const data = await res.json();
+  const title = (data.choices?.[0]?.message?.content || "").trim().replace(/^["']|["']$/g, "");
+  if (!title) return Response.json({ error: "Empty title" }, { status: 500 });
+
+  const supabase = createAdminClient();
+  const { data: updated, error } = await supabase
+    .from("practice_sessions")
+    .update({ title })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select("id, title")
+    .single();
+
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  return Response.json({ session: updated });
+}

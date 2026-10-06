@@ -9,6 +9,15 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
+### Monorepo `web/` + `mobile/` (branch `chore/monorepo-structure`, CHƯA merge)
+
+Web app Next.js chuyển vào `web/` (git mv, giữ lịch sử); `mobile/` giữ chỗ
+cho app iOS. `supabase/` và `migrations/` **giữ ở gốc** — schema dùng chung
+cho web và mobile. Lệnh `npm` chạy từ `web/`, lệnh `npx supabase` chạy từ gốc;
+`.env.local` / `.env.test.local` nằm trong `web/`. CI chạy trong `web/`, có
+paths filter. Kiểm chứng: 273/273 test pass (bằng main), build sạch, nhận
+middleware, lint CI sạch. **Chặn merge:** mục 8 "Chờ chủ dự án quyết định".
+
 ### Deploy 4/9/2026 — B2B + sự cố AI đều đã xong
 
 `feat/b2b-multi-tenant` (32 commit) đã MERGE HẲN vào `main`, không phải
@@ -19,6 +28,56 @@ trên Vercel — đã kiểm chứng bằng cách gọi API thật) sang đếm 
 
 Từ nay `main` là nguồn sự thật duy nhất cho trạng thái B2B — không còn
 tình trạng "code đã viết nhưng nằm trên branch khác main".
+
+### 6/10/2026 — App iOS sống lại (branch `feat/ios-mobile-api`, xếp TRÊN `chore/monorepo-structure`, CHƯA push/deploy)
+
+| Việc | Bằng chứng |
+|---|---|
+| Web nhận `Authorization: Bearer` (app iOS không có cookie) — `web/src/lib/auth/bearer-auth.js`, middleware + `supabase-server` | 12 test mới, `npm test` 285/285 (trong `web/`), build sạch, eslint sạch. Dev server: không token / token rác / JWT tự ký giả → đều 401 |
+| App iOS vào git tại `mobile/ios/`; credential ở `Config/Secrets.xcconfig` (gitignore) | `git check-ignore` xác nhận; không còn key thật trong file được commit |
+| Xcode project sinh bằng XcodeGen (`mobile/ios/project.yml`) | `xcodebuild` → BUILD SUCCEEDED (app + widget), chạy được trên simulator tới màn đăng nhập |
+| Sửa 2 lỗi cú pháp, struct trùng ở widget, Practice đọc text stream (web không còn trả JSON `{reply}`) | build pass |
+
+**Chưa kiểm chứng:** đăng nhập thật + gọi API với token thật (cần tài khoản; production chưa có bản sửa Bearer). Không có test Swift (chưa có test target).
+**Đã quyết (6/10):** bỏ tab "My Words" trên iOS cho khớp web (web đã xoá tính năng này ở redesign 3/7) — iOS còn 4 tab: Dịch, Journal, Luyện nói, Hồ sơ. Xoá `Package.swift` (thừa, XcodeGen thay thế). Build vẫn SUCCEEDED.
+**Thứ tự merge:** đổi Root Directory Vercel = `web` → merge `chore/monorepo-structure` → merge `feat/ios-mobile-api`.
+
+### 6/10/2026 — Cấu trúc lại `web/src` theo domain (branch `refactor/web-src-structure`, xếp TRÊN `feat/ios-mobile-api`, CHƯA push)
+
+`lib/` chia theo domain (supabase, auth, security, ai, org, learning, tuition, storage, email), component trang chủ vào `components/home` + `layout`, trang vào route group `(auth)`/`(learner)`/`(org)`. Xoá code chết: TranslateWidget, WordCard, word-content-client, data/vocabulary, jwt-verify (+ 2 file test).
+
+| Kiểm chứng | Kết quả |
+|---|---|
+| Danh sách route của `next build` trước/sau | **78 route giống hệt** (cả kiểu render) — URL không đổi |
+| `npm test` | 265/265 (285 − 20 test của 2 file test bị xoá cùng code chết) |
+| Lint phạm vi CI / lint toàn bộ src+tests+scripts | sạch / 12 lỗi cũ, **trước và sau như nhau** |
+| Rename | 58 file `git mv`, 272 dòng import viết lại bằng codemod |
+
+Đã sửa đường dẫn lint trong `.github/workflows/ci.yml` (commit riêng). **Thứ tự merge:** Vercel Root Directory = `web` → `chore/monorepo-structure` → `feat/ios-mobile-api` → `refactor/web-src-structure`.
+
+### 6/10/2026 — iOS chuẩn bị TestFlight (branch `feat/ios-testflight-prep`, xếp TRÊN `refactor/web-src-structure`, CHƯA push)
+
+| Việc | Bằng chứng |
+|---|---|
+| Test target Swift `WordlyiOSTests` (TDD cho iOS) | 9/9 test pass trên simulator |
+| Sửa đọc ngày giờ: timestamp Supabase có phần lẻ giây → trước đây mọi mục hiện "bây giờ"; lịch sử nhóm theo ngày UTC → mục 0h–7h sáng VN rơi sang hôm trước | Test fail với code cũ (đã kiểm), pass với code mới |
+| 401 → làm mới phiên 1 lần, vẫn 401 thì đăng xuất về màn đăng nhập (trước đây kẹt ở thông báo lỗi chung) | 5 test cho `AuthRecovery` |
+| `PrivacyInfo.xcprivacy` cho app + widget (thiếu → App Store Connect từ chối, ITMS-91053) | Có trong archive Release |
+| Commit `Package.resolved` (ghim supabase-swift 2.55.3 + 6 phụ thuộc) | `.gitignore` chỉ mở riêng file này |
+| Archive Release | ARCHIVE SUCCEEDED (chưa ký) |
+
+**Còn chặn TestFlight (phía chủ dự án):** Team ID "Thien Tran Phan Huy" + đăng nhập Xcode; tạo app trên App Store Connect (`com.thientran.wordly`); đổi Vercel Root Directory = `web` để deploy bản sửa Bearer. **Chưa kiểm:** đăng nhập thật; cài đặt Auth trên Supabase (xác nhận email, redirect URL).
+
+### 6/10/2026 — Giao diện iOS khớp web (branch `feat/ios-testflight-prep`, CHƯA push)
+
+Màu (xanh Duolingo `#58CC02`, nền tối `#131F24`, sáng/tối tự đổi), font Plus Jakarta Sans (đóng gói, OFL), logo gấu thay emoji 🌈, card/input/nút theo `components/ui` của web. Sửa kèm: `hoverBG`/`inkGhost`/`background` đọc từ asset catalog không tồn tại (placeholder vô hình), tab Luyện nói thiếu nền (đen tuyền). Thêm chế độ xem trước chỉ có trong bản Debug để chụp màn hình không cần đăng nhập.
+
+| Kiểm chứng | Kết quả |
+|---|---|
+| Test (thêm DesignSystemTests: màu khớp web sáng/tối, font có đủ dấu tiếng Việt; PreviewModeTests) | 20/20 pass |
+| Ảnh chụp trước/sau 5 màn, chế độ tối + sáng | Đã so — khớp bảng màu web |
+| Archive Release | SUCCEEDED, 0 chuỗi của chế độ xem trước trong binary |
+| Widget | Build được; **chưa xem trực quan** (cần thêm widget trên màn hình chính) |
 
 ---
 
@@ -95,8 +154,8 @@ Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 **GĐ2:** `/api/homework`, `/api/homework/[id]/submit`,
 `/api/homework/[id]/grade`, `/api/quiz`,
 `/api/materials/video-upload-url`, `/api/materials/video`,
-`/api/materials/[id]/video-url` (video R2 — xem `src/lib/video-validation.js`
-+ `src/lib/r2-client.js`)
+`/api/materials/[id]/video-url` (video R2 — xem `web/src/lib/storage/video-validation.js`
++ `web/src/lib/storage/r2-client.js`)
 
 **GĐ4:** `/api/tuition`, `/api/tuition/payments`
 
@@ -106,7 +165,7 @@ Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 `/org/classes/[id]` (tab Tiến độ · Bài giảng · Bài tập · Bộ từ · Học phí),
 `/join` (nhập mã lớp), `/quiz` (quiz từ vựng).
 
-**Component** (`src/components/org/`): `OrgShell` (layout dùng chung),
+**Component** (`web/src/components/org/`): `OrgShell` (layout dùng chung),
 `LessonLibrary`, `HomeworkPanel`, `TuitionPanel`, `MembersPanel`,
 `AssignmentsPanel`, `QuizStatsPanel`, `SettingsPanel`, `GuardiansPanel`,
 `SpeakingPanel`.
@@ -122,7 +181,7 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 `cleanupOrphanedFiles` (cron tuần), `syncStorageLimits` (cron ngày),
 `sendParentReports` (cron CN, gác bởi feature flag).
 
-### AI (`src/lib/ai-models.js` — cấu hình TẬP TRUNG)
+### AI (`web/src/lib/ai/ai-models.js` — cấu hình TẬP TRUNG)
 
 | API | Chức năng |
 |---|---|
@@ -132,7 +191,7 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 | `/api/ai/grade-speaking` | Whisper nghe audio → LLM chấm bài nói |
 
 **Model theo vai trò, ladder XUYÊN NHÀ CUNG CẤP** (Gemini chính, Groq dự
-phòng) — `src/lib/ai-models.js`:
+phòng) — `web/src/lib/ai/ai-models.js`:
 
 | Vai trò | Thứ tự thử |
 |---|---|
@@ -193,7 +252,7 @@ chạy (không có Supabase local).
 
 Tham chiếu `translate_history` — bảng lõi không có `CREATE TABLE` trong repo.
 Xem `docs/LOCAL-SETUP-B2B.md` mục 3 (Cách A: dump baseline; Cách B:
-`scripts/b2b-local-baseline.sql`).
+`web/scripts/b2b-local-baseline.sql`).
 
 ### 3. Hook JWT phải bật TRƯỚC khi chạy migration
 
@@ -211,8 +270,9 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | 3 | **Dựng staging** | Cần tạo project Supabase mới, tốn phí |
 | ~~4~~ | ~~Cổng thanh toán~~ | ✅ QUYẾT 6/9: dùng VNPay, làm SAU (không phải bây giờ) |
 | ~~5~~ | ~~Đăng ký Cloudflare R2~~ | ✅ XONG 6/9: bucket tạo, credential điền Vercel, migration chạy, kết nối kiểm chứng thật |
-| 6 | **Credential iOS** trong `APIClient.swift` | Chuyển sang cấu hình ngoài trước khi commit `wordly-ios/` |
+| 6 | ~~Credential iOS trong `APIClient.swift`~~ | ✅ Đã chuyển sang `mobile/ios/Config/Secrets.xcconfig` (6/10, branch `feat/ios-mobile-api`) |
 | 7 | **Đăng ký Cloudflare R2** | Theo `docs/R2-SETUP.md` — cần làm TRƯỚC khi merge nhánh video |
+| 8 | **Vercel Root Directory = `web`** | Nhánh `chore/monorepo-structure` chuyển web app vào `web/`. PHẢI đổi trong Vercel → Settings → Build and Deployment TRƯỚC khi merge, nếu không deploy production tiếp theo hỏng |
 
 ---
 

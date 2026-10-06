@@ -10,6 +10,30 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 - `docs/superpowers/specs/` — spec thiết kế đã duyệt
 - `docs/LOCAL-SETUP-B2B.md` — dựng môi trường local + test
 
+**Cấu trúc repo (monorepo):**
+
+| Thư mục | Nội dung | Chạy lệnh từ đâu |
+|---|---|---|
+| `web/` | Web app Next.js (src, tests, scripts, package.json) — Vercel deploy từ đây | `cd web` rồi `npm ...` |
+| `mobile/` | App native — iOS ở `mobile/ios/` (XcodeGen, xem README trong đó) | Xcode |
+| `supabase/`, `migrations/` | Schema + migration dùng chung cho web và mobile | Gốc repo (`npx supabase ...`) |
+| `docs/`, `*.md` | Tài liệu | — |
+
+`.env.local` và `.env.test.local` phải nằm trong `web/`.
+
+**Cấu trúc `web/src`:**
+
+| Thư mục | Nội dung |
+|---|---|
+| `app/(auth)`, `app/(learner)`, `app/(org)` | Trang theo nhóm người dùng — route group, **không** thêm vào URL |
+| `app/api/` | API — là hợp đồng với app iOS, đổi đường dẫn = vỡ app |
+| `components/ui`, `layout`, `home`, `auth`, `org`, `spinner` | UI dùng chung / khung trang / trang chủ / theo tính năng |
+| `lib/supabase`, `auth`, `security` | Client Supabase, nhận diện người dùng (cookie + Bearer), rate limit |
+| `lib/ai`, `org`, `learning`, `tuition`, `storage`, `email` | Logic theo domain — logic thuần đặt ở đây để test được |
+| `inngest/`, `middleware.js` | Job nền; middleware bắt buộc ở `src/` |
+
+Thêm file mới: đặt theo domain, import bằng alias `@/`.
+
 ---
 
 ## 1. Quy tắc tuyệt đối
@@ -18,10 +42,10 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 |---|---|---|
 | 1 | **KHÔNG deploy production** khi chưa được yêu cầu rõ ràng | Đã có người dùng thật |
 | 2 | **KHÔNG chạy migration lên production/staging** khi chưa được đồng ý | Không có rollback |
-| 3 | **KHÔNG commit `wordly-ios/`** | Chứa credential thật trong `APIClient.swift` |
+| 3 | **KHÔNG commit `mobile/ios/Config/Secrets.xcconfig`** | Chứa credential thật của app iOS (đã gitignore — kiểm `git status --ignored mobile/` trước khi add) |
 | 4 | **KHÔNG `git add -A`** khi có file untracked chứa secret | Đã từng vô tình commit credential iOS |
 | 5 | **KHÔNG dùng service role** cho request của người dùng | Bypass RLS = rò dữ liệu chéo trung tâm |
-| 6 | Đọc `node_modules/next/dist/docs/` trước khi viết code Next.js | Next 16 có breaking changes |
+| 6 | Đọc `web/node_modules/next/dist/docs/` trước khi viết code Next.js | Next 16 có breaking changes |
 
 ### Về đa người thuê (multi-tenant)
 
@@ -30,7 +54,7 @@ một khách vì thấy dữ liệu khách khác là mất toàn bộ uy tín. N
 
 - Mọi bảng có dữ liệu tenant **phải** bật RLS, không có ngoại lệ
 - Mọi bảng mới **phải** có test cô lập chéo org trước khi coi là xong
-- Dùng `supabase-server` (anon + RLS) làm mặc định; `createAdminClient()`
+- Dùng `lib/supabase/server` (anon + RLS) làm mặc định; `createAdminClient()`
   chỉ cho Inngest job và script admin
 
 ---
@@ -52,12 +76,12 @@ không chứng minh được nó bắt được lỗi gì.
 
 | Loại code | Cách test | Chạy được ở đâu |
 |---|---|---|
-| Logic thuần (validate, tính toán, format) | `tests/unit/*.test.mjs` | Mọi nơi, không cần DB |
-| RLS policy, quyền truy cập | `tests/rls/*.test.mjs` | **Chỉ local** (cần Supabase local) |
+| Logic thuần (validate, tính toán, format) | `web/tests/unit/*.test.mjs` | Mọi nơi, không cần DB |
+| RLS policy, quyền truy cập | `web/tests/rls/*.test.mjs` | **Chỉ local** (cần Supabase local) |
 | Logic SQL (streak, snapshot) | Mô phỏng bằng JS rồi đối chiếu | Mọi nơi |
 
 **Mẹo quan trọng:** khi logic nằm trong route handler thì không test được.
-Tách ra `src/lib/` rồi test ở đó. Ví dụ: `material-validation.js` được tách
+Tách ra `web/src/lib/` rồi test ở đó. Ví dụ: `material-validation.js` được tách
 khỏi `api/materials/` chính vì lý do này.
 
 **Với SQL không chạy được ở local:** viết bản mô phỏng bằng JS, đối chiếu với
@@ -67,6 +91,7 @@ thuật toán đang dùng trong app. Cách này đã bắt được lỗi dấu 
 ### Lệnh
 
 ```bash
+cd web               # mọi lệnh npm chạy trong web/
 npm test              # toàn bộ
 npm run test:rls      # chỉ test RLS (cần Supabase local)
 npm run test:watch    # theo dõi khi sửa
@@ -94,6 +119,7 @@ ngắn, chứ không phải bỏ bước duyệt.
 Dùng skill `superpowers:verification-before-completion`. Chạy đủ và **đọc kết quả**:
 
 ```bash
+cd web
 npm test                     # phải xanh
 npx next build               # phải "Compiled successfully"
 npx eslint <file đã sửa>     # phải sạch
@@ -115,7 +141,7 @@ Nguyên tắc báo cáo:
 - Làm trên branch riêng: `feat/<tên>`, không commit thẳng `main`
 - `git add <đường dẫn cụ thể>` — **không** `git add -A`
 - Commit message tiếng Việt, nêu **vì sao** chứ không chỉ **cái gì**
-- Kết thúc bằng: `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`
+- **Không** thêm dòng `Co-Authored-By` (chủ dự án chốt 6/10/2026, khớp quy ước ATLAS)
 - Chỉ commit/push khi được yêu cầu
 
 ---
