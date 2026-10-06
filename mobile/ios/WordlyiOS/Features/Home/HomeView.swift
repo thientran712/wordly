@@ -52,6 +52,9 @@ struct HomeView: View {
                         NavigationLink { JournalView() } label: {
                             ActionCard(title: "Sổ tay câu hay", subtitle: "Ghi lại câu muốn nhớ", systemImage: "book.closed.fill", color: WordlyColors.duoPurple)
                         }
+                        NavigationLink { SpeakSpinnerView() } label: {
+                            ActionCard(title: "Vòng quay chủ đề", subtitle: "IELTS, phỏng vấn, deep talk", systemImage: "dice.fill", color: WordlyColors.error)
+                        }
                         NavigationLink { TopicVocabularyView() } label: {
                             ActionCard(title: "Từ vựng theo chủ đề", subtitle: "IELTS, TOEIC, 12 chủ đề", systemImage: "square.grid.2x2.fill", color: WordlyColors.grass)
                         }

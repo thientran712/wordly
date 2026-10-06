@@ -336,6 +336,13 @@ struct PracticeView: View {
     // MARK: - Toolbar
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
+        // Vòng quay luyện nói theo chủ đề (web /speak) — cùng tab Luyện nói
+        ToolbarItem(placement: .topBarTrailing) {
+            NavigationLink { SpeakSpinnerView() } label: {
+                Image(systemName: "dice.fill")
+            }
+            .accessibilityLabel("Luyện nói theo chủ đề")
+        }
         ToolbarItem(placement: .topBarLeading) {
             Button {
                 withAnimation { vm.sidebarOpen.toggle() }
