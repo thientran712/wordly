@@ -1,5 +1,7 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { createSign } from "crypto";
+import { ttsCacheKey, getOrCreateAudio } from "@/lib/storage/tts-cache";
+import { getObjectBytes, putObjectBytes } from "@/lib/storage/r2-client";
 
 const TTS_URL = "https://texttospeech.googleapis.com/v1/text:synthesize";
 
@@ -61,18 +63,36 @@ async function getAccessToken() {
 }
 
 // ── Audio cache ──────────────────────────────────────────────────────────
-// Same word/phrase gets spoken repeatedly (retrying pronunciation in Học từ
-// mới, replaying an AI reply, re-translating the same word) — synthesizing
-// via Google TTS takes ~1s every time despite producing byte-identical
-// output. Cache by exact (voice, text) key, capped to avoid unbounded growth.
+// Cùng một từ/câu được đọc lại nhiều lần nhưng audio giống hệt nhau. RAM của
+// instance là tầng 1 (gần như luôn trống trên serverless), R2 là tầng bền
+// dùng chung — xem lib/storage/tts-cache.js. Header X-TTS-Cache cho biết
+// audio lấy từ đâu (memory | r2 | google) để kiểm chứng.
 const audioCache = new Map();
-const AUDIO_CACHE_MAX_ENTRIES = 500;
+const r2Store = {
+  get: (key) => getObjectBytes(key),
+  put: (key, bytes) => putObjectBytes(key, bytes, "audio/mpeg"),
+};
 
-function cacheAudio(key, buffer) {
-  if (audioCache.size >= AUDIO_CACHE_MAX_ENTRIES) {
-    audioCache.delete(audioCache.keys().next().value); // evict oldest
+async function synthesize(text, lang, voiceName) {
+  const accessToken = await getAccessToken();
+  const ttsRes = await fetch(TTS_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      input: { text },
+      voice: { languageCode: lang, name: voiceName },
+      audioConfig: { audioEncoding: "MP3", speakingRate: 0.9 },
+    }),
+  });
+  if (!ttsRes.ok) {
+    const err = await ttsRes.json().catch(() => ({}));
+    throw new Error(err.error?.message || "TTS failed");
   }
-  audioCache.set(key, buffer);
+  const { audioContent } = await ttsRes.json();
+  return Buffer.from(audioContent, "base64");
 }
 
 export async function POST(request) {
@@ -85,44 +105,19 @@ export async function POST(request) {
 
   const trimmedText = text.trim();
   const voiceName = VOICE_BY_LANG[lang] || VOICE_BY_LANG["en-US"];
-  const cacheKey = `${voiceName}::${trimmedText}`;
-
-  const cached = audioCache.get(cacheKey);
-  if (cached) {
-    return new Response(cached, {
-      headers: { "Content-Type": "audio/mpeg", "Cache-Control": "public, max-age=86400" },
-    });
-  }
 
   try {
-    const accessToken = await getAccessToken();
-
-    const ttsRes = await fetch(TTS_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        input: { text: trimmedText },
-        voice: { languageCode: lang, name: voiceName },
-        audioConfig: { audioEncoding: "MP3", speakingRate: 0.9 },
-      }),
+    const { audio, source } = await getOrCreateAudio({
+      key: ttsCacheKey(voiceName, trimmedText),
+      memory: audioCache,
+      store: r2Store,
+      synthesize: () => synthesize(trimmedText, lang, voiceName),
     });
-
-    if (!ttsRes.ok) {
-      const err = await ttsRes.json();
-      return Response.json({ error: err.error?.message || "TTS failed" }, { status: 500 });
-    }
-
-    const { audioContent } = await ttsRes.json();
-    const audio = Buffer.from(audioContent, "base64");
-    cacheAudio(cacheKey, audio);
-
     return new Response(audio, {
       headers: {
         "Content-Type": "audio/mpeg",
         "Cache-Control": "public, max-age=86400",
+        "X-TTS-Cache": source,
       },
     });
   } catch (err) {

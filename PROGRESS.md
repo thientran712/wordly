@@ -79,6 +79,22 @@ Màu (xanh Duolingo `#58CC02`, nền tối `#131F24`, sáng/tối tự đổi), 
 | Archive Release | SUCCEEDED, 0 chuỗi của chế độ xem trước trong binary |
 | Widget | Build được; **chưa xem trực quan** (cần thêm widget trên màn hình chính) |
 
+### 6/10/2026 — ĐÃ DEPLOY PRODUCTION: monorepo + app iOS dùng được API (PR #1, merge `ffc54f8`)
+
+Vercel Root Directory = `web` (chủ dự án đổi). Kiểm trên production bằng tài khoản test `huythien7122+wordlytest@gmail.com`: Bearer 200 trên profile/streak/journal (ghi+đọc)/lịch sử/phiên luyện nói/dịch/practice; không token + token xấu → 401; `/`, `/login`, `/speak` 200. Sửa thêm trong lúc kiểm: middleware sập (500) với JWT thiếu `exp`; luồng chat Alex bị cụt rồi treo 60s. Google Cloud billing cho TTS đã bật (trước đó TTS lỗi trên cả web lẫn app).
+
+**Chưa kiểm:** đăng nhập web bằng trình duyệt thật (luồng cookie).
+**Đề xuất (chờ quyết):** Gemini 2.5 Flash tiêu ~90/150 token cho "thinking" ở chat Alex → thêm `reasoning_effort: "none"` (đo: tổng ~60 token, không cắt câu).
+
+### 6/10/2026 — Cache audio TTS lên R2 (branch `feat/tts-r2-cache`)
+
+Cache cũ chỉ là `Map` trong RAM → gần như luôn trống trên Vercel, mỗi lần đọc là một lần Google tính phí. Giờ: RAM → R2 (`tts/v1/<giọng>/<sha256>.mp3`, bucket video sẵn có) → Google. R2 lỗi thì vẫn gọi Google (không làm hỏng phát âm). Header `X-TTS-Cache` cho biết nguồn.
+
+| Kiểm chứng | Kết quả |
+|---|---|
+| Test `tts-cache` (11) / toàn bộ | 11/11 · 285/285, build + lint sạch |
+| Dev server với R2 + Google thật | lần 1 `google` → lần 2 `memory` (9ms) → restart `r2` (không gọi Google) |
+
 ---
 
 ## Trạng thái tổng quan
