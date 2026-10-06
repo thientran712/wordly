@@ -40,6 +40,13 @@ targets:
         WordlySupabaseURL: $(WORDLY_SUPABASE_URL)
         WordlySupabaseAnonKey: $(WORDLY_SUPABASE_ANON_KEY)
         WordlyAppGroup: $(WORDLY_APP_GROUP)
+        # Plus Jakarta Sans — font của web (Resources/Fonts, giấy phép OFL)
+        UIAppFonts:
+          - PlusJakartaSans-Regular.ttf
+          - PlusJakartaSans-Medium.ttf
+          - PlusJakartaSans-SemiBold.ttf
+          - PlusJakartaSans-Bold.ttf
+          - PlusJakartaSans-ExtraBold.ttf
         # App chỉ dùng HTTPS chuẩn của hệ điều hành → không phải khai báo xuất khẩu mã hoá
         ITSAppUsesNonExemptEncryption: false
         NSMicrophoneUsageDescription: "Wordly cần mic để luyện nói với Alex — giáo viên AI của bạn."
@@ -94,6 +101,11 @@ targets:
         excludes:
           - Info.plist
           - "*.entitlements"
+      # Dùng chung bảng màu + font với app
+      - path: WordlyiOS/Shared/Theme/DesignSystem.swift
+      - path: WordlyiOS/Resources/Fonts
+        buildPhase: resources
+      - path: WordlyiOS/Resources/Brand.xcassets
     info:
       path: WordlyWidget/Info.plist
       properties:
@@ -101,6 +113,12 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WordlyAppGroup: $(WORDLY_APP_GROUP)
+        UIAppFonts:
+          - PlusJakartaSans-Regular.ttf
+          - PlusJakartaSans-Medium.ttf
+          - PlusJakartaSans-SemiBold.ttf
+          - PlusJakartaSans-Bold.ttf
+          - PlusJakartaSans-ExtraBold.ttf
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:

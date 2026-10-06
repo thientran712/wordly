@@ -28,6 +28,13 @@ open WordlyiOS.xcodeproj
   Logic thuần (đọc ngày giờ, xử lý 401…) đặt ở `WordlyiOS/Core/` để test được.
 - `WordlyiOS.xcodeproj/…/swiftpm/Package.resolved` là lockfile SPM — **được commit** (phần còn lại
   của `.xcodeproj` thì không). Muốn nâng supabase-swift: Xcode → File → Packages → Update, rồi commit file này.
+- **Giao diện khớp web:** màu ở `Shared/Theme/DesignSystem.swift` lấy từ `web/src/app/globals.css`
+  (tự đổi sáng/tối), font Plus Jakarta Sans ở `Resources/Fonts` (OFL), logo ở `Resources/Brand.xcassets`.
+  Web đổi màu → sửa `DesignSystem.swift` + `DesignSystemTests`. Dùng `WordlyColors.*` / `WordlyFonts.*`,
+  không viết `Color(hex:)` hay `.system(size:)` trong màn hình.
+- **Xem trước giao diện (chỉ bản Debug):** chạy với launch argument `-WordlyUIPreview <translate|journal|practice|profile>`
+  → bỏ qua đăng nhập, API trả dữ liệu mẫu (`Core/Debug/PreviewMode.swift`). Thêm `-wordly-theme light` để xem chế độ sáng.
+  Không có trong bản Release/TestFlight.
 - `PrivacyInfo.xcprivacy` (app + widget): khai báo dữ liệu thu thập + lý do dùng UserDefaults.
   Thêm API "required reason" hoặc thu thập dữ liệu mới → phải cập nhật, nếu không App Store Connect từ chối bản build.
 

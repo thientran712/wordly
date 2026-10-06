@@ -116,20 +116,20 @@ struct LockScreenRectangularView: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Image(systemName: "book.fill")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(WordlyFonts.body(9, weight: .bold))
                     Text("WORDLY")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(WordlyFonts.body(9, weight: .bold))
                         .tracking(1.5)
                 }
                 .foregroundStyle(.secondary)
 
                 Text(word.sourceText)
-                    .font(.system(size: 15, weight: .bold, design: .serif))
+                    .font(WordlyFonts.display(15))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Text(word.translatedText)
-                    .font(.system(size: 12))
+                    .font(WordlyFonts.body(12))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
@@ -151,16 +151,16 @@ struct LockScreenCircularView: View {
                 AccessoryWidgetBackground()
                 VStack(spacing: 2) {
                     Image(systemName: "book.fill")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(WordlyFonts.body(12, weight: .bold))
                     Text(String(word.sourceText.prefix(4)))
-                        .font(.system(size: 10, weight: .bold, design: .serif))
+                        .font(WordlyFonts.display(10))
                         .lineLimit(1)
                 }
             }
         } else {
             ZStack {
                 AccessoryWidgetBackground()
-                Image(systemName: "book.fill").font(.system(size: 18))
+                Image(systemName: "book.fill").font(WordlyFonts.body(18))
             }
         }
     }
@@ -192,14 +192,14 @@ struct HomeSmallView: View {
         ZStack {
             // Background gradient
             LinearGradient(
-                colors: [Color(hex: "#0A0A0A"), Color(hex: "#111111")],
+                colors: [Color(hex: "#131F24"), Color(hex: "#1F2E36")],  // nền tối của web; widget luôn tối vì chữ trắng
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
             // Green accent glow
             Circle()
-                .fill(Color(hex: "#22C55E").opacity(0.15))
+                .fill(WordlyColors.electric.opacity(0.15))
                 .frame(width: 120)
                 .offset(x: 40, y: -40)
                 .blur(radius: 20)
@@ -208,47 +208,46 @@ struct HomeSmallView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     // Header
                     HStack(spacing: 4) {
-                        Text("🌈")
-                            .font(.system(size: 10))
+                        WordlyLogo(size: 16)
                         Text("Wordly")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(Color(hex: "#22C55E"))
+                            .font(WordlyFonts.body(10, weight: .bold))
+                            .foregroundStyle(WordlyColors.electric)
                     }
 
                     Spacer()
 
                     // Word
                     Text(word.sourceText)
-                        .font(.custom("Fraunces-Black", size: 22))
+                        .font(WordlyFonts.display(22))
                         .foregroundStyle(.white)
                         .lineLimit(2)
                         .minimumScaleFactor(0.7)
 
                     // Translation
                     Text(word.translatedText)
-                        .font(.system(size: 11))
+                        .font(WordlyFonts.body(11))
                         .foregroundStyle(Color.white.opacity(0.6))
                         .lineLimit(2)
 
                     // Direction badge
                     Text(word.direction)
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Color(hex: "#22C55E"))
+                        .font(WordlyFonts.body(9, weight: .bold))
+                        .foregroundStyle(WordlyColors.electric)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color(hex: "#22C55E").opacity(0.15))
+                        .background(WordlyColors.electric.opacity(0.15))
                         .clipShape(Capsule())
                 }
                 .padding(14)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             } else {
                 VStack(spacing: 6) {
-                    Text("🌈").font(.system(size: 28))
+                    WordlyLogo(size: 44.8)
                     Text("Wordly")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color(hex: "#22C55E"))
+                        .font(WordlyFonts.body(14, weight: .bold))
+                        .foregroundStyle(WordlyColors.electric)
                     Text("Mở app để tải từ")
-                        .font(.system(size: 10))
+                        .font(WordlyFonts.body(10))
                         .foregroundStyle(Color.white.opacity(0.4))
                         .multilineTextAlignment(.center)
                 }
@@ -265,13 +264,13 @@ struct HomeMediumView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(hex: "#0A0A0A"), Color(hex: "#111111")],
+                colors: [Color(hex: "#131F24"), Color(hex: "#1F2E36")],  // nền tối của web; widget luôn tối vì chữ trắng
                 startPoint: .leading,
                 endPoint: .trailing
             )
 
             Circle()
-                .fill(Color(hex: "#22C55E").opacity(0.1))
+                .fill(WordlyColors.electric.opacity(0.1))
                 .frame(width: 200)
                 .offset(x: 120, y: -30)
                 .blur(radius: 30)
@@ -281,28 +280,28 @@ struct HomeMediumView: View {
                     // Left: word + details
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 4) {
-                            Text("🌈").font(.system(size: 11))
-                            Text("Wordly").font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(Color(hex: "#22C55E"))
+                            WordlyLogo(size: 17.6)
+                            Text("Wordly").font(WordlyFonts.body(11, weight: .bold))
+                                .foregroundStyle(WordlyColors.electric)
                             Spacer()
                             Text(word.direction)
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(Color(hex: "#22C55E"))
+                                .font(WordlyFonts.body(9, weight: .bold))
+                                .foregroundStyle(WordlyColors.electric)
                                 .padding(.horizontal, 5).padding(.vertical, 1)
-                                .background(Color(hex: "#22C55E").opacity(0.15))
+                                .background(WordlyColors.electric.opacity(0.15))
                                 .clipShape(Capsule())
                         }
 
                         Spacer()
 
                         Text(word.sourceText)
-                            .font(.custom("Fraunces-Black", size: 26))
+                            .font(WordlyFonts.display(26))
                             .foregroundStyle(.white)
                             .lineLimit(2)
                             .minimumScaleFactor(0.7)
 
                         Text(word.translatedText)
-                            .font(.system(size: 12))
+                            .font(WordlyFonts.body(12))
                             .foregroundStyle(Color.white.opacity(0.6))
                             .lineLimit(3)
                     }
@@ -313,7 +312,7 @@ struct HomeMediumView: View {
                     VStack {
                         Spacer()
                         Text("📖")
-                            .font(.system(size: 40))
+                            .font(WordlyFonts.body(40))
                             .opacity(0.15)
                         Spacer()
                     }
@@ -321,10 +320,10 @@ struct HomeMediumView: View {
                 }
             } else {
                 HStack(spacing: 12) {
-                    Text("🌈").font(.system(size: 36))
+                    WordlyLogo(size: 57.6)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Wordly").font(.system(size: 16, weight: .bold)).foregroundStyle(Color(hex: "#22C55E"))
-                        Text("Mở app để tải từ vựng").font(.system(size: 12)).foregroundStyle(Color.white.opacity(0.4))
+                        Text("Wordly").font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.electric)
+                        Text("Mở app để tải từ vựng").font(WordlyFonts.body(12)).foregroundStyle(Color.white.opacity(0.4))
                     }
                 }
             }
@@ -338,31 +337,17 @@ struct LockScreenEmptyView: View {
     var body: some View {
         VStack(spacing: 3) {
             Image(systemName: "book.fill")
-                .font(.system(size: 12))
+                .font(WordlyFonts.body(12))
                 .foregroundStyle(.secondary)
             Text("Wordly")
-                .font(.system(size: 10, weight: .bold))
+                .font(WordlyFonts.body(10, weight: .bold))
                 .foregroundStyle(.secondary)
         }
     }
 }
 
 // MARK: - Color Extension (duplicated for Widget target isolation)
-extension Color {
-    init(hex: String) {
-        let h = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: h).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch h.count {
-        case 3: (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default: (a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(.sRGB, red: Double(r)/255, green: Double(g)/255, blue: Double(b)/255, opacity: Double(a)/255)
-    }
-}
+// Color(hex:) + bảng màu dùng chung: WordlyiOS/Shared/Theme/DesignSystem.swift
 
 // MARK: - Widget Preview
 #Preview(as: .accessoryRectangular) {

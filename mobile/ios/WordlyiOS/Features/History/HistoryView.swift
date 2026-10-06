@@ -31,17 +31,17 @@ struct HistoryView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 13))
+                        .font(WordlyFonts.body(13))
                         .foregroundStyle(WordlyColors.electric)
                     Text("Lịch sử dịch")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(WordlyFonts.body(14, weight: .bold))
                         .foregroundStyle(WordlyColors.ink(scheme: scheme))
                     Spacer()
                     if vm.isLoading {
                         ProgressView().scaleEffect(0.7).tint(WordlyColors.electric)
                     } else {
                         Text("\(vm.totalCount)")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(WordlyFonts.body(11, weight: .semibold))
                             .foregroundStyle(WordlyColors.electric)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
@@ -63,9 +63,9 @@ struct HistoryView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "trash")
-                                .font(.system(size: 11))
+                                .font(WordlyFonts.body(11))
                             Text(confirmClear ? "Chắc chắn?" : "Xoá hết")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(WordlyFonts.body(11, weight: .semibold))
                         }
                         .foregroundStyle(confirmClear ? WordlyColors.error : WordlyColors.inkSoft(scheme: scheme))
                         .padding(.horizontal, 8)
@@ -74,7 +74,7 @@ struct HistoryView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(WordlyFonts.body(12, weight: .semibold))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         .rotationEffect(.degrees(collapsed ? 0 : 180))
                 }
@@ -89,9 +89,8 @@ struct HistoryView: View {
             }
         }
         .background(WordlyColors.cardBG(scheme: scheme))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(WordlyColors.divider(scheme: scheme), lineWidth: 1))
-        .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(WordlyColors.cardBorder, lineWidth: 1))
         .task { await vm.fetchHistory() }
     }
 
@@ -104,7 +103,7 @@ struct HistoryView: View {
             } else {
                 ForEach(vm.groups, id: \.day) { group in
                     Section(header: Text(group.dateLabel)
-                        .font(.system(size: 10, weight: .bold))
+                        .font(WordlyFonts.body(10, weight: .bold))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         .textCase(.uppercase)
                     ) {
@@ -126,7 +125,7 @@ struct HistoryView: View {
                                 ProgressView().scaleEffect(0.8)
                             } else {
                                 Label("Tải thêm", systemImage: "chevron.down")
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(WordlyFonts.body(13, weight: .semibold))
                                     .foregroundStyle(WordlyColors.electric)
                             }
                             Spacer()
@@ -147,7 +146,7 @@ struct HistoryView: View {
             ForEach(vm.groups, id: \.day) { group in
                 // Date header
                 Text(group.dateLabel)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(WordlyFonts.body(10, weight: .bold))
                     .foregroundStyle(WordlyColors.inkSoft(scheme: scheme).opacity(0.6))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
@@ -173,7 +172,7 @@ struct HistoryView: View {
                             Text("Tải thêm")
                         }
                     }
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(WordlyFonts.body(12, weight: .semibold))
                     .foregroundStyle(WordlyColors.electric)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
@@ -200,11 +199,11 @@ struct HistoryEntryRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(entry.sourceText)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(WordlyFonts.body(14, weight: .semibold))
                             .foregroundStyle(WordlyColors.ink(scheme: scheme))
                             .lineLimit(2)
                         Text(entry.direction)
-                            .font(.system(size: 9, weight: .bold))
+                            .font(WordlyFonts.body(9, weight: .bold))
                             .foregroundStyle(WordlyColors.electric)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
@@ -212,7 +211,7 @@ struct HistoryEntryRow: View {
                             .clipShape(Capsule())
                     }
                     Text(entry.translatedText)
-                        .font(.system(size: 12))
+                        .font(WordlyFonts.body(12))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         .lineLimit(2)
                 }
@@ -222,7 +221,7 @@ struct HistoryEntryRow: View {
                         Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") }
                     } label: {
                         Image(systemName: "speaker.wave.2")
-                            .font(.system(size: 12))
+                            .font(WordlyFonts.body(12))
                             .foregroundStyle(WordlyColors.electric)
                             .frame(width: 28, height: 28)
                             .background(WordlyColors.electricSubtle)

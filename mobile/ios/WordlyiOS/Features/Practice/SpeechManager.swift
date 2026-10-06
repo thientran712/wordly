@@ -31,6 +31,10 @@ final class SpeechManager: NSObject, ObservableObject {
 
     // MARK: - Permissions
     func requestPermissions() async {
+        #if DEBUG
+        // Xem trước giao diện: không bật hộp thoại xin quyền che màn hình
+        if PreviewMode.isOn { return }
+        #endif
         let speechStatus = await withCheckedContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { status in
                 continuation.resume(returning: status)

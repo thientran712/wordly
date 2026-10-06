@@ -91,6 +91,11 @@ final class APIClient: ObservableObject {
         responseType: T.Type,
         useWebBase: Bool
     ) async throws -> T {
+        #if DEBUG
+        if PreviewMode.isOn, let data = PreviewMode.fixture(path: path, method: method) {
+            return try decoder.decode(T.self, from: data)
+        }
+        #endif
         let base = useWebBase ? WordlyConfig.webBaseURL : WordlyConfig.supabaseURL
         guard let url = URL(string: base + path) else { throw APIError.invalidURL }
 
@@ -135,6 +140,9 @@ final class APIClient: ObservableObject {
     }
 
     private func sendRaw(path: String, method: String, body: Encodable?) async throws -> Data {
+        #if DEBUG
+        if PreviewMode.isOn { return PreviewMode.fixture(path: path, method: method) ?? Data() }
+        #endif
         guard let url = URL(string: WordlyConfig.webBaseURL + path) else { throw APIError.invalidURL }
 
         var req = URLRequest(url: url)

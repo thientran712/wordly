@@ -43,20 +43,19 @@ struct LoginView: View {
                                     )
                                     .frame(width: 88, height: 88)
                                     .shadow(color: WordlyColors.electric.opacity(0.4), radius: 20, y: 8)
-                                Text("🌈")
-                                    .font(.system(size: 44))
+                                WordlyLogo(size: 70.4)
                             }
                             Text("Wordly")
-                                .font(.custom("Fraunces-Black", size: 48))
+                                .font(WordlyFonts.display(48))
                                 .foregroundStyle(
                                     LinearGradient(
-                                        colors: [WordlyColors.electric, Color(hex: "#86EFAC")],
+                                        colors: [WordlyColors.electric, WordlyColors.electric],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
                                 )
                             Text("Học tiếng Anh mỗi ngày")
-                                .font(.system(size: 15, weight: .medium))
+                                .font(WordlyFonts.body(15, weight: .medium))
                                 .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         }
                         .padding(.top, 60)
@@ -66,7 +65,7 @@ struct LoginView: View {
                             // Email
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Email")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(WordlyFonts.body(13, weight: .bold))
                                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
                                 TextField("your@email.com", text: $email)
                                     .keyboardType(.emailAddress)
@@ -81,7 +80,7 @@ struct LoginView: View {
                             // Password
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Mật khẩu")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(WordlyFonts.body(13, weight: .bold))
                                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
                                 HStack {
                                     Group {
@@ -99,7 +98,7 @@ struct LoginView: View {
                                     } label: {
                                         Image(systemName: showPassword ? "eye.slash" : "eye")
                                             .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                                            .font(.system(size: 15))
+                                            .font(WordlyFonts.body(15))
                                     }
                                 }
                                 .wordlyInputStyle(focused: focusedField == .password)
@@ -111,7 +110,7 @@ struct LoginView: View {
                                 Button("Quên mật khẩu?") {
                                     showForgotPassword = true
                                 }
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(WordlyFonts.body(13, weight: .semibold))
                                 .foregroundStyle(WordlyColors.electric)
                             }
                         }
@@ -121,9 +120,9 @@ struct LoginView: View {
                         if let error = authManager.authError {
                             HStack(spacing: 8) {
                                 Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 13))
+                                    .font(WordlyFonts.body(13))
                                 Text(error)
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(WordlyFonts.body(13, weight: .medium))
                             }
                             .foregroundStyle(WordlyColors.error)
                             .padding(.horizontal, 16)
@@ -141,16 +140,16 @@ struct LoginView: View {
                                 HStack(spacing: 8) {
                                     if isLoading {
                                         ProgressView()
-                                            .tint(Color(hex: "#0A0A0A"))
+                                            .tint(WordlyColors.onElectric)
                                             .scaleEffect(0.85)
                                     }
                                     Text(isLoading ? "Đang đăng nhập..." : "Đăng nhập")
-                                        .font(.system(size: 16, weight: .bold))
+                                        .font(WordlyFonts.body(16, weight: .bold))
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
                                 .background(email.isEmpty || password.isEmpty ? WordlyColors.electric.opacity(0.5) : WordlyColors.electric)
-                                .foregroundStyle(Color(hex: "#0A0A0A"))
+                                .foregroundStyle(WordlyColors.onElectric)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                                 .shadow(color: WordlyColors.electric.opacity(0.3), radius: 8, y: 4)
                             }
@@ -160,7 +159,7 @@ struct LoginView: View {
                             HStack {
                                 Rectangle().fill(WordlyColors.divider(scheme: scheme)).frame(height: 1)
                                 Text("hoặc")
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(WordlyFonts.body(12, weight: .medium))
                                     .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                                     .padding(.horizontal, 8)
                                 Rectangle().fill(WordlyColors.divider(scheme: scheme)).frame(height: 1)
@@ -171,7 +170,7 @@ struct LoginView: View {
                                 showSignup = true
                             } label: {
                                 Text("Tạo tài khoản mới")
-                                    .font(.system(size: 16, weight: .bold))
+                                    .font(WordlyFonts.body(16, weight: .bold))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 16)
                                     .background(WordlyColors.surfaceElevated(scheme: scheme))
@@ -222,11 +221,11 @@ struct SignupView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         VStack(spacing: 8) {
-                            Text("🌈 Tạo tài khoản")
-                                .font(.custom("Fraunces-Black", size: 32))
+                            Text("Tạo tài khoản")
+                                .font(WordlyFonts.display(32))
                                 .foregroundStyle(WordlyColors.ink(scheme: scheme))
                             Text("Bắt đầu hành trình học tiếng Anh")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(WordlyFonts.body(14, weight: .medium))
                                 .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         }
                         .padding(.top, 8)
@@ -244,7 +243,7 @@ struct SignupView: View {
 
                         if let err = localError ?? authManager.authError {
                             Text(err)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(WordlyFonts.body(13, weight: .medium))
                                 .foregroundStyle(WordlyColors.error)
                                 .padding(.horizontal, 16).padding(.vertical, 10)
                                 .background(WordlyColors.errorSoft)
@@ -256,14 +255,14 @@ struct SignupView: View {
                             Task { await signup() }
                         } label: {
                             HStack(spacing: 8) {
-                                if isLoading { ProgressView().tint(Color(hex: "#0A0A0A")).scaleEffect(0.85) }
+                                if isLoading { ProgressView().tint(WordlyColors.onElectric).scaleEffect(0.85) }
                                 Text(isLoading ? "Đang tạo..." : "Tạo tài khoản")
-                                    .font(.system(size: 16, weight: .bold))
+                                    .font(WordlyFonts.body(16, weight: .bold))
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(WordlyColors.electric)
-                            .foregroundStyle(Color(hex: "#0A0A0A"))
+                            .foregroundStyle(WordlyColors.onElectric)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                             .shadow(color: WordlyColors.electric.opacity(0.3), radius: 8, y: 4)
                         }
@@ -311,25 +310,25 @@ struct ForgotPasswordView: View {
                 VStack(spacing: 24) {
                     Spacer()
                     Text("🔑")
-                        .font(.system(size: 56))
+                        .font(WordlyFonts.body(56))
                     Text("Quên mật khẩu")
-                        .font(.custom("Fraunces-Black", size: 28))
+                        .font(WordlyFonts.display(28))
                         .foregroundStyle(WordlyColors.ink(scheme: scheme))
                     Text("Nhập email để nhận link đặt lại mật khẩu")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(WordlyFonts.body(14, weight: .medium))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         .multilineTextAlignment(.center)
 
                     if success {
                         VStack(spacing: 8) {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 40))
+                                .font(WordlyFonts.body(40))
                                 .foregroundStyle(WordlyColors.electric)
                             Text("Đã gửi email!")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(WordlyFonts.body(16, weight: .bold))
                                 .foregroundStyle(WordlyColors.electric)
                             Text("Kiểm tra hộp thư của bạn")
-                                .font(.system(size: 14))
+                                .font(WordlyFonts.body(14))
                                 .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         }
                     } else {
@@ -339,7 +338,7 @@ struct ForgotPasswordView: View {
                                 .padding(.horizontal, 24)
 
                             if let err = errorMsg {
-                                Text(err).font(.system(size: 13, weight: .medium))
+                                Text(err).font(WordlyFonts.body(13, weight: .medium))
                                     .foregroundStyle(WordlyColors.error)
                                     .padding(.horizontal, 24)
                             }
@@ -348,13 +347,13 @@ struct ForgotPasswordView: View {
                                 Task { await reset() }
                             } label: {
                                 HStack(spacing: 8) {
-                                    if isLoading { ProgressView().tint(Color(hex: "#0A0A0A")).scaleEffect(0.85) }
+                                    if isLoading { ProgressView().tint(WordlyColors.onElectric).scaleEffect(0.85) }
                                     Text(isLoading ? "Đang gửi..." : "Gửi link đặt lại")
-                                        .font(.system(size: 16, weight: .bold))
+                                        .font(WordlyFonts.body(16, weight: .bold))
                                 }
                                 .frame(maxWidth: .infinity).padding(.vertical, 16)
                                 .background(WordlyColors.electric)
-                                .foregroundStyle(Color(hex: "#0A0A0A"))
+                                .foregroundStyle(WordlyColors.onElectric)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                             }
                             .disabled(email.isEmpty || isLoading)
@@ -397,7 +396,7 @@ struct WordlyTextField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.system(size: 13, weight: .bold)).foregroundStyle(WordlyColors.ink(scheme: scheme))
+            Text(label).font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.ink(scheme: scheme))
             TextField(placeholder, text: $text)
                 .keyboardType(keyboardType)
                 .textInputAutocapitalization(autocap)
@@ -418,7 +417,7 @@ struct WordlySecureField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.system(size: 13, weight: .bold)).foregroundStyle(WordlyColors.ink(scheme: scheme))
+            Text(label).font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.ink(scheme: scheme))
             HStack {
                 Group {
                     if show { TextField(placeholder, text: $text) }

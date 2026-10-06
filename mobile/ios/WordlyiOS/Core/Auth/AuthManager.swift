@@ -17,6 +17,13 @@ final class AuthManager: ObservableObject {
             supabaseURL: URL(string: WordlyConfig.supabaseURL)!,
             supabaseKey: WordlyConfig.supabaseAnonKey
         )
+        #if DEBUG
+        if PreviewMode.isOn {
+            isAuthenticated = true
+            isLoading = false
+            return
+        }
+        #endif
         Task { await checkSession() }
     }
 

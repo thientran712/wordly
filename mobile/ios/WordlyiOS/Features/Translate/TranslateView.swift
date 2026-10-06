@@ -34,12 +34,11 @@ struct TranslateView: View {
                             }
                         }
                         .background(WordlyColors.cardBG(scheme: scheme))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(WordlyColors.divider(scheme: scheme), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(WordlyColors.cardBorder, lineWidth: 1)
                         )
-                        .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
 
                         // History (embedded)
                         HistoryView(isEmbedded: true) { entry in
@@ -53,7 +52,7 @@ struct TranslateView: View {
                     .padding(.bottom, 80)
                 }
             }
-            .navigationTitle("Wordly 🌈")
+            .navigationTitle("Wordly")
             .navigationBarTitleDisplayMode(.large)
         }
         .overlay(alignment: .bottom) {
@@ -70,7 +69,7 @@ struct TranslateView: View {
     private var langBar: some View {
         HStack(spacing: 0) {
             Text(vm.direction.sourceName)
-                .font(.system(size: 14, weight: .bold))
+                .font(WordlyFonts.body(14, weight: .bold))
                 .foregroundStyle(WordlyColors.ink(scheme: scheme))
                 .frame(maxWidth: .infinity)
 
@@ -78,7 +77,7 @@ struct TranslateView: View {
                 vm.flipDirection()
             } label: {
                 Image(systemName: "arrow.left.arrow.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(WordlyFonts.body(14, weight: .semibold))
                     .foregroundStyle(WordlyColors.electric)
                     .frame(width: 36, height: 36)
                     .background(WordlyColors.electricSubtle)
@@ -87,7 +86,7 @@ struct TranslateView: View {
             }
 
             Text(vm.direction.targetName)
-                .font(.system(size: 14, weight: .bold))
+                .font(WordlyFonts.body(14, weight: .bold))
                 .foregroundStyle(WordlyColors.electric)
                 .frame(maxWidth: .infinity)
         }
@@ -101,7 +100,7 @@ struct TranslateView: View {
             VStack(alignment: .leading, spacing: 0) {
                 TextEditor(text: $vm.inputText)
                     .focused($inputFocused)
-                    .font(.system(size: 16))
+                    .font(WordlyFonts.body(16))
                     .foregroundStyle(vm.isOverLimit ? WordlyColors.error : WordlyColors.ink(scheme: scheme))
                     .scrollContentBackground(.hidden)
                     .background(.clear)
@@ -112,7 +111,7 @@ struct TranslateView: View {
 
                 if vm.inputText.isEmpty {
                     Text(vm.direction == .enToVi ? "Enter text or a word..." : "Nhập văn bản...")
-                        .font(.system(size: 16))
+                        .font(WordlyFonts.body(16))
                         .foregroundStyle(WordlyColors.inkGhost)
                         .allowsHitTesting(false)
                         .padding(.horizontal, 16)
@@ -122,7 +121,7 @@ struct TranslateView: View {
                 // Char counter
                 if vm.inputText.count > Int(Double(vm.charLimit) * 0.8) {
                     Text("\(vm.inputText.count.formatted()) / \(vm.charLimit.formatted())")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(WordlyFonts.body(11, weight: .semibold))
                         .foregroundStyle(vm.isOverLimit ? WordlyColors.error : WordlyColors.inkGhost)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.horizontal, 12)
@@ -154,7 +153,7 @@ struct TranslateView: View {
                     Task { await tts.speak(vm.inputText, lang: vm.direction == .enToVi ? "en-US" : "vi-VN") }
                 } label: {
                     Image(systemName: "speaker.wave.2")
-                        .font(.system(size: 14))
+                        .font(WordlyFonts.body(14))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         .frame(width: 32, height: 32)
                         .background(WordlyColors.hoverBG)
@@ -166,7 +165,7 @@ struct TranslateView: View {
                     Task { await vm.save(); showSaveToast(true) }
                 } label: {
                     Image(systemName: vm.saved ? "bookmark.fill" : "bookmark")
-                        .font(.system(size: 14))
+                        .font(WordlyFonts.body(14))
                         .foregroundStyle(vm.saved ? WordlyColors.electric : WordlyColors.inkSoft(scheme: scheme))
                         .frame(width: 32, height: 32)
                         .background(vm.saved ? WordlyColors.electricSubtle : WordlyColors.hoverBG)
@@ -180,7 +179,7 @@ struct TranslateView: View {
             if !vm.inputText.isEmpty {
                 Button { vm.clear() } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(WordlyFonts.body(12, weight: .semibold))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         .frame(width: 28, height: 28)
                         .background(WordlyColors.hoverBG)
@@ -201,17 +200,17 @@ struct TranslateView: View {
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11))
+                            .font(WordlyFonts.body(11))
                             .foregroundStyle(word == vm.inputText.lowercased() ? WordlyColors.electric : WordlyColors.inkGhost)
                         Text(word)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(WordlyFonts.body(14, weight: .medium))
                             .foregroundStyle(word == vm.inputText.lowercased() ? WordlyColors.electric : WordlyColors.ink(scheme: scheme))
                         Spacer()
                         Button {
                             Task { await tts.speak(word, lang: "en-US") }
                         } label: {
                             Image(systemName: "speaker.wave.2")
-                                .font(.system(size: 12))
+                                .font(WordlyFonts.body(12))
                                 .foregroundStyle(WordlyColors.electric.opacity(0.5))
                                 .padding(6)
                         }
@@ -240,23 +239,23 @@ struct TranslateView: View {
             Group {
                 if vm.isOverLimit {
                     Text("⚠️ Văn bản quá dài — tối đa \(vm.charLimit.formatted()) ký tự")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(WordlyFonts.body(14, weight: .semibold))
                         .foregroundStyle(WordlyColors.error)
                 } else if vm.isTranslating {
                     HStack(spacing: 6) {
                         ProgressView().scaleEffect(0.75).tint(WordlyColors.electric)
                         Text("Đang dịch...")
-                            .font(.system(size: 14))
+                            .font(WordlyFonts.body(14))
                             .foregroundStyle(WordlyColors.electric)
                     }
                 } else if !vm.translatedText.isEmpty {
                     Text(vm.translatedText)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(WordlyFonts.body(16, weight: .semibold))
                         .foregroundStyle(WordlyColors.ink(scheme: scheme))
                         .lineSpacing(4)
                 } else {
                     Text(vm.inputText.isEmpty ? "Bản dịch sẽ hiện ở đây" : "...")
-                        .font(.system(size: 14))
+                        .font(WordlyFonts.body(14))
                         .foregroundStyle(WordlyColors.inkGhost)
                 }
             }
@@ -271,7 +270,7 @@ struct TranslateView: View {
                         Task { await tts.speak(vm.translatedText, lang: vm.direction == .enToVi ? "vi-VN" : "en-US") }
                     } label: {
                         Image(systemName: "speaker.wave.2")
-                            .font(.system(size: 14))
+                            .font(WordlyFonts.body(14))
                             .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                             .frame(width: 32, height: 32)
                             .background(WordlyColors.hoverBG)
@@ -297,7 +296,7 @@ struct TranslateView: View {
                 HStack(spacing: 8) {
                     ProgressView().scaleEffect(0.7).tint(WordlyColors.electric)
                     Text("Đang tra từ điển...")
-                        .font(.system(size: 12))
+                        .font(WordlyFonts.body(12))
                         .foregroundStyle(WordlyColors.electric)
                 }
                 .padding()
@@ -314,11 +313,11 @@ struct TranslateView: View {
                             ForEach(Array(meaning.defs.enumerated()), id: \.offset) { idx, def in
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("\(idx + 1). \(def.definition)")
-                                        .font(.system(size: 12))
+                                        .font(WordlyFonts.body(12))
                                         .foregroundStyle(WordlyColors.ink(scheme: scheme))
                                     if !def.example.isEmpty {
                                         Text("\"\(def.example)\"")
-                                            .font(.system(size: 11))
+                                            .font(WordlyFonts.body(11))
                                             .italic()
                                             .foregroundStyle(WordlyColors.inkGhost)
                                             .padding(.leading, 12)
@@ -336,7 +335,7 @@ struct TranslateView: View {
     // MARK: - Toast
     private var toastView: some View {
         Text("📎 Đã lưu vào lịch sử")
-            .font(.system(size: 14, weight: .semibold))
+            .font(WordlyFonts.body(14, weight: .semibold))
             .foregroundStyle(WordlyColors.electric)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
@@ -382,7 +381,7 @@ struct PosBadge: View {
     }
     var body: some View {
         Text(label)
-            .font(.system(size: 10, weight: .bold))
+            .font(WordlyFonts.body(10, weight: .bold))
             .foregroundStyle(style.text)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)

@@ -55,7 +55,7 @@ struct ProfileView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Email")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(WordlyFonts.body(11, weight: .bold))
                     .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                     .textCase(.uppercase)
                     .tracking(1)
@@ -66,10 +66,10 @@ struct ProfileView: View {
                 } else {
                     HStack(spacing: 8) {
                         Text(vm.email)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(WordlyFonts.body(15, weight: .semibold))
                             .foregroundStyle(WordlyColors.ink(scheme: scheme))
                         Text(vm.authProvider)
-                            .font(.system(size: 10, weight: .bold))
+                            .font(WordlyFonts.body(10, weight: .bold))
                             .foregroundStyle(WordlyColors.electric)
                             .padding(.horizontal, 7)
                             .padding(.vertical, 2)
@@ -84,7 +84,7 @@ struct ProfileView: View {
                     showChangePassword = true
                 } label: {
                     Label("Đổi mật khẩu", systemImage: "key.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(WordlyFonts.body(14, weight: .semibold))
                         .foregroundStyle(WordlyColors.electric)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
@@ -104,13 +104,13 @@ struct ProfileView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Tên của bạn")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(WordlyFonts.body(13, weight: .bold))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
                 if vm.isLoading {
                     RoundedRectangle(cornerRadius: 12).fill(WordlyColors.hoverBG).frame(height: 48)
                 } else {
                     TextField("Nguyễn Văn A", text: $vm.name)
-                        .font(.system(size: 15))
+                        .font(WordlyFonts.body(15))
                         .foregroundStyle(WordlyColors.ink(scheme: scheme))
                         .wordlyInputStyle()
                 }
@@ -127,7 +127,7 @@ struct ProfileView: View {
             // Skill level
             VStack(alignment: .leading, spacing: 10) {
                 Label("Trình độ tiếng Anh", systemImage: "book.fill")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(WordlyFonts.body(13, weight: .bold))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
 
                 if vm.isLoading {
@@ -143,8 +143,8 @@ struct ProfileView: View {
                             let selected = vm.skillLevel == level
                             Button { vm.skillLevel = level } label: {
                                 Text(level)
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundStyle(selected ? Color(hex: "#0A0A0A") : WordlyColors.inkSoft(scheme: scheme))
+                                    .font(WordlyFonts.body(13, weight: .bold))
+                                    .foregroundStyle(selected ? WordlyColors.onElectric : WordlyColors.inkSoft(scheme: scheme))
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 36)
                                     .background(selected ? WordlyColors.electric : WordlyColors.hoverBG)
@@ -161,7 +161,7 @@ struct ProfileView: View {
             // Learning goal
             VStack(alignment: .leading, spacing: 10) {
                 Label("Mục tiêu học tập", systemImage: "trophy.fill")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(WordlyFonts.body(13, weight: .bold))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
 
                 let goals: [(String, String)] = [
@@ -184,8 +184,8 @@ struct ProfileView: View {
                             let selected = vm.learningGoal == value
                             Button { vm.learningGoal = value } label: {
                                 Text(label)
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundStyle(selected ? Color(hex: "#0A0A0A") : WordlyColors.inkSoft(scheme: scheme))
+                                    .font(WordlyFonts.body(12, weight: .bold))
+                                    .foregroundStyle(selected ? WordlyColors.onElectric : WordlyColors.inkSoft(scheme: scheme))
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 36)
                                     .background(selected ? WordlyColors.electric : WordlyColors.hoverBG)
@@ -208,7 +208,7 @@ struct ProfileView: View {
             sectionTitle("Giao diện", icon: "paintbrush.fill")
             HStack {
                 Text("Chế độ màu")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(WordlyFonts.body(14, weight: .semibold))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
                 Spacer()
                 HStack(spacing: 0) {
@@ -229,10 +229,10 @@ struct ProfileView: View {
             themeManager.apply(value)
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: 12))
-                Text(label).font(.system(size: 13, weight: .semibold))
+                Image(systemName: icon).font(WordlyFonts.body(12))
+                Text(label).font(WordlyFonts.body(13, weight: .semibold))
             }
-            .foregroundStyle(selected ? Color(hex: "#0A0A0A") : WordlyColors.inkSoft(scheme: scheme))
+            .foregroundStyle(selected ? WordlyColors.onElectric : WordlyColors.inkSoft(scheme: scheme))
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background(selected ? WordlyColors.electric : Color.clear)
@@ -247,17 +247,17 @@ struct ProfileView: View {
         } label: {
             HStack(spacing: 8) {
                 if vm.isSaving {
-                    ProgressView().tint(Color(hex: "#0A0A0A")).scaleEffect(0.8)
+                    ProgressView().tint(WordlyColors.onElectric).scaleEffect(0.8)
                 } else if vm.saveSuccess {
                     Image(systemName: "checkmark")
                 }
                 Text(vm.isSaving ? "Đang lưu..." : vm.saveSuccess ? "Đã lưu!" : "💾 Lưu thay đổi")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(WordlyFonts.body(16, weight: .bold))
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(vm.saveSuccess ? WordlyColors.electricSubtle : WordlyColors.electric)
-            .foregroundStyle(vm.saveSuccess ? WordlyColors.electric : Color(hex: "#0A0A0A"))
+            .foregroundStyle(vm.saveSuccess ? WordlyColors.electric : WordlyColors.onElectric)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(vm.saveSuccess ? WordlyColors.electricBorder : .clear, lineWidth: 1.5))
             .shadow(color: vm.saveSuccess ? .clear : WordlyColors.electric.opacity(0.3), radius: 8, y: 4)
@@ -269,7 +269,7 @@ struct ProfileView: View {
     private var signOutButton: some View {
         Button { showSignOutConfirm = true } label: {
             Label("Đăng xuất", systemImage: "rectangle.portrait.and.arrow.right")
-                .font(.system(size: 15, weight: .semibold))
+                .font(WordlyFonts.body(15, weight: .semibold))
                 .foregroundStyle(WordlyColors.error)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -280,7 +280,7 @@ struct ProfileView: View {
 
     private func sectionTitle(_ text: String, icon: String) -> some View {
         Label(text, systemImage: icon)
-            .font(.custom("Fraunces", size: 18).weight(.bold))
+            .font(WordlyFonts.body(18, weight: .bold))
             .foregroundStyle(WordlyColors.ink(scheme: scheme))
     }
 }
@@ -305,10 +305,10 @@ struct ChangePasswordView: View {
                     if success {
                         VStack(spacing: 16) {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 56))
+                                .font(WordlyFonts.body(56))
                                 .foregroundStyle(WordlyColors.electric)
                             Text("Mật khẩu đã được cập nhật!")
-                                .font(.system(size: 18, weight: .bold))
+                                .font(WordlyFonts.body(18, weight: .bold))
                                 .foregroundStyle(WordlyColors.electric)
                         }
                         .padding(.top, 60)
@@ -319,7 +319,7 @@ struct ChangePasswordView: View {
                             WordlySecureField(label: "Xác nhận mật khẩu", placeholder: "Nhập lại mật khẩu",
                                              text: $confirmPassword, show: $showPw)
                             if let err = error {
-                                Text(err).font(.system(size: 13)).foregroundStyle(WordlyColors.error)
+                                Text(err).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.error)
                                     .padding(.horizontal, 12).padding(.vertical, 8)
                                     .background(WordlyColors.errorSoft).clipShape(RoundedRectangle(cornerRadius: 10))
                             }
@@ -330,10 +330,10 @@ struct ChangePasswordView: View {
                                     .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                                     .clipShape(RoundedRectangle(cornerRadius: 14))
                                 Button { Task { await changePassword() } } label: {
-                                    HStack { if isLoading { ProgressView().scaleEffect(0.8).tint(Color(hex: "#0A0A0A")) }; Text(isLoading ? "Đang lưu..." : "Lưu") }
+                                    HStack { if isLoading { ProgressView().scaleEffect(0.8).tint(WordlyColors.onElectric) }; Text(isLoading ? "Đang lưu..." : "Lưu") }
                                         .frame(maxWidth: .infinity).padding(.vertical, 14)
-                                        .background(WordlyColors.electric).foregroundStyle(Color(hex: "#0A0A0A"))
-                                        .font(.system(size: 15, weight: .bold))
+                                        .background(WordlyColors.electric).foregroundStyle(WordlyColors.onElectric)
+                                        .font(WordlyFonts.body(15, weight: .bold))
                                         .clipShape(RoundedRectangle(cornerRadius: 14))
                                 }
                                 .disabled(isLoading)

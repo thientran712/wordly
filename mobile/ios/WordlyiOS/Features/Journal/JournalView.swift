@@ -42,7 +42,7 @@ struct JournalView: View {
             HStack(alignment: .top, spacing: 10) {
                 TextEditor(text: $vm.newContent)
                     .focused($inputFocused)
-                    .font(.system(size: 14))
+                    .font(WordlyFonts.body(14))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 60, maxHeight: 120)
@@ -57,7 +57,7 @@ struct JournalView: View {
                     .overlay(alignment: .topLeading) {
                         if vm.newContent.isEmpty {
                             Text("Câu, bài học, hoặc câu hỏi bạn gặp hôm nay...")
-                                .font(.system(size: 14))
+                                .font(WordlyFonts.body(14))
                                 .foregroundStyle(WordlyColors.inkGhost)
                                 .padding(.horizontal, 16)
                                 .padding(.top, 12)
@@ -71,17 +71,17 @@ struct JournalView: View {
             } label: {
                 HStack(spacing: 6) {
                     if vm.isAdding {
-                        ProgressView().scaleEffect(0.75).tint(Color(hex: "#0A0A0A"))
+                        ProgressView().scaleEffect(0.75).tint(WordlyColors.onElectric)
                     } else {
                         Image(systemName: "plus")
                     }
                     Text(vm.isAdding ? "Đang lưu..." : "Thêm vào journal")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(WordlyFonts.body(14, weight: .bold))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 13)
                 .background(vm.newContent.isEmpty ? WordlyColors.electric.opacity(0.4) : WordlyColors.electric)
-                .foregroundStyle(Color(hex: "#0A0A0A"))
+                .foregroundStyle(WordlyColors.onElectric)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .shadow(color: WordlyColors.electric.opacity(0.25), radius: 6, y: 3)
             }
@@ -104,7 +104,7 @@ struct JournalView: View {
                         }
                     } header: {
                         Text(group.dateLabel)
-                            .font(.system(size: 10, weight: .bold))
+                            .font(WordlyFonts.body(10, weight: .bold))
                             .foregroundStyle(WordlyColors.inkSoft(scheme: scheme).opacity(0.5))
                             .textCase(.uppercase)
                             .tracking(1.5)
@@ -125,13 +125,13 @@ struct JournalView: View {
         VStack(spacing: 12) {
             Spacer()
             Image(systemName: "note.text")
-                .font(.system(size: 48))
+                .font(WordlyFonts.body(48))
                 .foregroundStyle(WordlyColors.inkSoft(scheme: scheme).opacity(0.2))
             Text("Chưa có ghi chú nào")
-                .font(.system(size: 16, weight: .semibold))
+                .font(WordlyFonts.body(16, weight: .semibold))
                 .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
             Text("Ghi lại điều đầu tiên bạn học được hôm nay")
-                .font(.system(size: 13))
+                .font(WordlyFonts.body(13))
                 .foregroundStyle(WordlyColors.inkSoft(scheme: scheme).opacity(0.6))
                 .multilineTextAlignment(.center)
             Spacer()
@@ -151,7 +151,7 @@ struct JournalEntryRow: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(entry.content)
-                    .font(.system(size: 14))
+                    .font(WordlyFonts.body(14))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
                     .lineSpacing(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -159,7 +159,7 @@ struct JournalEntryRow: View {
 
             VStack(alignment: .trailing, spacing: 8) {
                 Text(timeAgo(entry.createdDate))
-                    .font(.system(size: 10))
+                    .font(WordlyFonts.body(10))
                     .foregroundStyle(WordlyColors.inkSoft(scheme: scheme).opacity(0.5))
                     .monospacedDigit()
 
@@ -174,7 +174,7 @@ struct JournalEntryRow: View {
                     }
                 } label: {
                     Image(systemName: isDeleting ? "arrow.circlepath" : showConfirmDelete ? "trash.fill" : "trash")
-                        .font(.system(size: 12))
+                        .font(WordlyFonts.body(12))
                         .foregroundStyle(showConfirmDelete ? WordlyColors.error : WordlyColors.inkSoft(scheme: scheme))
                         .frame(width: 28, height: 28)
                         .background(showConfirmDelete ? WordlyColors.errorSoft : WordlyColors.hoverBG)

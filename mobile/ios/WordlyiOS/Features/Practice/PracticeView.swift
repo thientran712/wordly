@@ -7,61 +7,65 @@ struct PracticeView: View {
 
     var body: some View {
         NavigationStack {
-            HStack(spacing: 0) {
-                // Sidebar (on iPad or when open)
-                if vm.sidebarOpen {
-                    SessionSidebarView(vm: vm)
-                        .frame(width: 260)
-                        .transition(.move(edge: .leading))
-                }
-
-                // Main panel
-                VStack(spacing: 0) {
-                    // Chat area
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            LazyVStack(spacing: 16) {
-                                // Avatar
-                                alexAvatar
-                                    .padding(.top, 24)
-
-                                // Messages
-                                ForEach(vm.messages) { msg in
-                                    MessageBubble(message: msg)
-                                        .id(msg.id)
-                                }
-
-                                // Thinking indicator
-                                if vm.isThinking {
-                                    thinkingIndicator
-                                }
-
-                                // Transcript
-                                if vm.isListening {
-                                    transcriptView
-                                }
-
-                                // Error
-                                if let err = vm.error {
-                                    errorView(err)
-                                }
-
-                                Color.clear.frame(height: 20).id("bottom")
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 120)
-                        }
-                        .onChange(of: vm.messages.count) { _, _ in
-                            withAnimation { proxy.scrollTo("bottom", anchor: .bottom) }
-                        }
-                        .onChange(of: vm.isThinking) { _, _ in
-                            withAnimation { proxy.scrollTo("bottom", anchor: .bottom) }
-                        }
+            ZStack {
+                // Nền giống các tab khác (trước đây thiếu → hệ thống tô đen tuyền)
+                WordlyColors.bg(scheme: scheme).ignoresSafeArea()
+                HStack(spacing: 0) {
+                    // Sidebar (on iPad or when open)
+                    if vm.sidebarOpen {
+                        SessionSidebarView(vm: vm)
+                            .frame(width: 260)
+                            .transition(.move(edge: .leading))
                     }
 
-                    // Controls
-                    Divider()
-                    controls
+                    // Main panel
+                    VStack(spacing: 0) {
+                        // Chat area
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                LazyVStack(spacing: 16) {
+                                    // Avatar
+                                    alexAvatar
+                                        .padding(.top, 24)
+
+                                    // Messages
+                                    ForEach(vm.messages) { msg in
+                                        MessageBubble(message: msg)
+                                            .id(msg.id)
+                                    }
+
+                                    // Thinking indicator
+                                    if vm.isThinking {
+                                        thinkingIndicator
+                                    }
+
+                                    // Transcript
+                                    if vm.isListening {
+                                        transcriptView
+                                    }
+
+                                    // Error
+                                    if let err = vm.error {
+                                        errorView(err)
+                                    }
+
+                                    Color.clear.frame(height: 20).id("bottom")
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 120)
+                            }
+                            .onChange(of: vm.messages.count) { _, _ in
+                                withAnimation { proxy.scrollTo("bottom", anchor: .bottom) }
+                            }
+                            .onChange(of: vm.isThinking) { _, _ in
+                                withAnimation { proxy.scrollTo("bottom", anchor: .bottom) }
+                            }
+                        }
+
+                        // Controls
+                        Divider()
+                        controls
+                    }
                 }
             }
             .navigationTitle(vm.activeSessionTitle)
@@ -96,14 +100,14 @@ struct PracticeView: View {
                     .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: vm.tts.isSpeaking)
 
                 Text("🧑‍🏫")
-                    .font(.system(size: 44))
+                    .font(WordlyFonts.body(44))
             }
             VStack(spacing: 2) {
                 Text("Alex")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(WordlyFonts.body(14, weight: .bold))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
                 Text(statusText)
-                    .font(.system(size: 12))
+                    .font(WordlyFonts.body(12))
                     .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
             }
         }
@@ -124,11 +128,11 @@ struct PracticeView: View {
                 Button { Task { await vm.startSession() } } label: {
                     Label(vm.activeSessionId != nil ? "Bắt đầu cuộc trò chuyện mới" : "Bắt đầu luyện nói",
                           systemImage: "phone.fill")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(WordlyFonts.body(15, weight: .bold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(WordlyColors.electric)
-                        .foregroundStyle(Color(hex: "#0A0A0A"))
+                        .foregroundStyle(WordlyColors.onElectric)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .shadow(color: WordlyColors.electric.opacity(0.4), radius: 8, y: 4)
                 }
@@ -137,7 +141,7 @@ struct PracticeView: View {
                 HStack(spacing: 10) {
                     ProgressView().tint(WordlyColors.inkSoft(scheme: scheme))
                     Text("Đang kết nối...")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(WordlyFonts.body(15, weight: .bold))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                 }
                 .frame(maxWidth: .infinity)
@@ -152,7 +156,7 @@ struct PracticeView: View {
                         ZStack {
                             Button { vm.toggleMic() } label: {
                                 Image(systemName: vm.isListening ? "mic.fill" : "mic.slash.fill")
-                                    .font(.system(size: 28))
+                                    .font(WordlyFonts.body(28))
                                     .foregroundStyle(vm.isListening ? WordlyColors.electric : WordlyColors.inkSoft(scheme: scheme))
                                     .frame(width: 72, height: 72)
                                     .background(
@@ -181,7 +185,7 @@ struct PracticeView: View {
                         // End call button
                         Button { vm.endSession() } label: {
                             Image(systemName: "phone.down.fill")
-                                .font(.system(size: 18))
+                                .font(WordlyFonts.body(18))
                                 .foregroundStyle(.white)
                                 .frame(width: 48, height: 48)
                                 .background(WordlyColors.error)
@@ -195,28 +199,28 @@ struct PracticeView: View {
                          vm.isUserTalking ? "Đang nghe bạn nói..." :
                          vm.isListening ? "Mic đang bật — cứ tự nhiên nói" :
                          "Nhấn mic để bật")
-                        .font(.system(size: 12))
+                        .font(WordlyFonts.body(12))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                 }
 
             case .ended:
                 VStack(spacing: 12) {
                     Text("Buổi luyện tập kết thúc · \(vm.userTurnCount) lượt nói")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(WordlyFonts.body(13, weight: .semibold))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                     HStack(spacing: 12) {
                         Button { vm.resumeSession() } label: {
                             Label("Tiếp tục", systemImage: "mic.fill")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(WordlyFonts.body(14, weight: .semibold))
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 12)
                                 .background(WordlyColors.electric)
-                                .foregroundStyle(Color(hex: "#0A0A0A"))
+                                .foregroundStyle(WordlyColors.onElectric)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         Button { vm.newSession() } label: {
                             Label("Cuộc mới", systemImage: "plus")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(WordlyFonts.body(14, weight: .semibold))
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 12)
                                 .background(WordlyColors.surfaceElevated(scheme: scheme))
@@ -255,7 +259,7 @@ struct PracticeView: View {
     // MARK: - Transcript
     private var transcriptView: some View {
         Text(vm.transcript.isEmpty ? "Đang nghe... hãy nói tiếng Anh" : vm.transcript)
-            .font(.system(size: 13))
+            .font(WordlyFonts.body(13))
             .foregroundStyle(WordlyColors.electric)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -268,12 +272,12 @@ struct PracticeView: View {
     private func errorView(_ msg: String) -> some View {
         HStack {
             Text(msg)
-                .font(.system(size: 13))
+                .font(WordlyFonts.body(13))
                 .foregroundStyle(WordlyColors.error)
             Spacer()
             Button { vm.error = nil } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12))
+                    .font(WordlyFonts.body(12))
                     .foregroundStyle(WordlyColors.error)
             }
         }
@@ -304,7 +308,7 @@ struct PracticeView: View {
                 HStack(spacing: 4) {
                     Circle().fill(WordlyColors.electric).frame(width: 6, height: 6)
                         .overlay(Circle().fill(WordlyColors.electric).frame(width: 6, height: 6).scaleEffect(1.5).opacity(0.3))
-                    Text("Live").font(.system(size: 11, weight: .semibold)).foregroundStyle(WordlyColors.electric)
+                    Text("Live").font(WordlyFonts.body(11, weight: .semibold)).foregroundStyle(WordlyColors.electric)
                 }
             }
         }
@@ -326,7 +330,7 @@ struct MessageBubble: View {
                 HStack(alignment: .bottom, spacing: 6) {
                     if !isUser {
                         Text(message.content)
-                            .font(.system(size: 14))
+                            .font(WordlyFonts.body(14))
                             .foregroundStyle(WordlyColors.ink(scheme: scheme))
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
@@ -338,13 +342,13 @@ struct MessageBubble: View {
                             Task { await tts.speak(message.content, lang: "en-US") }
                         } label: {
                             Image(systemName: "speaker.wave.2")
-                                .font(.system(size: 11))
+                                .font(WordlyFonts.body(11))
                                 .foregroundStyle(WordlyColors.electric.opacity(0.5))
                                 .padding(6)
                         }
                     } else {
                         Text(message.content)
-                            .font(.system(size: 14))
+                            .font(WordlyFonts.body(14))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
@@ -388,20 +392,20 @@ struct SessionSidebarView: View {
             // Header
             HStack {
                 Text("Lịch sử luyện nói")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(WordlyFonts.body(13, weight: .bold))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
                 Spacer()
                 Button { vm.newSession() } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color(hex: "#0A0A0A"))
+                        .font(WordlyFonts.body(13, weight: .bold))
+                        .foregroundStyle(WordlyColors.onElectric)
                         .frame(width: 28, height: 28)
                         .background(WordlyColors.electric)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 Button { withAnimation { vm.sidebarOpen = false } } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12))
+                        .font(WordlyFonts.body(12))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         .frame(width: 28, height: 28)
                         .background(WordlyColors.hoverBG)
@@ -419,7 +423,7 @@ struct SessionSidebarView: View {
                         ProgressView().padding(.top, 24)
                     } else if vm.sessions.isEmpty {
                         Text("Chưa có cuộc trò chuyện nào")
-                            .font(.system(size: 12))
+                            .font(WordlyFonts.body(12))
                             .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                             .padding(.top, 24)
                             .frame(maxWidth: .infinity)
@@ -441,7 +445,7 @@ struct SessionSidebarView: View {
     private func sessionRow(_ session: PracticeSession) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "bubble.left.and.bubble.right")
-                .font(.system(size: 12))
+                .font(WordlyFonts.body(12))
                 .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
 
             if renamingId == session.id {
@@ -449,16 +453,16 @@ struct SessionSidebarView: View {
                     Task { await vm.renameSession(session.id, title: renameValue) }
                     renamingId = nil
                 })
-                .font(.system(size: 12))
+                .font(WordlyFonts.body(12))
                 .foregroundStyle(WordlyColors.ink(scheme: scheme))
             } else {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(session.title)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(WordlyFonts.body(12, weight: .medium))
                         .foregroundStyle(WordlyColors.ink(scheme: scheme))
                         .lineLimit(1)
                     Text(relativeDate(session.updatedDate))
-                        .font(.system(size: 10))
+                        .font(WordlyFonts.body(10))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -470,7 +474,7 @@ struct SessionSidebarView: View {
                     renameValue = session.title
                 } label: {
                     Image(systemName: "pencil")
-                        .font(.system(size: 10))
+                        .font(WordlyFonts.body(10))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         .frame(width: 22, height: 22)
                         .background(WordlyColors.hoverBG)
@@ -480,7 +484,7 @@ struct SessionSidebarView: View {
                     Task { await vm.deleteSession(session.id) }
                 } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 10))
+                        .font(WordlyFonts.body(10))
                         .foregroundStyle(WordlyColors.error)
                         .frame(width: 22, height: 22)
                         .background(WordlyColors.hoverBG)

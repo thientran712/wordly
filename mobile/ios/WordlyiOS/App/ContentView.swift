@@ -34,14 +34,13 @@ struct SplashView: View {
                         )
                         .frame(width: 72, height: 72)
                         .shadow(color: WordlyColors.electric.opacity(0.4), radius: 16, y: 6)
-                    Text("🌈")
-                        .font(.system(size: 36))
+                    WordlyLogo(size: 57.6)
                 }
                 Text("Wordly")
-                    .font(.custom("Fraunces-BlackItalic", size: 40))
+                    .font(WordlyFonts.display(40))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [WordlyColors.electric, Color(hex: "#86EFAC")],
+                            colors: [WordlyColors.electric, WordlyColors.electric],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -55,10 +54,17 @@ struct SplashView: View {
 }
 
 struct MainTabView: View {
-    @State private var selectedTab: Tab = .translate
+    @State private var selectedTab: Tab = Self.startTab
 
-    enum Tab: Int {
+    enum Tab: String {
         case translate, journal, practice, profile
+    }
+
+    private static var startTab: Tab {
+        #if DEBUG
+        if let name = PreviewMode.initialTab, let tab = Tab(rawValue: name) { return tab }
+        #endif
+        return .translate
     }
 
     var body: some View {
