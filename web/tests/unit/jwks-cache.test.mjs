@@ -1,7 +1,8 @@
 // Test cho logic cache JWKS — phần quyết định KHI NÀO refresh, tách khỏi
 // việc đọc/ghi Postgres thật (không test được bằng unit test).
 //
-// Xem tests/unit/jwt-verify.test.mjs cho phần verify chữ ký.
+// Chữ ký vẫn do supabase.auth.getClaims() verify (middleware truyền JWKS
+// từ cache vào) — không tự viết verify.
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
