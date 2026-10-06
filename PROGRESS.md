@@ -39,7 +39,7 @@ tình trạng "code đã viết nhưng nằm trên branch khác main".
 | Sửa 2 lỗi cú pháp, struct trùng ở widget, Practice đọc text stream (web không còn trả JSON `{reply}`) | build pass |
 
 **Chưa kiểm chứng:** đăng nhập thật + gọi API với token thật (cần tài khoản; production chưa có bản sửa Bearer). Không có test Swift (chưa có test target).
-**Chờ quyết định:** tab "My Words" trên iOS gọi `/api/words/search` — route đã bị xoá có chủ đích ở redesign 3/7 và không còn gì ghi `user_progress`. Bỏ tab hay thay bằng gì? · Xoá `mobile/ios/Package.swift` (không dùng nữa)?
+**Đã quyết (6/10):** bỏ tab "My Words" trên iOS cho khớp web (web đã xoá tính năng này ở redesign 3/7) — iOS còn 4 tab: Dịch, Journal, Luyện nói, Hồ sơ. Xoá `Package.swift` (thừa, XcodeGen thay thế). Build vẫn SUCCEEDED.
 **Thứ tự merge:** đổi Root Directory Vercel = `web` → merge `chore/monorepo-structure` → merge `feat/ios-mobile-api`.
 
 ---

@@ -192,14 +192,6 @@ final class APIClient: ObservableObject {
         _ = try await request(path: "/api/translate-history", method: "DELETE", responseType: Resp.self)
     }
 
-    // MARK: - Words
-    func fetchWords(tab: String = "learned", query: String = "", level: String = "") async throws -> WordsResponse {
-        var path = "/api/words/search?tab=\(tab)"
-        if !query.isEmpty { path += "&q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)" }
-        if !level.isEmpty { path += "&level=\(level)" }
-        return try await request(path: path, responseType: WordsResponse.self)
-    }
-
     // MARK: - Journal
     func fetchJournal() async throws -> JournalResponse {
         try await request(path: "/api/journal", responseType: JournalResponse.self)

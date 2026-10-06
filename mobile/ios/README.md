@@ -43,7 +43,6 @@ WordlyiOS/
 │   ├── Auth/               LoginView, SignupView, ForgotPasswordView
 │   ├── Translate/          TranslateView + ViewModel (DeepL + DictionaryAPI)
 │   ├── History/            HistoryView + ViewModel (paginated, grouped by date)
-│   ├── Words/              WordsView + WordDetailView + ViewModel (FSRS states)
 │   ├── Journal/            JournalView + ViewModel (quick-add, grouped entries)
 │   ├── Practice/           PracticeView + PracticeViewModel + SpeechManager (STT/VAD)
 │   └── Profile/            ProfileView + ProfileViewModel + ChangePasswordView
@@ -83,7 +82,6 @@ The Widget reads these and creates a timeline showing 1 different word per hour.
 | Word suggestions | ✅ | Datamuse API |
 | Dictionary definitions | ✅ | Free Dictionary API |
 | Translate history | ✅ | Paginated, swipe-to-delete |
-| My Words (FSRS states) | ✅ | Filter by level, state |
 | Journal | ✅ | Quick-add, grouped by date |
 | AI Practice (Alex) | ✅ | STT + Groq LLM + TTS |
 | Profile | ✅ | Name, level, goal, theme |

@@ -128,7 +128,7 @@ Nguyên tắc báo cáo:
 - Làm trên branch riêng: `feat/<tên>`, không commit thẳng `main`
 - `git add <đường dẫn cụ thể>` — **không** `git add -A`
 - Commit message tiếng Việt, nêu **vì sao** chứ không chỉ **cái gì**
-- Kết thúc bằng: `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`
+- **Không** thêm dòng `Co-Authored-By` (chủ dự án chốt 6/10/2026, khớp quy ước ATLAS)
 - Chỉ commit/push khi được yêu cầu
 
 ---

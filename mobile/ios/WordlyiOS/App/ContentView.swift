@@ -58,7 +58,7 @@ struct MainTabView: View {
     @State private var selectedTab: Tab = .translate
 
     enum Tab: Int {
-        case translate, words, journal, practice, profile
+        case translate, journal, practice, profile
     }
 
     var body: some View {
@@ -68,12 +68,6 @@ struct MainTabView: View {
                     Label("Dịch", systemImage: "translate")
                 }
                 .tag(Tab.translate)
-
-            WordsView()
-                .tabItem {
-                    Label("Từ vựng", systemImage: "book.fill")
-                }
-                .tag(Tab.words)
 
             JournalView()
                 .tabItem {

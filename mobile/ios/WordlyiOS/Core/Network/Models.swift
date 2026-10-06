@@ -85,47 +85,6 @@ struct SaveTranslationRequest: Codable {
     }
 }
 
-// MARK: - Words
-struct Word: Codable, Identifiable {
-    let id: Int
-    let word: String
-    let phonetic: String?
-    let defEn: String?
-    let exEn: String?
-    let pos: String?
-    let level: String?
-    let synonyms: [String]?
-    // User-specific fields (from user_progress join)
-    var userState: String?
-    var isBookmarked: Bool?
-    var learnedAt: String?
-    var dueAt: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id, word, phonetic, pos, level, synonyms
-        case defEn = "def_en"
-        case exEn = "ex_en"
-        case userState = "user_state"
-        case isBookmarked = "is_bookmarked"
-        case learnedAt = "learned_at"
-        case dueAt = "due_at"
-    }
-
-    var dueDate: Date? {
-        guard let s = dueAt else { return nil }
-        return ISO8601DateFormatter().date(from: s)
-    }
-    var learnedDate: Date? {
-        guard let s = learnedAt else { return nil }
-        return ISO8601DateFormatter().date(from: s)
-    }
-}
-
-struct WordsResponse: Codable {
-    let words: [Word]
-    let total: Int?
-}
-
 // MARK: - Journal
 struct JournalEntry: Codable, Identifiable {
     let id: String
