@@ -62,6 +62,15 @@ final class APIClient: ObservableObject {
         encoder = JSONEncoder()
     }
 
+    // MARK: - 401 → làm mới phiên 1 lần, vẫn 401 thì đăng xuất (xem AuthRecovery)
+    private func withAuthRecovery<T>(_ perform: () async throws -> T) async throws -> T {
+        try await AuthRecovery.run(
+            perform,
+            refresh: { _ = try await AuthManager.shared.supabase.auth.refreshSession() },
+            signOut: { await AuthManager.shared.signOut() }
+        )
+    }
+
     // MARK: - Generic request
     private func request<T: Decodable>(
         path: String,
@@ -69,6 +78,18 @@ final class APIClient: ObservableObject {
         body: Encodable? = nil,
         responseType: T.Type,
         useWebBase: Bool = true
+    ) async throws -> T {
+        try await withAuthRecovery {
+            try await send(path: path, method: method, body: body, responseType: responseType, useWebBase: useWebBase)
+        }
+    }
+
+    private func send<T: Decodable>(
+        path: String,
+        method: String,
+        body: Encodable?,
+        responseType: T.Type,
+        useWebBase: Bool
     ) async throws -> T {
         let base = useWebBase ? WordlyConfig.webBaseURL : WordlyConfig.supabaseURL
         guard let url = URL(string: base + path) else { throw APIError.invalidURL }
@@ -108,6 +129,12 @@ final class APIClient: ObservableObject {
 
     // MARK: - Raw data request (for TTS audio)
     func rawRequest(path: String, method: String = "GET", body: Encodable? = nil) async throws -> Data {
+        try await withAuthRecovery {
+            try await sendRaw(path: path, method: method, body: body)
+        }
+    }
+
+    private func sendRaw(path: String, method: String, body: Encodable?) async throws -> Data {
         guard let url = URL(string: WordlyConfig.webBaseURL + path) else { throw APIError.invalidURL }
 
         var req = URLRequest(url: url)

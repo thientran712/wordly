@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Privacy manifest — Apple từ chối bản build dùng "required reason API" mà
+  không khai báo (ITMS-91053). App dùng UserDefaults (@AppStorage cho giao
+  diện, App Group chia sẻ từ vựng với widget). Không tracking.
+  Dữ liệu thu thập: email + tên (tài khoản), nội dung người dùng (journal,
+  lịch sử dịch, hội thoại luyện nói) — đều gắn với tài khoản, chỉ để app chạy.
+  Phải khớp với nhãn quyền riêng tư khai trên App Store Connect.
+-->
+<plist version="1.0">
+<dict>
+    <key>NSPrivacyTracking</key>
+    <false/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeEmailAddress</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <true/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+            </array>
+        </dict>
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeName</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <true/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+            </array>
+        </dict>
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <true/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+            </array>
+        </dict>
+    </array>
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- CA92.1: dữ liệu chỉ app tự đọc; 1C8F.1: App Group chia sẻ với widget -->
+                <string>CA92.1</string>
+                <string>1C8F.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

@@ -24,6 +24,12 @@ open WordlyiOS.xcodeproj
   `xcodegen generate`, không sửa trong Xcode.
 - Bundle ID / App Group nằm trong `Config/Base.xcconfig`.
 - Build dòng lệnh: `xcodebuild -project WordlyiOS.xcodeproj -scheme WordlyiOS -destination 'generic/platform=iOS Simulator' build`
+- Test (target `WordlyiOSTests`, chạy trên simulator): `xcodebuild -project WordlyiOS.xcodeproj -scheme WordlyiOS -destination 'platform=iOS Simulator,name=<tên máy ảo>' test`.
+  Logic thuần (đọc ngày giờ, xử lý 401…) đặt ở `WordlyiOS/Core/` để test được.
+- `WordlyiOS.xcodeproj/…/swiftpm/Package.resolved` là lockfile SPM — **được commit** (phần còn lại
+  của `.xcodeproj` thì không). Muốn nâng supabase-swift: Xcode → File → Packages → Update, rồi commit file này.
+- `PrivacyInfo.xcprivacy` (app + widget): khai báo dữ liệu thu thập + lý do dùng UserDefaults.
+  Thêm API "required reason" hoặc thu thập dữ liệu mới → phải cập nhật, nếu không App Store Connect từ chối bản build.
 
 ### Xác thực với web API
 App gửi `Authorization: Bearer <access_token>` (không có cookie). Middleware web

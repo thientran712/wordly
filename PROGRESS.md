@@ -55,6 +55,19 @@ tình trạng "code đã viết nhưng nằm trên branch khác main".
 
 Đã sửa đường dẫn lint trong `.github/workflows/ci.yml` (commit riêng). **Thứ tự merge:** Vercel Root Directory = `web` → `chore/monorepo-structure` → `feat/ios-mobile-api` → `refactor/web-src-structure`.
 
+### 6/10/2026 — iOS chuẩn bị TestFlight (branch `feat/ios-testflight-prep`, xếp TRÊN `refactor/web-src-structure`, CHƯA push)
+
+| Việc | Bằng chứng |
+|---|---|
+| Test target Swift `WordlyiOSTests` (TDD cho iOS) | 9/9 test pass trên simulator |
+| Sửa đọc ngày giờ: timestamp Supabase có phần lẻ giây → trước đây mọi mục hiện "bây giờ"; lịch sử nhóm theo ngày UTC → mục 0h–7h sáng VN rơi sang hôm trước | Test fail với code cũ (đã kiểm), pass với code mới |
+| 401 → làm mới phiên 1 lần, vẫn 401 thì đăng xuất về màn đăng nhập (trước đây kẹt ở thông báo lỗi chung) | 5 test cho `AuthRecovery` |
+| `PrivacyInfo.xcprivacy` cho app + widget (thiếu → App Store Connect từ chối, ITMS-91053) | Có trong archive Release |
+| Commit `Package.resolved` (ghim supabase-swift 2.55.3 + 6 phụ thuộc) | `.gitignore` chỉ mở riêng file này |
+| Archive Release | ARCHIVE SUCCEEDED (chưa ký) |
+
+**Còn chặn TestFlight (phía chủ dự án):** Team ID "Thien Tran Phan Huy" + đăng nhập Xcode; tạo app trên App Store Connect (`com.thientran.wordly`); đổi Vercel Root Directory = `web` để deploy bản sửa Bearer. **Chưa kiểm:** đăng nhập thật; cài đặt Auth trên Supabase (xác nhận email, redirect URL).
+
 ---
 
 ## Trạng thái tổng quan

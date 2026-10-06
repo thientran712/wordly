@@ -299,7 +299,7 @@ final class HistoryViewModel: ObservableObject {
         var keys: [String] = []
         var dict: [String: [TranslateHistoryEntry]] = [:]
         for entry in entries {
-            let day = String(entry.savedAt.prefix(10))
+            let day = dayKey(for: entry)
             if dict[day] == nil { keys.append(day); dict[day] = [] }
             dict[day]!.append(entry)
         }
@@ -317,7 +317,7 @@ final class HistoryViewModel: ObservableObject {
 
     private func merge(_ entries: [TranslateHistoryEntry]) {
         for entry in entries {
-            let day = String(entry.savedAt.prefix(10))
+            let day = dayKey(for: entry)
             if let idx = groups.firstIndex(where: { $0.day == day }) {
                 groups[idx].entries.append(entry)
             } else {
@@ -329,7 +329,11 @@ final class HistoryViewModel: ObservableObject {
         }
     }
 
-    private func isoDate(_ d: Date) -> String { String(ISO8601DateFormatter().string(from: d).prefix(10)) }
+    private func isoDate(_ d: Date) -> String { APIDate.dayKey(d) }
+    // Ngày theo múi giờ máy, không cắt chuỗi UTC (lệch 7 tiếng ở VN)
+    private func dayKey(for entry: TranslateHistoryEntry) -> String {
+        APIDate.parse(entry.savedAt).map { APIDate.dayKey($0) } ?? String(entry.savedAt.prefix(10))
+    }
     private func formatDay(_ iso: String) -> String {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"

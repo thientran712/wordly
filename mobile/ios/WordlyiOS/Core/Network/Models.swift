@@ -64,7 +64,7 @@ struct TranslateHistoryEntry: Codable, Identifiable {
     }
 
     var savedDate: Date {
-        ISO8601DateFormatter().date(from: savedAt) ?? Date()
+        APIDate.parse(savedAt) ?? Date()
     }
 }
 
@@ -97,7 +97,7 @@ struct JournalEntry: Codable, Identifiable {
     }
 
     var createdDate: Date {
-        ISO8601DateFormatter().date(from: createdAt) ?? Date()
+        APIDate.parse(createdAt) ?? Date()
     }
 }
 
@@ -144,7 +144,7 @@ struct PracticeSession: Codable, Identifiable {
     }
 
     var updatedDate: Date {
-        ISO8601DateFormatter().date(from: updatedAt) ?? Date()
+        APIDate.parse(updatedAt) ?? Date()
     }
 }
 

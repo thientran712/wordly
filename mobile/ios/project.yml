@@ -69,6 +69,23 @@ targets:
     dependencies:
       - package: Supabase
       - target: WordlyWidget
+    scheme:
+      testTargets:
+        - WordlyiOSTests
+  WordlyiOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: WordlyiOSTests
+    dependencies:
+      - target: WordlyiOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(WORDLY_BUNDLE_ID).tests
+        # App có PRODUCT_NAME = Wordly, không phải tên target
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Wordly.app/Wordly
+        BUNDLE_LOADER: $(TEST_HOST)
   WordlyWidget:
     type: app-extension
     platform: iOS

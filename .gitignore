@@ -59,7 +59,17 @@ supabase/.temp/
 # Mobile — app iOS native (SwiftUI) ở mobile/ios/. .xcodeproj sinh từ project.yml (XcodeGen).
 # Secrets.xcconfig chứa credential thật, KHÔNG BAO GIỜ commit.
 mobile/ios/Config/Secrets.xcconfig
-mobile/ios/*.xcodeproj
+# .xcodeproj là file sinh ra — CHỈ giữ Package.resolved (lockfile của SPM,
+# ghim phiên bản supabase-swift + phụ thuộc bắc cầu). Git không cho "!" đi
+# xuyên qua thư mục bị ignore nên phải mở từng tầng.
+mobile/ios/*.xcodeproj/*
+!mobile/ios/*.xcodeproj/project.xcworkspace/
+mobile/ios/*.xcodeproj/project.xcworkspace/*
+!mobile/ios/*.xcodeproj/project.xcworkspace/xcshareddata/
+mobile/ios/*.xcodeproj/project.xcworkspace/xcshareddata/*
+!mobile/ios/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+mobile/ios/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
+!mobile/ios/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 mobile/ios/build/
 xcuserdata/
 DerivedData/
