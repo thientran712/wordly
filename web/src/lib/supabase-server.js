@@ -1,8 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { bearerToForward } from "@/lib/bearer-auth";
 
 export async function createClient() {
   const cookieStore = await cookies();
+
+  // Request từ app iOS (Bearer, không cookie): chuyển token xuống PostgREST
+  // để RLS chạy đúng người dùng. Không có token thì giữ nguyên hành vi cookie.
+  const bearerToken = bearerToForward({
+    cookieNames: cookieStore.getAll().map((c) => c.name),
+    authorizationHeader: (await headers()).get("authorization"),
+  });
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -22,6 +30,9 @@ export async function createClient() {
           }
         },
       },
+      ...(bearerToken && {
+        global: { headers: { Authorization: `Bearer ${bearerToken}` } },
+      }),
     }
   );
 }

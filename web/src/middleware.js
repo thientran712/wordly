@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseJs } from "@supabase/supabase-js";
 import { getCachedJwks } from "@/lib/jwks-cache";
+import { bearerToForward } from "@/lib/bearer-auth";
 
 export async function middleware(request) {
   let response = NextResponse.next({ request });
@@ -50,8 +51,16 @@ export async function middleware(request) {
     console.error("[middleware] lỗi cache JWKS, dùng fallback:", e.message);
   }
 
+  // App iOS không có cookie, gửi `Authorization: Bearer <jwt>`. Chỉ dùng khi
+  // KHÔNG có cookie session (cookie luôn thắng). Token vẫn qua đúng hàm
+  // getClaims() bên dưới — cùng cách verify chữ ký như cookie.
+  const bearerToken = bearerToForward({
+    cookieNames: request.cookies.getAll().map((c) => c.name),
+    authorizationHeader: request.headers.get("authorization"),
+  });
+
   const { data: claimsData, error: authError } = await supabase.auth.getClaims(
-    undefined,
+    bearerToken ?? undefined,
     jwks ? { keys: jwks.keys } : undefined
   );
   const claims = claimsData?.claims || null;
