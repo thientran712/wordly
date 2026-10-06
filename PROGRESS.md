@@ -29,6 +29,19 @@ trên Vercel — đã kiểm chứng bằng cách gọi API thật) sang đếm 
 Từ nay `main` là nguồn sự thật duy nhất cho trạng thái B2B — không còn
 tình trạng "code đã viết nhưng nằm trên branch khác main".
 
+### 6/10/2026 — App iOS sống lại (branch `feat/ios-mobile-api`, xếp TRÊN `chore/monorepo-structure`, CHƯA push/deploy)
+
+| Việc | Bằng chứng |
+|---|---|
+| Web nhận `Authorization: Bearer` (app iOS không có cookie) — `web/src/lib/bearer-auth.js`, middleware + `supabase-server` | 12 test mới, `npm test` 285/285 (trong `web/`), build sạch, eslint sạch. Dev server: không token / token rác / JWT tự ký giả → đều 401 |
+| App iOS vào git tại `mobile/ios/`; credential ở `Config/Secrets.xcconfig` (gitignore) | `git check-ignore` xác nhận; không còn key thật trong file được commit |
+| Xcode project sinh bằng XcodeGen (`mobile/ios/project.yml`) | `xcodebuild` → BUILD SUCCEEDED (app + widget), chạy được trên simulator tới màn đăng nhập |
+| Sửa 2 lỗi cú pháp, struct trùng ở widget, Practice đọc text stream (web không còn trả JSON `{reply}`) | build pass |
+
+**Chưa kiểm chứng:** đăng nhập thật + gọi API với token thật (cần tài khoản; production chưa có bản sửa Bearer). Không có test Swift (chưa có test target).
+**Chờ quyết định:** tab "My Words" trên iOS gọi `/api/words/search` — route đã bị xoá có chủ đích ở redesign 3/7 và không còn gì ghi `user_progress`. Bỏ tab hay thay bằng gì? · Xoá `mobile/ios/Package.swift` (không dùng nữa)?
+**Thứ tự merge:** đổi Root Directory Vercel = `web` → merge `chore/monorepo-structure` → merge `feat/ios-mobile-api`.
+
 ---
 
 ## Trạng thái tổng quan
@@ -220,7 +233,7 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | 3 | **Dựng staging** | Cần tạo project Supabase mới, tốn phí |
 | ~~4~~ | ~~Cổng thanh toán~~ | ✅ QUYẾT 6/9: dùng VNPay, làm SAU (không phải bây giờ) |
 | ~~5~~ | ~~Đăng ký Cloudflare R2~~ | ✅ XONG 6/9: bucket tạo, credential điền Vercel, migration chạy, kết nối kiểm chứng thật |
-| 6 | **Credential iOS** trong `APIClient.swift` | Chuyển sang cấu hình ngoài trước khi commit `wordly-ios/` |
+| 6 | ~~Credential iOS trong `APIClient.swift`~~ | ✅ Đã chuyển sang `mobile/ios/Config/Secrets.xcconfig` (6/10, branch `feat/ios-mobile-api`) |
 | 7 | **Đăng ký Cloudflare R2** | Theo `docs/R2-SETUP.md` — cần làm TRƯỚC khi merge nhánh video |
 | 8 | **Vercel Root Directory = `web`** | Nhánh `chore/monorepo-structure` chuyển web app vào `web/`. PHẢI đổi trong Vercel → Settings → Build and Deployment TRƯỚC khi merge, nếu không deploy production tiếp theo hỏng |
 

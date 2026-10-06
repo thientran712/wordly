@@ -15,7 +15,7 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 | Thư mục | Nội dung | Chạy lệnh từ đâu |
 |---|---|---|
 | `web/` | Web app Next.js (src, tests, scripts, package.json) — Vercel deploy từ đây | `cd web` rồi `npm ...` |
-| `mobile/` | App native (iOS sẽ chuyển vào `mobile/ios/`) | Xcode |
+| `mobile/` | App native — iOS ở `mobile/ios/` (XcodeGen, xem README trong đó) | Xcode |
 | `supabase/`, `migrations/` | Schema + migration dùng chung cho web và mobile | Gốc repo (`npx supabase ...`) |
 | `docs/`, `*.md` | Tài liệu | — |
 
@@ -29,7 +29,7 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 |---|---|---|
 | 1 | **KHÔNG deploy production** khi chưa được yêu cầu rõ ràng | Đã có người dùng thật |
 | 2 | **KHÔNG chạy migration lên production/staging** khi chưa được đồng ý | Không có rollback |
-| 3 | **KHÔNG commit `wordly-ios/`** | Chứa credential thật trong `APIClient.swift` |
+| 3 | **KHÔNG commit `mobile/ios/Config/Secrets.xcconfig`** | Chứa credential thật của app iOS (đã gitignore — kiểm `git status --ignored mobile/` trước khi add) |
 | 4 | **KHÔNG `git add -A`** khi có file untracked chứa secret | Đã từng vô tình commit credential iOS |
 | 5 | **KHÔNG dùng service role** cho request của người dùng | Bypass RLS = rò dữ liệu chéo trung tâm |
 | 6 | Đọc `web/node_modules/next/dist/docs/` trước khi viết code Next.js | Next 16 có breaking changes |

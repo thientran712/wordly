@@ -905,7 +905,7 @@ Sidebar (`AppSidebar.js`) — thu gọn được, responsive mobile với overla
 
 ## 10. Ứng dụng iOS
 
-Native SwiftUI app tại `wordly-ios/` — **~5.000 dòng Swift**.
+Native SwiftUI app tại `mobile/ios/` (trước đây `wordly-ios/`) — **~5.000 dòng Swift**. Cập nhật 6/10/2026: đã có Xcode project (XcodeGen), credential tách ra xcconfig, đã vào git — xem `mobile/ios/README.md`. Bảng vấn đề dưới đây là hiện trạng TRƯỚC đợt sửa đó.
 
 ### 10.1. Cấu trúc
 

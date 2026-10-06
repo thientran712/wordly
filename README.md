@@ -5,7 +5,7 @@ Monorepo cho Wordly — web app và app di động dùng chung một backend Sup
 | Thư mục | Nội dung | Deploy |
 |---|---|---|
 | `web/` | Web app Next.js 16 (UI + API cho cả web lẫn mobile) | Vercel, Root Directory = `web` |
-| `mobile/` | App native (iOS sẽ chuyển vào `mobile/ios/`) | App Store |
+| `mobile/` | App native — iOS (SwiftUI) ở `mobile/ios/` | App Store |
 | `supabase/` | Cấu hình Supabase CLI + migration B2B (dùng chung) | Chạy tay, xem `CLAUDE.md` |
 | `migrations/` | Migration SQL cũ (B2C), chạy tay trên SQL Editor | Chạy tay |
 | `docs/` | Tài liệu, spec | — |

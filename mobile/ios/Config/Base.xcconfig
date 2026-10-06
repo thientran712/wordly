@@ -1,0 +1,5 @@
+// Cấu hình chung cho cả app và widget. Giá trị bí mật nằm ở Secrets.xcconfig.
+#include? "Secrets.xcconfig"
+
+WORDLY_BUNDLE_ID = com.wordly.app
+WORDLY_APP_GROUP = group.com.wordly.app
