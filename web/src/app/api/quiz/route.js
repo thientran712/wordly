@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { isUuid } from "@/lib/org/org-context";
-import { buildQuizQuestions, scoreQuiz, QUIZ_MODES } from "@/lib/learning/quiz-generation";
+import { buildQuizQuestions, scoreQuiz, QUIZ_MODES, bankWordToQuizWord } from "@/lib/learning/quiz-generation";
 
 const MAX_QUESTIONS = 20;
 const DEFAULT_QUESTIONS = 10;
@@ -66,9 +66,9 @@ export async function GET(request) {
     const admin = createAdminClient();
     let query = admin
       .from("words")
-      .select("id, word, def_vi, def_en, level")
-      .not("def_vi", "is", null)
-      .neq("def_vi", "");
+      .select("id, word, def_en, level")
+      .not("def_en", "is", null)
+      .neq("def_en", "");
 
     if (level) query = query.eq("level", level);
 
@@ -88,7 +88,7 @@ export async function GET(request) {
       console.error("[api/quiz] lỗi đọc kho từ:", error.message);
       return Response.json({ error: "Không tải được từ vựng" }, { status: 500 });
     }
-    words = [...words, ...(data || [])];
+    words = [...words, ...(data || []).map(bankWordToQuizWord).filter(Boolean)];
   }
 
   const questions = buildQuizQuestions(words, { count, mode });
@@ -159,7 +159,7 @@ export async function POST(request) {
       .select("id, source_text, translated_text")
       .eq("user_id", user.id)
       .in("id", wordIds.filter(isUuid)),
-    admin.from("words").select("id, word, def_vi").in("id", wordIds.filter(isUuid)),
+    admin.from("words").select("id, word, def_en, level").in("id", wordIds.filter(isUuid)),
   ]);
 
   const truth = new Map();
@@ -167,7 +167,8 @@ export async function POST(request) {
     truth.set(r.id, { word: r.source_text, def_vi: r.translated_text });
   }
   for (const r of bankRes.data || []) {
-    if (!truth.has(r.id)) truth.set(r.id, { word: r.word, def_vi: r.def_vi });
+    const bank = bankWordToQuizWord(r);
+    if (bank && !truth.has(r.id)) truth.set(r.id, { word: bank.word, def_vi: bank.def_vi });
   }
 
   // Dựng lại danh sách câu hỏi dạng chuẩn để dùng scoreQuiz đã có test.
