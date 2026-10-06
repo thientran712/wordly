@@ -6,34 +6,34 @@ struct JournalView: View {
     @State private var showAddSheet = false
     @FocusState private var inputFocused: Bool
 
+    // Được push từ Trang chủ (nằm trong NavigationStack của tab) — không tự
+    // bọc NavigationStack, nếu không sẽ lồng hai stack.
     var body: some View {
-        NavigationStack {
-            ZStack {
-                WordlyColors.bg(scheme: scheme).ignoresSafeArea()
+        ZStack {
+            WordlyColors.bg(scheme: scheme).ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // Quick-add bar
-                    quickAddBar
+            VStack(spacing: 0) {
+                // Quick-add bar
+                quickAddBar
 
-                    Divider().foregroundStyle(WordlyColors.divider(scheme: scheme))
+                Divider().foregroundStyle(WordlyColors.divider(scheme: scheme))
 
-                    // Entries
-                    if vm.isLoading {
-                        Spacer()
-                        ProgressView().tint(WordlyColors.electric)
-                        Spacer()
-                    } else if vm.entries.isEmpty {
-                        emptyState
-                    } else {
-                        entriesList
-                    }
+                // Entries
+                if vm.isLoading {
+                    Spacer()
+                    ProgressView().tint(WordlyColors.electric)
+                    Spacer()
+                } else if vm.entries.isEmpty {
+                    emptyState
+                } else {
+                    entriesList
                 }
             }
-            .navigationTitle("📓 Journal")
-            .navigationBarTitleDisplayMode(.large)
-            .task { await vm.fetch() }
-            .refreshable { await vm.fetch() }
         }
+        .navigationTitle("Sổ tay câu hay")
+        .navigationBarTitleDisplayMode(.large)
+        .task { await vm.fetch() }
+        .refreshable { await vm.fetch() }
     }
 
     // MARK: - Quick-add bar

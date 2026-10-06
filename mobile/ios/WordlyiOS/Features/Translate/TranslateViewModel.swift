@@ -1,31 +1,11 @@
 import Foundation
-import Combine
 
+/// Màn Dịch & tra từ — hành vi giống web (components/home/InlineTranslate.js):
+/// dịch tự động khi gõ, gợi ý từ (Datamuse), từ điển AI cho từ đơn, tự ghi lịch
+/// sử sau 10 giây, nút Lưu đánh dấu "Đã lưu" (vào quiz + widget + email ôn tập).
 @MainActor
 final class TranslateViewModel: ObservableObject {
-    @Published var inputText = ""
-    @Published var translatedText = ""
-    @Published var direction: TranslateDirection = .enToVi
-    @Published var isTranslating = false
-    @Published var isSuggLoading = false
-    @Published var suggestions: [String] = []
-    @Published var showSuggestions = false
-    @Published var wordDetail: WordDetail?
-    @Published var isDetailLoading = false
-    @Published var saved = false
-    @Published var isOverLimit = false
-    @Published var saveError: String?
-
-    let api = APIClient.shared
-    private var translateTask: Task<Void, Never>?
-    private var suggestTask: Task<Void, Never>?
-    private var translateCache: [String: String] = [:]
-    private var dictCache: [String: WordDetail] = [:]
-    private var suppressSuggestions = false
-
-    let charLimit = 10_000
-
-    enum TranslateDirection: String, CaseIterable {
+    enum Direction: String, CaseIterable {
         case enToVi = "EN→VI"
         case viToEn = "VI→EN"
 
@@ -33,174 +13,224 @@ final class TranslateViewModel: ObservableObject {
         var target: String { self == .enToVi ? "VI" : "EN" }
         var sourceName: String { self == .enToVi ? "English" : "Tiếng Việt" }
         var targetName: String { self == .enToVi ? "Tiếng Việt" : "English" }
-        var flipped: TranslateDirection { self == .enToVi ? .viToEn : .enToVi }
+        var flipped: Direction { self == .enToVi ? .viToEn : .enToVi }
     }
 
-    // MARK: - Input changed
+    enum DictionaryState: Equatable {
+        case hidden, loading, loaded(DictionaryDetail), notFound, failed(String)
+    }
+
+    @Published var inputText = ""
+    @Published var translatedText = ""
+    @Published var direction: Direction = .enToVi
+    @Published var isTranslating = false
+    @Published var suggestions: [String] = []
+    @Published var dictionary: DictionaryState = .hidden
+    @Published var saved = false
+    @Published var toast: String?
+    /// Tăng mỗi khi lịch sử đổi (tự ghi / lưu) để danh sách lịch sử tải lại.
+    @Published var historyVersion = 0
+
+    let charLimit = 10_000
+    var isOverLimit: Bool { inputText.count > charLimit }
+    var canSave: Bool { !inputText.trimmingCharacters(in: .whitespaces).isEmpty && !translatedText.isEmpty && !isTranslating }
+
+    private let api = APIClient.shared
+    private var translateTask: Task<Void, Never>?
+    private var suggestTask: Task<Void, Never>?
+    private var autoLogTask: Task<Void, Never>?
+    private var translateCache: [String: String] = [:]
+    private var dictCache: [String: DictionaryDetail] = [:]
+    private var autoLog = AutoLogTracker()
+    private var suppressSuggestions = false
+    /// Đổi inputText bằng code (chọn mục lịch sử) → onChange của ô nhập không xử lý lại.
+    private var skipNextChange = false
+
+    // MARK: Gõ chữ
     func onInputChanged(_ text: String) {
-        saved = false
-        wordDetail = nil
-        isOverLimit = text.count > charLimit
-        scheduleTranslation(text)
-        if direction == .enToVi && !suppressSuggestions {
-            scheduleSuggestions(text)
+        if skipNextChange {
+            skipNextChange = false
+            return
         }
+        saved = false
+        if !TranslateLogic.isSingleWord(text) { dictionary = .hidden }
+        scheduleTranslation(text)
+        if direction == .enToVi, !suppressSuggestions { scheduleSuggestions(text) } else { suggestions = [] }
     }
 
-    // MARK: - Translation debounce
     private func scheduleTranslation(_ text: String) {
         translateTask?.cancel()
-        guard !isOverLimit, !text.trimmingCharacters(in: .whitespaces).isEmpty else {
-            if text.isEmpty { translatedText = "" }
+        autoLogTask?.cancel()
+        guard !isOverLimit, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            translatedText = ""
             return
         }
         translateTask = Task {
-            try? await Task.sleep(nanoseconds: 280_000_000) // 280ms
+            try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
-            await translate(text: text)
+            await translate(text)
         }
     }
 
-    private func translate(text: String) async {
-        let key = "\(direction.rawValue)::\(text.trimmingCharacters(in: .whitespaces))"
+    private func translate(_ text: String) async {
+        let key = "\(direction.rawValue)::\(text.trimmingCharacters(in: .whitespacesAndNewlines))"
         if let cached = translateCache[key] {
             translatedText = cached
-            return
-        }
-        isTranslating = true
-        do {
-            let resp = try await api.translate(text: text, source: direction.source, target: direction.target)
-            if let result = resp.translated, !result.isEmpty {
+        } else {
+            isTranslating = true
+            defer { isTranslating = false }
+            do {
+                let r = try await api.translate(text: text, source: direction.source, target: direction.target)
+                guard !Task.isCancelled else { return }
+                guard let result = r.translated, !result.isEmpty else {
+                    translatedText = ""
+                    toast = r.error ?? "Không dịch được, thử lại nhé"
+                    return
+                }
                 translateCache[key] = result
-                if translateCache.count > 100 { translateCache.removeValue(forKey: translateCache.keys.first!) }
                 translatedText = result
-            } else {
-                translatedText = "Lỗi — thử lại sau"
+            } catch {
+                toast = "Mất kết nối — thử lại nhé"
+                return
             }
-        } catch {
-            translatedText = "Lỗi — thử lại sau"
         }
-        isTranslating = false
+        if direction == .enToVi, TranslateLogic.isSingleWord(text) {
+            await lookUp(text)
+        }
+        scheduleAutoLog()
     }
 
-    // MARK: - Suggestions debounce
+    /// Web tự ghi bản dịch vào lịch sử sau 10 giây đứng yên (chưa "Lưu").
+    private func scheduleAutoLog() {
+        autoLogTask?.cancel()
+        let source = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let translated = translatedText
+        let dir = direction.rawValue
+        autoLogTask = Task {
+            try? await Task.sleep(for: .seconds(10))
+            guard !Task.isCancelled, autoLog.shouldLog(direction: dir, text: source) else { return }
+            do {
+                try await api.saveTranslation(sourceText: source, translatedText: translated, direction: dir)
+                historyVersion += 1
+            } catch {
+                autoLog.forget(direction: dir, text: source)
+            }
+        }
+    }
+
+    // MARK: Gợi ý từ
     private func scheduleSuggestions(_ text: String) {
         suggestTask?.cancel()
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        guard trimmed.count >= 2 else {
+        let typed = text.trimmingCharacters(in: .whitespaces)
+        guard typed.count >= 2, TranslateLogic.isSingleWord(typed) else {
             suggestions = []
-            showSuggestions = false
             return
         }
         suggestTask = Task {
-            try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
+            try? await Task.sleep(for: .milliseconds(150))
             guard !Task.isCancelled else { return }
-            isSuggLoading = true
-            do {
-                var words = try await api.fetchSuggestions(query: trimmed)
-                let exact = trimmed.lowercased()
-                if words.first?.lowercased() != exact {
-                    words = [exact] + words.filter { $0.lowercased() != exact }
-                    words = Array(words.prefix(8))
-                }
-                suggestions = words
-                showSuggestions = !words.isEmpty
-            } catch {}
-            isSuggLoading = false
+            let fetched = (try? await api.fetchSuggestions(query: typed)) ?? []
+            guard !Task.isCancelled else { return }
+            suggestions = TranslateLogic.orderSuggestions(typed: typed, fetched: fetched)
         }
     }
 
-    // MARK: - Pick suggestion
     func pickSuggestion(_ word: String) {
         suppressSuggestions = true
-        showSuggestions = false
         suggestions = []
-        wordDetail = nil
-        saved = false
-        inputText = word
-        scheduleTranslation(word)
-        if direction == .enToVi && isSingleWord(word) {
-            Task { await loadWordDetail(word) }
-        }
-        // Re-enable suggestions after a brief delay
+        inputText = word   // onChange của ô nhập sẽ dịch
         Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            try? await Task.sleep(for: .seconds(1))
             suppressSuggestions = false
         }
     }
 
-    // MARK: - Flip direction
+    // MARK: Từ điển AI
+    func lookUp(_ word: String) async {
+        let key = TranslateLogic.wordKey(word)
+        if let cached = dictCache[key] {
+            dictionary = .loaded(cached)
+            return
+        }
+        dictionary = .loading
+        do {
+            if let detail = try await api.lookupWord(key) {
+                dictCache[key] = detail
+                dictionary = .loaded(detail)
+            } else {
+                dictionary = .notFound
+            }
+        } catch APIError.serverError(let m) where m.contains("429") {
+            dictionary = .failed("Bạn tra hơi nhanh, chờ một chút rồi thử lại nhé.")
+        } catch {
+            dictionary = .failed("Không tra được nghĩa từ. Thử lại nhé.")
+        }
+    }
+
+    func retryLookup() {
+        Task { await lookUp(inputText) }
+    }
+
+    // MARK: Hành động
     func flipDirection() {
-        let newDir = direction.flipped
-        direction = newDir
+        direction = direction.flipped
         suggestions = []
-        showSuggestions = false
-        wordDetail = nil
-        suppressSuggestions = false
+        dictionary = .hidden
         if !translatedText.isEmpty {
             let old = inputText
             inputText = translatedText
             translatedText = old
         }
+        saved = false
     }
 
-    // MARK: - Clear
     func clear() {
-        suppressSuggestions = false
-        inputText = ""
-        translatedText = ""
-        wordDetail = nil
-        suggestions = []
-        showSuggestions = false
-        saved = false
         translateTask?.cancel()
         suggestTask?.cancel()
+        autoLogTask?.cancel()
+        inputText = ""
+        translatedText = ""
+        suggestions = []
+        dictionary = .hidden
+        saved = false
     }
 
-    // MARK: - Save
+    /// "Lưu" — web dùng PATCH: đánh dấu dòng lịch sử là đã lưu (tạo mới nếu chưa có).
     func save() async {
-        guard !inputText.isEmpty, !translatedText.isEmpty, !saved else { return }
+        guard canSave, !saved else { return }
         saved = true
+        let source = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
-            try await api.saveTranslation(
-                sourceText: inputText.trimmingCharacters(in: .whitespaces),
-                translatedText: translatedText,
-                direction: direction.rawValue
-            )
+            try await api.markSaved(sourceText: source, translatedText: translatedText, direction: direction.rawValue)
+            _ = autoLog.shouldLog(direction: direction.rawValue, text: source) // đã có trong lịch sử, khỏi tự ghi
+            autoLogTask?.cancel()
+            historyVersion += 1
+            toast = "Đã lưu “\(source)” — sẽ có trong quiz và widget"
         } catch {
             saved = false
-            saveError = error.localizedDescription
+            toast = "Không lưu được, thử lại nhé"
         }
     }
 
-    // MARK: - Word detail
-    func loadWordDetail(_ word: String) async {
-        if let cached = dictCache[word.lowercased()] {
-            wordDetail = cached
-            return
+    /// Nhận một mục từ lịch sử để xem lại.
+    func load(entry: TranslateHistoryEntry) {
+        direction = entry.direction == Direction.viToEn.rawValue ? .viToEn : .enToVi
+        suppressSuggestions = true
+        skipNextChange = entry.sourceText != inputText
+        inputText = entry.sourceText
+        translatedText = entry.translatedText
+        translateCache["\(direction.rawValue)::\(entry.sourceText)"] = entry.translatedText
+        saved = entry.isSaved == true
+        suggestions = []
+        _ = autoLog.shouldLog(direction: direction.rawValue, text: entry.sourceText)
+        if direction == .enToVi, TranslateLogic.isSingleWord(entry.sourceText) {
+            Task { await lookUp(entry.sourceText) }
+        } else {
+            dictionary = .hidden
         }
-        isDetailLoading = true
-        if let detail = try? await api.fetchWordDetail(word: word) {
-            dictCache[word.lowercased()] = detail
-            wordDetail = detail
-        }
-        isDetailLoading = false
-    }
-
-    func onFocused() {
-        if !suggestions.isEmpty && !suppressSuggestions {
-            showSuggestions = true
-        }
-    }
-    func onUnfocused() {
         Task {
-            try? await Task.sleep(nanoseconds: 180_000_000)
-            showSuggestions = false
+            try? await Task.sleep(for: .seconds(1))
+            suppressSuggestions = false
         }
-    }
-
-    private func isSingleWord(_ text: String) -> Bool {
-        let pattern = #"^\s*[a-zA-Z'-]+\s*$"#
-        return text.range(of: pattern, options: .regularExpression) != nil
     }
 }

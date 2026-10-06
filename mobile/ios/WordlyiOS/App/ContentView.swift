@@ -54,44 +54,29 @@ struct SplashView: View {
 }
 
 struct MainTabView: View {
-    @State private var selectedTab: Tab = Self.startTab
-
-    enum Tab: String {
-        case translate, journal, practice, profile
-    }
-
-    private static var startTab: Tab {
-        #if DEBUG
-        if let name = PreviewMode.initialTab, let tab = Tab(rawValue: name) { return tab }
-        #endif
-        return .translate
-    }
+    @EnvironmentObject private var router: AppRouter
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            TranslateView()
-                .tabItem {
-                    Label("Dịch", systemImage: "translate")
-                }
-                .tag(Tab.translate)
+        TabView(selection: $router.selectedTab) {
+            HomeView()
+                .tabItem { Label("Trang chủ", systemImage: "house.fill") }
+                .tag(AppRouter.Tab.home)
 
-            JournalView()
-                .tabItem {
-                    Label("Journal", systemImage: "note.text")
-                }
-                .tag(Tab.journal)
+            TranslateView()
+                .tabItem { Label("Dịch", systemImage: "character.book.closed.fill") }
+                .tag(AppRouter.Tab.translate)
 
             PracticeView()
-                .tabItem {
-                    Label("Luyện nói", systemImage: "mic.fill")
-                }
-                .tag(Tab.practice)
+                .tabItem { Label("Luyện nói", systemImage: "mic.fill") }
+                .tag(AppRouter.Tab.speak)
+
+            ClassesView()
+                .tabItem { Label("Lớp học", systemImage: "graduationcap.fill") }
+                .tag(AppRouter.Tab.classes)
 
             ProfileView()
-                .tabItem {
-                    Label("Hồ sơ", systemImage: "person.fill")
-                }
-                .tag(Tab.profile)
+                .tabItem { Label("Hồ sơ", systemImage: "person.crop.circle.fill") }
+                .tag(AppRouter.Tab.profile)
         }
         .tint(WordlyColors.electric)
     }

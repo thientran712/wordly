@@ -13,6 +13,8 @@ final class PracticeViewModel: ObservableObject {
     @Published var isSaving = false
     @Published var error: String?
     @Published var sidebarOpen = false
+    /// Từ đang luyện (mở từ "Hỏi Alex" ở màn Dịch / Từ vựng theo chủ đề).
+    @Published var focusWord: AppRouter.PracticeWord?
 
     // Voice state
     @Published var isListening = false
@@ -65,38 +67,55 @@ final class PracticeViewModel: ObservableObject {
     }
 
     // MARK: - Start new session
-    func startSession() async {
+    // Lời chào hiện ngay nhưng CHƯA tạo phiên trong DB — chỉ tạo khi người dùng
+    // gửi tin nhắn thật đầu tiên (giống web), để xem rồi rời đi không để lại rác.
+    func startSession(word: AppRouter.PracticeWord? = nil) async {
+        stopVoice()
+        focusWord = word
+        activeSessionId = nil
         sessionState = .connecting
-        messages = []
+        let kickoff = word.map { PracticeLogic.kickoff(word: $0.word) } ?? "Hello! I want to practice my English."
+        messages = [ChatMessage(role: "user", content: kickoff)]
         error = nil
         isThinking = true
         do {
             let greeting = try await api.sendPracticeMessage(
-                messages: [ChatMessage(role: "user", content: "Hello! I want to practice my English.")],
-                vocabularyContext: true
+                messages: [ChatMessage(role: "user", content: kickoff)],
+                vocabularyContext: true,
+                word: word?.word
             )
-            let initMessages = [
-                ChatMessage(role: "user", content: "Hello! I want to practice my English."),
+            messages = [
+                ChatMessage(role: "user", content: kickoff),
                 ChatMessage(role: "assistant", content: greeting)
             ]
-            messages = initMessages
             isThinking = false
             sessionState = .active
-
-            // Create session in DB
-            let title = "Conversation " + DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
-            let session = try await api.createSession(title: title, messages: initMessages)
-            sessions.insert(session, at: 0)
-            activeSessionId = session.id
-
-            // Speak greeting
             await speakAndWait(greeting)
-            // Start listening after Alex finishes
             startVoice()
         } catch {
             isThinking = false
             sessionState = .idle
+            messages = []
             self.error = "Không thể kết nối. Thử lại nhé!"
+        }
+    }
+
+    /// Lưu cuộc trò chuyện: tạo phiên ở tin nhắn thật đầu tiên, sau đó cập nhật.
+    private func persist(_ all: [ChatMessage]) async {
+        if PracticeLogic.needsSessionOnSend(activeSessionId: activeSessionId) {
+            let title = PracticeLogic.placeholderTitle(word: focusWord?.word, date: Date())
+            guard let session = try? await api.createSession(title: title, messages: all, wordId: focusWord?.wordId) else { return }
+            sessions.insert(session, at: 0)
+            activeSessionId = session.id
+        } else {
+            scheduleSave(all)
+        }
+        if PracticeLogic.shouldGenerateTitle(messages: all), let id = activeSessionId {
+            let exchange = Array(all.suffix(2))
+            Task {
+                guard let title = try? await api.generateSessionTitle(id: id, messages: exchange) else { return }
+                if let idx = sessions.firstIndex(where: { $0.id == id }) { sessions[idx].title = title }
+            }
         }
     }
 
@@ -112,11 +131,11 @@ final class PracticeViewModel: ObservableObject {
         messages = newMessages
         isThinking = true
         do {
-            let reply = try await api.sendPracticeMessage(messages: newMessages, vocabularyContext: false)
+            let reply = try await api.sendPracticeMessage(messages: newMessages, vocabularyContext: false, word: focusWord?.word)
             let withReply = newMessages + [ChatMessage(role: "assistant", content: reply)]
             messages = withReply
             isThinking = false
-            scheduleSave(withReply)
+            await persist(withReply)
             await speakAndWait(reply)
         } catch {
             isThinking = false
@@ -144,6 +163,7 @@ final class PracticeViewModel: ObservableObject {
     // MARK: - New session (clear)
     func newSession() {
         stopVoice()
+        focusWord = nil
         activeSessionId = nil
         messages = []
         sessionState = .idle

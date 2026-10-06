@@ -2,8 +2,11 @@ import SwiftUI
 
 struct PracticeView: View {
     @StateObject private var vm = PracticeViewModel()
+    @EnvironmentObject private var router: AppRouter
     @Environment(\.colorScheme) var scheme
     @State private var scrollProxy: ScrollViewProxy?
+    @State private var textInput = ""
+    @FocusState private var textFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -76,7 +79,49 @@ struct PracticeView: View {
         .task {
             await vm.loadSessions()
             await vm.speech.requestPermissions()
+            await startFocusWordIfNeeded()
         }
+        .onChange(of: router.practiceWord) { _, _ in
+            Task { await startFocusWordIfNeeded() }
+        }
+    }
+
+    /// "Hỏi Alex về từ này" từ màn khác → mở phiên luyện theo từ đó (web: /practice?word=…).
+    private func startFocusWordIfNeeded() async {
+        guard let word = router.practiceWord else { return }
+        router.practiceWord = nil
+        await vm.startSession(word: word)
+    }
+
+    /// Ô nhập chữ — web cho gõ thay vì nói.
+    private var textComposer: some View {
+        HStack(spacing: 10) {
+            TextField("Nhập tin nhắn cho Alex…", text: $textInput, axis: .vertical)
+                .font(WordlyFonts.body(15))
+                .lineLimit(1...4)
+                .focused($textFocused)
+                .wordlyInputStyle(focused: textFocused)
+                .submitLabel(.send)
+                .onSubmit(sendText)
+            Button(action: sendText) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(WordlyColors.onElectric)
+                    .frame(width: 42, height: 42)
+                    .background(WordlyColors.electric)
+                    .clipShape(Circle())
+            }
+            .disabled(textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vm.isThinking)
+            .opacity(textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.4 : 1)
+            .accessibilityLabel("Gửi")
+        }
+    }
+
+    private func sendText() {
+        let text = textInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !vm.isThinking else { return }
+        textInput = ""
+        Task { await vm.sendMessage(text) }
     }
 
     // MARK: - Alex Avatar
@@ -151,6 +196,7 @@ struct PracticeView: View {
 
             case .active:
                 VStack(spacing: 10) {
+                    textComposer
                     HStack(spacing: 24) {
                         // Mic button
                         ZStack {

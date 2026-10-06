@@ -54,6 +54,7 @@ struct TranslateHistoryEntry: Codable, Identifiable {
     let translatedText: String
     let direction: String
     let savedAt: String
+    var isSaved: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -61,6 +62,7 @@ struct TranslateHistoryEntry: Codable, Identifiable {
         case translatedText = "translated_text"
         case direction
         case savedAt = "saved_at"
+        case isSaved = "is_saved"
     }
 
     var savedDate: Date {
@@ -123,11 +125,8 @@ struct ChatMessage: Codable, Identifiable, Equatable {
 struct PracticeRequest: Codable {
     let messages: [ChatMessage]
     let vocabularyContext: Bool?
-}
-
-struct PracticeResponse: Codable {
-    let reply: String?
-    let error: String?
+    /// Luyện theo một từ (web: /practice?word=…) — Alex dạy đúng từ này.
+    var word: String? = nil
 }
 
 struct PracticeSession: Codable, Identifiable {
@@ -159,6 +158,12 @@ struct PracticeSessionResponse: Codable {
 struct CreateSessionRequest: Codable {
     let title: String
     let messages: [ChatMessage]
+    var wordId: String? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case title, messages
+        case wordId = "word_id"
+    }
 }
 
 struct PatchSessionRequest: Codable {
@@ -182,53 +187,4 @@ struct DatamuseWord: Codable {
     let word: String
     let score: Int?
     let tags: [String]?
-}
-
-// MARK: - Dictionary API
-struct DictionaryEntry: Codable {
-    let word: String
-    let phonetic: String?
-    let phonetics: [DictionaryPhonetic]?
-    let meanings: [DictionaryMeaning]?
-}
-
-struct DictionaryPhonetic: Codable {
-    let text: String?
-    let audio: String?
-}
-
-struct DictionaryMeaning: Codable {
-    let partOfSpeech: String
-    let definitions: [DictionaryDefinition]
-}
-
-struct DictionaryDefinition: Codable {
-    let definition: String
-    let example: String?
-    let synonyms: [String]?
-}
-
-// Local model after parsing
-struct WordDetail {
-    let word: String
-    let phonetic: String
-    let meanings: [ParsedMeaning]
-}
-
-struct ParsedMeaning {
-    let pos: String
-    let defs: [ParsedDef]
-}
-
-struct ParsedDef {
-    let definition: String
-    let example: String
-}
-
-// MARK: - Widget Data
-struct WidgetWord: Codable {
-    let sourceText: String
-    let translatedText: String
-    let direction: String
-    let dueAt: String?
 }
