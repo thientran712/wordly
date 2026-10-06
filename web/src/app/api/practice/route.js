@@ -1,6 +1,7 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { callGroq } from "@/lib/ai/ai-models";
+import { toPlainTextStream } from "@/lib/ai/sse-to-text";
 
 
 // Shared guardrails appended to every persona prompt — keeps Alex strictly
@@ -105,45 +106,6 @@ async function buildVocabContext(user, vocabularyContext) {
     // non-critical
   }
   return "";
-}
-
-// Converts a Groq SSE stream into a plain text stream of just the delta content,
-// which is all the client needs to render the typing effect.
-function toPlainTextStream(groqBody) {
-  const reader = groqBody.getReader();
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  let buffer = "";
-
-  return new ReadableStream({
-    async pull(controller) {
-      const { done, value } = await reader.read();
-      if (done) {
-        controller.close();
-        return;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data:")) continue;
-        const payload = trimmed.slice(5).trim();
-        if (payload === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(payload);
-          const delta = parsed.choices?.[0]?.delta?.content;
-          if (delta) controller.enqueue(encoder.encode(delta));
-        } catch {
-          // ignore malformed SSE chunk
-        }
-      }
-    },
-    cancel() {
-      reader.cancel();
-    },
-  });
 }
 
 export async function POST(request) {
