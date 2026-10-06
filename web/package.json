@@ -10,10 +10,10 @@
     "test": "node --test --test-concurrency=1 tests/**/*.test.mjs",
     "test:rls": "node --test --test-concurrency=1 tests/rls/*.test.mjs",
     "test:watch": "node --test --watch tests/**/*.test.mjs",
-    "db:new": "supabase migration new",
-    "db:push": "supabase db push",
-    "db:diff": "supabase db diff",
-    "db:reset": "supabase db reset"
+    "db:new": "supabase --workdir .. migration new",
+    "db:push": "supabase --workdir .. db push",
+    "db:diff": "supabase --workdir .. db diff",
+    "db:reset": "supabase --workdir .. db reset"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",

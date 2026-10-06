@@ -95,8 +95,8 @@ Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 **GĐ2:** `/api/homework`, `/api/homework/[id]/submit`,
 `/api/homework/[id]/grade`, `/api/quiz`,
 `/api/materials/video-upload-url`, `/api/materials/video`,
-`/api/materials/[id]/video-url` (video R2 — xem `src/lib/video-validation.js`
-+ `src/lib/r2-client.js`)
+`/api/materials/[id]/video-url` (video R2 — xem `web/src/lib/video-validation.js`
++ `web/src/lib/r2-client.js`)
 
 **GĐ4:** `/api/tuition`, `/api/tuition/payments`
 
@@ -106,7 +106,7 @@ Không có test (phụ thuộc DB/JWT, chỉ test được ở local):
 `/org/classes/[id]` (tab Tiến độ · Bài giảng · Bài tập · Bộ từ · Học phí),
 `/join` (nhập mã lớp), `/quiz` (quiz từ vựng).
 
-**Component** (`src/components/org/`): `OrgShell` (layout dùng chung),
+**Component** (`web/src/components/org/`): `OrgShell` (layout dùng chung),
 `LessonLibrary`, `HomeworkPanel`, `TuitionPanel`, `MembersPanel`,
 `AssignmentsPanel`, `QuizStatsPanel`, `SettingsPanel`, `GuardiansPanel`,
 `SpeakingPanel`.
@@ -122,7 +122,7 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 `cleanupOrphanedFiles` (cron tuần), `syncStorageLimits` (cron ngày),
 `sendParentReports` (cron CN, gác bởi feature flag).
 
-### AI (`src/lib/ai-models.js` — cấu hình TẬP TRUNG)
+### AI (`web/src/lib/ai-models.js` — cấu hình TẬP TRUNG)
 
 | API | Chức năng |
 |---|---|
@@ -132,7 +132,7 @@ Tab "Học phí" chỉ hiện với owner; tab Lớp/Thành viên chỉ hiện v
 | `/api/ai/grade-speaking` | Whisper nghe audio → LLM chấm bài nói |
 
 **Model theo vai trò, ladder XUYÊN NHÀ CUNG CẤP** (Gemini chính, Groq dự
-phòng) — `src/lib/ai-models.js`:
+phòng) — `web/src/lib/ai-models.js`:
 
 | Vai trò | Thứ tự thử |
 |---|---|
@@ -193,7 +193,7 @@ chạy (không có Supabase local).
 
 Tham chiếu `translate_history` — bảng lõi không có `CREATE TABLE` trong repo.
 Xem `docs/LOCAL-SETUP-B2B.md` mục 3 (Cách A: dump baseline; Cách B:
-`scripts/b2b-local-baseline.sql`).
+`web/scripts/b2b-local-baseline.sql`).
 
 ### 3. Hook JWT phải bật TRƯỚC khi chạy migration
 

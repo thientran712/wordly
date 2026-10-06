@@ -10,6 +10,17 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 - `docs/superpowers/specs/` — spec thiết kế đã duyệt
 - `docs/LOCAL-SETUP-B2B.md` — dựng môi trường local + test
 
+**Cấu trúc repo (monorepo):**
+
+| Thư mục | Nội dung | Chạy lệnh từ đâu |
+|---|---|---|
+| `web/` | Web app Next.js (src, tests, scripts, package.json) — Vercel deploy từ đây | `cd web` rồi `npm ...` |
+| `mobile/` | App native (iOS sẽ chuyển vào `mobile/ios/`) | Xcode |
+| `supabase/`, `migrations/` | Schema + migration dùng chung cho web và mobile | Gốc repo (`npx supabase ...`) |
+| `docs/`, `*.md` | Tài liệu | — |
+
+`.env.local` và `.env.test.local` phải nằm trong `web/`.
+
 ---
 
 ## 1. Quy tắc tuyệt đối
@@ -21,7 +32,7 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 | 3 | **KHÔNG commit `wordly-ios/`** | Chứa credential thật trong `APIClient.swift` |
 | 4 | **KHÔNG `git add -A`** khi có file untracked chứa secret | Đã từng vô tình commit credential iOS |
 | 5 | **KHÔNG dùng service role** cho request của người dùng | Bypass RLS = rò dữ liệu chéo trung tâm |
-| 6 | Đọc `node_modules/next/dist/docs/` trước khi viết code Next.js | Next 16 có breaking changes |
+| 6 | Đọc `web/node_modules/next/dist/docs/` trước khi viết code Next.js | Next 16 có breaking changes |
 
 ### Về đa người thuê (multi-tenant)
 
@@ -52,12 +63,12 @@ không chứng minh được nó bắt được lỗi gì.
 
 | Loại code | Cách test | Chạy được ở đâu |
 |---|---|---|
-| Logic thuần (validate, tính toán, format) | `tests/unit/*.test.mjs` | Mọi nơi, không cần DB |
-| RLS policy, quyền truy cập | `tests/rls/*.test.mjs` | **Chỉ local** (cần Supabase local) |
+| Logic thuần (validate, tính toán, format) | `web/tests/unit/*.test.mjs` | Mọi nơi, không cần DB |
+| RLS policy, quyền truy cập | `web/tests/rls/*.test.mjs` | **Chỉ local** (cần Supabase local) |
 | Logic SQL (streak, snapshot) | Mô phỏng bằng JS rồi đối chiếu | Mọi nơi |
 
 **Mẹo quan trọng:** khi logic nằm trong route handler thì không test được.
-Tách ra `src/lib/` rồi test ở đó. Ví dụ: `material-validation.js` được tách
+Tách ra `web/src/lib/` rồi test ở đó. Ví dụ: `material-validation.js` được tách
 khỏi `api/materials/` chính vì lý do này.
 
 **Với SQL không chạy được ở local:** viết bản mô phỏng bằng JS, đối chiếu với
@@ -67,6 +78,7 @@ thuật toán đang dùng trong app. Cách này đã bắt được lỗi dấu 
 ### Lệnh
 
 ```bash
+cd web               # mọi lệnh npm chạy trong web/
 npm test              # toàn bộ
 npm run test:rls      # chỉ test RLS (cần Supabase local)
 npm run test:watch    # theo dõi khi sửa
@@ -94,6 +106,7 @@ ngắn, chứ không phải bỏ bước duyệt.
 Dùng skill `superpowers:verification-before-completion`. Chạy đủ và **đọc kết quả**:
 
 ```bash
+cd web
 npm test                     # phải xanh
 npx next build               # phải "Compiled successfully"
 npx eslint <file đã sửa>     # phải sạch

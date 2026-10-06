@@ -22,8 +22,12 @@ tới localhost.
 
 Cần **Docker Desktop** đang chạy (Supabase local dùng container).
 
+> **Monorepo:** lệnh `npx supabase ...` chạy từ **gốc repo** (nơi có
+> `supabase/`). Lệnh `npm ...` và `node scripts/...` chạy từ **`web/`**.
+> File `.env.local` và `.env.test.local` nằm trong `web/`.
+
 ```bash
-# Không cần cài toàn cục, dùng npx
+# Chạy từ gốc repo. Không cần cài toàn cục, dùng npx
 npx supabase init   # nếu chưa có (config.toml đã có trong repo rồi)
 npx supabase start
 ```
@@ -79,13 +83,13 @@ Lệnh này tạo lại DB local và chạy **toàn bộ** file trong
 > Chỉ ĐỌC từ production, không ghi gì.
 >
 > **Cách B (nhanh, để thử nhanh):** tạm tạo bảng lõi tối thiểu ở local — xem
-> `scripts/b2b-local-baseline.sql`.
+> `web/scripts/b2b-local-baseline.sql`.
 
 ---
 
 ## 4. Cấu hình môi trường test
 
-Tạo `.env.test.local` (đã được `.gitignore` bỏ qua vì khớp `.env*`):
+Tạo `web/.env.test.local` (đã được `.gitignore` bỏ qua vì khớp `.env*`):
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
@@ -101,6 +105,7 @@ không bị dùng lẫn.
 ## 5. Chạy test RLS
 
 ```bash
+cd web
 npm test
 ```
 
@@ -124,9 +129,10 @@ npm test
 
 ## 6. Chạy app với DB local
 
-Tạm trỏ `.env.local` sang local (nhớ backup bản production trước):
+Tạm trỏ `web/.env.local` sang local (nhớ backup bản production trước):
 
 ```bash
+cd web
 cp .env.local .env.local.production-backup
 ```
 
@@ -144,6 +150,7 @@ Tạo org + owner đầu tiên phải qua service role (theo thiết kế: onboa
 trung tâm là quy trình bán hàng có kiểm soát, không self-service).
 
 ```bash
+# từ web/
 node scripts/b2b-create-org.mjs "Trung tâm ABC" your-email@example.com
 ```
 
@@ -163,6 +170,7 @@ Dashboard đọc từ `student_progress_snapshots`, được tính bởi Inngest
 hằng ngày. Ở local, gọi thẳng hàm SQL cho nhanh:
 
 ```bash
+# từ gốc repo
 npx supabase db reset --no-seed >/dev/null 2>&1  # nếu cần làm lại
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
   -c "SELECT compute_org_progress_snapshots('<org_id>');"
@@ -183,7 +191,7 @@ Chỉ sau khi **tất cả** mục dưới đây đúng:
 - [ ] Bật custom access token hook trên production:
       Dashboard → Authentication → Hooks → Custom Access Token →
       chọn `public.custom_access_token_hook`
-- [ ] Đã khôi phục `.env.local` về bản production
+- [ ] Đã khôi phục `web/.env.local` về bản production
 
 Thứ tự lên production: **staging trước, production sau**, và bật hook
 **trước** khi chạy migration để không có khoảng thời gian policy chặn hết.

@@ -1,11 +1,27 @@
 name: CI
 
 # Chạy tự động mỗi lần push hoặc mở PR — bắt lỗi trước khi lên production.
+#
+# Monorepo: chỉ chạy khi thay đổi chạm tới web app, DB (supabase/, migrations/)
+# hoặc chính workflow này. Thay đổi chỉ trong mobile/ hay docs/ không kích
+# hoạt CI web — tiết kiệm phút CI và không làm đỏ PR của mobile vì lý do web.
 on:
   push:
     branches: [main, "feat/**", "fix/**"]
+    paths:
+      - "web/**"
+      - "supabase/**"
+      - "migrations/**"
+      - "PROGRESS.md"
+      - ".github/workflows/ci.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "web/**"
+      - "supabase/**"
+      - "migrations/**"
+      - "PROGRESS.md"
+      - ".github/workflows/ci.yml"
 
 # Huỷ lần chạy cũ khi push thêm commit vào cùng branch (tiết kiệm phút CI)
 concurrency:
@@ -18,6 +34,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # Toàn bộ web app (package.json, src/, tests/) nằm trong web/
+    defaults:
+      run:
+        working-directory: web
+
     steps:
       - uses: actions/checkout@v4
 
@@ -25,6 +46,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Cài dependencies
         run: npm ci

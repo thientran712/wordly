@@ -1,8 +1,12 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+#
+# Monorepo: web app Next.js nằm trong web/, app native nằm trong mobile/.
+# Các rule có dấu / ở đầu được neo vào gốc repo nên phải ghi rõ /web/...
+# Các rule không có / (.env*, .DS_Store, .vercel...) áp dụng ở mọi cấp.
 
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+/web/.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -11,14 +15,14 @@
 !.yarn/versions
 
 # testing
-/coverage
+/web/coverage
 
 # next.js
-/.next/
-/out/
+/web/.next/
+/web/out/
 
 # production
-/build
+/web/build
 
 # misc
 .DS_Store
@@ -48,10 +52,18 @@ next-env.d.ts
 /wordly-ios/
 
 # Artifact thiết kế lớn, không cần trong repo
-/public/logo 3.7
+/web/public/logo 3.7
 
 # Môi trường test local (URL + key của Supabase local)
 .env.test.local
 
 # File tạm của Supabase CLI
 supabase/.temp/
+
+# Mobile — app iOS native (SwiftUI) sẽ chuyển từ /wordly-ios/ vào mobile/ios/.
+# Secrets.xcconfig chứa credential thật, KHÔNG BAO GIỜ commit.
+mobile/ios/Config/Secrets.xcconfig
+mobile/ios/*.xcodeproj
+mobile/ios/build/
+xcuserdata/
+DerivedData/
