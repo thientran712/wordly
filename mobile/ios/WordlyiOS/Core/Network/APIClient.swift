@@ -49,7 +49,7 @@ enum APIError: LocalizedError {
 final class APIClient: ObservableObject {
     static let shared = APIClient()
 
-    private let session: URLSession
+    let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
@@ -72,7 +72,7 @@ final class APIClient: ObservableObject {
     }
 
     // MARK: - Generic request
-    private func request<T: Decodable>(
+    func request<T: Decodable>(
         path: String,
         method: String = "GET",
         body: Encodable? = nil,
