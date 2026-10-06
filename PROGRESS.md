@@ -9,6 +9,15 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
+### Monorepo `web/` + `mobile/` (branch `chore/monorepo-structure`, CHƯA merge)
+
+Web app Next.js chuyển vào `web/` (git mv, giữ lịch sử); `mobile/` giữ chỗ
+cho app iOS. `supabase/` và `migrations/` **giữ ở gốc** — schema dùng chung
+cho web và mobile. Lệnh `npm` chạy từ `web/`, lệnh `npx supabase` chạy từ gốc;
+`.env.local` / `.env.test.local` nằm trong `web/`. CI chạy trong `web/`, có
+paths filter. Kiểm chứng: 273/273 test pass (bằng main), build sạch, nhận
+middleware, lint CI sạch. **Chặn merge:** mục 8 "Chờ chủ dự án quyết định".
+
 ### Deploy 4/9/2026 — B2B + sự cố AI đều đã xong
 
 `feat/b2b-multi-tenant` (32 commit) đã MERGE HẲN vào `main`, không phải
@@ -213,6 +222,7 @@ quyền gì". Local đã cấu hình sẵn trong `supabase/config.toml`.
 | ~~5~~ | ~~Đăng ký Cloudflare R2~~ | ✅ XONG 6/9: bucket tạo, credential điền Vercel, migration chạy, kết nối kiểm chứng thật |
 | 6 | **Credential iOS** trong `APIClient.swift` | Chuyển sang cấu hình ngoài trước khi commit `wordly-ios/` |
 | 7 | **Đăng ký Cloudflare R2** | Theo `docs/R2-SETUP.md` — cần làm TRƯỚC khi merge nhánh video |
+| 8 | **Vercel Root Directory = `web`** | Nhánh `chore/monorepo-structure` chuyển web app vào `web/`. PHẢI đổi trong Vercel → Settings → Build and Deployment TRƯỚC khi merge, nếu không deploy production tiếp theo hỏng |
 
 ---
 
