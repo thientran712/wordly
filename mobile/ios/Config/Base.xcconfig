@@ -1,5 +1,6 @@
 // Cấu hình chung cho cả app và widget. Giá trị bí mật nằm ở Secrets.xcconfig.
 #include? "Secrets.xcconfig"
 
-WORDLY_BUNDLE_ID = com.wordly.app
-WORDLY_APP_GROUP = group.com.wordly.app
+// Phải đăng ký trong team Apple Developer phát hành app (Identifiers → App IDs / App Groups)
+WORDLY_BUNDLE_ID = com.thientran.wordly
+WORDLY_APP_GROUP = group.com.thientran.wordly

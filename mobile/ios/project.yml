@@ -40,6 +40,8 @@ targets:
         WordlySupabaseURL: $(WORDLY_SUPABASE_URL)
         WordlySupabaseAnonKey: $(WORDLY_SUPABASE_ANON_KEY)
         WordlyAppGroup: $(WORDLY_APP_GROUP)
+        # App chỉ dùng HTTPS chuẩn của hệ điều hành → không phải khai báo xuất khẩu mã hoá
+        ITSAppUsesNonExemptEncryption: false
         NSMicrophoneUsageDescription: "Wordly cần mic để luyện nói với Alex — giáo viên AI của bạn."
         NSSpeechRecognitionUsageDescription: "Wordly dùng nhận dạng giọng nói để chuyển lời nói của bạn thành văn bản khi luyện nói với Alex."
         CFBundleURLTypes:
@@ -61,6 +63,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(WORDLY_BUNDLE_ID)
         PRODUCT_NAME: Wordly
+        # Icon lấy từ web/public (bản vuông tràn nền, không alpha — iOS tự bo góc)
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
     dependencies:
       - package: Supabase
