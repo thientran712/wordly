@@ -79,6 +79,12 @@ Màu (xanh Duolingo `#58CC02`, nền tối `#131F24`, sáng/tối tự đổi), 
 | Archive Release | SUCCEEDED, 0 chuỗi của chế độ xem trước trong binary |
 | Widget | Build được; **chưa xem trực quan** (cần thêm widget trên màn hình chính) |
 
+### 6/10/2026 — iOS ĐÃ UPLOAD LÊN APP STORE CONNECT: 1.0.0 (build 1)
+
+Team `929P8F77XX`, bundle `com.thientran.wordly`, App Group `group.com.thientran.wordly` (Xcode tự tạo cert Distribution + profile qua `-allowProvisioningUpdates`). Archive + export từ `main` (`ffc54f8`).
+**Lần upload sau PHẢI tăng `CURRENT_PROJECT_VERSION` trong `mobile/ios/project.yml`** (build 1 đã dùng; số build không được giảm/trùng).
+Tài khoản test cho TestFlight/Apple review: `huythien7122+wordlytest@gmail.com` (production).
+
 ### 6/10/2026 — ĐÃ DEPLOY PRODUCTION: monorepo + app iOS dùng được API (PR #1, merge `ffc54f8`)
 
 Vercel Root Directory = `web` (chủ dự án đổi). Kiểm trên production bằng tài khoản test `huythien7122+wordlytest@gmail.com`: Bearer 200 trên profile/streak/journal (ghi+đọc)/lịch sử/phiên luyện nói/dịch/practice; không token + token xấu → 401; `/`, `/login`, `/speak` 200. Sửa thêm trong lúc kiểm: middleware sập (500) với JWT thiếu `exp`; luồng chat Alex bị cụt rồi treo 60s. Google Cloud billing cho TTS đã bật (trước đó TTS lỗi trên cả web lẫn app).
