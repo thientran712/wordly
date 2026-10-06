@@ -50,3 +50,27 @@ export async function getOrCreateAudio({ key, memory, store, synthesize, memoryM
   remember(audio);
   return { audio, source: "google" };
 }
+
+/** Hết hạn mức gọi Google TTS — route bắt lỗi này và trả 429. */
+export class TtsRateLimitedError extends Error {
+  constructor(result) {
+    super("Vượt hạn mức phát âm");
+    this.result = result;
+  }
+}
+
+/**
+ * Bọc hàm gọi Google bằng các hạn mức (lớp chặn chi phí trong app). Đặt làm
+ * `synthesize` của getOrCreateAudio → chỉ chạy khi CACHE MISS, nên phát lại
+ * từ đã cache không bị tính. Hạn mức đầu tiên chặn thì dừng luôn.
+ * @param checks  mảng hàm async trả { allowed, retry_after_seconds, limit }
+ */
+export function limitedSynthesize({ checks, synthesize }) {
+  return async () => {
+    for (const check of checks) {
+      const result = await check();
+      if (!result.allowed) throw new TtsRateLimitedError(result);
+    }
+    return synthesize();
+  };
+}

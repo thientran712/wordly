@@ -1,6 +1,9 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { createSign } from "crypto";
-import { ttsCacheKey, getOrCreateAudio } from "@/lib/storage/tts-cache";
+import { ttsCacheKey, getOrCreateAudio, limitedSynthesize, TtsRateLimitedError } from "@/lib/storage/tts-cache";
+import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
+import { rateLimitResponse } from "@/lib/security/rate-limit";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getObjectBytes, putObjectBytes } from "@/lib/storage/r2-client";
 
 const TTS_URL = "https://texttospeech.googleapis.com/v1/text:synthesize";
@@ -68,6 +71,15 @@ async function getAccessToken() {
 // dùng chung — xem lib/storage/tts-cache.js. Header X-TTS-Cache cho biết
 // audio lấy từ đâu (memory | r2 | google) để kiểm chứng.
 const audioCache = new Map();
+
+// ── Hạn mức gọi Google (chặn chi phí trong app) ─────────────────────────
+// Chỉ tính lần CACHE MISS — phát lại từ đã cache không tốn tiền nên không
+// giới hạn. Mỗi người: 30 lần/phút (chặn gọi dồn), 300 lần/ngày (trần chi
+// phí: tối đa ~150k ký tự/người/ngày). Một buổi luyện nói 30 phút ≈ 60 câu.
+const TTS_LIMITS = [
+  { scope: "tts-google-min", limit: 30, windowMs: 60_000 },
+  { scope: "tts-google-day", limit: 300, windowMs: 86_400_000 },
+];
 const r2Store = {
   get: (key) => getObjectBytes(key),
   put: (key, bytes) => putObjectBytes(key, bytes, "audio/mpeg"),
@@ -111,7 +123,12 @@ export async function POST(request) {
       key: ttsCacheKey(voiceName, trimmedText),
       memory: audioCache,
       store: r2Store,
-      synthesize: () => synthesize(trimmedText, lang, voiceName),
+      synthesize: limitedSynthesize({
+        checks: TTS_LIMITS.map(({ scope, limit, windowMs }) => () =>
+          checkRateLimitDb({ supabase: createAdminClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
+        ),
+        synthesize: () => synthesize(trimmedText, lang, voiceName),
+      }),
     });
     return new Response(audio, {
       headers: {
@@ -121,6 +138,9 @@ export async function POST(request) {
       },
     });
   } catch (err) {
+    if (err instanceof TtsRateLimitedError) {
+      return rateLimitResponse(err.result, "Bạn nghe phát âm quá nhiều trong thời gian ngắn. Vui lòng thử lại sau.");
+    }
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

@@ -94,6 +94,9 @@ Cache cũ chỉ là `Map` trong RAM → gần như luôn trống trên Vercel, m
 |---|---|
 | Test `tts-cache` (11) / toàn bộ | 11/11 · 285/285, build + lint sạch |
 | Dev server với R2 + Google thật | lần 1 `google` → lần 2 `memory` (9ms) → restart `r2` (không gọi Google) |
+| Hạn mức gọi Google (chỉ tính cache miss): 30/phút + 300/ngày mỗi người | 36 request song song cùng phút → đúng 30 qua, 6 bị 429 (`Retry-After`); phát lại từ đã cache khi đang bị chặn vẫn 200 |
+
+Chặn chi phí TTS gồm: quota Google "Requests per minute" (chủ dự án đã hạ) + hạn mức trong app ở trên + cache R2. Không dùng tự tắt billing.
 
 ---
 
