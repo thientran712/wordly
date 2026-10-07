@@ -9,6 +9,24 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
+### 7/10/2026 — iOS 1.0.0 (build 3) ĐÃ UPLOAD lên App Store Connect
+
+Archive Release từ `feat/mobile-restructure` (UI 5 tab + trộn từ kho + icon phẳng, mục dưới). Kiểm archive: version 1.0.0 (3) cho cả app + widget, 0 chuỗi chế độ xem trước, ký team 929P8F77XX. `xcodebuild -exportArchive` → "Upload succeeded". **Lần upload sau phải tăng `CURRENT_PROJECT_VERSION` lên 4.**
+
+### 7/10/2026 — iOS: cấu trúc lại UI + trộn từ kho (branch `feat/mobile-restructure`, xếp TRÊN `feat/ios-feature-parity`, CHƯA commit/push)
+
+| Việc | Ghi chú |
+|---|---|
+| 5 tab, bỏ Trang chủ | **Dịch** (tab đầu, kiểu Google Dịch) · **Từ vựng** (Đã lưu / Kho theo chủ đề) · **Ôn tập** (Quiz / Sổ tay) · **Luyện nói** (Alex / Vòng quay — phiên chat giữ khi chuyển) · **Cá nhân** (chuỗi ngày học + cài đặt) |
+| Widget trộn từ kho | `WordMix` (Shared/Widget): chống trùng (chuẩn hoá chữ), 2 từ của bạn : 1 từ kho, mỗi vòng xáo thứ tự khác (hạt giống = số vòng), không lặp ở chỗ nối vòng, kho lớn không át từ của bạn. Lô kho đổi mỗi ngày/khi đổi trình độ (`BankWords`, đọc thẳng bảng `words` qua Supabase). Bật/tắt: Widget → "Trộn từ mới từ kho" |
+| Email trộn từ kho (web) | `selectBankWords` + `pickBankWords`: +1 từ kho mỗi email, bỏ từ người dùng đã dịch, bỏ từ kho đã gửi trong 60 ngày; nhãn "📚 Từ mới từ kho". Cả email thử |
+| Logo/app icon | Nền xanh phẳng một màu `#6BCA03` (bỏ mép sáng + nhiễu); bỏ khung gradient quanh logo ở màn đăng nhập/splash |
+
+**Kiểm chứng:** iOS 100/100 test, build simulator OK, ảnh chụp 5 tab + widget settings đã soát. Web 283/283, `next build` sạch, eslint sạch.
+**Phát hiện:** production KHÔNG có cột `words.def_vi` → từ kho hiện **định nghĩa tiếng Anh** (`def_en`). Đây cũng là gốc lỗi quiz 500 (PR #4 chọn `def_vi`).
+**Chưa kiểm:** email thật chưa gửi (cần deploy web); widget thật trên màn hình khoá.
+**Chờ chủ dự án:** muốn nghĩa tiếng Việt cho từ kho → cần migration thêm `words.def_vi` + điền dữ liệu.
+
 ### 7/10/2026 — iOS ĐÃ UPLOAD 1.0.0 (build 2) lên App Store Connect
 
 Archive Release từ `feat/ios-feature-parity` (các tính năng mang từ web sang + giao diện mới + 8 lỗi review đã sửa). 84/84 test, không có code chế độ xem trước trong bản Release, có Sign in with Apple + App Group + widget. PR #2/#3/#4 đã merge + deploy production cùng ngày (kiểm: quiz 200, cache TTS ra `r2`, /api/classes 200). Google login đã chạy trên app (chủ dự án cấu hình Supabase).
