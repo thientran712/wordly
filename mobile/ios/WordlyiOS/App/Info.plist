@@ -24,6 +24,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>wordly</string>
+				<string>$(WORDLY_BUNDLE_ID)</string>
 			</array>
 		</dict>
 	</array>

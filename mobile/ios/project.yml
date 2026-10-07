@@ -51,8 +51,9 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         NSMicrophoneUsageDescription: "Wordly cần mic để luyện nói với Alex — giáo viên AI của bạn."
         NSSpeechRecognitionUsageDescription: "Wordly dùng nhận dạng giọng nói để chuyển lời nói của bạn thành văn bản khi luyện nói với Alex."
+        # com.thientran.wordly://login-callback — Google OAuth (Supabase) quay về app
         CFBundleURLTypes:
-          - CFBundleURLSchemes: [wordly]
+          - CFBundleURLSchemes: [wordly, $(WORDLY_BUNDLE_ID)]
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
         UILaunchScreen: {}
@@ -66,6 +67,9 @@ targets:
       properties:
         com.apple.security.application-groups:
           - $(WORDLY_APP_GROUP)
+        # Sign in with Apple (bắt buộc khi có đăng nhập Google — App Store 4.8)
+        com.apple.developer.applesignin:
+          - Default
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(WORDLY_BUNDLE_ID)

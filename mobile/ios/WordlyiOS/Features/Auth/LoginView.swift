@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 struct LoginView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -9,6 +10,9 @@ struct LoginView: View {
     @State private var showSignup = false
     @State private var showForgotPassword = false
     @State private var showPassword = false
+    @State private var socialLoading = false
+    /// Nonce gốc của lần Sign in with Apple đang chạy (Apple nhận bản băm)
+    @State private var appleNonce = ""
     @FocusState private var focusedField: Field?
 
     enum Field { case email, password }
@@ -164,6 +168,56 @@ struct LoginView: View {
                                     .padding(.horizontal, 8)
                                 Rectangle().fill(WordlyColors.divider(scheme: scheme)).frame(height: 1)
                             }
+
+                            // Đăng nhập Google (giống web) + Apple (bắt buộc khi có Google — App Store 4.8)
+                            Button {
+                                Task {
+                                    socialLoading = true
+                                    await authManager.signInWithGoogle()
+                                    socialLoading = false
+                                }
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Text("G")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .foregroundStyle(LinearGradient(colors: [Color(hex: "#4285F4"), Color(hex: "#EA4335"), Color(hex: "#FBBC05"), Color(hex: "#34A853")],
+                                                                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    Text("Tiếp tục với Google")
+                                        .font(WordlyFonts.body(16, weight: .semibold))
+                                        .foregroundStyle(Color(hex: "#1F1F1F"))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 15)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(hex: "#DADCE0"), lineWidth: 1))
+                            }
+                            .disabled(socialLoading)
+
+                            SignInWithAppleButton(.continue) { request in
+                                appleNonce = SocialAuth.randomNonce()
+                                request.requestedScopes = [.fullName, .email]
+                                request.nonce = SocialAuth.sha256(appleNonce)
+                            } onCompletion: { result in
+                                switch result {
+                                case .success(let auth):
+                                    guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else { return }
+                                    let token = credential.identityToken.flatMap { String(data: $0, encoding: .utf8) }
+                                    let name = [credential.fullName?.givenName, credential.fullName?.familyName]
+                                        .compactMap { $0 }.joined(separator: " ")
+                                    Task {
+                                        socialLoading = true
+                                        await authManager.signInWithApple(idToken: token, rawNonce: appleNonce, fullName: name)
+                                        socialLoading = false
+                                    }
+                                case .failure(let error):
+                                    authManager.authError = SocialAuth.userMessage(for: error)
+                                }
+                            }
+                            .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
+                            .frame(height: 52)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .disabled(socialLoading)
 
                             // Signup button
                             Button {
