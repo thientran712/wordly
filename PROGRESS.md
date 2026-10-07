@@ -9,7 +9,12 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
-### 7/10/2026 — Sự cố mất dữ liệu + xoá mềm (branch `fix/soft-delete-history`, CHƯA commit, migration CHƯA chạy)
+### 7/10/2026 — Xoá mềm ĐÃ LÊN production + iOS 1.0.0 (build 6) ĐÃ UPLOAD
+
+Migration `20261007000100_soft_delete_history` đã chạy production qua `supabase db query --linked` (kiểm: 2 cột + 2 index có mặt, 106 từ đã lưu nguyên vẹn) → PR #8 merge (`3a036b9`), Vercel Production `success` → build 6 archive từ main, 1.0.0 (6) app + widget, "Upload succeeded". **Lần upload sau: build 7.**
+**Chưa kiểm bằng tài khoản thật:** "Xoá hết" + Hoàn tác trên production (middleware trả 401 cho mọi route khi chưa đăng nhập nên không kiểm từ ngoài được).
+
+### 7/10/2026 — Sự cố mất dữ liệu + xoá mềm (chi tiết)
 
 **Sự cố:** tài khoản huythien7122@gmail.com bấm nhầm "Xoá hết" (~19h 7/10) → API xoá CỨNG toàn bộ `translate_history` kể cả từ đã lưu. Project gói Free: `pitr_enabled: false`, `backups: []` (kiểm qua `supabase backups list`) → không khôi phục từ backup được.
 **Đã cứu:** 106 từ đã lưu + nghĩa, bóc từ ~200 email nhắc học trong Gmail (khớp 100% nhật ký `email_log`, bỏ từ test ngày 7/6) → đã INSERT lại production (87 dòng giữ id gốc). **Mất hẳn:** lịch sử chưa lưu, từ lưu sau 25/8 (email dừng từ đó), toàn bộ sổ tay.
@@ -28,7 +33,7 @@
 ### 7/10/2026 — iOS 1.0.0 (build 5) ĐÃ UPLOAD — sửa bàn phím khó tắt
 
 Chạm ra ngoài ô nhập ở mọi màn → đóng bàn phím (`Shared/Components/KeyboardDismiss.swift`, gắn lên cửa sổ, không chặn chạm); vuốt cuộn kéo bàn phím xuống; chat Alex giữ bàn phím sau khi gửi. Thêm target **UI test** `WordlyiOSUITests` (chế độ xem trước, không cần đăng nhập).
-**Kiểm chứng:** 103/103 unit + 3/3 UI test; tắt bản sửa → 2 UI test "chạm ngoài thì đóng" fail (đã kiểm). Archive 1.0.0 (5) app + widget, 0 chuỗi xem trước → "Upload succeeded". **Lần upload sau: build 6.**
+**Kiểm chứng:** 103/103 unit + 3/3 UI test; tắt bản sửa → 2 UI test "chạm ngoài thì đóng" fail (đã kiểm). Archive 1.0.0 (5) app + widget, 0 chuỗi xem trước → "Upload succeeded". (đã thay bằng build 6)
 **Chưa kiểm trên máy:** màn đăng nhập, màn lớp học (cùng cơ chế toàn app).
 
 ### 7/10/2026 — iOS 1.0.0 (build 4) ĐÃ UPLOAD lên App Store Connect
