@@ -9,6 +9,11 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
+### 7/10/2026 — iOS ĐÃ UPLOAD 1.0.0 (build 2) lên App Store Connect
+
+Archive Release từ `feat/ios-feature-parity` (các tính năng mang từ web sang + giao diện mới + 8 lỗi review đã sửa). 84/84 test, không có code chế độ xem trước trong bản Release, có Sign in with Apple + App Group + widget. PR #2/#3/#4 đã merge + deploy production cùng ngày (kiểm: quiz 200, cache TTS ra `r2`, /api/classes 200). Google login đã chạy trên app (chủ dự án cấu hình Supabase).
+**Lần upload sau phải tăng `CURRENT_PROJECT_VERSION` lên 3.**
+
 ### 7/10/2026 — iOS: mang tính năng web sang + giao diện mới (branch `feat/ios-feature-parity`, CHƯA push, CHƯA build TestFlight)
 
 | Tính năng | Ghi chú |
