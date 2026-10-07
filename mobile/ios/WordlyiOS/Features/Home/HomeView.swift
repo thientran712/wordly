@@ -60,6 +60,21 @@ struct HomeView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    if vm.hasClasses {
+                        NavigationLink { ClassesListContent() } label: {
+                            HStack(spacing: 14) {
+                                IconTile(systemImage: "graduationcap.fill", color: WordlyColors.duoBlue, size: 44)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Lớp của tôi").font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                                    Text("Bài giảng, bài tập, bài nói từ trung tâm").font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").foregroundStyle(WordlyColors.inkGhost)
+                            }
+                            .wordlyCard(padding: 14)
+                        }
+                        .buttonStyle(.plain)
+                    }
                     if !vm.savedWords.isEmpty { savedWordsSection }
                 }
                 .padding(16)

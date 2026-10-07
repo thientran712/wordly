@@ -1,291 +1,152 @@
 import SwiftUI
 
+// Hồ sơ & cài đặt — gom các mục của web (/profile, /profile/email) + cài đặt
+// riêng của app (widget màn hình khoá, giao diện).
 struct ProfileView: View {
+    @StateObject private var vm = ProfileViewModel()
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var themeManager: ThemeManager
-    @StateObject private var vm = ProfileViewModel()
-    @Environment(\.colorScheme) var scheme
     @AppStorage("wordly-theme") private var savedTheme: String = "dark"
     @State private var showChangePassword = false
-    @State private var showSignOutConfirm = false
+    @State private var confirmSignOut = false
+    @State private var emailSummary = ""
+
+    private let levels = ["A1", "A2", "B1", "B2", "C1", "C2"]
+    private let goals: [(String, String)] = [
+        ("daily", "💬 Giao tiếp hàng ngày"), ("toeic", "📊 TOEIC"), ("ielts", "🎓 IELTS"),
+        ("business", "💼 Kinh doanh"), ("travel", "✈️ Du lịch"),
+    ]
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                WordlyColors.bg(scheme: scheme).ignoresSafeArea()
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Account card
-                        accountCard
-                        // Personal info card
-                        personalInfoCard
-                        // Learning preferences card
-                        learningPrefsCard
-                        // Appearance card
-                        appearanceCard
-                        // Save button
-                        saveButton
-                        // Sign out
-                        signOutButton
+            Form {
+                Section { accountHeader }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
 
-                        Spacer(minLength: 60)
+                Section {
+                    TextField("Tên của bạn", text: $vm.name)
+                    Picker("Trình độ", selection: $vm.skillLevel) {
+                        ForEach(levels, id: \.self) { Text(VocabCatalog.levelLabels[$0] ?? $0).tag($0) }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 40)
+                    Picker("Mục tiêu", selection: $vm.learningGoal) {
+                        ForEach(goals, id: \.0) { Text($0.1).tag($0.0) }
+                    }
+                    Button {
+                        Task { await vm.save() }
+                    } label: {
+                        HStack {
+                            if vm.isSaving { ProgressView() }
+                            Text(vm.saveSuccess ? "Đã lưu ✓" : "Lưu thay đổi")
+                        }
+                    }
+                    .foregroundStyle(WordlyColors.electric)
+                    .disabled(vm.isSaving)
+                } header: {
+                    Text("Học tập")
+                } footer: {
+                    Text("Alex dùng trình độ và mục tiêu để chọn cách nói chuyện phù hợp với bạn.")
+                }
+
+                Section("Nhắc học") {
+                    NavigationLink { EmailSettingsView() } label: {
+                        settingRow("envelope.fill", WordlyColors.duoBlue, "Email nhắc học", emailSummary)
+                    }
+                    NavigationLink { WidgetSettingsView() } label: {
+                        settingRow("lock.iphone", WordlyColors.electric, "Widget màn hình khoá", "Từ vựng trên màn hình khoá")
+                    }
+                }
+
+                Section("Giao diện") {
+                    Picker("Chế độ", selection: Binding(get: { savedTheme }, set: { new in
+                        savedTheme = new
+                        themeManager.apply(new)
+                    })) {
+                        Label("Tối", systemImage: "moon.fill").tag("dark")
+                        Label("Sáng", systemImage: "sun.max.fill").tag("light")
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("Tài khoản") {
+                    if vm.authProvider == "email" {
+                        Button { showChangePassword = true } label: {
+                            settingRow("key.fill", WordlyColors.duoOrange, "Đổi mật khẩu", nil)
+                        }
+                    }
+                    Button(role: .destructive) { confirmSignOut = true } label: {
+                        settingRow("rectangle.portrait.and.arrow.right", WordlyColors.error, "Đăng xuất", nil)
+                    }
+                }
+
+                Section {
+                    Text("Wordly \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))")
+                        .font(WordlyFonts.body(12))
+                        .foregroundStyle(WordlyColors.inkGhost)
+                        .frame(maxWidth: .infinity)
+                }
+                .listRowBackground(Color.clear)
+            }
+            .scrollContentBackground(.hidden)
+            .screenBackground()
+            .navigationTitle("Hồ sơ")
+            .task {
+                await vm.fetchProfile()
+                if let p = try? await APIClient.shared.fetchEmailPreferences() {
+                    emailSummary = EmailSettingsLogic.summary(p)
+                } else {
+                    emailSummary = "Đang tắt"
                 }
             }
-            .navigationTitle("👤 Hồ sơ")
-            .navigationBarTitleDisplayMode(.large)
-            .task { await vm.fetchProfile() }
             .sheet(isPresented: $showChangePassword) { ChangePasswordView() }
-            .alert("Đăng xuất", isPresented: $showSignOutConfirm) {
-                Button("Huỷ", role: .cancel) {}
+            .confirmationDialog("Đăng xuất khỏi Wordly?", isPresented: $confirmSignOut, titleVisibility: .visible) {
                 Button("Đăng xuất", role: .destructive) { Task { await authManager.signOut() } }
-            } message: {
-                Text("Bạn có chắc muốn đăng xuất?")
+                Button("Huỷ", role: .cancel) {}
             }
         }
     }
 
-    // MARK: - Account card
-    private var accountCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Tài khoản", icon: "envelope.fill")
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Email")
-                    .font(WordlyFonts.body(11, weight: .bold))
-                    .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                    .textCase(.uppercase)
-                    .tracking(1)
-                if vm.isLoading {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(WordlyColors.hoverBG)
-                        .frame(width: 200, height: 20)
-                } else {
-                    HStack(spacing: 8) {
-                        Text(vm.email)
-                            .font(WordlyFonts.body(15, weight: .semibold))
-                            .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                        Text(vm.authProvider)
-                            .font(WordlyFonts.body(10, weight: .bold))
-                            .foregroundStyle(WordlyColors.electric)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 2)
-                            .background(WordlyColors.electricSubtle)
-                            .clipShape(Capsule())
-                    }
-                }
+    private var accountHeader: some View {
+        HStack(spacing: 14) {
+            Text(String((vm.name.isEmpty ? vm.email : vm.name).prefix(1)).uppercased())
+                .font(WordlyFonts.display(26))
+                .foregroundStyle(WordlyColors.onElectric)
+                .frame(width: 60, height: 60)
+                .background(LinearGradient(colors: [WordlyColors.electric, WordlyColors.duoBlue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .clipShape(Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(vm.name.isEmpty ? "Học viên Wordly" : vm.name)
+                    .font(WordlyFonts.body(18, weight: .bold))
+                    .foregroundStyle(WordlyColors.ink)
+                Text(vm.email).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft)
+                Badge(text: providerLabel, color: WordlyColors.duoBlue)
             }
+            Spacer()
+        }
+        .padding(.vertical, 8)
+    }
 
-            if !vm.isLoading && vm.authProvider == "email" {
-                Button {
-                    showChangePassword = true
-                } label: {
-                    Label("Đổi mật khẩu", systemImage: "key.fill")
-                        .font(WordlyFonts.body(14, weight: .semibold))
-                        .foregroundStyle(WordlyColors.electric)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(WordlyColors.electricSubtle)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(WordlyColors.electricBorder, lineWidth: 1.5))
+    private var providerLabel: String {
+        switch vm.authProvider {
+        case "google": return "Đăng nhập bằng Google"
+        case "apple": return "Đăng nhập bằng Apple"
+        default: return "Đăng nhập bằng email"
+        }
+    }
+
+    private func settingRow(_ icon: String, _ color: Color, _ title: String, _ subtitle: String?) -> some View {
+        HStack(spacing: 12) {
+            IconTile(systemImage: icon, color: color, size: 32)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(WordlyFonts.body(15, weight: .medium)).foregroundStyle(icon.hasPrefix("rectangle.portrait") ? WordlyColors.error : WordlyColors.ink)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
                 }
             }
         }
-        .wordlyCard()
-    }
-
-    // MARK: - Personal info card
-    private var personalInfoCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Thông tin cá nhân", icon: "person.fill")
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Tên của bạn")
-                    .font(WordlyFonts.body(13, weight: .bold))
-                    .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                if vm.isLoading {
-                    RoundedRectangle(cornerRadius: 12).fill(WordlyColors.hoverBG).frame(height: 48)
-                } else {
-                    TextField("Nguyễn Văn A", text: $vm.name)
-                        .font(WordlyFonts.body(15))
-                        .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                        .wordlyInputStyle()
-                }
-            }
-        }
-        .wordlyCard()
-    }
-
-    // MARK: - Learning preferences
-    private var learningPrefsCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            sectionTitle("Tùy chọn học tập", icon: "target")
-
-            // Skill level
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Trình độ tiếng Anh", systemImage: "book.fill")
-                    .font(WordlyFonts.body(13, weight: .bold))
-                    .foregroundStyle(WordlyColors.ink(scheme: scheme))
-
-                if vm.isLoading {
-                    HStack(spacing: 8) {
-                        ForEach(0..<6, id: \.self) { _ in
-                            RoundedRectangle(cornerRadius: 10).fill(WordlyColors.hoverBG)
-                                .frame(height: 36).frame(maxWidth: .infinity)
-                        }
-                    }
-                } else {
-                    HStack(spacing: 8) {
-                        ForEach(["A1", "A2", "B1", "B2", "C1", "C2"], id: \.self) { level in
-                            let selected = vm.skillLevel == level
-                            Button { vm.skillLevel = level } label: {
-                                Text(level)
-                                    .font(WordlyFonts.body(13, weight: .bold))
-                                    .foregroundStyle(selected ? WordlyColors.onElectric : WordlyColors.inkSoft(scheme: scheme))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 36)
-                                    .background(selected ? WordlyColors.electric : WordlyColors.hoverBG)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? .clear : WordlyColors.divider(scheme: scheme), lineWidth: 1.5))
-                                    .shadow(color: selected ? WordlyColors.electric.opacity(0.3) : .clear, radius: 4, y: 2)
-                                    .scaleEffect(selected ? 1.05 : 1)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Learning goal
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Mục tiêu học tập", systemImage: "trophy.fill")
-                    .font(WordlyFonts.body(13, weight: .bold))
-                    .foregroundStyle(WordlyColors.ink(scheme: scheme))
-
-                let goals: [(String, String)] = [
-                    ("daily", "💬 Giao tiếp hàng ngày"),
-                    ("toeic", "📊 TOEIC"),
-                    ("ielts", "🎓 IELTS"),
-                    ("business", "💼 Kinh doanh"),
-                    ("travel", "✈️ Du lịch"),
-                ]
-
-                if vm.isLoading {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                        ForEach(0..<4, id: \.self) { _ in
-                            RoundedRectangle(cornerRadius: 10).fill(WordlyColors.hoverBG).frame(height: 36)
-                        }
-                    }
-                } else {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                        ForEach(goals, id: \.0) { value, label in
-                            let selected = vm.learningGoal == value
-                            Button { vm.learningGoal = value } label: {
-                                Text(label)
-                                    .font(WordlyFonts.body(12, weight: .bold))
-                                    .foregroundStyle(selected ? WordlyColors.onElectric : WordlyColors.inkSoft(scheme: scheme))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 36)
-                                    .background(selected ? WordlyColors.electric : WordlyColors.hoverBG)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? .clear : WordlyColors.divider(scheme: scheme), lineWidth: 1.5))
-                                    .scaleEffect(selected ? 1.02 : 1)
-                                    .shadow(color: selected ? WordlyColors.electric.opacity(0.3) : .clear, radius: 4, y: 2)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        .wordlyCard()
-    }
-
-    // MARK: - Appearance card
-    private var appearanceCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Giao diện", icon: "paintbrush.fill")
-            HStack {
-                Text("Chế độ màu")
-                    .font(WordlyFonts.body(14, weight: .semibold))
-                    .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                Spacer()
-                HStack(spacing: 0) {
-                    themeButton(icon: "moon.fill", label: "Tối", value: "dark")
-                    themeButton(icon: "sun.max.fill", label: "Sáng", value: "light")
-                }
-                .background(WordlyColors.hoverBG)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            }
-        }
-        .wordlyCard()
-    }
-
-    private func themeButton(icon: String, label: String, value: String) -> some View {
-        let selected = savedTheme == value
-        return Button {
-            savedTheme = value
-            themeManager.apply(value)
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: icon).font(WordlyFonts.body(12))
-                Text(label).font(WordlyFonts.body(13, weight: .semibold))
-            }
-            .foregroundStyle(selected ? WordlyColors.onElectric : WordlyColors.inkSoft(scheme: scheme))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(selected ? WordlyColors.electric : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 9))
-        }
-    }
-
-    // MARK: - Save button
-    private var saveButton: some View {
-        Button {
-            Task { await vm.save() }
-        } label: {
-            HStack(spacing: 8) {
-                if vm.isSaving {
-                    ProgressView().tint(WordlyColors.onElectric).scaleEffect(0.8)
-                } else if vm.saveSuccess {
-                    Image(systemName: "checkmark")
-                }
-                Text(vm.isSaving ? "Đang lưu..." : vm.saveSuccess ? "Đã lưu!" : "💾 Lưu thay đổi")
-                    .font(WordlyFonts.body(16, weight: .bold))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(vm.saveSuccess ? WordlyColors.electricSubtle : WordlyColors.electric)
-            .foregroundStyle(vm.saveSuccess ? WordlyColors.electric : WordlyColors.onElectric)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(vm.saveSuccess ? WordlyColors.electricBorder : .clear, lineWidth: 1.5))
-            .shadow(color: vm.saveSuccess ? .clear : WordlyColors.electric.opacity(0.3), radius: 8, y: 4)
-        }
-        .disabled(vm.isSaving || vm.isLoading)
-    }
-
-    // MARK: - Sign out
-    private var signOutButton: some View {
-        Button { showSignOutConfirm = true } label: {
-            Label("Đăng xuất", systemImage: "rectangle.portrait.and.arrow.right")
-                .font(WordlyFonts.body(15, weight: .semibold))
-                .foregroundStyle(WordlyColors.error)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(WordlyColors.errorSoft)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
-    }
-
-    private func sectionTitle(_ text: String, icon: String) -> some View {
-        Label(text, systemImage: icon)
-            .font(WordlyFonts.body(18, weight: .bold))
-            .foregroundStyle(WordlyColors.ink(scheme: scheme))
     }
 }
 
-// MARK: - Change Password
 struct ChangePasswordView: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.colorScheme) var scheme

@@ -55,6 +55,7 @@ struct SplashView: View {
 
 struct MainTabView: View {
     @EnvironmentObject private var router: AppRouter
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -70,14 +71,14 @@ struct MainTabView: View {
                 .tabItem { Label("Luyện nói", systemImage: "mic.fill") }
                 .tag(AppRouter.Tab.speak)
 
-            ClassesView()
-                .tabItem { Label("Lớp học", systemImage: "graduationcap.fill") }
-                .tag(AppRouter.Tab.classes)
-
             ProfileView()
                 .tabItem { Label("Hồ sơ", systemImage: "person.crop.circle.fill") }
                 .tag(AppRouter.Tab.profile)
         }
         .tint(WordlyColors.electric)
+        // Mỗi lần mở app → cập nhật từ cho widget màn hình khoá
+        .task(id: scenePhase) {
+            if scenePhase == .active { await WidgetSync.refresh() }
+        }
     }
 }

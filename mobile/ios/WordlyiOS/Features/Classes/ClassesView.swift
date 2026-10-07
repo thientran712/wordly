@@ -29,52 +29,51 @@ final class ClassesViewModel: ObservableObject {
     }
 }
 
-struct ClassesView: View {
+/// Danh sách lớp — được push từ Trang chủ (không tự bọc NavigationStack).
+struct ClassesListContent: View {
     @StateObject private var vm = ClassesViewModel()
     @State private var showJoin = false
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LoadableView(state: vm.state, retry: { Task { await vm.load() } }) { groups in
-                    let all = groups.flatMap(\.classes)
-                    if all.isEmpty {
-                        EmptyStateView(systemImage: "graduationcap.fill",
-                                       title: "Bạn chưa tham gia lớp nào",
-                                       message: "Nhập mã lớp giáo viên gửi để vào lớp, xem bài giảng, làm bài tập và bài nói.",
-                                       actionTitle: "Nhập mã lớp") { showJoin = true }
-                            .padding(.top, 40)
-                    } else {
-                        VStack(alignment: .leading, spacing: 20) {
-                            ForEach(groups.filter { !$0.classes.isEmpty }) { group in
-                                VStack(alignment: .leading, spacing: 10) {
-                                    SectionHeader(title: group.org.name)
-                                    ForEach(group.classes) { klass in
-                                        NavigationLink { ClassDetailView(klass: klass) } label: {
-                                            ClassCard(klass: klass)
-                                        }
-                                        .buttonStyle(.plain)
+        ScrollView {
+            LoadableView(state: vm.state, retry: { Task { await vm.load() } }) { groups in
+                let all = groups.flatMap(\.classes)
+                if all.isEmpty {
+                    EmptyStateView(systemImage: "graduationcap.fill",
+                                   title: "Bạn chưa tham gia lớp nào",
+                                   message: "Nhập mã lớp giáo viên gửi để vào lớp, xem bài giảng, làm bài tập và bài nói.",
+                                   actionTitle: "Nhập mã lớp") { showJoin = true }
+                        .padding(.top, 40)
+                } else {
+                    VStack(alignment: .leading, spacing: 20) {
+                        ForEach(groups.filter { !$0.classes.isEmpty }) { group in
+                            VStack(alignment: .leading, spacing: 10) {
+                                SectionHeader(title: group.org.name)
+                                ForEach(group.classes) { klass in
+                                    NavigationLink { ClassDetailView(klass: klass) } label: {
+                                        ClassCard(klass: klass)
                                     }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         }
-                        .padding(16)
                     }
+                    .padding(16)
                 }
             }
-            .screenBackground()
-            .navigationTitle("Lớp của tôi")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showJoin = true } label: { Label("Nhập mã lớp", systemImage: "plus.circle.fill") }
-                }
+        }
+        .screenBackground()
+        .navigationTitle("Lớp của tôi")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showJoin = true } label: { Label("Nhập mã lớp", systemImage: "plus.circle.fill") }
             }
-            .task { await vm.load() }
-            .refreshable { await vm.load() }
-            .sheet(isPresented: $showJoin) {
-                JoinClassSheet { await vm.load() }
-                    .presentationDetents([.medium])
-            }
+        }
+        .task { await vm.load() }
+        .refreshable { await vm.load() }
+        .sheet(isPresented: $showJoin) {
+            JoinClassSheet { await vm.load() }
+                .presentationDetents([.medium])
         }
     }
 }

@@ -101,8 +101,9 @@ targets:
         excludes:
           - Info.plist
           - "*.entitlements"
-      # Dùng chung bảng màu + font với app
+      # Dùng chung bảng màu + font + lịch hiển thị widget với app
       - path: WordlyiOS/Shared/Theme/DesignSystem.swift
+      - path: WordlyiOS/Shared/Widget/WidgetSchedule.swift
       - path: WordlyiOS/Resources/Fonts
         buildPhase: resources
       - path: WordlyiOS/Resources/Brand.xcassets

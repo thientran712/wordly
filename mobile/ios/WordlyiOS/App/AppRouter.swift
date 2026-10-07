@@ -5,7 +5,8 @@ import SwiftUI
 @MainActor
 final class AppRouter: ObservableObject {
     enum Tab: String, Hashable {
-        case home, translate, speak, classes, profile
+        // Lớp học (trung tâm) tạm ẩn khỏi thanh tab — vào từ Trang chủ khi có lớp
+        case home, translate, speak, profile
     }
 
     @Published var selectedTab: Tab = AppRouter.startTab

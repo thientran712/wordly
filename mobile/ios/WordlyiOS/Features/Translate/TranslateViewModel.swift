@@ -206,6 +206,7 @@ final class TranslateViewModel: ObservableObject {
             autoLogTask?.cancel()
             historyVersion += 1
             toast = "Đã lưu “\(source)” — sẽ có trong quiz và widget"
+            Task { await WidgetSync.refresh() }
         } catch {
             saved = false
             toast = "Không lưu được, thử lại nhé"
