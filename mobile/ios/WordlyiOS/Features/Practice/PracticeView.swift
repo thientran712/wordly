@@ -1,15 +1,17 @@
 import SwiftUI
 
 struct PracticeView: View {
-    @StateObject private var vm = PracticeViewModel()
+    /// Do SpeakHubView giữ → phiên chat còn nguyên khi chuyển sang Vòng quay rồi quay lại
+    @ObservedObject var vm: PracticeViewModel
     @EnvironmentObject private var router: AppRouter
     @Environment(\.colorScheme) var scheme
     @State private var scrollProxy: ScrollViewProxy?
     @State private var textInput = ""
     @FocusState private var textFocused: Bool
 
+    // Nằm trong NavigationStack của SpeakHubView
     var body: some View {
-        NavigationStack {
+        Group {
             ZStack {
                 // Nền giống các tab khác (trước đây thiếu → hệ thống tô đen tuyền)
                 WordlyColors.bg(scheme: scheme).ignoresSafeArea()

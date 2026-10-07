@@ -3,8 +3,8 @@ import Foundation
 import SwiftUI
 
 // Chế độ xem trước giao diện — CHỈ có trong bản Debug (không vào TestFlight).
-// Chạy app với launch argument `-WordlyUIPreview <tab>` (translate | journal |
-// practice | profile): bỏ qua đăng nhập, mọi lời gọi web API trả dữ liệu mẫu.
+// Chạy app với launch argument `-WordlyUIPreview <tab>` (translate | vocab |
+// review | speak | profile): bỏ qua đăng nhập, mọi lời gọi web API trả dữ liệu mẫu.
 // Dùng để chụp màn hình kiểm giao diện mà không cần tài khoản thật.
 enum PreviewMode {
     static let flag = "-WordlyUIPreview"
@@ -82,10 +82,10 @@ enum PreviewMode {
 
     private static let history = #"""
     {"hasMore": false, "history": [
-      {"id": "h1", "source_text": "ephemeral", "translated_text": "thoáng qua, không bền", "direction": "EN→VI", "saved_at": "2026-10-06T08:15:02.123456+00:00"},
-      {"id": "h2", "source_text": "resilient", "translated_text": "kiên cường, mau phục hồi", "direction": "EN→VI", "saved_at": "2026-10-06T02:40:10.5+00:00"},
+      {"id": "h1", "is_saved": true, "source_text": "ephemeral", "translated_text": "thoáng qua, không bền", "direction": "EN→VI", "saved_at": "2026-10-06T08:15:02.123456+00:00"},
+      {"id": "h2", "is_saved": true, "source_text": "resilient", "translated_text": "kiên cường, mau phục hồi", "direction": "EN→VI", "saved_at": "2026-10-06T02:40:10.5+00:00"},
       {"id": "h3", "source_text": "cơ hội", "translated_text": "opportunity", "direction": "VI→EN", "saved_at": "2026-10-05T14:05:00+00:00"},
-      {"id": "h4", "source_text": "meticulous", "translated_text": "tỉ mỉ, kỹ lưỡng", "direction": "EN→VI", "saved_at": "2026-10-03T11:30:00.000001+00:00"}
+      {"id": "h4", "is_saved": true, "source_text": "meticulous", "translated_text": "tỉ mỉ, kỹ lưỡng", "direction": "EN→VI", "saved_at": "2026-10-03T11:30:00.000001+00:00"}
     ]}
     """#
 

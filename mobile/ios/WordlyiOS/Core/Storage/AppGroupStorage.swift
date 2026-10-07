@@ -7,6 +7,9 @@ final class AppGroupStorage {
     static let shared = AppGroupStorage()
     static let wordsKey = "wordly.widget.items"
     static let settingsKey = "wordly.widget.settings"
+    static let bankKey = "wordly.widget.bank"
+    private static let bankFetchedAtKey = "wordly.widget.bank.fetchedAt"
+    private static let bankLevelKey = "wordly.widget.bank.level"
 
     private let defaults: UserDefaults?
 
@@ -37,9 +40,25 @@ final class AppGroupStorage {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Từ kho trộn vào widget (lô của ngày).
+    var bank: [WidgetWordItem] {
+        guard let data = defaults?.data(forKey: Self.bankKey) else { return [] }
+        return (try? JSONDecoder().decode([WidgetWordItem].self, from: data)) ?? []
+    }
+    var bankFetchedAt: Date? { defaults?.object(forKey: Self.bankFetchedAtKey) as? Date }
+    var bankLevel: String? { defaults?.string(forKey: Self.bankLevelKey) }
+
+    func saveBank(_ words: [WidgetWordItem], level: String?, at date: Date = Date()) {
+        defaults?.set(try? JSONEncoder().encode(words), forKey: Self.bankKey)
+        defaults?.set(date, forKey: Self.bankFetchedAtKey)
+        defaults?.set(level, forKey: Self.bankLevelKey)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     /// Đăng xuất: xoá từ vựng (riêng tư) của tài khoản khỏi màn hình khoá.
     func clearWords() {
         defaults?.removeObject(forKey: Self.wordsKey)
+        defaults?.removeObject(forKey: Self.bankFetchedAtKey)
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -81,5 +100,15 @@ enum WidgetSync {
         // không còn từ của tài khoản trước trên màn hình khoá
         guard fetchedAny else { return }
         AppGroupStorage.shared.saveWords(AppGroupStorage.items(from: all))
+        await refreshBank()
+    }
+
+    /// Lô từ kho mới mỗi ngày, hoặc khi đổi trình độ (`force` khi vừa sửa hồ sơ).
+    static func refreshBank(force: Bool = false) async {
+        let store = AppGroupStorage.shared
+        let skill = try? await APIClient.shared.fetchProfile().profile?.skillLevel
+        guard force || BankWords.needsRefresh(fetchedAt: store.bankFetchedAt, level: skill, lastLevel: store.bankLevel) else { return }
+        guard let words = try? await BankWords.fetch(skill: skill), !words.isEmpty else { return }
+        store.saveBank(words, level: skill)
     }
 }

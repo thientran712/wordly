@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Hồ sơ & cài đặt — gom các mục của web (/profile, /profile/email) + cài đặt
+// Tab Cá nhân: chuỗi ngày học + hồ sơ & cài đặt — gom các mục của web (/profile, /profile/email) + cài đặt
 // riêng của app (widget màn hình khoá, giao diện).
 struct ProfileView: View {
     @StateObject private var vm = ProfileViewModel()
@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var showChangePassword = false
     @State private var confirmSignOut = false
     @State private var emailSummary = ""
+    @State private var streak: StreakResponse?
 
     private let levels = ["A1", "A2", "B1", "B2", "C1", "C2"]
     private let goals: [(String, String)] = [
@@ -20,9 +21,13 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section { accountHeader }
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
+                Section {
+                    accountHeader
+                    streakCard
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
 
                 Section {
                     TextField("Tên của bạn", text: $vm.name)
@@ -89,8 +94,9 @@ struct ProfileView: View {
             }
             .scrollContentBackground(.hidden)
             .screenBackground()
-            .navigationTitle("Hồ sơ")
+            .navigationTitle("Cá nhân")
             .task {
+                streak = try? await APIClient.shared.fetchStreak()
                 await vm.fetchProfile()
                 if let p = try? await APIClient.shared.fetchEmailPreferences() {
                     emailSummary = EmailSettingsLogic.summary(p)
@@ -124,6 +130,25 @@ struct ProfileView: View {
             Spacer()
         }
         .padding(.vertical, 8)
+    }
+
+    private var streakCard: some View {
+        HStack(spacing: 14) {
+            Text("🔥").font(.system(size: 34))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(streak?.streak ?? 0) ngày liên tiếp")
+                    .font(WordlyFonts.display(20))
+                    .foregroundStyle(WordlyColors.ink)
+                Text("Tổng \(streak?.totalDays ?? 0) ngày đã học")
+                    .font(WordlyFonts.body(13, weight: .medium))
+                    .foregroundStyle(WordlyColors.inkSoft)
+            }
+            Spacer()
+        }
+        .padding(16)
+        .background(WordlyColors.duoOrange.opacity(0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.bottom, 8)
     }
 
     private var providerLabel: String {
@@ -267,6 +292,8 @@ final class ProfileViewModel: ObservableObject {
                 learningGoal: learningGoal
             )
             saveSuccess = true
+            // Đổi trình độ → widget đổi lô từ kho theo trình độ mới
+            Task { await WidgetSync.refreshBank() }
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             saveSuccess = false
         } catch {}

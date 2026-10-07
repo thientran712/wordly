@@ -36,19 +36,9 @@ struct LoginView: View {
                     VStack(spacing: 32) {
                         // Logo
                         VStack(spacing: 12) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [WordlyColors.electric, WordlyColors.electricDark],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 88, height: 88)
-                                    .shadow(color: WordlyColors.electric.opacity(0.4), radius: 20, y: 8)
-                                WordlyLogo(size: 70.4)
-                            }
+                            // Logo đặt thẳng, không khung gradient → nền xanh liền một màu
+                            WordlyLogo(size: 96)
+                                .shadow(color: WordlyColors.logoGreen.opacity(0.35), radius: 20, y: 8)
                             Text("Wordly")
                                 .font(WordlyFonts.display(48))
                                 .foregroundStyle(

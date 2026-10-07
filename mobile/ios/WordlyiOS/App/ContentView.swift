@@ -31,28 +31,12 @@ struct SplashView: View {
         ZStack {
             Color(WordlyColors.background).ignoresSafeArea()
             VStack(spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                colors: [WordlyColors.electric, WordlyColors.electricDark],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 72, height: 72)
-                        .shadow(color: WordlyColors.electric.opacity(0.4), radius: 16, y: 6)
-                    WordlyLogo(size: 57.6)
-                }
+                // Logo đặt thẳng, không khung gradient → nền xanh liền một màu
+                WordlyLogo(size: 88)
+                    .shadow(color: WordlyColors.logoGreen.opacity(0.35), radius: 16, y: 6)
                 Text("Wordly")
                     .font(WordlyFonts.display(40))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [WordlyColors.electric, WordlyColors.electric],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .foregroundStyle(WordlyColors.electric)
                 ProgressView()
                     .tint(WordlyColors.electric)
                     .padding(.top, 8)
@@ -67,20 +51,24 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
-            HomeView()
-                .tabItem { Label("Trang chủ", systemImage: "house.fill") }
-                .tag(AppRouter.Tab.home)
-
             TranslateView()
-                .tabItem { Label("Dịch", systemImage: "character.book.closed.fill") }
+                .tabItem { Label("Dịch", systemImage: "character.bubble.fill") }
                 .tag(AppRouter.Tab.translate)
 
-            PracticeView()
+            VocabularyHubView()
+                .tabItem { Label("Từ vựng", systemImage: "books.vertical.fill") }
+                .tag(AppRouter.Tab.vocab)
+
+            ReviewHubView()
+                .tabItem { Label("Ôn tập", systemImage: "bolt.fill") }
+                .tag(AppRouter.Tab.review)
+
+            SpeakHubView()
                 .tabItem { Label("Luyện nói", systemImage: "mic.fill") }
                 .tag(AppRouter.Tab.speak)
 
             ProfileView()
-                .tabItem { Label("Hồ sơ", systemImage: "person.crop.circle.fill") }
+                .tabItem { Label("Cá nhân", systemImage: "person.crop.circle.fill") }
                 .tag(AppRouter.Tab.profile)
         }
         .tint(WordlyColors.electric)

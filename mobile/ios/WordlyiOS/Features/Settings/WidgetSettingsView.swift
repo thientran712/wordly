@@ -10,24 +10,31 @@ final class WidgetSettingsViewModel: ObservableObject {
         didSet { AppGroupStorage.shared.settings = settings }
     }
     @Published var words: [WidgetWordItem]
+    @Published var bank: [WidgetWordItem]
     @Published var syncing = false
 
     init() {
         settings = AppGroupStorage.shared.settings
         words = AppGroupStorage.shared.words
+        bank = AppGroupStorage.shared.bank
     }
 
     var preview: WidgetWordItem? {
-        WidgetSchedule.entries(words: words, settings: settings).first { $0.word != nil }?.word
+        WidgetSchedule.entries(words: words, bank: bank, settings: settings).first { $0.word != nil }?.word
             ?? WidgetSchedule.pool(from: words, settings: settings).first
     }
+
+    /// Từ kho thực sự được trộn (đã bỏ từ trùng với từ của bạn)
+    var bankInUse: Int { WidgetSchedule.bankPool(bank, words: words, settings: settings).count }
 
     var allDay: Bool { settings.activeStartMinutes == settings.activeEndMinutes }
 
     func refresh() async {
         syncing = true
         await WidgetSync.refresh()
+        await WidgetSync.refreshBank(force: bank.isEmpty)
         words = AppGroupStorage.shared.words
+        bank = AppGroupStorage.shared.bank
         syncing = false
     }
 
@@ -72,6 +79,15 @@ struct WidgetSettingsView: View {
                     Text("Tự chọn").tag(WidgetSettings.Source.custom)
                 }
                 .pickerStyle(.segmented)
+                Toggle(isOn: $vm.settings.includeBank) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Trộn từ mới từ kho")
+                        Text("Xen kẽ 2 từ của bạn : 1 từ mới theo trình độ")
+                            .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                    }
+                }
+                .tint(WordlyColors.electric)
+                .disabled(vm.settings.source == .custom)
             } header: {
                 Text("Nguồn từ")
             } footer: {
@@ -120,7 +136,7 @@ struct WidgetSettingsView: View {
                 }
                 .foregroundStyle(WordlyColors.electric)
             } footer: {
-                Text("\(vm.words.count) từ đang có trong widget (\(vm.words.filter(\.isSaved).count) từ đã lưu).")
+                Text("\(vm.words.count) từ của bạn (\(vm.words.filter(\.isSaved).count) đã lưu) + \(vm.bankInUse) từ mới từ kho hôm nay. Từ trùng được lọc bỏ; mỗi vòng xáo thứ tự khác nhau.")
             }
 
             Section("Thêm widget vào màn hình khoá") {
@@ -139,9 +155,9 @@ struct WidgetSettingsView: View {
 
     private var sourceFooter: String {
         switch vm.settings.source {
-        case .saved: return "Các từ bạn bấm Lưu khi dịch. Chưa lưu từ nào thì hiện từ gần đây."
+        case .saved: return "Các từ bạn bấm Lưu khi dịch (chưa lưu từ nào thì dùng từ gần đây), trộn thêm từ mới nếu bật."
         case .recent: return "Mọi từ tiếng Anh bạn đã dịch gần đây."
-        case .custom: return "Chỉ những từ bạn chọn bên dưới (\(vm.settings.selectedIds.count) từ)."
+        case .custom: return "Chỉ những từ bạn chọn bên dưới (\(vm.settings.selectedIds.count) từ) — không trộn từ kho."
         }
     }
 
@@ -152,8 +168,8 @@ struct WidgetSettingsView: View {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
-                        Image(systemName: "bookmark.fill").font(.system(size: 10))
-                        Text("Wordly").font(.system(size: 11, weight: .semibold))
+                        Image(systemName: vm.preview?.fromBank == true ? "sparkles" : "bookmark.fill").font(.system(size: 10))
+                        Text(vm.preview?.fromBank == true ? "Từ mới" : "Đã lưu").font(.system(size: 11, weight: .semibold))
                     }
                     .opacity(0.7)
                     Text(vm.preview?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold))

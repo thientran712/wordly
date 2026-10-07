@@ -8,6 +8,7 @@ import SwiftUI
 private let appGroup = Bundle.main.object(forInfoDictionaryKey: "WordlyAppGroup") as? String ?? ""
 private let wordsKey = "wordly.widget.items"
 private let settingsKey = "wordly.widget.settings"
+private let bankKey = "wordly.widget.bank"
 
 struct WordlyEntry: TimelineEntry {
     let date: Date
@@ -26,24 +27,27 @@ struct WordlyProvider: TimelineProvider {
 
     func getSnapshot(in context: Context, completion: @escaping (WordlyEntry) -> Void) {
         let settings = loadSettings()
-        let first = WidgetSchedule.pool(from: loadWords(), settings: settings).first
+        let first = WidgetSchedule.entries(words: loadWords(), bank: loadWords(bankKey), settings: settings)
+            .first { $0.word != nil }?.word
         completion(WordlyEntry(date: Date(), word: first ?? Self.sample, showMeaning: settings.showMeaning, resting: false))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WordlyEntry>) -> Void) {
         let settings = loadSettings()
         let words = loadWords()
+        let bank = loadWords(bankKey)
         let hasWords = !WidgetSchedule.pool(from: words, settings: settings).isEmpty
-        let entries = WidgetSchedule.entries(words: words, settings: settings).map {
+            || !WidgetSchedule.bankPool(bank, words: words, settings: settings).isEmpty
+        let schedule = WidgetSchedule.entries(words: words, bank: bank, settings: settings)
+        let entries = schedule.map {
             WordlyEntry(date: $0.date, word: $0.word, showMeaning: settings.showMeaning, resting: hasWords && $0.word == nil)
         }
         // Hết lịch thì xin lịch mới (app cũng gọi reload khi dữ liệu đổi)
-        let schedule = WidgetSchedule.entries(words: words, settings: settings)
         completion(Timeline(entries: entries, policy: .after(WidgetSchedule.reloadDate(entries: schedule))))
     }
 
-    private func loadWords() -> [WidgetWordItem] {
-        guard let data = UserDefaults(suiteName: appGroup)?.data(forKey: wordsKey) else { return [] }
+    private func loadWords(_ key: String = wordsKey) -> [WidgetWordItem] {
+        guard let data = UserDefaults(suiteName: appGroup)?.data(forKey: key) else { return [] }
         return (try? JSONDecoder().decode([WidgetWordItem].self, from: data)) ?? []
     }
 
@@ -64,7 +68,7 @@ struct WordlyWidget: Widget {
                 .containerBackground(for: .widget) { WidgetBackground() }
         }
         .configurationDisplayName("Wordly — Từ vựng")
-        .description("Hiện từ bạn đã lưu trên màn hình khoá và màn hình chính. Chỉnh nguồn từ, giờ hiển thị trong app: Hồ sơ → Widget.")
+        .description("Từ bạn đã lưu xen kẽ từ mới trong kho, trên màn hình khoá và màn hình chính. Chỉnh trong app: Cá nhân → Widget.")
         .supportedFamilies([.accessoryRectangular, .accessoryCircular, .accessoryInline, .systemSmall, .systemMedium])
     }
 }
@@ -106,9 +110,9 @@ struct LockRectangular: View {
         if let w = entry.word {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
-                    Image(systemName: w.isSaved ? "bookmark.fill" : "character.book.closed.fill")
+                    Image(systemName: w.symbol)
                         .font(.system(size: 10, weight: .bold))
-                    Text("Wordly").font(.system(size: 11, weight: .semibold))
+                    Text(w.tag).font(.system(size: 11, weight: .semibold))
                 }
                 .opacity(0.7)
                 Text(w.word)
@@ -135,7 +139,7 @@ struct LockCircular: View {
             AccessoryWidgetBackground()
             if let w = entry.word {
                 VStack(spacing: 0) {
-                    Image(systemName: "character.book.closed.fill").font(.system(size: 10))
+                    Image(systemName: w.symbol).font(.system(size: 10))
                     Text(w.word)
                         .font(.system(size: 12, weight: .bold))
                         .lineLimit(2)
@@ -155,7 +159,7 @@ struct LockInline: View {
     let entry: WordlyEntry
     var body: some View {
         if let w = entry.word {
-            Text(entry.showMeaning ? "📖 \(w.word) — \(w.meaning)" : "📖 \(w.word)")
+            Text(entry.showMeaning ? "\(w.fromBank ? "✨" : "📖") \(w.word) — \(w.meaning)" : "\(w.fromBank ? "✨" : "📖") \(w.word)")
         } else {
             Text(entry.resting ? "🌙 Wordly nghỉ ngơi" : "📖 Mở Wordly để lưu từ")
         }
@@ -186,8 +190,9 @@ struct HomeSmall: View {
                 Image("Logo").resizable().frame(width: 18, height: 18).clipShape(RoundedRectangle(cornerRadius: 5))
                 Text("Wordly").font(WordlyFonts.body(11, weight: .bold)).foregroundStyle(WordlyColors.electric)
                 Spacer()
-                if entry.word?.isSaved == true {
-                    Image(systemName: "bookmark.fill").font(.system(size: 10)).foregroundStyle(WordlyColors.duoOrange)
+                if let w = entry.word {
+                    Image(systemName: w.symbol).font(.system(size: 10))
+                        .foregroundStyle(w.fromBank ? WordlyColors.duoBlue : WordlyColors.duoOrange)
                 }
             }
             Spacer(minLength: 0)
@@ -218,7 +223,9 @@ struct HomeMedium: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Image("Logo").resizable().frame(width: 20, height: 20).clipShape(RoundedRectangle(cornerRadius: 5))
-                    Text("Từ vựng hôm nay").font(WordlyFonts.body(12, weight: .bold)).foregroundStyle(WordlyColors.electric)
+                    Text(entry.word.map { $0.fromBank ? "Từ mới từ kho" : "Từ của bạn" } ?? "Từ vựng hôm nay")
+                        .font(WordlyFonts.body(12, weight: .bold))
+                        .foregroundStyle(entry.word?.fromBank == true ? WordlyColors.duoBlue : WordlyColors.electric)
                 }
                 Spacer(minLength: 0)
                 if let w = entry.word {
@@ -241,4 +248,10 @@ struct HomeMedium: View {
             Spacer(minLength: 0)
         }
     }
+}
+
+// Phân biệt từ của bạn và từ mới từ kho ngay trên widget
+private extension WidgetWordItem {
+    var symbol: String { fromBank ? "sparkles" : (isSaved ? "bookmark.fill" : "clock.arrow.circlepath") }
+    var tag: String { fromBank ? "Từ mới" : (isSaved ? "Đã lưu" : "Gần đây") }
 }
