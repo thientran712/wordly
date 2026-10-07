@@ -14,8 +14,11 @@ struct WordlyApp: App {
                 .environmentObject(themeManager)
                 .environmentObject(router)
                 .preferredColorScheme(themeManager.colorScheme)
+                // Vuốt cuộn ở mọi màn kéo bàn phím xuống
+                .scrollDismissesKeyboard(.interactively)
                 .onAppear {
                     themeManager.apply(savedTheme)
+                    KeyboardDismiss.install()
                 }
         }
     }
