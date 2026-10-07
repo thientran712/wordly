@@ -128,6 +128,9 @@ struct PracticeView: View {
         guard !text.isEmpty, !vm.isThinking else { return }
         textInput = ""
         Task { await vm.sendMessage(text) }
+        // Chạm nút Gửi cũng là "chạm ngoài ô nhập" (KeyboardDismiss) → mở lại bàn
+        // phím để nhắn tiếp như app nhắn tin
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { textFocused = true }
     }
 
     // MARK: - Alex Avatar

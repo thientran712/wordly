@@ -13,7 +13,7 @@ settings:
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Automatic
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "4"
+    CURRENT_PROJECT_VERSION: "5"
 packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
@@ -86,6 +86,7 @@ targets:
     scheme:
       testTargets:
         - WordlyiOSTests
+        - WordlyiOSUITests
   WordlyiOSTests:
     type: bundle.unit-test
     platform: iOS
@@ -100,6 +101,19 @@ targets:
         # App có PRODUCT_NAME = Wordly, không phải tên target
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/Wordly.app/Wordly
         BUNDLE_LOADER: $(TEST_HOST)
+  # UI test — chạy app ở chế độ xem trước (Debug), máy tự chạm/gõ để kiểm hành vi
+  WordlyiOSUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: WordlyiOSUITests
+    dependencies:
+      - target: WordlyiOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(WORDLY_BUNDLE_ID).uitests
+        TEST_TARGET_NAME: WordlyiOS
   WordlyWidget:
     type: app-extension
     platform: iOS

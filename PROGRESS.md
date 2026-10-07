@@ -9,9 +9,15 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
+### 7/10/2026 — iOS 1.0.0 (build 5) ĐÃ UPLOAD — sửa bàn phím khó tắt
+
+Chạm ra ngoài ô nhập ở mọi màn → đóng bàn phím (`Shared/Components/KeyboardDismiss.swift`, gắn lên cửa sổ, không chặn chạm); vuốt cuộn kéo bàn phím xuống; chat Alex giữ bàn phím sau khi gửi. Thêm target **UI test** `WordlyiOSUITests` (chế độ xem trước, không cần đăng nhập).
+**Kiểm chứng:** 103/103 unit + 3/3 UI test; tắt bản sửa → 2 UI test "chạm ngoài thì đóng" fail (đã kiểm). Archive 1.0.0 (5) app + widget, 0 chuỗi xem trước → "Upload succeeded". **Lần upload sau: build 6.**
+**Chưa kiểm trên máy:** màn đăng nhập, màn lớp học (cùng cơ chế toàn app).
+
 ### 7/10/2026 — iOS 1.0.0 (build 4) ĐÃ UPLOAD lên App Store Connect
 
-Archive từ `main` sau khi merge PR #5 (`d3d01b4`): code iOS giống build 3, cộng các bản sửa web của PR #2/#3/#4 đã lên production. 100/100 test iOS, archive 1.0.0 (4) cho cả app + widget, 0 chuỗi chế độ xem trước → "Upload succeeded". **Lần upload sau phải tăng `CURRENT_PROJECT_VERSION` lên 5.**
+Archive từ `main` sau khi merge PR #5 (`d3d01b4`): code iOS giống build 3, cộng các bản sửa web của PR #2/#3/#4 đã lên production. 100/100 test iOS, archive 1.0.0 (4) cho cả app + widget, 0 chuỗi chế độ xem trước → "Upload succeeded". (đã thay bằng build 5)
 
 ### 7/10/2026 — iOS 1.0.0 (build 3) ĐÃ UPLOAD lên App Store Connect
 
