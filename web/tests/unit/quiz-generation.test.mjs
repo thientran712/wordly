@@ -10,6 +10,7 @@ import {
   buildQuizQuestions,
   pickDistractors,
   QUIZ_MODES,
+  bankWordToQuizWord,
 } from "../../src/lib/learning/quiz-generation.js";
 
 const words = [
@@ -145,5 +146,30 @@ describe("buildQuizQuestions", () => {
     assert.ok(Array.isArray(QUIZ_MODES));
     assert.ok(QUIZ_MODES.includes("en_to_vi"));
     assert.ok(QUIZ_MODES.includes("vi_to_en"));
+  });
+});
+
+// ── Kho từ (bảng words) ──────────────────────────────────────────────────
+// LỖI THẬT (6/10/2026): /api/quiz đọc cột words.def_vi — KHÔNG tồn tại (bảng
+// chỉ có def_en). Người có < 4 từ đã lưu (gần như mọi người mới) bị 500
+// "Không tải được từ vựng" trên cả web lẫn iOS. Kho từ dùng nghĩa tiếng Anh.
+
+describe("bankWordToQuizWord", () => {
+  test("dùng def_en làm nghĩa (bảng words không có def_vi)", () => {
+    const w = bankWordToQuizWord({ id: "w1", word: "Advice", def_en: "an opinion about what somebody should do", level: "A1" });
+    assert.deepEqual(w, { id: "w1", word: "Advice", def_vi: "an opinion about what somebody should do", level: "A1" });
+  });
+
+  test("thiếu def_en hoặc word → null (bị loại)", () => {
+    assert.equal(bankWordToQuizWord({ id: "w1", word: "x", def_en: "" }), null);
+    assert.equal(bankWordToQuizWord({ id: "w1", word: "", def_en: "y" }), null);
+    assert.equal(bankWordToQuizWord(null), null);
+  });
+
+  test("từ kho tạo được câu hỏi quiz en_to_vi", () => {
+    const rows = ["a", "b", "c", "d", "e"].map((x, i) => ({ id: `w${i}`, word: x, def_en: `meaning ${x}`, level: "A1" }));
+    const qs = buildQuizQuestions(rows.map(bankWordToQuizWord), { count: 3, mode: "en_to_vi" });
+    assert.equal(qs.length, 3);
+    for (const q of qs) assert.equal(q.options.length, 4);
   });
 });

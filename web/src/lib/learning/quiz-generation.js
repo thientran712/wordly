@@ -128,3 +128,17 @@ export function scoreQuiz(questions, answers) {
     details,
   };
 }
+
+/**
+ * Chuyển một dòng bảng `words` (kho từ chung) thành từ dùng cho quiz.
+ * Bảng words KHÔNG có nghĩa tiếng Việt (chỉ def_en) — trước đây route đọc
+ * cột def_vi không tồn tại nên quiz trả 500 cho mọi người có < 4 từ đã lưu.
+ * Kho từ dùng nghĩa tiếng Anh; từ người dùng tự lưu vẫn dùng nghĩa tiếng Việt.
+ * Trả null nếu thiếu từ hoặc nghĩa (bị loại khỏi pool).
+ */
+export function bankWordToQuizWord(row) {
+  const word = (row?.word || "").trim();
+  const meaning = (row?.def_en || "").trim();
+  if (!row?.id || !word || !meaning) return null;
+  return { id: row.id, word, def_vi: meaning, level: row.level ?? null };
+}
