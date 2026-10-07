@@ -164,12 +164,14 @@ export async function selectEmailContent(supabase, userId, { lastEntryIds = [] }
       .eq("user_id", userId)
       .eq("direction", "EN→VI")
       .eq("is_saved", true) // only words the user explicitly saved — not every auto-logged translation
+      .is("deleted_at", null)
       .or(`state.eq.new,due_at.lte.${nowIso}`)
       .limit(200),
     supabase
       .from("journal_entries")
       .select(JOURNAL_FIELDS)
       .eq("user_id", userId)
+      .is("deleted_at", null)
       .or(`state.eq.new,due_at.lte.${nowIso}`)
       .limit(200),
   ]);

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserFast } from "@/lib/auth/get-user-fast";
+import { clearAllTargets } from "@/lib/learning/history-delete";
 
 export async function POST(request) {
   const user = await getUserFast();
@@ -55,6 +56,7 @@ export async function PATCH(request) {
     .eq("source_text", trimmedSource)
     .eq("direction", direction)
     .eq("is_saved", false)
+    .is("deleted_at", null)
     .order("saved_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -99,6 +101,7 @@ export async function GET(request) {
     .from("translate_history")
     .select("id, source_text, translated_text, direction, saved_at, is_saved")
     .eq("user_id", user.id)
+    .is("deleted_at", null)
     .order("saved_at", { ascending: false })
     .range(offset, offset + limit);
 
@@ -106,19 +109,40 @@ export async function GET(request) {
   return Response.json({ history: (data || []).slice(0, limit), hasMore });
 }
 
+// Xoá mềm: chỉ đánh dấu deleted_at (hoàn tác qua POST /api/translate-history/restore).
+// Trả về `ids` đã xoá để client hiện nút "Hoàn tác".
+//   ?id=…  → xoá một dòng (kể cả từ đã lưu — người dùng chủ động xoá từng dòng)
+//   không id → "Xoá hết": chỉ xoá dòng CHƯA lưu, từ đã lưu luôn được giữ
 export async function DELETE(request) {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-
   const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  let ids;
   if (id) {
-    await admin.from("translate_history").delete().eq("id", id).eq("user_id", user.id);
+    ids = [id];
   } else {
-    // clear all
-    await admin.from("translate_history").delete().eq("user_id", user.id);
+    const { data, error } = await admin
+      .from("translate_history")
+      .select("id, is_saved, deleted_at")
+      .eq("user_id", user.id)
+      .eq("is_saved", false)
+      .is("deleted_at", null);
+    if (error) return Response.json({ error: error.message }, { status: 500 });
+    ids = clearAllTargets(data);
   }
-  return Response.json({ success: true });
+
+  for (let i = 0; i < ids.length; i += 500) {
+    const { error } = await admin
+      .from("translate_history")
+      .update({ deleted_at: now })
+      .eq("user_id", user.id)
+      .in("id", ids.slice(i, i + 500));
+    if (error) return Response.json({ error: error.message }, { status: 500 });
+  }
+  return Response.json({ success: true, ids });
 }

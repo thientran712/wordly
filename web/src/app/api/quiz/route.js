@@ -46,6 +46,7 @@ export async function GET(request) {
       .eq("user_id", user.id)
       .eq("direction", "EN→VI")
       .eq("is_saved", true)
+      .is("deleted_at", null)
       .order("saved_at", { ascending: false })
       .limit(count * POOL_MULTIPLIER);
 

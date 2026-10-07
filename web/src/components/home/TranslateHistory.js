@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { History, Trash2, X, Volume2, ChevronDown, Loader2, BookmarkCheck } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { History, Trash2, X, Volume2, ChevronDown, Loader2, BookmarkCheck, Undo2 } from "lucide-react";
+import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
 
 async function speak(text, lang = "en-US") {
   try {
@@ -57,6 +59,9 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
   const [offset, setOffset] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  // Thanh "Hoàn tác" sau khi xoá — xoá là xoá mềm, ids lấy từ API
+  const [undo, setUndo] = useState(null); // { label, ids, snapshot }
+  const undoTimer = useRef(null);
 
   const fetchHistory = useCallback(async () => {
     if (!isLoggedIn) return;
@@ -111,23 +116,51 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
 
   useEffect(() => { fetchHistory(); }, [fetchHistory, refreshToken]);
 
-  if (!isLoggedIn || (groups.length === 0 && !isLoading)) return null;
+  // Còn thanh "Hoàn tác" thì vẫn hiện, kể cả khi vừa xoá sạch danh sách
+  if (!isLoggedIn || (groups.length === 0 && !isLoading && !undo)) return null;
+
+  const showUndo = (label, ids, snapshot) => {
+    clearTimeout(undoTimer.current);
+    setUndo({ label, ids, snapshot });
+    undoTimer.current = setTimeout(() => setUndo(null), 6000);
+  };
+
+  const removeWhere = (pred) =>
+    setGroups(prev => prev.map(g => ({ ...g, entries: g.entries.filter(e => !pred(e)) }))
+      .filter(g => g.entries.length > 0));
 
   const handleDelete = async (id) => {
-    setGroups(prev => {
-      const next = prev.map(g => ({ ...g, entries: g.entries.filter(e => e.id !== id) }))
-        .filter(g => g.entries.length > 0);
-      return next;
-    });
-    fetch(`/api/translate-history?id=${id}`, { method: "DELETE" }).catch(() => null);
+    const snapshot = groups;
+    removeWhere(e => e.id === id);
+    const res = await fetch(`/api/translate-history?id=${id}`, { method: "DELETE" }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (data?.ids?.length) showUndo("Đã xoá 1 mục", data.ids, snapshot);
   };
 
+  // "Xoá hết" chỉ xoá mục CHƯA lưu — từ đã lưu luôn được giữ (server cũng làm vậy)
   const handleClear = async () => {
-    if (!confirmClear) { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); return; }
-    setGroups([]);
     setConfirmClear(false);
-    fetch("/api/translate-history", { method: "DELETE" }).catch(() => null);
+    const snapshot = groups;
+    removeWhere(e => !e.is_saved);
+    const res = await fetch("/api/translate-history", { method: "DELETE" }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (data?.ids?.length) showUndo(`Đã xoá ${data.ids.length} mục`, data.ids, snapshot);
   };
+
+  const handleUndo = async () => {
+    if (!undo) return;
+    clearTimeout(undoTimer.current);
+    setGroups(undo.snapshot);
+    const ids = undo.ids;
+    setUndo(null);
+    await fetch("/api/translate-history/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    }).catch(() => null);
+  };
+
+  const unsavedCount = groups.reduce((s, g) => s + g.entries.filter(e => !e.is_saved).length, 0);
 
   const totalCount = groups.reduce((s, g) => s + g.entries.length, 0);
 
@@ -156,15 +189,6 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
             {totalCount}
           </span>
         )}
-        <button
-          onMouseDown={e => e.preventDefault()}
-          onClick={e => { e.stopPropagation(); handleClear(); }}
-          className="no-min-h flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg active:scale-95 transition-all ml-1"
-          style={{ color: confirmClear ? "var(--error)" : "var(--ink-soft)", background: confirmClear ? "var(--error-soft)" : "var(--hover-bg)" }}
-        >
-          <Trash2 size={11} />
-          {confirmClear ? "Chắc chắn?" : "Xoá hết"}
-        </button>
         <ChevronDown
           size={14}
           className="flex-shrink-0 transition-transform duration-200 ml-1"
@@ -208,7 +232,50 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
               </button>
             </div>
           )}
+
+          {/* "Xoá hết" ở cuối danh sách — trước đây nằm sát mũi tên thu gọn, hay bị bấm nhầm */}
+          {unsavedCount > 0 && (
+            <div className="px-4 py-3 flex justify-end" style={{ borderTop: "1px solid var(--divider)" }}>
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="no-min-h flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                style={{ color: "var(--error)", background: "var(--error-soft)" }}
+              >
+                <Trash2 size={12} /> Xoá lịch sử chưa lưu
+              </button>
+            </div>
+          )}
         </div>
+      )}
+
+      {undo && (
+        <div
+          className="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold"
+          style={{ borderTop: "1px solid var(--divider)", background: "var(--hover-bg)", color: "var(--ink)" }}
+        >
+          <span className="flex-1">{undo.label}</span>
+          <button
+            onClick={handleUndo}
+            className="no-min-h flex items-center gap-1 px-2.5 py-1 rounded-lg"
+            style={{ color: "var(--electric)", background: "var(--green-subtle)" }}
+          >
+            <Undo2 size={12} /> Hoàn tác
+          </button>
+        </div>
+      )}
+
+      {confirmClear && (
+        <Modal onClose={() => setConfirmClear(false)}>
+          <h3 className="font-bold text-lg mb-2" style={{ color: "var(--ink)" }}>Xoá lịch sử dịch?</h3>
+          <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
+            Xoá {unsavedCount} mục chưa lưu. Các từ bạn đã bấm <b>Lưu</b> sẽ được giữ lại
+            (vẫn có trong quiz, email và widget). Bạn có thể hoàn tác ngay sau khi xoá.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="secondary" onClick={() => setConfirmClear(false)}>Huỷ</Button>
+            <Button variant="danger" onClick={handleClear}>Xoá</Button>
+          </div>
+        </Modal>
       )}
     </div>
   );
