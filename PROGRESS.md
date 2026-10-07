@@ -9,9 +9,13 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
+### 7/10/2026 — iOS 1.0.0 (build 4) ĐÃ UPLOAD lên App Store Connect
+
+Archive từ `main` sau khi merge PR #5 (`d3d01b4`): code iOS giống build 3, cộng các bản sửa web của PR #2/#3/#4 đã lên production. 100/100 test iOS, archive 1.0.0 (4) cho cả app + widget, 0 chuỗi chế độ xem trước → "Upload succeeded". **Lần upload sau phải tăng `CURRENT_PROJECT_VERSION` lên 5.**
+
 ### 7/10/2026 — iOS 1.0.0 (build 3) ĐÃ UPLOAD lên App Store Connect
 
-Archive Release từ `feat/mobile-restructure` (UI 5 tab + trộn từ kho + icon phẳng, mục dưới). Kiểm archive: version 1.0.0 (3) cho cả app + widget, 0 chuỗi chế độ xem trước, ký team 929P8F77XX. `xcodebuild -exportArchive` → "Upload succeeded". **Lần upload sau phải tăng `CURRENT_PROJECT_VERSION` lên 4.**
+Archive Release từ `feat/mobile-restructure` (UI 5 tab + trộn từ kho + icon phẳng, mục dưới). Kiểm archive: version 1.0.0 (3) cho cả app + widget, 0 chuỗi chế độ xem trước, ký team 929P8F77XX. `xcodebuild -exportArchive` → "Upload succeeded". (đã thay bằng build 4)
 
 ### 7/10/2026 — iOS: cấu trúc lại UI + trộn từ kho (branch `feat/mobile-restructure`, xếp TRÊN `feat/ios-feature-parity`, CHƯA commit/push)
 
