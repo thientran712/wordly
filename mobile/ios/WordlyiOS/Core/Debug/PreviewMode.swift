@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import SwiftUI
 
 // Chế độ xem trước giao diện — CHỈ có trong bản Debug (không vào TestFlight).
 // Chạy app với launch argument `-WordlyUIPreview <tab>` (translate | journal |
@@ -10,6 +11,12 @@ enum PreviewMode {
 
     static var isOn: Bool { isEnabled(in: CommandLine.arguments) }
     static var initialTab: String? { initialTab(from: CommandLine.arguments) }
+    /// `-WordlyUIPreviewScreen <tên>` → mở thẳng một màn bị push sâu (quiz, vocab…)
+    static var screen: String? {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "-WordlyUIPreviewScreen"), i + 1 < args.count else { return nil }
+        return args[i + 1]
+    }
 
     static func isEnabled(in arguments: [String]) -> Bool { arguments.contains(flag) }
 
@@ -100,5 +107,22 @@ enum PreviewMode {
     {"profile": {"id": "u1", "name": "Thiên", "skill_level": "B1", "learning_goal": "ielts", "timezone": "Asia/Ho_Chi_Minh"},
      "email": "preview@wordly.app", "auth_provider": "email"}
     """#
+}
+
+/// Màn mở thẳng khi chụp ảnh kiểm giao diện (chỉ bản Debug).
+enum PreviewScreens {
+    @MainActor @ViewBuilder
+    static func view(for name: String) -> some View {
+        switch name {
+        case "quiz": QuizView()
+        case "vocab": TopicVocabularyView()
+        case "spinner": SpeakSpinnerView()
+        case "journal": JournalView()
+        case "email": EmailSettingsView()
+        case "widget": WidgetSettingsView()
+        case "classes": ClassesListContent()
+        default: Text("Không có màn \(name)")
+        }
+    }
 }
 #endif

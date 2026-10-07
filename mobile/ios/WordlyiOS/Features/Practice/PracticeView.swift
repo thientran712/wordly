@@ -31,6 +31,10 @@ struct PracticeView: View {
                                     alexAvatar
                                         .padding(.top, 24)
 
+                                    if vm.messages.isEmpty && vm.sessionState == .idle {
+                                        idleIntro
+                                    }
+
                                     // Messages
                                     ForEach(vm.messages) { msg in
                                         MessageBubble(message: msg)
@@ -125,6 +129,31 @@ struct PracticeView: View {
     }
 
     // MARK: - Alex Avatar
+    /// Màn chờ: giải thích cách luyện + lối tắt sang vòng quay chủ đề.
+    private var idleIntro: some View {
+        VStack(spacing: 12) {
+            Text("Nói chuyện tiếng Anh với Alex bằng giọng nói hoặc gõ chữ. Alex sửa lỗi nhẹ nhàng và gợi ý từ hay.")
+                .font(WordlyFonts.body(14))
+                .foregroundStyle(WordlyColors.inkSoft)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            NavigationLink { SpeakSpinnerView() } label: {
+                HStack(spacing: 12) {
+                    IconTile(systemImage: "dice.fill", color: WordlyColors.error, size: 40)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Chưa biết nói gì?").font(WordlyFonts.body(15, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                        Text("Quay câu hỏi IELTS, phỏng vấn, deep talk").font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(WordlyColors.inkGhost)
+                }
+                .wordlyCard(padding: 14)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+        }
+    }
+
     private var alexAvatar: some View {
         VStack(spacing: 10) {
             ZStack {

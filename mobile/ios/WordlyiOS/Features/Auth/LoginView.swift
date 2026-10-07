@@ -215,6 +215,8 @@ struct LoginView: View {
                                 }
                             }
                             .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
+                            // Kiểu nút chỉ được đọc khi tạo → tạo lại khi đổi sáng/tối
+                            .id(scheme)
                             .frame(height: 52)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                             .disabled(socialLoading)

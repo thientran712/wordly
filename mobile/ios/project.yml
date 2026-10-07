@@ -35,6 +35,9 @@ targets:
         CFBundleDisplayName: Wordly
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # App tiếng Việt → nút hệ thống (Sign in with Apple, DatePicker…) hiện tiếng Việt
+        CFBundleDevelopmentRegion: vi
+        CFBundleLocalizations: [vi]
         # Cấu hình từ Config/*.xcconfig — đọc qua WordlyConfig
         WordlyWebBaseURL: $(WORDLY_WEB_BASE_URL)
         WordlySupabaseURL: $(WORDLY_SUPABASE_URL)

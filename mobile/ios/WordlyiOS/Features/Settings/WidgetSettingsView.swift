@@ -148,6 +148,7 @@ struct WidgetSettingsView: View {
     private var preview: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("XEM TRƯỚC").font(WordlyFonts.body(11, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
+                .padding(.leading, 12)
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
@@ -170,6 +171,7 @@ struct WidgetSettingsView: View {
             .clipShape(RoundedRectangle(cornerRadius: 22))
         }
         .padding(.vertical, 8)
+        .padding(.horizontal, 4)
     }
 
     private var customPicker: some View {
