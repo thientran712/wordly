@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendDailyWordEmail } from "@/lib/email/send-email";
-import { selectEmailContent } from "@/lib/email/select-word-for-email";
+import { selectEmailContent, selectBankWords } from "@/lib/email/select-word-for-email";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 
 export async function POST() {
@@ -15,7 +15,12 @@ export async function POST() {
     .eq("id", user.id)
     .single();
 
-  const content = await selectEmailContent(admin, user.id);
+  // Same mix as the scheduled email: saved words + one word from the bank
+  const picked = await selectEmailContent(admin, user.id);
+  const bankWords = await selectBankWords(admin, user.id, { count: 1 }).catch(() => []);
+  const content = picked || bankWords.length
+    ? { words: [...(picked?.words || []), ...bankWords], journal: picked?.journal || null }
+    : null;
   if (!content) return Response.json({ error: "Nothing to send — add words to your journal or translate history first" }, { status: 404 });
 
   const result = await sendDailyWordEmail({
