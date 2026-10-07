@@ -111,3 +111,23 @@ export async function getPlaybackUrl(key) {
   const command = new GetObjectCommand({ Bucket: getBucketName(), Key: key });
   return await getSignedUrl(client, command, { expiresIn: 3600 });
 }
+
+/** Đọc toàn bộ object thành Buffer; null nếu không tồn tại. Dùng cho cache TTS. */
+export async function getObjectBytes(key) {
+  const client = getR2Client();
+  try {
+    const result = await client.send(new GetObjectCommand({ Bucket: getBucketName(), Key: key }));
+    return Buffer.from(await result.Body.transformToByteArray());
+  } catch (e) {
+    if (e.name === "NoSuchKey" || e.$metadata?.httpStatusCode === 404) return null;
+    throw e;
+  }
+}
+
+/** Ghi Buffer lên R2 (server-side, không qua signed URL). Dùng cho cache TTS. */
+export async function putObjectBytes(key, bytes, contentType) {
+  const client = getR2Client();
+  await client.send(
+    new PutObjectCommand({ Bucket: getBucketName(), Key: key, Body: bytes, ContentType: contentType })
+  );
+}

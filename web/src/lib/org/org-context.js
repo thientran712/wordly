@@ -9,7 +9,9 @@
 // báo rõ ràng cho người dùng; RLS mới là thứ thực sự chặn ở tầng database.
 
 import { headers } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, currentBearerToken } from "@/lib/supabase/server";
+import { getClaimsSafely } from "@/lib/auth/safe-get-claims";
+import { userOrgsFromClaims } from "@/lib/org/user-orgs";
 
 export const ORG_ROLES = ["owner", "teacher", "student", "parent"];
 const STAFF_ROLES = ["owner", "teacher"];
@@ -20,13 +22,10 @@ const STAFF_ROLES = ["owner", "teacher"];
  */
 export async function getUserOrgs() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-  if (error || !data?.claims) return {};
-
-  const orgs = data.claims.user_orgs;
-  // Phòng trường hợp hook chưa được cấu hình hoặc claim sai kiểu
-  if (!orgs || typeof orgs !== "object" || Array.isArray(orgs)) return {};
-  return orgs;
+  // App iOS gửi Bearer, không có cookie → phải truyền token, nếu không
+  // getClaims() đọc cookie (trống) và học viên iOS bị 404 ở mọi API lớp học.
+  const bearerToken = await currentBearerToken();
+  return userOrgsFromClaims(await getClaimsSafely(supabase.auth, bearerToken ?? undefined));
 }
 
 /** Vai trò của user trong một org cụ thể, hoặc null nếu không thuộc org đó. */
