@@ -74,6 +74,45 @@ final class AuthManager: ObservableObject {
         }
     }
 
+    // MARK: - Google (OAuth qua Supabase, giống web)
+    /// Mở cửa sổ đăng nhập Google (ASWebAuthenticationSession), Supabase trả về app
+    /// qua SocialAuth.redirectURL. Người dùng tự đóng cửa sổ → không báo lỗi.
+    func signInWithGoogle() async {
+        authError = nil
+        do {
+            let session = try await supabase.auth.signInWithOAuth(
+                provider: .google,
+                redirectTo: SocialAuth.redirectURL()
+            )
+            currentUser = session.user
+            isAuthenticated = true
+        } catch {
+            authError = SocialAuth.userMessage(for: error)
+        }
+    }
+
+    // MARK: - Apple (Sign in with Apple native → id token cho Supabase)
+    func signInWithApple(idToken: String?, rawNonce: String, fullName: String?) async {
+        authError = nil
+        guard let idToken else {
+            authError = SocialAuth.userMessage(for: SocialAuth.Failure.missingToken)
+            return
+        }
+        do {
+            let session = try await supabase.auth.signInWithIdToken(
+                credentials: OpenIDConnectCredentials(provider: .apple, idToken: idToken, nonce: rawNonce)
+            )
+            currentUser = session.user
+            isAuthenticated = true
+            // Apple chỉ gửi tên ở lần đăng nhập đầu tiên → lưu ngay vào hồ sơ
+            if let fullName, !fullName.isEmpty {
+                _ = try? await APIClient.shared.updateProfile(name: fullName, skillLevel: nil, learningGoal: nil)
+            }
+        } catch {
+            authError = SocialAuth.userMessage(for: error)
+        }
+    }
+
     // MARK: - Sign Up
     func signUp(email: String, password: String, name: String? = nil) async throws {
         authError = nil
@@ -94,6 +133,7 @@ final class AuthManager: ObservableObject {
     // MARK: - Sign Out
     func signOut() async {
         try? await supabase.auth.signOut()
+        AppGroupStorage.shared.clearWords()
         currentUser = nil
         isAuthenticated = false
     }

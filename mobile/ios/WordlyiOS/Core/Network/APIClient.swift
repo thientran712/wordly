@@ -49,7 +49,7 @@ enum APIError: LocalizedError {
 final class APIClient: ObservableObject {
     static let shared = APIClient()
 
-    private let session: URLSession
+    let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
@@ -72,7 +72,7 @@ final class APIClient: ObservableObject {
     }
 
     // MARK: - Generic request
-    private func request<T: Decodable>(
+    func request<T: Decodable>(
         path: String,
         method: String = "GET",
         body: Encodable? = nil,
@@ -261,12 +261,12 @@ final class APIClient: ObservableObject {
         return s
     }
 
-    func createSession(title: String, messages: [ChatMessage]) async throws -> PracticeSession {
+    func createSession(title: String, messages: [ChatMessage], wordId: String? = nil) async throws -> PracticeSession {
         struct Resp: Decodable { let session: PracticeSession? }
         let resp = try await request(
             path: "/api/practice/sessions",
             method: "POST",
-            body: CreateSessionRequest(title: title, messages: messages),
+            body: CreateSessionRequest(title: title, messages: messages, wordId: wordId),
             responseType: Resp.self
         )
         guard let s = resp.session else { throw APIError.noData }
@@ -291,11 +291,11 @@ final class APIClient: ObservableObject {
     // MARK: - Practice Chat
     // Web trả về luồng text thuần (text/plain, stream từng đoạn), KHÔNG phải
     // JSON {reply}. Ở đây đọc trọn luồng rồi trả cả câu trả lời.
-    func sendPracticeMessage(messages: [ChatMessage], vocabularyContext: Bool = true) async throws -> String {
+    func sendPracticeMessage(messages: [ChatMessage], vocabularyContext: Bool = true, word: String? = nil) async throws -> String {
         let data = try await rawRequest(
             path: "/api/practice",
             method: "POST",
-            body: PracticeRequest(messages: messages, vocabularyContext: vocabularyContext)
+            body: PracticeRequest(messages: messages, vocabularyContext: vocabularyContext, word: word)
         )
         let reply = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !reply.isEmpty else { throw APIError.serverError("No reply") }
@@ -323,26 +323,5 @@ final class APIClient: ObservableObject {
         let (data, _) = try await session.data(from: url)
         let words = try decoder.decode([DatamuseWord].self, from: data)
         return words.map(\.word)
-    }
-
-    // MARK: - Free Dictionary
-    func fetchWordDetail(word: String) async throws -> WordDetail? {
-        guard let encoded = word.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              let url = URL(string: "https://api.dictionaryapi.dev/api/v2/entries/en/\(encoded)") else { return nil }
-        let (data, response) = try await session.data(from: url)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
-        let entries = try decoder.decode([DictionaryEntry].self, from: data)
-        guard let entry = entries.first else { return nil }
-
-        let phonetic = entry.phonetic ?? entry.phonetics?.first(where: { $0.text != nil })?.text ?? ""
-        let meanings = (entry.meanings ?? []).prefix(3).map { m in
-            ParsedMeaning(
-                pos: m.partOfSpeech,
-                defs: m.definitions.prefix(3).map { d in
-                    ParsedDef(definition: d.definition, example: d.example ?? "")
-                }
-            )
-        }
-        return WordDetail(word: word, phonetic: phonetic, meanings: Array(meanings))
     }
 }

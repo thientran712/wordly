@@ -8,7 +8,15 @@ struct ContentView: View {
             if authManager.isLoading {
                 SplashView()
             } else if authManager.isAuthenticated {
+                #if DEBUG
+                if let screen = PreviewMode.screen {
+                    NavigationStack { PreviewScreens.view(for: screen) }
+                } else {
+                    MainTabView()
+                }
+                #else
                 MainTabView()
+                #endif
             } else {
                 LoginView()
             }
@@ -23,28 +31,12 @@ struct SplashView: View {
         ZStack {
             Color(WordlyColors.background).ignoresSafeArea()
             VStack(spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                colors: [WordlyColors.electric, WordlyColors.electricDark],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 72, height: 72)
-                        .shadow(color: WordlyColors.electric.opacity(0.4), radius: 16, y: 6)
-                    WordlyLogo(size: 57.6)
-                }
+                // Logo đặt thẳng, không khung gradient → nền xanh liền một màu
+                WordlyLogo(size: 88)
+                    .shadow(color: WordlyColors.logoGreen.opacity(0.35), radius: 16, y: 6)
                 Text("Wordly")
                     .font(WordlyFonts.display(40))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [WordlyColors.electric, WordlyColors.electric],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .foregroundStyle(WordlyColors.electric)
                 ProgressView()
                     .tint(WordlyColors.electric)
                     .padding(.top, 8)
@@ -54,45 +46,35 @@ struct SplashView: View {
 }
 
 struct MainTabView: View {
-    @State private var selectedTab: Tab = Self.startTab
-
-    enum Tab: String {
-        case translate, journal, practice, profile
-    }
-
-    private static var startTab: Tab {
-        #if DEBUG
-        if let name = PreviewMode.initialTab, let tab = Tab(rawValue: name) { return tab }
-        #endif
-        return .translate
-    }
+    @EnvironmentObject private var router: AppRouter
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: $router.selectedTab) {
             TranslateView()
-                .tabItem {
-                    Label("Dịch", systemImage: "translate")
-                }
-                .tag(Tab.translate)
+                .tabItem { Label("Dịch", systemImage: "character.bubble.fill") }
+                .tag(AppRouter.Tab.translate)
 
-            JournalView()
-                .tabItem {
-                    Label("Journal", systemImage: "note.text")
-                }
-                .tag(Tab.journal)
+            VocabularyHubView()
+                .tabItem { Label("Từ vựng", systemImage: "books.vertical.fill") }
+                .tag(AppRouter.Tab.vocab)
 
-            PracticeView()
-                .tabItem {
-                    Label("Luyện nói", systemImage: "mic.fill")
-                }
-                .tag(Tab.practice)
+            ReviewHubView()
+                .tabItem { Label("Ôn tập", systemImage: "bolt.fill") }
+                .tag(AppRouter.Tab.review)
+
+            SpeakHubView()
+                .tabItem { Label("Luyện nói", systemImage: "mic.fill") }
+                .tag(AppRouter.Tab.speak)
 
             ProfileView()
-                .tabItem {
-                    Label("Hồ sơ", systemImage: "person.fill")
-                }
-                .tag(Tab.profile)
+                .tabItem { Label("Cá nhân", systemImage: "person.crop.circle.fill") }
+                .tag(AppRouter.Tab.profile)
         }
         .tint(WordlyColors.electric)
+        // Mỗi lần mở app → cập nhật từ cho widget màn hình khoá
+        .task(id: scenePhase) {
+            if scenePhase == .active { await WidgetSync.refresh() }
+        }
     }
 }

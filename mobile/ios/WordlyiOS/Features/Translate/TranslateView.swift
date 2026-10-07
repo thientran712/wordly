@@ -1,361 +1,343 @@
 import SwiftUI
 
+// Tab đầu tiên — dịch kiểu Google Dịch: thanh ngôn ngữ, ô nhập lớn, thẻ kết quả,
+// rồi từ điển AI + lịch sử (giống web /: InlineTranslate + TranslateHistory).
 struct TranslateView: View {
     @StateObject private var vm = TranslateViewModel()
     @StateObject private var tts = TTSManager.shared
-    @Environment(\.colorScheme) var scheme
+    @EnvironmentObject private var router: AppRouter
     @FocusState private var inputFocused: Bool
-    @State private var showSaveToast = false
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                WordlyColors.bg(scheme: scheme).ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 12) {
-                        // Translate card
-                        VStack(spacing: 0) {
-                            // Language bar
-                            langBar
-                            Divider().foregroundStyle(WordlyColors.divider(scheme: scheme))
-
-                            // Input + output
-                            HStack(alignment: .top, spacing: 0) {
-                                inputPanel
-                                Divider().foregroundStyle(WordlyColors.divider(scheme: scheme))
-                                outputPanel
-                            }
-
-                            // Word definitions
-                            if vm.isDetailLoading || vm.wordDetail != nil {
-                                Divider().foregroundStyle(WordlyColors.divider(scheme: scheme))
-                                wordDefinitions
-                            }
-                        }
-                        .background(WordlyColors.cardBG(scheme: scheme))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(WordlyColors.cardBorder, lineWidth: 1)
-                        )
-
-                        // History (embedded)
-                        HistoryView(isEmbedded: true) { entry in
-                            vm.inputText = entry.sourceText
-                            vm.translatedText = entry.translatedText
-                            vm.direction = entry.direction == "EN→VI" ? .enToVi : .viToEn
-                        }
+            ScrollView {
+                VStack(spacing: 14) {
+                    languageBar
+                    inputCard
+                    if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
+                    if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
+                    dictionarySection
+                    HistoryView(isEmbedded: true) { entry in
+                        vm.load(entry: entry)
+                        inputFocused = false
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 80)
+                    .id(vm.historyVersion)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .screenBackground()
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 8) {
+                        WordlyLogo(size: 26)
+                        Text("Wordly Dịch").font(WordlyFonts.display(18)).foregroundStyle(WordlyColors.ink)
+                    }
                 }
             }
-            .navigationTitle("Wordly")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .toast($vm.toast)
+            .onChange(of: vm.inputText) { _, text in vm.onInputChanged(text) }
         }
-        .overlay(alignment: .bottom) {
-            if showSaveToast {
-                toastView
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .padding(.bottom, 100)
-            }
-        }
-        .animation(.spring(response: 0.3), value: showSaveToast)
     }
 
-    // MARK: - Language bar
-    private var langBar: some View {
-        HStack(spacing: 0) {
-            Text(vm.direction.sourceName)
-                .font(WordlyFonts.body(14, weight: .bold))
-                .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                .frame(maxWidth: .infinity)
-
+    // MARK: Thanh ngôn ngữ
+    private var languageBar: some View {
+        HStack(spacing: 10) {
+            languagePill(vm.direction.sourceName)
             Button {
-                vm.flipDirection()
+                withAnimation(.spring(response: 0.3)) { vm.flipDirection() }
             } label: {
                 Image(systemName: "arrow.left.arrow.right")
-                    .font(WordlyFonts.body(14, weight: .semibold))
-                    .foregroundStyle(WordlyColors.electric)
-                    .frame(width: 36, height: 36)
-                    .background(WordlyColors.electricSubtle)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(WordlyColors.onElectric)
+                    .frame(width: 40, height: 40)
+                    .background(WordlyColors.electric)
                     .clipShape(Circle())
-                    .overlay(Circle().stroke(WordlyColors.electricBorder, lineWidth: 1))
             }
-
-            Text(vm.direction.targetName)
-                .font(WordlyFonts.body(14, weight: .bold))
-                .foregroundStyle(WordlyColors.electric)
-                .frame(maxWidth: .infinity)
+            .accessibilityLabel("Đổi chiều dịch")
+            languagePill(vm.direction.targetName)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.top, 4)
     }
 
-    // MARK: - Input panel
-    private var inputPanel: some View {
-        ZStack(alignment: .topLeading) {
-            VStack(alignment: .leading, spacing: 0) {
-                TextEditor(text: $vm.inputText)
-                    .focused($inputFocused)
-                    .font(WordlyFonts.body(16))
-                    .foregroundStyle(vm.isOverLimit ? WordlyColors.error : WordlyColors.ink(scheme: scheme))
-                    .scrollContentBackground(.hidden)
-                    .background(.clear)
-                    .frame(minHeight: 96)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 12)
-                    .onChange(of: vm.inputText) { _, new in vm.onInputChanged(new) }
-
-                if vm.inputText.isEmpty {
-                    Text(vm.direction == .enToVi ? "Enter text or a word..." : "Nhập văn bản...")
-                        .font(WordlyFonts.body(16))
-                        .foregroundStyle(WordlyColors.inkGhost)
-                        .allowsHitTesting(false)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                }
-
-                // Char counter
-                if vm.inputText.count > Int(Double(vm.charLimit) * 0.8) {
-                    Text("\(vm.inputText.count.formatted()) / \(vm.charLimit.formatted())")
-                        .font(WordlyFonts.body(11, weight: .semibold))
-                        .foregroundStyle(vm.isOverLimit ? WordlyColors.error : WordlyColors.inkGhost)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.horizontal, 12)
-                }
-
-                // Action row
-                actionRow
-            }
+    private func languagePill(_ name: String) -> some View {
+        Text(name)
+            .font(WordlyFonts.body(15, weight: .bold))
+            .foregroundStyle(WordlyColors.ink)
             .frame(maxWidth: .infinity)
-
-            // Suggestions overlay
-            if vm.showSuggestions && !vm.suggestions.isEmpty {
-                suggestionsDropdown
-                    .offset(y: 0)
-                    .zIndex(10)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .onTapGesture { inputFocused = true }
-        .onChange(of: inputFocused) { _, focused in
-            if focused { vm.onFocused() } else { vm.onUnfocused() }
-        }
+            .padding(.vertical, 11)
+            .background(WordlyColors.cardBG)
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(WordlyColors.cardBorder, lineWidth: 1))
     }
 
-    private var actionRow: some View {
-        HStack(spacing: 8) {
-            if !vm.inputText.isEmpty {
-                Button {
-                    Task { await tts.speak(vm.inputText, lang: vm.direction == .enToVi ? "en-US" : "vi-VN") }
-                } label: {
-                    Image(systemName: "speaker.wave.2")
-                        .font(WordlyFonts.body(14))
-                        .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                        .frame(width: 32, height: 32)
-                        .background(WordlyColors.hoverBG)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+    // MARK: Ô nhập
+    private var inputCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ZStack(alignment: .topLeading) {
+                if vm.inputText.isEmpty {
+                    Text(vm.direction == .enToVi ? "Nhập từ hoặc câu tiếng Anh" : "Nhập văn bản tiếng Việt")
+                        .font(WordlyFonts.body(22))
+                        .foregroundStyle(WordlyColors.inkGhost)
+                        .padding(.top, 8)
+                        .padding(.leading, 5)
                 }
+                TextEditor(text: $vm.inputText)
+                    .font(WordlyFonts.body(22, weight: .medium))
+                    .foregroundStyle(WordlyColors.ink)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 130, maxHeight: 220)
+                    .focused($inputFocused)
             }
-            if !vm.translatedText.isEmpty {
-                Button {
-                    Task { await vm.save(); showSaveToast(true) }
-                } label: {
-                    Image(systemName: vm.saved ? "bookmark.fill" : "bookmark")
-                        .font(WordlyFonts.body(14))
-                        .foregroundStyle(vm.saved ? WordlyColors.electric : WordlyColors.inkSoft(scheme: scheme))
-                        .frame(width: 32, height: 32)
-                        .background(vm.saved ? WordlyColors.electricSubtle : WordlyColors.hoverBG)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+            HStack(spacing: 8) {
+                if !vm.inputText.isEmpty {
+                    if vm.direction == .enToVi {
+                        speakChip("US", lang: "en-US", text: vm.inputText)
+                        speakChip("UK", lang: "en-GB", text: vm.inputText)
+                    } else {
+                        speakChip("VI", lang: "vi-VN", text: vm.inputText)
+                    }
+                } else if UIPasteboard.general.hasStrings {
+                    Button {
+                        vm.inputText = UIPasteboard.general.string ?? ""
+                    } label: {
+                        Label("Dán", systemImage: "doc.on.clipboard")
+                            .font(WordlyFonts.body(13, weight: .bold))
+                            .padding(.horizontal, 12).padding(.vertical, 8)
+                            .background(WordlyColors.hoverBG)
+                            .foregroundStyle(WordlyColors.inkSoft)
+                            .clipShape(Capsule())
+                    }
                 }
-            }
-            if vm.isSuggLoading {
-                ProgressView().scaleEffect(0.7).tint(WordlyColors.electric)
-            }
-            Spacer()
-            if !vm.inputText.isEmpty {
-                Button { vm.clear() } label: {
-                    Image(systemName: "xmark")
-                        .font(WordlyFonts.body(12, weight: .semibold))
-                        .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                        .frame(width: 28, height: 28)
-                        .background(WordlyColors.hoverBG)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                Spacer()
+                Text("\(vm.inputText.count)/\(vm.charLimit)")
+                    .font(WordlyFonts.body(11))
+                    .foregroundStyle(vm.isOverLimit ? WordlyColors.error : WordlyColors.inkGhost)
+                    .monospacedDigit()
+                if !vm.inputText.isEmpty {
+                    Button { vm.clear() } label: {
+                        Image(systemName: "xmark.circle.fill").font(.system(size: 20)).foregroundStyle(WordlyColors.inkGhost)
+                    }
+                    .accessibilityLabel("Xoá")
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(14)
+        .background(WordlyColors.cardBG)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .stroke(inputFocused ? WordlyColors.electric : WordlyColors.cardBorder, lineWidth: inputFocused ? 2 : 1))
     }
 
-    private var suggestionsDropdown: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(vm.suggestions.enumerated()), id: \.offset) { idx, word in
-                Button {
-                    vm.pickSuggestion(word)
-                    inputFocused = false
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "magnifyingglass")
-                            .font(WordlyFonts.body(11))
-                            .foregroundStyle(word == vm.inputText.lowercased() ? WordlyColors.electric : WordlyColors.inkGhost)
-                        Text(word)
-                            .font(WordlyFonts.body(14, weight: .medium))
-                            .foregroundStyle(word == vm.inputText.lowercased() ? WordlyColors.electric : WordlyColors.ink(scheme: scheme))
-                        Spacer()
-                        Button {
-                            Task { await tts.speak(word, lang: "en-US") }
-                        } label: {
-                            Image(systemName: "speaker.wave.2")
-                                .font(WordlyFonts.body(12))
-                                .foregroundStyle(WordlyColors.electric.opacity(0.5))
-                                .padding(6)
+    // MARK: Kết quả
+    private var resultCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(vm.direction.targetName.uppercased())
+                .font(WordlyFonts.body(11, weight: .bold))
+                .foregroundStyle(WordlyColors.electric)
+            if vm.isTranslating && vm.translatedText.isEmpty {
+                ProgressView().tint(WordlyColors.electric).frame(maxWidth: .infinity, minHeight: 44)
+            } else {
+                Text(vm.translatedText)
+                    .font(WordlyFonts.body(22, weight: .semibold))
+                    .foregroundStyle(WordlyColors.ink)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 8) {
+                    speakChip("", lang: vm.direction == .enToVi ? "vi-VN" : "en-US", text: vm.translatedText)
+                    Button {
+                        UIPasteboard.general.string = vm.translatedText
+                        vm.toast = "Đã sao chép"
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .frame(width: 34, height: 34)
+                            .background(WordlyColors.cardBG)
+                            .clipShape(Circle())
+                    }
+                    .foregroundStyle(WordlyColors.inkSoft)
+                    .accessibilityLabel("Sao chép")
+                    if vm.canLookUp {
+                        Button { vm.retryLookup() } label: {
+                            Label("Tra nghĩa", systemImage: "book.fill")
+                                .font(WordlyFonts.body(13, weight: .bold))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(WordlyColors.duoBlue.opacity(0.14))
+                                .foregroundStyle(WordlyColors.duoBlue)
+                                .clipShape(Capsule())
                         }
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .frame(minHeight: 44)
-                    .background(WordlyColors.cardBG(scheme: scheme))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                if idx < vm.suggestions.count - 1 {
-                    Divider().padding(.leading, 36)
-                }
-            }
-        }
-        .background(WordlyColors.cardBG(scheme: scheme))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
-        .offset(y: 108) // below input area
-    }
-
-    // MARK: - Output panel
-    private var outputPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Group {
-                if vm.isOverLimit {
-                    Text("⚠️ Văn bản quá dài — tối đa \(vm.charLimit.formatted()) ký tự")
-                        .font(WordlyFonts.body(14, weight: .semibold))
-                        .foregroundStyle(WordlyColors.error)
-                } else if vm.isTranslating {
-                    HStack(spacing: 6) {
-                        ProgressView().scaleEffect(0.75).tint(WordlyColors.electric)
-                        Text("Đang dịch...")
-                            .font(WordlyFonts.body(14))
-                            .foregroundStyle(WordlyColors.electric)
-                    }
-                } else if !vm.translatedText.isEmpty {
-                    Text(vm.translatedText)
-                        .font(WordlyFonts.body(16, weight: .semibold))
-                        .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                        .lineSpacing(4)
-                } else {
-                    Text(vm.inputText.isEmpty ? "Bản dịch sẽ hiện ở đây" : "...")
-                        .font(WordlyFonts.body(14))
-                        .foregroundStyle(WordlyColors.inkGhost)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-
-            // TTS for output
-            if !vm.translatedText.isEmpty {
-                HStack {
-                    Button {
-                        Task { await tts.speak(vm.translatedText, lang: vm.direction == .enToVi ? "vi-VN" : "en-US") }
-                    } label: {
-                        Image(systemName: "speaker.wave.2")
-                            .font(WordlyFonts.body(14))
-                            .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                            .frame(width: 32, height: 32)
-                            .background(WordlyColors.hoverBG)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
                     Spacer()
+                    Button {
+                        Task { await vm.save() }
+                    } label: {
+                        Label(vm.saved ? "Đã lưu" : "Lưu", systemImage: vm.saved ? "bookmark.fill" : "bookmark")
+                            .font(WordlyFonts.body(13, weight: .bold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(vm.saved ? WordlyColors.electric : WordlyColors.cardBG)
+                            .foregroundStyle(vm.saved ? WordlyColors.onElectric : WordlyColors.electric)
+                            .clipShape(Capsule())
+                    }
+                    .disabled(!vm.canSave)
                 }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 10)
-            } else {
-                Spacer()
-                    .frame(height: 42)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 120)
+        .padding(16)
         .background(WordlyColors.electricSubtle)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(WordlyColors.electricBorder, lineWidth: 1))
     }
 
-    // MARK: - Word definitions
-    private var wordDefinitions: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if vm.isDetailLoading {
-                HStack(spacing: 8) {
-                    ProgressView().scaleEffect(0.7).tint(WordlyColors.electric)
-                    Text("Đang tra từ điển...")
-                        .font(WordlyFonts.body(12))
-                        .foregroundStyle(WordlyColors.electric)
+    private func speakChip(_ label: String, lang: String, text: String) -> some View {
+        Button {
+            Task { await tts.speak(text, lang: lang) }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "speaker.wave.2.fill")
+                if !label.isEmpty { Text(label) }
+            }
+            .font(WordlyFonts.body(12, weight: .bold))
+            .padding(.horizontal, label.isEmpty ? 0 : 10)
+            .frame(minWidth: 34, minHeight: 34)
+            .background(WordlyColors.electricSubtle)
+            .foregroundStyle(WordlyColors.electric)
+            .clipShape(Capsule())
+        }
+        .accessibilityLabel("Phát âm \(label)")
+    }
+
+    // MARK: Gợi ý
+    private var suggestionBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(vm.suggestions, id: \.self) { word in
+                    FilterChip(label: word, isSelected: false) { vm.pickSuggestion(word) }
                 }
-                .padding()
-            } else if let detail = vm.wordDetail {
+            }
+        }
+    }
+
+    // MARK: Từ điển AI
+    @ViewBuilder
+    private var dictionarySection: some View {
+        switch vm.dictionary {
+        case .hidden:
+            EmptyView()
+        case .loading:
+            HStack(spacing: 10) {
+                ProgressView().tint(WordlyColors.electric)
+                Text("Đang tra từ điển…").font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .wordlyCard(padding: 16)
+        case .notFound:
+            Label("Không tìm thấy từ này trong từ điển", systemImage: "questionmark.circle")
+                .font(WordlyFonts.body(13, weight: .medium))
+                .foregroundStyle(WordlyColors.inkSoft)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .wordlyCard(padding: 16)
+        case .failed(let message):
+            HStack {
+                Text(message).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.error)
+                Spacer()
+                Button("Thử lại") { vm.retryLookup() }
+                    .font(WordlyFonts.body(13, weight: .bold))
+                    .foregroundStyle(WordlyColors.electric)
+            }
+            .wordlyCard(padding: 16)
+        case .loaded(let detail):
+            DictionaryCard(detail: detail, tts: tts) {
+                router.practice(word: detail.word)
+            }
+        }
+    }
+}
+
+/// Thẻ nghĩa từ (từ điển AI) — giống WordDefinitions trên web.
+struct DictionaryCard: View {
+    let detail: DictionaryDetail
+    @ObservedObject var tts: TTSManager
+    var onAskAlex: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(detail.word)
+                    .font(WordlyFonts.display(26))
+                    .foregroundStyle(WordlyColors.ink)
+                Spacer()
+                Button(action: onAskAlex) {
+                    Label("Hỏi Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+                        .font(WordlyFonts.body(12, weight: .bold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(WordlyColors.duoBlue.opacity(0.14))
+                        .foregroundStyle(WordlyColors.duoBlue)
+                        .clipShape(Capsule())
+                }
+            }
+            HStack(spacing: 10) {
+                phonetic("🇺🇸", detail.phoneticUs, lang: "en-US")
+                phonetic("🇬🇧", detail.phoneticUk, lang: "en-GB")
+            }
+            ForEach(detail.meanings) { meaning in
                 VStack(alignment: .leading, spacing: 10) {
-                    if !detail.phonetic.isEmpty {
-                        Text(detail.phonetic)
-                            .font(.system(size: 12, design: .monospaced))
-                            .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                    }
-                    ForEach(Array(detail.meanings.enumerated()), id: \.offset) { _, meaning in
-                        VStack(alignment: .leading, spacing: 6) {
-                            PosBadge(pos: meaning.pos)
-                            ForEach(Array(meaning.defs.enumerated()), id: \.offset) { idx, def in
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("\(idx + 1). \(def.definition)")
-                                        .font(WordlyFonts.body(12))
-                                        .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                                    if !def.example.isEmpty {
-                                        Text("\"\(def.example)\"")
-                                            .font(WordlyFonts.body(11))
-                                            .italic()
-                                            .foregroundStyle(WordlyColors.inkGhost)
-                                            .padding(.leading, 12)
-                                    }
+                    PosBadge(pos: meaning.pos)
+                    ForEach(Array(meaning.defs.enumerated()), id: \.offset) { index, sense in
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("\(index + 1)")
+                                .font(WordlyFonts.body(12, weight: .bold))
+                                .foregroundStyle(WordlyColors.onElectric)
+                                .frame(width: 20, height: 20)
+                                .background(WordlyColors.electric)
+                                .clipShape(Circle())
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(sense.defVi)
+                                    .font(WordlyFonts.body(15, weight: .bold))
+                                    .foregroundStyle(WordlyColors.ink)
+                                Text(sense.def)
+                                    .font(WordlyFonts.body(13))
+                                    .foregroundStyle(WordlyColors.inkSoft)
+                                if !sense.example.isEmpty {
+                                    Text("“\(sense.example)”")
+                                        .font(WordlyFonts.body(13).italic())
+                                        .foregroundStyle(WordlyColors.duoBlue)
                                 }
                             }
                         }
                     }
                 }
-                .padding()
+                if meaning.id != detail.meanings.last?.id { Divider() }
             }
         }
+        .wordlyCard(padding: 16)
     }
 
-    // MARK: - Toast
-    private var toastView: some View {
-        Text("📎 Đã lưu vào lịch sử")
-            .font(WordlyFonts.body(14, weight: .semibold))
-            .foregroundStyle(WordlyColors.electric)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(WordlyColors.electricBorder, lineWidth: 1))
-            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
-    }
-
-    private func showSaveToast(_ show: Bool) {
-        guard show else { return }
-        showSaveToast = true
-        Task {
-            try? await Task.sleep(nanoseconds: 2_500_000_000)
-            showSaveToast = false
+    @ViewBuilder
+    private func phonetic(_ flag: String, _ ipa: String, lang: String) -> some View {
+        if !ipa.isEmpty {
+            Button {
+                Task { await tts.speak(detail.word, lang: lang) }
+            } label: {
+                HStack(spacing: 6) {
+                    Text(flag)
+                    Text(ipa).font(WordlyFonts.body(13, weight: .medium))
+                    Image(systemName: "speaker.wave.2.fill").font(.system(size: 11))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(WordlyColors.hoverBG)
+                .foregroundStyle(WordlyColors.ink)
+                .clipShape(Capsule())
+            }
         }
     }
 }
 
-// MARK: - POS Badge
+/// Nhãn từ loại — màu giống web (InlineTranslate.js).
 struct PosBadge: View {
     let pos: String
     private var style: (bg: Color, border: Color, text: Color) {
@@ -376,12 +358,13 @@ struct PosBadge: View {
         case "pronoun": return "Đại từ"
         case "preposition": return "Giới từ"
         case "conjunction": return "Liên từ"
+        case "interjection": return "Thán từ"
         default: return pos
         }
     }
     var body: some View {
         Text(label)
-            .font(WordlyFonts.body(10, weight: .bold))
+            .font(WordlyFonts.body(11, weight: .bold))
             .foregroundStyle(style.text)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)

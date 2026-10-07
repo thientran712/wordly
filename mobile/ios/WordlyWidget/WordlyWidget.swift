@@ -1,370 +1,257 @@
 import WidgetKit
 import SwiftUI
 
-// MARK: - App Group key (must match main app)
-private let appGroup = Bundle.main.object(forInfoDictionaryKey: "WordlyAppGroup") as? String ?? ""
-private let wordsKey = "wordly.widget.words"
+// Widget từ vựng — màn hình khoá (chữ nhật, tròn, một dòng) + màn hình chính
+// (nhỏ, vừa). Đọc từ + cài đặt mà app lưu vào App Group (AppGroupStorage), lịch
+// hiển thị do WidgetSchedule tính (dùng chung với app, có test).
 
-// MARK: - Widget Entry
+private let appGroup = Bundle.main.object(forInfoDictionaryKey: "WordlyAppGroup") as? String ?? ""
+private let wordsKey = "wordly.widget.items"
+private let settingsKey = "wordly.widget.settings"
+private let bankKey = "wordly.widget.bank"
+
 struct WordlyEntry: TimelineEntry {
     let date: Date
-    let word: WidgetWordEntry?
-    let wordIndex: Int
+    let word: WidgetWordItem?
+    let showMeaning: Bool
+    /// Có từ nhưng đang ngoài khung giờ hiển thị
+    let resting: Bool
 }
 
-// MARK: - Timeline Provider
 struct WordlyProvider: TimelineProvider {
+    private static let sample = WidgetWordItem(id: "sample", word: "resilient", meaning: "kiên cường, mau phục hồi", isSaved: true)
+
     func placeholder(in context: Context) -> WordlyEntry {
-        WordlyEntry(
-            date: Date(),
-            word: WidgetWordEntry(sourceText: "ephemeral", translatedText: "thoáng qua, không bền", direction: "EN→VI"),
-            wordIndex: 0
-        )
+        WordlyEntry(date: Date(), word: Self.sample, showMeaning: true, resting: false)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (WordlyEntry) -> Void) {
-        let words = loadWords()
-        let entry = WordlyEntry(date: Date(), word: words.first, wordIndex: 0)
-        completion(entry)
+        let settings = loadSettings()
+        let first = WidgetSchedule.entries(words: loadWords(), bank: loadWords(bankKey), settings: settings)
+            .first { $0.word != nil }?.word
+        completion(WordlyEntry(date: Date(), word: first ?? Self.sample, showMeaning: settings.showMeaning, resting: false))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WordlyEntry>) -> Void) {
+        let settings = loadSettings()
         let words = loadWords()
-        guard !words.isEmpty else {
-            // No words — show placeholder, refresh in 30min
-            let entry = WordlyEntry(date: Date(), word: nil, wordIndex: 0)
-            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date())!
-            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
-            return
+        let bank = loadWords(bankKey)
+        let hasWords = !WidgetSchedule.pool(from: words, settings: settings).isEmpty
+            || !WidgetSchedule.bankPool(bank, words: words, settings: settings).isEmpty
+        let schedule = WidgetSchedule.entries(words: words, bank: bank, settings: settings)
+        let entries = schedule.map {
+            WordlyEntry(date: $0.date, word: $0.word, showMeaning: settings.showMeaning, resting: hasWords && $0.word == nil)
         }
-
-        // Create one entry per hour, cycling through words
-        var entries: [WordlyEntry] = []
-        let now = Date()
-        let calendar = Calendar.current
-
-        for hourOffset in 0..<12 {
-            let entryDate = calendar.date(byAdding: .hour, value: hourOffset, to: now)!
-            let wordIndex = hourOffset % words.count
-            entries.append(WordlyEntry(date: entryDate, word: words[wordIndex], wordIndex: wordIndex))
-        }
-
-        // Reload after 12 hours to pick up new words from main app
-        let reloadDate = calendar.date(byAdding: .hour, value: 12, to: now)!
-        completion(Timeline(entries: entries, policy: .after(reloadDate)))
+        // Hết lịch thì xin lịch mới (app cũng gọi reload khi dữ liệu đổi)
+        completion(Timeline(entries: entries, policy: .after(WidgetSchedule.reloadDate(entries: schedule))))
     }
 
-    private func loadWords() -> [WidgetWordEntry] {
-        guard let defaults = UserDefaults(suiteName: appGroup),
-              let data = defaults.data(forKey: wordsKey),
-              let words = try? JSONDecoder().decode([WidgetWordEntry].self, from: data)
-        else { return [] }
-        return words
+    private func loadWords(_ key: String = wordsKey) -> [WidgetWordItem] {
+        guard let data = UserDefaults(suiteName: appGroup)?.data(forKey: key) else { return [] }
+        return (try? JSONDecoder().decode([WidgetWordItem].self, from: data)) ?? []
+    }
+
+    private func loadSettings() -> WidgetSettings {
+        guard let data = UserDefaults(suiteName: appGroup)?.data(forKey: settingsKey),
+              let s = try? JSONDecoder().decode(WidgetSettings.self, from: data) else { return WidgetSettings() }
+        return s
     }
 }
 
-// MARK: - Widget Configuration
 @main
 struct WordlyWidget: Widget {
-    let kind: String = "WordlyWidget"
+    let kind = "WordlyWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: WordlyProvider()) { entry in
             WordlyWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) { WidgetBackground() }
         }
-        .configurationDisplayName("Wordly")
-        .description("Hiển thị từ vựng tiếng Anh trên màn hình khoá và Home Screen")
-        .supportedFamilies([
-            .systemSmall,
-            .systemMedium,
-            .accessoryRectangular,   // Lock Screen rectangular
-            .accessoryCircular,      // Lock Screen circular
-            .accessoryInline         // Lock Screen inline
-        ])
+        .configurationDisplayName("Wordly — Từ vựng")
+        .description("Từ bạn đã lưu xen kẽ từ mới trong kho, trên màn hình khoá và màn hình chính. Chỉnh trong app: Cá nhân → Widget.")
+        .supportedFamilies([.accessoryRectangular, .accessoryCircular, .accessoryInline, .systemSmall, .systemMedium])
     }
 }
 
-// MARK: - Entry View (router)
+private struct WidgetBackground: View {
+    @Environment(\.widgetFamily) private var family
+    var body: some View {
+        if family.isAccessory {
+            Color.clear
+        } else {
+            LinearGradient(colors: [Color(hex: "#131F24"), Color(hex: "#1F2E36")], startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+}
+
+private extension WidgetFamily {
+    var isAccessory: Bool { self == .accessoryRectangular || self == .accessoryCircular || self == .accessoryInline }
+}
+
 struct WordlyWidgetEntryView: View {
-    @Environment(\.widgetFamily) var family
     let entry: WordlyEntry
+    @Environment(\.widgetFamily) private var family
 
     var body: some View {
         switch family {
-        case .accessoryRectangular:
-            LockScreenRectangularView(entry: entry)
-        case .accessoryCircular:
-            LockScreenCircularView(entry: entry)
-        case .accessoryInline:
-            LockScreenInlineView(entry: entry)
-        case .systemSmall:
-            HomeSmallView(entry: entry)
-        case .systemMedium:
-            HomeMediumView(entry: entry)
-        default:
-            HomeSmallView(entry: entry)
+        case .accessoryRectangular: LockRectangular(entry: entry)
+        case .accessoryCircular: LockCircular(entry: entry)
+        case .accessoryInline: LockInline(entry: entry)
+        case .systemMedium: HomeMedium(entry: entry)
+        default: HomeSmall(entry: entry)
         }
     }
 }
 
-// MARK: - Lock Screen: Rectangular (best for showing word + meaning)
-struct LockScreenRectangularView: View {
+// MARK: - Màn hình khoá
+struct LockRectangular: View {
     let entry: WordlyEntry
-
     var body: some View {
-        if let word = entry.word {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Image(systemName: "book.fill")
-                        .font(WordlyFonts.body(9, weight: .bold))
-                    Text("WORDLY")
-                        .font(WordlyFonts.body(9, weight: .bold))
-                        .tracking(1.5)
+        if let w = entry.word {
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 4) {
+                    Image(systemName: w.symbol)
+                        .font(.system(size: 10, weight: .bold))
+                    Text(w.tag).font(.system(size: 11, weight: .semibold))
                 }
-                .foregroundStyle(.secondary)
-
-                Text(word.sourceText)
-                    .font(WordlyFonts.display(15))
-                    .foregroundStyle(.primary)
+                .opacity(0.7)
+                Text(w.word)
+                    .font(.system(size: 17, weight: .bold))
                     .lineLimit(1)
-
-                Text(word.translatedText)
-                    .font(WordlyFonts.body(12))
-                    .foregroundStyle(.secondary)
+                    .minimumScaleFactor(0.7)
+                Text(entry.showMeaning ? w.meaning : "Nghĩa là gì nhỉ? 🤔")
+                    .font(.system(size: 13))
                     .lineLimit(2)
+                    .opacity(0.85)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(.horizontal, 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .widgetAccentable()
         } else {
-            LockScreenEmptyView()
+            LockMessage(resting: entry.resting)
         }
     }
 }
 
-// MARK: - Lock Screen: Circular
-struct LockScreenCircularView: View {
+struct LockCircular: View {
     let entry: WordlyEntry
-
-    var body: some View {
-        if let word = entry.word {
-            ZStack {
-                AccessoryWidgetBackground()
-                VStack(spacing: 2) {
-                    Image(systemName: "book.fill")
-                        .font(WordlyFonts.body(12, weight: .bold))
-                    Text(String(word.sourceText.prefix(4)))
-                        .font(WordlyFonts.display(10))
-                        .lineLimit(1)
-                }
-            }
-        } else {
-            ZStack {
-                AccessoryWidgetBackground()
-                Image(systemName: "book.fill").font(WordlyFonts.body(18))
-            }
-        }
-    }
-}
-
-// MARK: - Lock Screen: Inline
-struct LockScreenInlineView: View {
-    let entry: WordlyEntry
-
-    var body: some View {
-        if let word = entry.word {
-            Label {
-                Text("\(word.sourceText) · \(word.translatedText)")
-                    .lineLimit(1)
-            } icon: {
-                Image(systemName: "book.fill")
-            }
-        } else {
-            Label("Wordly", systemImage: "book.fill")
-        }
-    }
-}
-
-// MARK: - Home Screen: Small
-struct HomeSmallView: View {
-    let entry: WordlyEntry
-
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [Color(hex: "#131F24"), Color(hex: "#1F2E36")],  // nền tối của web; widget luôn tối vì chữ trắng
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            // Green accent glow
-            Circle()
-                .fill(WordlyColors.electric.opacity(0.15))
-                .frame(width: 120)
-                .offset(x: 40, y: -40)
-                .blur(radius: 20)
-
-            if let word = entry.word {
-                VStack(alignment: .leading, spacing: 8) {
-                    // Header
-                    HStack(spacing: 4) {
-                        WordlyLogo(size: 16)
-                        Text("Wordly")
-                            .font(WordlyFonts.body(10, weight: .bold))
-                            .foregroundStyle(WordlyColors.electric)
-                    }
-
-                    Spacer()
-
-                    // Word
-                    Text(word.sourceText)
-                        .font(WordlyFonts.display(22))
-                        .foregroundStyle(.white)
+            AccessoryWidgetBackground()
+            if let w = entry.word {
+                VStack(spacing: 0) {
+                    Image(systemName: w.symbol).font(.system(size: 10))
+                    Text(w.word)
+                        .font(.system(size: 12, weight: .bold))
                         .lineLimit(2)
-                        .minimumScaleFactor(0.7)
-
-                    // Translation
-                    Text(word.translatedText)
-                        .font(WordlyFonts.body(11))
-                        .foregroundStyle(Color.white.opacity(0.6))
-                        .lineLimit(2)
-
-                    // Direction badge
-                    Text(word.direction)
-                        .font(WordlyFonts.body(9, weight: .bold))
-                        .foregroundStyle(WordlyColors.electric)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(WordlyColors.electric.opacity(0.15))
-                        .clipShape(Capsule())
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            } else {
-                VStack(spacing: 6) {
-                    WordlyLogo(size: 44.8)
-                    Text("Wordly")
-                        .font(WordlyFonts.body(14, weight: .bold))
-                        .foregroundStyle(WordlyColors.electric)
-                    Text("Mở app để tải từ")
-                        .font(WordlyFonts.body(10))
-                        .foregroundStyle(Color.white.opacity(0.4))
+                        .minimumScaleFactor(0.5)
                         .multilineTextAlignment(.center)
                 }
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-    }
-}
-
-// MARK: - Home Screen: Medium
-struct HomeMediumView: View {
-    let entry: WordlyEntry
-
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color(hex: "#131F24"), Color(hex: "#1F2E36")],  // nền tối của web; widget luôn tối vì chữ trắng
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-
-            Circle()
-                .fill(WordlyColors.electric.opacity(0.1))
-                .frame(width: 200)
-                .offset(x: 120, y: -30)
-                .blur(radius: 30)
-
-            if let word = entry.word {
-                HStack(spacing: 0) {
-                    // Left: word + details
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 4) {
-                            WordlyLogo(size: 17.6)
-                            Text("Wordly").font(WordlyFonts.body(11, weight: .bold))
-                                .foregroundStyle(WordlyColors.electric)
-                            Spacer()
-                            Text(word.direction)
-                                .font(WordlyFonts.body(9, weight: .bold))
-                                .foregroundStyle(WordlyColors.electric)
-                                .padding(.horizontal, 5).padding(.vertical, 1)
-                                .background(WordlyColors.electric.opacity(0.15))
-                                .clipShape(Capsule())
-                        }
-
-                        Spacer()
-
-                        Text(word.sourceText)
-                            .font(WordlyFonts.display(26))
-                            .foregroundStyle(.white)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.7)
-
-                        Text(word.translatedText)
-                            .font(WordlyFonts.body(12))
-                            .foregroundStyle(Color.white.opacity(0.6))
-                            .lineLimit(3)
-                    }
-                    .padding(14)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-
-                    // Right: decorative
-                    VStack {
-                        Spacer()
-                        Text("📖")
-                            .font(WordlyFonts.body(40))
-                            .opacity(0.15)
-                        Spacer()
-                    }
-                    .frame(width: 60)
-                }
+                .padding(4)
             } else {
-                HStack(spacing: 12) {
-                    WordlyLogo(size: 57.6)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Wordly").font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.electric)
-                        Text("Mở app để tải từ vựng").font(WordlyFonts.body(12)).foregroundStyle(Color.white.opacity(0.4))
-                    }
-                }
+                Image(systemName: entry.resting ? "moon.zzz.fill" : "character.book.closed")
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .widgetAccentable()
     }
 }
 
-// MARK: - Lock Screen Empty
-struct LockScreenEmptyView: View {
+struct LockInline: View {
+    let entry: WordlyEntry
     var body: some View {
-        VStack(spacing: 3) {
-            Image(systemName: "book.fill")
-                .font(WordlyFonts.body(12))
-                .foregroundStyle(.secondary)
-            Text("Wordly")
-                .font(WordlyFonts.body(10, weight: .bold))
-                .foregroundStyle(.secondary)
+        if let w = entry.word {
+            Text(entry.showMeaning ? "\(w.fromBank ? "✨" : "📖") \(w.word) — \(w.meaning)" : "\(w.fromBank ? "✨" : "📖") \(w.word)")
+        } else {
+            Text(entry.resting ? "🌙 Wordly nghỉ ngơi" : "📖 Mở Wordly để lưu từ")
         }
     }
 }
 
-// MARK: - Color Extension (duplicated for Widget target isolation)
-// Color(hex:) + bảng màu dùng chung: WordlyiOS/Shared/Theme/DesignSystem.swift
-
-// MARK: - Widget Preview
-#Preview(as: .accessoryRectangular) {
-    WordlyWidget()
-} timeline: {
-    WordlyEntry(date: .now, word: WidgetWordEntry(sourceText: "ephemeral", translatedText: "thoáng qua, không bền lâu", direction: "EN→VI"), wordIndex: 0)
-    WordlyEntry(date: .now, word: WidgetWordEntry(sourceText: "serendipity", translatedText: "may mắn tình cờ", direction: "EN→VI"), wordIndex: 1)
+struct LockMessage: View {
+    let resting: Bool
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(resting ? "🌙 Đang ngoài giờ học" : "📖 Wordly")
+                .font(.system(size: 14, weight: .bold))
+            Text(resting ? "Từ vựng sẽ quay lại theo giờ bạn đặt" : "Mở app và lưu từ để hiện ở đây")
+                .font(.system(size: 12))
+                .opacity(0.8)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
-#Preview(as: .systemSmall) {
-    WordlyWidget()
-} timeline: {
-    WordlyEntry(date: .now, word: WidgetWordEntry(sourceText: "resilience", translatedText: "khả năng phục hồi", direction: "EN→VI"), wordIndex: 0)
+// MARK: - Màn hình chính
+struct HomeSmall: View {
+    let entry: WordlyEntry
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 5) {
+                Image("Logo").resizable().frame(width: 18, height: 18).clipShape(RoundedRectangle(cornerRadius: 5))
+                Text("Wordly").font(WordlyFonts.body(11, weight: .bold)).foregroundStyle(WordlyColors.electric)
+                Spacer()
+                if let w = entry.word {
+                    Image(systemName: w.symbol).font(.system(size: 10))
+                        .foregroundStyle(w.fromBank ? WordlyColors.duoBlue : WordlyColors.duoOrange)
+                }
+            }
+            Spacer(minLength: 0)
+            if let w = entry.word {
+                Text(w.word)
+                    .font(WordlyFonts.display(22))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.6)
+                Text(entry.showMeaning ? w.meaning : "Nghĩa là gì nhỉ? 🤔")
+                    .font(WordlyFonts.body(13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(2)
+            } else {
+                Text(entry.resting ? "🌙" : "📖").font(.system(size: 30))
+                Text(entry.resting ? "Ngoài giờ học" : "Lưu từ trong app để hiện ở đây")
+                    .font(WordlyFonts.body(12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+        }
+    }
 }
 
-#Preview(as: .systemMedium) {
-    WordlyWidget()
-} timeline: {
-    WordlyEntry(date: .now, word: WidgetWordEntry(sourceText: "perseverance", translatedText: "sự kiên trì, bền bỉ", direction: "EN→VI"), wordIndex: 0)
+struct HomeMedium: View {
+    let entry: WordlyEntry
+    var body: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image("Logo").resizable().frame(width: 20, height: 20).clipShape(RoundedRectangle(cornerRadius: 5))
+                    Text(entry.word.map { $0.fromBank ? "Từ mới từ kho" : "Từ của bạn" } ?? "Từ vựng hôm nay")
+                        .font(WordlyFonts.body(12, weight: .bold))
+                        .foregroundStyle(entry.word?.fromBank == true ? WordlyColors.duoBlue : WordlyColors.electric)
+                }
+                Spacer(minLength: 0)
+                if let w = entry.word {
+                    Text(w.word)
+                        .font(WordlyFonts.display(28))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Text(entry.showMeaning ? w.meaning : "Đoán nghĩa rồi mở app kiểm tra nhé 🤔")
+                        .font(WordlyFonts.body(14, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .lineLimit(2)
+                } else {
+                    Text(entry.resting ? "🌙 Đang ngoài giờ học" : "📖 Chưa có từ nào")
+                        .font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(.white)
+                    Text(entry.resting ? "Từ vựng quay lại theo giờ bạn đặt trong app." : "Dịch và bấm Lưu để từ hiện ở đây.")
+                        .font(WordlyFonts.body(12)).foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+// Phân biệt từ của bạn và từ mới từ kho ngay trên widget
+private extension WidgetWordItem {
+    var symbol: String { fromBank ? "sparkles" : (isSaved ? "bookmark.fill" : "clock.arrow.circlepath") }
+    var tag: String { fromBank ? "Từ mới" : (isSaved ? "Đã lưu" : "Gần đây") }
 }

@@ -86,21 +86,17 @@ Main App → AppGroupStorage (UserDefaults group.com.*.wordly) → WordlyWidget
 Every time the app opens the History tab, it syncs the latest 50 EN→VI words to UserDefaults.
 The Widget reads these and creates a timeline showing 1 different word per hour.
 
-## Features
+## Tính năng (7/10/2026)
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Login/Signup | ✅ | Email + password via Supabase |
-| Translate EN↔VI | ✅ | DeepL via web API |
-| Word suggestions | ✅ | Datamuse API |
-| Dictionary definitions | ✅ | Free Dictionary API |
-| Translate history | ✅ | Paginated, swipe-to-delete |
-| Journal | ✅ | Quick-add, grouped by date |
-| AI Practice (Alex) | ✅ | STT + Groq LLM + TTS |
-| Profile | ✅ | Name, level, goal, theme |
-| Lock Screen Widget | ✅ | Rectangular + Circular + Inline |
-| Home Screen Widget | ✅ | Small + Medium |
-| TTS Playback | ✅ | Google TTS (Neural2) via web |
-| Dark/Light mode | ✅ | System + manual toggle |
-| Offline cache | 🔜 | v2 — CoreData mirror |
-| Push notifications | 🔜 | v2 — daily review reminders |
+| Tính năng | Ghi chú |
+|---|---|
+| Đăng nhập email / Google / Apple | Google qua OAuth Supabase; Apple native (id token + nonce) |
+| Dịch & tra từ | Từ điển AI của web, phát âm US/UK/VI, Lưu từ, lịch sử |
+| Quiz từ vựng | Từ đã lưu (thiếu thì kho từ chung) |
+| Từ vựng theo chủ đề | Kỳ thi, 12 chủ đề, trình độ, tìm kiếm |
+| Luyện nói với Alex | Giọng nói + gõ chữ, phiên theo từ |
+| Vòng quay luyện nói | IELTS / Phỏng vấn / Deep Talk, hẹn giờ, khung trả lời |
+| Sổ tay câu hay | Journal |
+| Email nhắc học | Tần suất, khung giờ, gửi thử |
+| Widget màn hình khoá + màn hình chính | Nguồn từ, chu kỳ, khung giờ, ẩn nghĩa (Hồ sơ → Widget) |
+| Lớp của tôi (trung tâm) | Đã có code, **tạm ẩn** |

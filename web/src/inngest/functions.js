@@ -1,7 +1,7 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendDailyWordEmail } from "@/lib/email/send-email";
-import { selectEmailContent, EMAIL_INTERVALS } from "@/lib/email/select-word-for-email";
+import { selectEmailContent, selectBankWords, EMAIL_INTERVALS } from "@/lib/email/select-word-for-email";
 
 // Validate a timezone string; fall back to Asia/Ho_Chi_Minh if invalid/empty.
 function safeTimezone(tz) {
@@ -221,7 +221,27 @@ export const sendSlotEmail = inngest.createFunction(
 
       const recentIds = (recentLogs || []).flatMap(l => l.entry_ids || []);
 
-      return await selectEmailContent(supabase, user_id, { lastEntryIds: recentIds });
+      const picked = await selectEmailContent(supabase, user_id, { lastEntryIds: recentIds });
+
+      // Mix in one word from the shared bank. Bank words sent in the last
+      // 60 days are skipped so the same "new word" doesn't come back soon.
+      const bankSince = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: bankLogs } = await supabase
+        .from("email_log")
+        .select("entry_ids")
+        .eq("user_id", user_id)
+        .eq("status", "sent")
+        .gte("created_at", bankSince);
+      const bankWords = await selectBankWords(supabase, user_id, {
+        count: 1,
+        recentIds: (bankLogs || []).flatMap(l => l.entry_ids || []),
+      }).catch(() => []);
+
+      if (!picked && bankWords.length === 0) return null;
+      return {
+        words: [...(picked?.words || []), ...bankWords],
+        journal: picked?.journal || null,
+      };
     });
 
     if (!content) {
@@ -290,7 +310,8 @@ export const sendSlotEmail = inngest.createFunction(
       };
 
       const results = await Promise.all([
-        ...content.words.map(w =>
+        // Bank words have no translate_history row — nothing to reschedule
+        ...content.words.filter(w => w.step !== "bank").map(w =>
           supabase
             .from("translate_history")
             .update(buildUpdate(w.review_count ?? 0))

@@ -209,6 +209,16 @@ struct HistoryEntryRow: View {
                             .padding(.vertical, 2)
                             .background(WordlyColors.electricSubtle)
                             .clipShape(Capsule())
+                        if entry.isSaved == true {
+                            // Giống web: từ đã lưu sẽ được nhắc ôn tập (quiz, email, widget)
+                            Label("Đã lưu", systemImage: "bookmark.fill")
+                                .font(WordlyFonts.body(9, weight: .bold))
+                                .foregroundStyle(WordlyColors.duoOrange)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(WordlyColors.duoOrange.opacity(0.14))
+                                .clipShape(Capsule())
+                        }
                     }
                     Text(entry.translatedText)
                         .font(WordlyFonts.body(12))

@@ -38,7 +38,7 @@ export default function DailyWordEmail({
           {/* Word cards */}
           {words.map((word, i) => (
             <Section key={word.id || i} style={wordCard}>
-              <Text style={badge}>{word.step === "new" ? "✨ Từ mới" : "🔁 Ôn tập"}</Text>
+              <Text style={badge}>{word.step === "bank" ? "📚 Từ mới từ kho" : word.step === "new" ? "✨ Từ mới" : "🔁 Ôn tập"}</Text>
               <Heading style={wordMain}>{word.word}</Heading>
               {word.meaning_vi && (
                 <Text style={meaningVi}>🇻🇳 {word.meaning_vi}</Text>

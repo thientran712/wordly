@@ -12,6 +12,8 @@ enum WordlyColors {
     static let electricBorder  = Color(hex: "#58CC02").opacity(0.3)
     static let electricSubtle  = adaptive(light: Color(hex: "#58CC02").opacity(0.08), dark: Color(hex: "#58CC02").opacity(0.12))
     static let onElectric      = Color.white            // chữ trên nút xanh
+    /// Màu nền phẳng của logo/app icon (Brand.xcassets/Logo, AppIcon) — một màu duy nhất
+    static let logoGreen       = Color(hex: "#6BCA03")
 
     // Màu nhấn theo nhóm
     static let duoBlue   = Color(hex: "#1CB0F6")

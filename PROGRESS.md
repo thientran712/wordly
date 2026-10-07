@@ -9,6 +9,53 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
+### 7/10/2026 — iOS 1.0.0 (build 3) ĐÃ UPLOAD lên App Store Connect
+
+Archive Release từ `feat/mobile-restructure` (UI 5 tab + trộn từ kho + icon phẳng, mục dưới). Kiểm archive: version 1.0.0 (3) cho cả app + widget, 0 chuỗi chế độ xem trước, ký team 929P8F77XX. `xcodebuild -exportArchive` → "Upload succeeded". **Lần upload sau phải tăng `CURRENT_PROJECT_VERSION` lên 4.**
+
+### 7/10/2026 — iOS: cấu trúc lại UI + trộn từ kho (branch `feat/mobile-restructure`, xếp TRÊN `feat/ios-feature-parity`, CHƯA commit/push)
+
+| Việc | Ghi chú |
+|---|---|
+| 5 tab, bỏ Trang chủ | **Dịch** (tab đầu, kiểu Google Dịch) · **Từ vựng** (Đã lưu / Kho theo chủ đề) · **Ôn tập** (Quiz / Sổ tay) · **Luyện nói** (Alex / Vòng quay — phiên chat giữ khi chuyển) · **Cá nhân** (chuỗi ngày học + cài đặt) |
+| Widget trộn từ kho | `WordMix` (Shared/Widget): chống trùng (chuẩn hoá chữ), 2 từ của bạn : 1 từ kho, mỗi vòng xáo thứ tự khác (hạt giống = số vòng), không lặp ở chỗ nối vòng, kho lớn không át từ của bạn. Lô kho đổi mỗi ngày/khi đổi trình độ (`BankWords`, đọc thẳng bảng `words` qua Supabase). Bật/tắt: Widget → "Trộn từ mới từ kho" |
+| Email trộn từ kho (web) | `selectBankWords` + `pickBankWords`: +1 từ kho mỗi email, bỏ từ người dùng đã dịch, bỏ từ kho đã gửi trong 60 ngày; nhãn "📚 Từ mới từ kho". Cả email thử |
+| Logo/app icon | Nền xanh phẳng một màu `#6BCA03` (bỏ mép sáng + nhiễu); bỏ khung gradient quanh logo ở màn đăng nhập/splash |
+
+**Kiểm chứng:** iOS 100/100 test, build simulator OK, ảnh chụp 5 tab + widget settings đã soát. Web 283/283, `next build` sạch, eslint sạch.
+**Phát hiện:** production KHÔNG có cột `words.def_vi` → từ kho hiện **định nghĩa tiếng Anh** (`def_en`). Đây cũng là gốc lỗi quiz 500 (PR #4 chọn `def_vi`).
+**Chưa kiểm:** email thật chưa gửi (cần deploy web); widget thật trên màn hình khoá.
+**Chờ chủ dự án:** muốn nghĩa tiếng Việt cho từ kho → cần migration thêm `words.def_vi` + điền dữ liệu.
+
+### 7/10/2026 — iOS ĐÃ UPLOAD 1.0.0 (build 2) lên App Store Connect
+
+Archive Release từ `feat/ios-feature-parity` (các tính năng mang từ web sang + giao diện mới + 8 lỗi review đã sửa). 84/84 test, không có code chế độ xem trước trong bản Release, có Sign in with Apple + App Group + widget. PR #2/#3/#4 đã merge + deploy production cùng ngày (kiểm: quiz 200, cache TTS ra `r2`, /api/classes 200). Google login đã chạy trên app (chủ dự án cấu hình Supabase).
+**Lần upload sau phải tăng `CURRENT_PROJECT_VERSION` lên 3.**
+
+### 7/10/2026 — iOS: mang tính năng web sang + giao diện mới (branch `feat/ios-feature-parity`, CHƯA push, CHƯA build TestFlight)
+
+| Tính năng | Ghi chú |
+|---|---|
+| Dịch & tra từ | Từ điển AI của web, phát âm US/UK, Lưu (PATCH như web → quiz/widget/email), tự ghi lịch sử sau 10s, "Hỏi Alex" |
+| Quiz từ vựng | Anh→Việt / Việt→Anh, kết quả + xem lại đáp án |
+| Từ vựng theo chủ đề | Lọc kỳ thi/12 chủ đề/trình độ, tìm kiếm, chi tiết + học với Alex |
+| Vòng quay luyện nói | IELTS Part 1–3, Phỏng vấn, Deep Talk; hẹn giờ, gợi ý từ (AI), khung trả lời |
+| Luyện với Alex | Phiên theo từ, ô nhập chữ, tự đặt tiêu đề, chỉ tạo phiên khi gửi tin thật đầu tiên |
+| Email nhắc học | Giống web /profile/email + gửi email thử |
+| Widget màn hình khoá | Nguồn từ (đã lưu/gần đây/tự chọn), chu kỳ đổi từ, khung giờ hiển thị, ẩn nghĩa |
+| Đăng nhập Google + Apple | Apple bắt buộc khi có Google (App Store 4.8) |
+| Giao diện | Tab mới: Trang chủ / Dịch / Luyện nói / Hồ sơ (Hồ sơ = trung tâm cài đặt) |
+
+**Kiểm chứng:** 84/84 test iOS; build simulator + build ký cho thiết bị (team 929P8F77XX) thành công; ảnh chụp 12 màn tối + sáng đã soát; review toàn branch → sửa 8 lỗi (commit `05b12a5`).
+
+**Tính năng trung tâm tiếng Anh: TẠM DỪNG** theo yêu cầu (code "Lớp của tôi" vẫn còn nhưng không có lối vào). Khi làm tiếp, 2 lỗi review còn mở: trạng thái nháp server là `in_progress` (app đang so `draft`); tab Tiến độ lấy `students.first` sai khi là giáo viên.
+
+**Chờ chủ dự án:**
+- Supabase → Auth → URL Configuration: thêm `com.thientran.wordly://login-callback`; Auth → Providers → Apple: bật, Client ID `com.thientran.wordly`. Chưa làm thì Google/Apple trên app báo lỗi.
+- Merge **PR #4** (quiz 500 khi ít từ đã lưu — lỗi có sẵn trên cả web) để Quiz trên app chạy được cho người mới.
+- PR #2 (cache + hạn mức TTS), PR #3 (org-context Bearer — chỉ cần khi làm lại tính năng trung tâm).
+- Chưa kiểm trên máy thật (iPhone không kết nối được lúc build) và chưa xem widget thật trên màn hình khoá.
+
 ### Monorepo `web/` + `mobile/` (branch `chore/monorepo-structure`, CHƯA merge)
 
 Web app Next.js chuyển vào `web/` (git mv, giữ lịch sử); `mobile/` giữ chỗ

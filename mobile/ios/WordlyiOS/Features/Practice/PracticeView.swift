@@ -1,12 +1,17 @@
 import SwiftUI
 
 struct PracticeView: View {
-    @StateObject private var vm = PracticeViewModel()
+    /// Do SpeakHubView giữ → phiên chat còn nguyên khi chuyển sang Vòng quay rồi quay lại
+    @ObservedObject var vm: PracticeViewModel
+    @EnvironmentObject private var router: AppRouter
     @Environment(\.colorScheme) var scheme
     @State private var scrollProxy: ScrollViewProxy?
+    @State private var textInput = ""
+    @FocusState private var textFocused: Bool
 
+    // Nằm trong NavigationStack của SpeakHubView
     var body: some View {
-        NavigationStack {
+        Group {
             ZStack {
                 // Nền giống các tab khác (trước đây thiếu → hệ thống tô đen tuyền)
                 WordlyColors.bg(scheme: scheme).ignoresSafeArea()
@@ -27,6 +32,10 @@ struct PracticeView: View {
                                     // Avatar
                                     alexAvatar
                                         .padding(.top, 24)
+
+                                    if vm.messages.isEmpty && vm.sessionState == .idle {
+                                        idleIntro
+                                    }
 
                                     // Messages
                                     ForEach(vm.messages) { msg in
@@ -76,10 +85,77 @@ struct PracticeView: View {
         .task {
             await vm.loadSessions()
             await vm.speech.requestPermissions()
+            await startFocusWordIfNeeded()
+        }
+        .onChange(of: router.practiceWord) { _, _ in
+            Task { await startFocusWordIfNeeded() }
         }
     }
 
+    /// "Hỏi Alex về từ này" từ màn khác → mở phiên luyện theo từ đó (web: /practice?word=…).
+    private func startFocusWordIfNeeded() async {
+        guard let word = router.practiceWord else { return }
+        router.practiceWord = nil
+        await vm.startSession(word: word)
+    }
+
+    /// Ô nhập chữ — web cho gõ thay vì nói.
+    private var textComposer: some View {
+        HStack(spacing: 10) {
+            TextField("Nhập tin nhắn cho Alex…", text: $textInput, axis: .vertical)
+                .font(WordlyFonts.body(15))
+                .lineLimit(1...4)
+                .focused($textFocused)
+                .wordlyInputStyle(focused: textFocused)
+                .submitLabel(.send)
+                .onSubmit(sendText)
+            Button(action: sendText) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(WordlyColors.onElectric)
+                    .frame(width: 42, height: 42)
+                    .background(WordlyColors.electric)
+                    .clipShape(Circle())
+            }
+            .disabled(textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vm.isThinking)
+            .opacity(textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.4 : 1)
+            .accessibilityLabel("Gửi")
+        }
+    }
+
+    private func sendText() {
+        let text = textInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !vm.isThinking else { return }
+        textInput = ""
+        Task { await vm.sendMessage(text) }
+    }
+
     // MARK: - Alex Avatar
+    /// Màn chờ: giải thích cách luyện + lối tắt sang vòng quay chủ đề.
+    private var idleIntro: some View {
+        VStack(spacing: 12) {
+            Text("Nói chuyện tiếng Anh với Alex bằng giọng nói hoặc gõ chữ. Alex sửa lỗi nhẹ nhàng và gợi ý từ hay.")
+                .font(WordlyFonts.body(14))
+                .foregroundStyle(WordlyColors.inkSoft)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            NavigationLink { SpeakSpinnerView() } label: {
+                HStack(spacing: 12) {
+                    IconTile(systemImage: "dice.fill", color: WordlyColors.error, size: 40)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Chưa biết nói gì?").font(WordlyFonts.body(15, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                        Text("Quay câu hỏi IELTS, phỏng vấn, deep talk").font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(WordlyColors.inkGhost)
+                }
+                .wordlyCard(padding: 14)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+        }
+    }
+
     private var alexAvatar: some View {
         VStack(spacing: 10) {
             ZStack {
@@ -151,6 +227,7 @@ struct PracticeView: View {
 
             case .active:
                 VStack(spacing: 10) {
+                    textComposer
                     HStack(spacing: 24) {
                         // Mic button
                         ZStack {
@@ -290,6 +367,13 @@ struct PracticeView: View {
     // MARK: - Toolbar
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
+        // Vòng quay luyện nói theo chủ đề (web /speak) — cùng tab Luyện nói
+        ToolbarItem(placement: .topBarTrailing) {
+            NavigationLink { SpeakSpinnerView() } label: {
+                Image(systemName: "dice.fill")
+            }
+            .accessibilityLabel("Luyện nói theo chủ đề")
+        }
         ToolbarItem(placement: .topBarLeading) {
             Button {
                 withAnimation { vm.sidebarOpen.toggle() }

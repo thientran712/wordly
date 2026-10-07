@@ -13,7 +13,7 @@ settings:
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Automatic
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "3"
 packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
@@ -35,6 +35,9 @@ targets:
         CFBundleDisplayName: Wordly
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # App tiếng Việt → nút hệ thống (Sign in with Apple, DatePicker…) hiện tiếng Việt
+        CFBundleDevelopmentRegion: vi
+        CFBundleLocalizations: [vi]
         # Cấu hình từ Config/*.xcconfig — đọc qua WordlyConfig
         WordlyWebBaseURL: $(WORDLY_WEB_BASE_URL)
         WordlySupabaseURL: $(WORDLY_SUPABASE_URL)
@@ -51,8 +54,9 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         NSMicrophoneUsageDescription: "Wordly cần mic để luyện nói với Alex — giáo viên AI của bạn."
         NSSpeechRecognitionUsageDescription: "Wordly dùng nhận dạng giọng nói để chuyển lời nói của bạn thành văn bản khi luyện nói với Alex."
+        # com.thientran.wordly://login-callback — Google OAuth (Supabase) quay về app
         CFBundleURLTypes:
-          - CFBundleURLSchemes: [wordly]
+          - CFBundleURLSchemes: [wordly, $(WORDLY_BUNDLE_ID)]
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
         UILaunchScreen: {}
@@ -66,6 +70,9 @@ targets:
       properties:
         com.apple.security.application-groups:
           - $(WORDLY_APP_GROUP)
+        # Sign in with Apple (bắt buộc khi có đăng nhập Google — App Store 4.8)
+        com.apple.developer.applesignin:
+          - Default
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(WORDLY_BUNDLE_ID)
@@ -101,8 +108,9 @@ targets:
         excludes:
           - Info.plist
           - "*.entitlements"
-      # Dùng chung bảng màu + font với app
+      # Dùng chung bảng màu + font + lịch hiển thị widget với app
       - path: WordlyiOS/Shared/Theme/DesignSystem.swift
+      - path: WordlyiOS/Shared/Widget/WidgetSchedule.swift
       - path: WordlyiOS/Resources/Fonts
         buildPhase: resources
       - path: WordlyiOS/Resources/Brand.xcassets
