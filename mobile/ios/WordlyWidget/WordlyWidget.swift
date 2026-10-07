@@ -38,8 +38,8 @@ struct WordlyProvider: TimelineProvider {
             WordlyEntry(date: $0.date, word: $0.word, showMeaning: settings.showMeaning, resting: hasWords && $0.word == nil)
         }
         // Hết lịch thì xin lịch mới (app cũng gọi reload khi dữ liệu đổi)
-        let reload = entries.last?.date ?? Date().addingTimeInterval(3600)
-        completion(Timeline(entries: entries, policy: .after(reload)))
+        let schedule = WidgetSchedule.entries(words: words, settings: settings)
+        completion(Timeline(entries: entries, policy: .after(WidgetSchedule.reloadDate(entries: schedule))))
     }
 
     private func loadWords() -> [WidgetWordItem] {

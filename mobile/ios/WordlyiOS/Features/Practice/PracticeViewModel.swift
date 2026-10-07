@@ -53,6 +53,7 @@ final class PracticeViewModel: ObservableObject {
     // MARK: - Select existing session
     func selectSession(_ id: String) async {
         stopVoice()
+        focusWord = nil
         sessionState = .idle
         messages = []
         activeSessionId = id

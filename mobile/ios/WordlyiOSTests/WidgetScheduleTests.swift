@@ -95,4 +95,14 @@ final class WidgetScheduleTests: XCTestCase {
         let back = try JSONDecoder().decode(WidgetSettings.self, from: JSONEncoder().encode(d))
         XCTAssertEqual(back, d)
     }
+
+    // Review: pool rỗng → entries chỉ có 1 entry tại `now` → xin lịch mới ngay lập tức,
+    // lặp liên tục, đốt hết lượt cập nhật của widget. Phải chờ ít nhất 30 phút.
+    func testReloadDateNeverImmediate() {
+        let now = at(9)
+        let empty = WidgetSchedule.entries(words: [], settings: WidgetSettings(), now: now, calendar: cal)
+        XCTAssertEqual(WidgetSchedule.reloadDate(entries: empty, now: now), now.addingTimeInterval(30 * 60))
+        let full = WidgetSchedule.entries(words: words, settings: WidgetSettings(), now: now, calendar: cal)
+        XCTAssertEqual(WidgetSchedule.reloadDate(entries: full, now: now), full.last?.date)
+    }
 }

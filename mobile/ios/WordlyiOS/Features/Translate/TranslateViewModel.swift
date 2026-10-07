@@ -94,9 +94,8 @@ final class TranslateViewModel: ObservableObject {
                 return
             }
         }
-        if direction == .enToVi, TranslateLogic.isSingleWord(text) {
-            await lookUp(text)
-        }
+        // Từ điển AI tính phí theo lượt → không tự tra mỗi lần gõ (giống web: tra
+        // khi chọn gợi ý / mục lịch sử, hoặc bấm "Tra nghĩa")
         scheduleAutoLog()
     }
 
@@ -139,6 +138,7 @@ final class TranslateViewModel: ObservableObject {
         suppressSuggestions = true
         suggestions = []
         inputText = word   // onChange của ô nhập sẽ dịch
+        if direction == .enToVi { Task { await lookUp(word) } }
         Task {
             try? await Task.sleep(for: .seconds(1))
             suppressSuggestions = false
@@ -153,18 +153,27 @@ final class TranslateViewModel: ObservableObject {
             return
         }
         dictionary = .loading
+        // Người dùng đổi từ trong lúc chờ → bỏ kết quả cũ, không hiện nhầm thẻ từ
+        func stillCurrent() -> Bool { TranslateLogic.wordKey(inputText) == key }
         do {
-            if let detail = try await api.lookupWord(key) {
+            let detail = try await api.lookupWord(key)
+            guard stillCurrent() else { return }
+            if let detail {
                 dictCache[key] = detail
                 dictionary = .loaded(detail)
             } else {
                 dictionary = .notFound
             }
         } catch APIError.serverError(let m) where m.contains("429") {
-            dictionary = .failed("Bạn tra hơi nhanh, chờ một chút rồi thử lại nhé.")
+            if stillCurrent() { dictionary = .failed("Bạn tra hơi nhanh, chờ một chút rồi thử lại nhé.") }
         } catch {
-            dictionary = .failed("Không tra được nghĩa từ. Thử lại nhé.")
+            if stillCurrent() { dictionary = .failed("Không tra được nghĩa từ. Thử lại nhé.") }
         }
+    }
+
+    /// Hiện nút "Tra nghĩa" khi đang có một từ tiếng Anh mà chưa tra.
+    var canLookUp: Bool {
+        direction == .enToVi && dictionary == .hidden && TranslateLogic.isSingleWord(inputText) && !translatedText.isEmpty
     }
 
     func retryLookup() {

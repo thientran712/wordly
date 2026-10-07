@@ -84,6 +84,14 @@ enum WidgetSchedule {
         return m < s ? at(s) : at(s, dayOffset: 1)
     }
 
+    /// Lúc xin lịch mới: hết lịch, nhưng không sớm hơn 30 phút — pool rỗng chỉ
+    /// có 1 entry tại `now`, xin lại ngay sẽ lặp liên tục và đốt lượt cập nhật.
+    static func reloadDate(entries: [Entry], now: Date = Date()) -> Date {
+        let minimum = now.addingTimeInterval(30 * 60)
+        guard let last = entries.last?.date, last > minimum else { return minimum }
+        return last
+    }
+
     /// Lịch hiển thị ~24 giờ tới. Ngoài khung giờ → entry `word == nil` (màn nghỉ).
     static func entries(words: [WidgetWordItem], settings: WidgetSettings, now: Date = Date(),
                         calendar cal: Calendar = .current, horizonHours: Int = 24) -> [Entry] {

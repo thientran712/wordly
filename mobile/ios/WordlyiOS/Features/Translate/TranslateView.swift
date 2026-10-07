@@ -128,6 +128,17 @@ struct TranslateView: View {
                         }
                         .foregroundStyle(WordlyColors.inkSoft)
                         .accessibilityLabel("Sao chép")
+                        if vm.canLookUp {
+                            Button { vm.retryLookup() } label: {
+                                Label("Tra nghĩa", systemImage: "book.fill")
+                                    .font(WordlyFonts.body(13, weight: .bold))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(WordlyColors.duoBlue.opacity(0.14))
+                                    .foregroundStyle(WordlyColors.duoBlue)
+                                    .clipShape(Capsule())
+                            }
+                        }
                         Spacer()
                         Button {
                             Task { await vm.save() }

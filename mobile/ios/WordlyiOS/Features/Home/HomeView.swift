@@ -7,13 +7,11 @@ final class HomeViewModel: ObservableObject {
     @Published var name = ""
     @Published var streak: StreakResponse?
     @Published var savedWords: [TranslateHistoryEntry] = []
-    @Published var hasClasses = false
 
     func load() async {
         async let profile = try? APIClient.shared.fetchProfile()
         async let streak = try? APIClient.shared.fetchStreak()
         async let history = try? APIClient.shared.fetchHistory(limit: 30, offset: 0)
-        async let orgs = try? APIClient.shared.fetchOrgs()
 
         let p = await profile
         name = p?.profile?.name ?? p?.email?.components(separatedBy: "@").first ?? ""
@@ -22,7 +20,6 @@ final class HomeViewModel: ObservableObject {
             savedWords = Array(entries.filter { $0.isSaved == true }.prefix(6))
             AppGroupStorage.shared.syncWidgetData(from: entries)
         }
-        hasClasses = !(await orgs ?? []).isEmpty
     }
 }
 
@@ -60,21 +57,6 @@ struct HomeView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    if vm.hasClasses {
-                        NavigationLink { ClassesListContent() } label: {
-                            HStack(spacing: 14) {
-                                IconTile(systemImage: "graduationcap.fill", color: WordlyColors.duoBlue, size: 44)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Lớp của tôi").font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
-                                    Text("Bài giảng, bài tập, bài nói từ trung tâm").font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right").foregroundStyle(WordlyColors.inkGhost)
-                            }
-                            .wordlyCard(padding: 14)
-                        }
-                        .buttonStyle(.plain)
-                    }
                     if !vm.savedWords.isEmpty { savedWordsSection }
                 }
                 .padding(16)
@@ -125,8 +107,11 @@ struct HomeView: View {
 
     private var savedWordsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Từ đã lưu gần đây", actionTitle: "Ôn bằng quiz") {
-                router.selectedTab = .home
+            HStack {
+                SectionHeader(title: "Từ đã lưu gần đây")
+                NavigationLink("Ôn bằng quiz") { QuizView() }
+                    .font(WordlyFonts.body(13, weight: .semibold))
+                    .foregroundStyle(WordlyColors.electric)
             }
             VStack(spacing: 0) {
                 ForEach(vm.savedWords) { entry in

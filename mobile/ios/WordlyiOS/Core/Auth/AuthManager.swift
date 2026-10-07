@@ -133,6 +133,7 @@ final class AuthManager: ObservableObject {
     // MARK: - Sign Out
     func signOut() async {
         try? await supabase.auth.signOut()
+        AppGroupStorage.shared.clearWords()
         currentUser = nil
         isAuthenticated = false
     }

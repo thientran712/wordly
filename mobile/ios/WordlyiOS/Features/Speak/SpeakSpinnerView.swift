@@ -48,7 +48,8 @@ final class SpeakSpinnerViewModel: ObservableObject {
     }
 
     private func loadPool() async {
-        if let cached = cache[cacheKey] { pool = cached; return }
+        let key = cacheKey   // chụp lại: người dùng có thể đổi chế độ trong lúc chờ
+        if let cached = cache[key] { pool = cached; return }
         loadError = nil
         do {
             let items: [SpinnerItem]
@@ -57,10 +58,11 @@ final class SpeakSpinnerViewModel: ObservableObject {
             case .interview: items = try await APIClient.shared.fetchInterviewQuestions(category: category ?? "behavioral")
             case .deepTalk: items = try await APIClient.shared.fetchDeepTalkQuestions(category: category)
             }
-            cache[cacheKey] = items
+            cache[key] = items
+            guard key == cacheKey else { return }   // đã đổi chế độ → không hiện câu của chế độ cũ
             pool = items
         } catch {
-            loadError = "Không tải được câu hỏi. Kéo xuống để thử lại."
+            if key == cacheKey { loadError = "Không tải được câu hỏi. Kéo xuống để thử lại." }
         }
     }
 

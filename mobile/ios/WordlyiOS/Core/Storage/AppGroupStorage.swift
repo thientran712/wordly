@@ -37,6 +37,12 @@ final class AppGroupStorage {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Đăng xuất: xoá từ vựng (riêng tư) của tài khoản khỏi màn hình khoá.
+    func clearWords() {
+        defaults?.removeObject(forKey: Self.wordsKey)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     /// Lịch sử dịch → từ cho widget: chỉ Anh→Việt, bỏ trùng, giữ thứ tự mới nhất trước.
     static func items(from history: [TranslateHistoryEntry]) -> [WidgetWordItem] {
         var seen = Set<String>()
@@ -63,13 +69,17 @@ enum WidgetSync {
     static func refresh() async {
         var all: [TranslateHistoryEntry] = []
         var offset = 0
+        var fetchedAny = false
         while offset < 200 {
             guard let page = try? await APIClient.shared.fetchHistory(limit: 50, offset: offset) else { break }
+            fetchedAny = true
             all += page.history
             if !page.hasMore { break }
             offset += 50
         }
-        guard !all.isEmpty else { return }
+        // Mất mạng → giữ nguyên; tải được mà rỗng (tài khoản mới) → ghi rỗng để
+        // không còn từ của tài khoản trước trên màn hình khoá
+        guard fetchedAny else { return }
         AppGroupStorage.shared.saveWords(AppGroupStorage.items(from: all))
     }
 }

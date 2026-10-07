@@ -54,7 +54,8 @@ final class QuizViewModel: ObservableObject {
     }
 
     func next() async {
-        guard session.advance() else { return }
+        // Lượt đã xong mà nộp lỗi trước đó → nộp lại thẳng (advance() không chạy lại được)
+        guard session.isFinished || session.advance() else { return }
         phase = .submitting
         let ms = startedAt.map { Int(Date().timeIntervalSince($0) * 1000) }
         do {
@@ -200,13 +201,18 @@ struct QuizView: View {
                     }
                 }
             }
+            if vm.session.isFinished && vm.phase == .playing {
+                Label("Đã trả lời hết \(vm.session.questions.count) câu", systemImage: "checkmark.circle.fill")
+                    .font(WordlyFonts.body(15, weight: .semibold))
+                    .foregroundStyle(WordlyColors.electric)
+            }
             if let error = vm.error {
                 Text(error).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.error)
             }
             Button {
                 Task { await vm.next() }
             } label: {
-                Text(vm.session.isLastQuestion ? "Nộp bài" : "Tiếp")
+                Text(vm.session.isFinished ? "Nộp lại" : vm.session.isLastQuestion ? "Nộp bài" : "Tiếp")
             }
             .buttonStyle(ElectricButtonStyle(isLoading: vm.phase == .submitting, isFullWidth: true))
             .disabled(!vm.session.canAdvance || vm.phase == .submitting)

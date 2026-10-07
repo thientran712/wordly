@@ -1,4 +1,5 @@
 import XCTest
+import AuthenticationServices
 @testable import Wordly
 
 // Đăng nhập Google (OAuth qua Supabase) + Apple (id token + nonce).
@@ -23,5 +24,12 @@ final class SocialAuthTests: XCTestCase {
     func testCancelledLoginIsNotAnError() {
         XCTAssertNil(SocialAuth.userMessage(for: SocialAuth.Failure.cancelled))
         XCTAssertNotNil(SocialAuth.userMessage(for: SocialAuth.Failure.missingToken))
+    }
+
+    // Review: lỗi huỷ thật của hệ thống không chứa chữ "cancel" trong mô tả
+    func testSystemCancelErrorsAreSilent() {
+        XCTAssertNil(SocialAuth.userMessage(for: ASWebAuthenticationSessionError(.canceledLogin)))
+        XCTAssertNil(SocialAuth.userMessage(for: ASAuthorizationError(.canceled)))
+        XCTAssertNotNil(SocialAuth.userMessage(for: ASAuthorizationError(.failed)))
     }
 }

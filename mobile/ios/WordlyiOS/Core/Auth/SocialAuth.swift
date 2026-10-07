@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import AuthenticationServices
 
 /// Hỗ trợ đăng nhập Google (OAuth qua Supabase) + Apple (id token + nonce).
 enum SocialAuth {
@@ -34,6 +35,9 @@ enum SocialAuth {
             case .missingToken: return "Không nhận được thông tin đăng nhập. Thử lại nhé."
             }
         }
+        // Người dùng tự đóng cửa sổ Google / Apple — mô tả lỗi không chứa chữ "cancel"
+        if let e = error as? ASWebAuthenticationSessionError, e.code == .canceledLogin { return nil }
+        if let e = error as? ASAuthorizationError, e.code == .canceled { return nil }
         let text = error.localizedDescription.lowercased()
         if text.contains("cancel") { return nil }
         if text.contains("provider is not enabled") || text.contains("unsupported provider") {
