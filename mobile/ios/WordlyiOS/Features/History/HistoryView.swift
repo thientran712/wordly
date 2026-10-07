@@ -8,7 +8,7 @@ struct HistoryView: View {
     @StateObject private var tts = TTSManager.shared
     @Environment(\.colorScheme) var scheme
     @State private var collapsed = false
-    @State private var confirmClear = false
+    @State private var confirmClear = false   // popup xác nhận "Xoá hết"
 
     var body: some View {
         if isEmbedded {
@@ -49,30 +49,6 @@ struct HistoryView: View {
                             .clipShape(Capsule())
                             .overlay(Capsule().stroke(WordlyColors.electricBorder, lineWidth: 1))
                     }
-                    Button {
-                        if confirmClear {
-                            vm.clearAll()
-                            confirmClear = false
-                        } else {
-                            confirmClear = true
-                            Task {
-                                try? await Task.sleep(nanoseconds: 3_000_000_000)
-                                confirmClear = false
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "trash")
-                                .font(WordlyFonts.body(11))
-                            Text(confirmClear ? "Chắc chắn?" : "Xoá hết")
-                                .font(WordlyFonts.body(11, weight: .semibold))
-                        }
-                        .foregroundStyle(confirmClear ? WordlyColors.error : WordlyColors.inkSoft(scheme: scheme))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(confirmClear ? WordlyColors.errorSoft : WordlyColors.hoverBG)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
                     Image(systemName: "chevron.down")
                         .font(WordlyFonts.body(12, weight: .semibold))
                         .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
@@ -86,12 +62,63 @@ struct HistoryView: View {
             if !collapsed {
                 Divider().foregroundStyle(WordlyColors.divider(scheme: scheme))
                 entriesList
+                if vm.unsavedCount > 0 { clearButton }
             }
+            if vm.undo != nil { undoBar }
         }
         .background(WordlyColors.cardBG(scheme: scheme))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(WordlyColors.cardBorder, lineWidth: 1))
+        .animation(.easeInOut(duration: 0.2), value: vm.undo)
         .task { await vm.fetchHistory() }
+        .confirmationDialog("Xoá lịch sử dịch?", isPresented: $confirmClear, titleVisibility: .visible) {
+            Button("Xoá \(vm.unsavedCount) mục chưa lưu", role: .destructive) { vm.clearUnsaved() }
+            Button("Huỷ", role: .cancel) {}
+        } message: {
+            Text("Các từ bạn đã bấm Lưu sẽ được giữ lại (vẫn có trong quiz, email và widget). Bạn có thể hoàn tác ngay sau khi xoá.")
+        }
+    }
+
+    /// "Xoá hết" nằm cuối danh sách — trước đây sát mũi tên thu gọn, hay bị bấm nhầm.
+    private var clearButton: some View {
+        HStack {
+            Spacer()
+            Button { confirmClear = true } label: {
+                Label("Xoá lịch sử chưa lưu", systemImage: "trash")
+                    .font(WordlyFonts.body(12, weight: .semibold))
+                    .foregroundStyle(WordlyColors.error)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(WordlyColors.errorSoft)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    private var undoBar: some View {
+        HStack {
+            Text(vm.undo?.label ?? "")
+                .font(WordlyFonts.body(13, weight: .semibold))
+                .foregroundStyle(WordlyColors.ink(scheme: scheme))
+            Spacer()
+            Button { vm.undoLast() } label: {
+                Label("Hoàn tác", systemImage: "arrow.uturn.backward")
+                    .font(WordlyFonts.body(13, weight: .bold))
+                    .foregroundStyle(WordlyColors.electric)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(WordlyColors.electricSubtle)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(WordlyColors.hoverBG)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     // MARK: - Full screen (standalone tab)
@@ -245,7 +272,7 @@ struct HistoryEntryRow: View {
 }
 
 // MARK: - Group Model
-struct HistoryGroup {
+struct HistoryGroup: Equatable {
     let day: String
     let dateLabel: String
     var entries: [TranslateHistoryEntry]
@@ -289,18 +316,57 @@ final class HistoryViewModel: ObservableObject {
         isLoadingMore = false
     }
 
+    /// Thanh "Hoàn tác" sau khi xoá (xoá mềm trên server — khôi phục bằng id)
+    struct Undo: Equatable {
+        let label: String
+        let ids: [String]
+        let snapshot: [HistoryGroup]
+    }
+    @Published var undo: Undo?
+    private var undoTask: Task<Void, Never>?
+
+    var unsavedCount: Int { HistoryLogic.unsavedCount(groups) }
+
     func delete(id: String) {
+        let snapshot = groups
         groups = groups.compactMap { g in
             var g = g
             g.entries.removeAll { $0.id == id }
             return g.entries.isEmpty ? nil : g
         }
-        Task { try? await APIClient.shared.deleteHistoryEntry(id: id) }
+        Task {
+            let ids = (try? await APIClient.shared.deleteHistoryEntry(id: id)) ?? []
+            showUndo("Đã xoá 1 mục", ids: ids, snapshot: snapshot)
+        }
     }
 
-    func clearAll() {
-        groups = []
-        Task { try? await APIClient.shared.clearAllHistory() }
+    /// "Xoá hết" — chỉ mục CHƯA lưu; từ đã lưu ở lại (server cũng vậy).
+    func clearUnsaved() {
+        let snapshot = groups
+        groups = HistoryLogic.removingUnsaved(groups)
+        Task {
+            let ids = (try? await APIClient.shared.clearAllHistory()) ?? []
+            showUndo("Đã xoá \(ids.count) mục", ids: ids, snapshot: snapshot)
+        }
+    }
+
+    func undoLast() {
+        guard let undo else { return }
+        undoTask?.cancel()
+        groups = undo.snapshot
+        self.undo = nil
+        Task { try? await APIClient.shared.restoreHistory(ids: undo.ids) }
+    }
+
+    /// Server cũ (xoá cứng) không trả id → không có gì để hoàn tác → không hiện nút.
+    private func showUndo(_ label: String, ids: [String], snapshot: [HistoryGroup]) {
+        guard !ids.isEmpty else { return }
+        undoTask?.cancel()
+        undo = Undo(label: label, ids: ids, snapshot: snapshot)
+        undoTask = Task {
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            if !Task.isCancelled { undo = nil }
+        }
     }
 
     private func group(_ entries: [TranslateHistoryEntry]) -> [HistoryGroup] {
