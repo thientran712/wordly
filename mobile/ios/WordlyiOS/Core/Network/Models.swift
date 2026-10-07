@@ -48,7 +48,7 @@ struct TranslateResponse: Codable {
     }
 }
 
-struct TranslateHistoryEntry: Codable, Identifiable {
+struct TranslateHistoryEntry: Codable, Identifiable, Equatable {
     let id: String
     let sourceText: String
     let translatedText: String

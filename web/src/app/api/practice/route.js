@@ -95,6 +95,7 @@ async function buildVocabContext(user, vocabularyContext) {
       .select("source_text")
       .eq("user_id", user.id)
       .eq("direction", "EN→VI")
+      .is("deleted_at", null)
       .order("saved_at", { ascending: false })
       .limit(20);
 

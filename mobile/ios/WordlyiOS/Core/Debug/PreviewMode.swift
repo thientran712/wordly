@@ -73,6 +73,9 @@ enum PreviewMode {
             json = PreviewFixtures.homeworkSubmit
         case ("POST", _) where parts.count == 5 && parts[1] == "practice" && parts[4] == "title":
             json = #"{"session": {"id": "s1", "title": "Ordering coffee", "created_at": "2026-10-06T07:00:00.000000+00:00", "updated_at": "2026-10-06T07:12:00.000000+00:00"}}"#
+        // Xoá mềm: "Xoá hết" trả id mục chưa lưu (h3) để hiện "Hoàn tác"
+        case ("DELETE", "/api/translate-history"): json = #"{"success": true, "ids": ["h3"]}"#
+        case ("POST", "/api/translate-history/restore"): json = #"{"success": true, "restored": 1}"#
         case ("POST", "/api/translate-history"), ("PATCH", _), ("DELETE", _), ("PUT", _), ("POST", "/api/spinner/history"):
             json = #"{"success": true}"#
         default: json = nil

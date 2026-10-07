@@ -9,6 +9,22 @@
 **Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
 **Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
 
+### 7/10/2026 — Sự cố mất dữ liệu + xoá mềm (branch `fix/soft-delete-history`, CHƯA commit, migration CHƯA chạy)
+
+**Sự cố:** tài khoản huythien7122@gmail.com bấm nhầm "Xoá hết" (~19h 7/10) → API xoá CỨNG toàn bộ `translate_history` kể cả từ đã lưu. Project gói Free: `pitr_enabled: false`, `backups: []` (kiểm qua `supabase backups list`) → không khôi phục từ backup được.
+**Đã cứu:** 106 từ đã lưu + nghĩa, bóc từ ~200 email nhắc học trong Gmail (khớp 100% nhật ký `email_log`, bỏ từ test ngày 7/6) → đã INSERT lại production (87 dòng giữ id gốc). **Mất hẳn:** lịch sử chưa lưu, từ lưu sau 25/8 (email dừng từ đó), toàn bộ sổ tay.
+
+**Sửa (chống lặp lại):**
+| Phần | Việc |
+|---|---|
+| Migration `20261007000100_soft_delete_history.sql` | Cột `deleted_at` cho `translate_history` + `journal_entries`, index một phần `where deleted_at is null` |
+| API | Xoá = đặt `deleted_at`; "Xoá hết" chỉ xoá mục CHƯA lưu, trả `ids`; `POST /api/translate-history/restore`, `/api/journal/restore`; lịch sử/quiz/email/gợi ý Alex/sổ tay lọc `deleted_at is null`. Streak + snapshot vẫn đếm dòng đã xoá (hôm đó có học thật) |
+| Web + iOS | Nút xoá dời khỏi cạnh mũi tên thu gọn → cuối danh sách "Xoá lịch sử chưa lưu"; popup xác nhận nói rõ giữ từ đã lưu; thanh "Hoàn tác" 6 giây |
+
+**Kiểm chứng:** web 313/313 (6 test mới `history-delete`), `next build` sạch; iOS 105/105 + 4/4 UI test (mới: xoá → xác nhận → từ đã lưu còn → hoàn tác).
+**Thứ tự deploy BẮT BUỘC:** chạy migration → deploy web → mới phát hành app. Code mới chạy với DB cũ sẽ lỗi (cột chưa có); app mới chạy với server cũ thì "Xoá hết" vẫn xoá cứng.
+**Chưa làm:** dọn hẳn dòng đã xoá mềm sau N ngày (tuỳ chọn); route translate-history vẫn dùng service role cho request người dùng (nợ có từ trước, quy tắc #5).
+
 ### 7/10/2026 — iOS 1.0.0 (build 5) ĐÃ UPLOAD — sửa bàn phím khó tắt
 
 Chạm ra ngoài ô nhập ở mọi màn → đóng bàn phím (`Shared/Components/KeyboardDismiss.swift`, gắn lên cửa sổ, không chặn chạm); vuốt cuộn kéo bàn phím xuống; chat Alex giữ bàn phím sau khi gửi. Thêm target **UI test** `WordlyiOSUITests` (chế độ xem trước, không cần đăng nhập).

@@ -213,18 +213,27 @@ final class APIClient: ObservableObject {
         )
     }
 
-    func deleteHistoryEntry(id: String) async throws {
-        struct Resp: Decodable { let success: Bool? }
-        _ = try await request(
-            path: "/api/translate-history?id=\(id)",
-            method: "DELETE",
-            responseType: Resp.self
-        )
+    /// Xoá mềm trả về id đã xoá để hoàn tác. Server cũ (xoá cứng) không trả `ids`
+    /// → mảng rỗng → app không hiện "Hoàn tác".
+    private struct DeleteResp: Decodable { let success: Bool?; let ids: [String]? }
+
+    @discardableResult
+    func deleteHistoryEntry(id: String) async throws -> [String] {
+        try await request(path: "/api/translate-history?id=\(id)", method: "DELETE",
+                          responseType: DeleteResp.self).ids ?? []
     }
 
-    func clearAllHistory() async throws {
+    /// "Xoá hết" — server chỉ xoá mục CHƯA lưu, giữ từ đã lưu.
+    @discardableResult
+    func clearAllHistory() async throws -> [String] {
+        try await request(path: "/api/translate-history", method: "DELETE", responseType: DeleteResp.self).ids ?? []
+    }
+
+    func restoreHistory(ids: [String]) async throws {
+        struct Body: Encodable { let ids: [String] }
         struct Resp: Decodable { let success: Bool? }
-        _ = try await request(path: "/api/translate-history", method: "DELETE", responseType: Resp.self)
+        _ = try await request(path: "/api/translate-history/restore", method: "POST",
+                              body: Body(ids: ids), responseType: Resp.self)
     }
 
     // MARK: - Journal
