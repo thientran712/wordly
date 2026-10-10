@@ -1,16 +1,11 @@
 "use client";
 
-// /quiz — Quiz ôn từ vựng.
-//
-// Dùng được cho cả B2C (tự ôn từ đã lưu) và B2B (giáo viên theo dõi qua
-// class_id). Câu hỏi sinh từ kho từ sẵn có nên chi phí ~0.
+// /quiz — Quiz ôn từ vựng. Câu hỏi sinh từ kho từ sẵn có nên chi phí ~0.
 //
 // Đáp án đúng KHÔNG có trong dữ liệu client nhận được — server chấm lại
 // khi nộp, nên không thể gian lận qua DevTools.
 
-import { useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useState, useCallback } from "react";
 import { Zap, Check, X, RotateCcw, Trophy, ArrowRight } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -23,17 +18,6 @@ const MODES = [
 ];
 
 export default function QuizPage() {
-  return (
-    <Suspense fallback={null}>
-      <QuizInner />
-    </Suspense>
-  );
-}
-
-function QuizInner() {
-  const searchParams = useSearchParams();
-  const classId = searchParams.get("class_id");
-
   const [phase, setPhase] = useState("setup"); // setup | playing | done
   const [mode, setMode] = useState("en_to_vi");
   const [questions, setQuestions] = useState([]);
@@ -51,8 +35,6 @@ function QuizInner() {
     setError("");
     try {
       const params = new URLSearchParams({ mode, count: "10" });
-      if (classId) params.set("class_id", classId);
-
       const res = await fetch(`/api/quiz?${params}`);
       const d = await res.json();
 
@@ -104,7 +86,6 @@ function QuizInner() {
         body: JSON.stringify({
           answers,
           mode,
-          class_id: classId || null,
           duration_ms: startedAt ? Date.now() - startedAt : null,
         }),
       });
@@ -120,7 +101,7 @@ function QuizInner() {
     } finally {
       setLoading(false);
     }
-  }, [index, questions.length, answers, mode, classId, startedAt]);
+  }, [index, questions.length, answers, mode, startedAt]);
 
   // ── Màn hình chọn chế độ ──
   if (phase === "setup") {
