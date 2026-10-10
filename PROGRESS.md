@@ -3,6 +3,32 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 10/10/2026 (đêm) — iOS BUILD 8: xong code, ARCHIVE SUCCEEDED, **CHỜ đăng nhập Xcode để upload TestFlight**
+
+**Đã làm xong, đã commit, 102/102 unit test pass (full suite), build Debug/Release sạch:**
+1. Luyện nói: gỡ nút "Xong" thừa góc trên vòng quay chủ đề (`1c6c8e6`-nhánh SpeakSpinnerView, đã có từ trước, thấy kèm batch này).
+2. Widget Settings: đơn giản hoá "Nguồn từ" (2 lựa chọn + DisclosureGroup "Tự chọn từng từ" thu gọn), thêm `LockStyle` (đầy đủ/gọn chữ to) + `HomeTheme` (3 màu nền) cho widget màn hình khoá/chính (`4b018cc` + commit trước đó thêm 2 tests).
+3. Quiz: chấm điểm ngay từng câu qua `POST /api/quiz/check` (web đã deploy trước đó) — không phải làm hết bài mới biết đúng/sai (`abc73c2`).
+4. Widget Settings: preview giờ cuộn ngang 5 thẻ sắp tới (trước chỉ 1 từ) — dùng thẳng `WidgetSchedule.entries` (`4b018cc`).
+5. **Mang tính năng chụp ảnh dịch + ghi âm dịch từ web sang iOS native** (`10419ca`):
+   - Chụp ảnh: `CameraPicker` (UIImagePickerController, camera → fallback photo library trên simulator) → JPEG → base64 data URL → `POST /api/translate/image` (Gemini vision OCR+dịch 1 lần, khớp đúng web, giữ nguyên giới hạn 5MB).
+   - Ghi âm: `DictationManager` mới (Speech framework on-device, ghi 1 lần bấm start/stop, KHÔNG dùng VAD liên tục như `SpeechManager` của luyện nói Alex — tách riêng để không đụng code đó) → text → dịch qua pipeline DeepL có sẵn (`/api/translate`). **Quyết định kiến trúc:** bỏ qua hoàn toàn việc port `/api/translate/voice` (Whisper fallback) vì iOS luôn có STT on-device miễn phí, web chỉ dùng Whisper khi trình duyệt không có Web Speech API.
+   - Thêm `NSCameraUsageDescription` vào `project.yml`, cập nhật mô tả mic/speech cho rõ dùng cả 2 tính năng.
+
+**Build 8 (`CURRENT_PROJECT_VERSION=8`, bump `6df52f2`):**
+- `xcodegen generate` → Debug build OK → 102/102 test pass → Archive Release (`-allowProvisioningUpdates`) → **ARCHIVE SUCCEEDED** (app + widget, team `929P8F77XX`).
+- **Export (cả `method: app-store-connect` tự upload VÀ export .ipa thường) đều FAIL: "No Accounts" / "No signing certificate iOS Distribution found".**
+  → Xcode trên máy này hiện **không có Apple ID nào đăng nhập** (khác hẳn build 5-7 chạy trót lọt trước đây — session Xcode đã hết hạn hoặc bị đăng xuất).
+  → **Cần chủ dự án: mở Xcode → Settings (⌘,) → Accounts → đăng nhập lại Apple ID (có thể cần 2FA) → bấm "Download Manual Profiles" hoặc để Automatic signing tự tạo lại cert Distribution.**
+  → Sau khi đăng nhập xong, archive đã có sẵn tại
+  `/private/tmp/claude-501/.../scratchpad/build8/Wordly.xcarchive` (session-local,
+  mất khi session kết thúc) — chỉ cần export lại, hoặc mở Xcode Organizer → Archives → chọn bản 1.0.0 (8) → Distribute App, không cần build lại từ đầu.
+
+**Chờ quyết định / chờ hành động của chủ dự án:**
+- Đăng nhập Xcode để export + upload build 8 lên TestFlight (chặn duy nhất còn lại).
+
+---
+
 ### 10/10/2026 (tối) — iOS 1.0.0 BUILD 7 ĐÃ UPLOAD TestFlight + thay Inngest bằng cron VPS
 
 **iOS build 7 — "Upload succeeded" (App Store Connect đang xử lý):**
