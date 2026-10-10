@@ -209,17 +209,25 @@ export const sendSlotEmail = inngest.createFunction(
     const content = await step.run("select-content", async () => {
       const supabase = createAdminClient();
 
-      // Collect all entry_ids sent in the last 12 hours across ALL slots so
-      // two slots firing the same day never pick the same word (race-safe).
-      const since = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+      // Exclude personal words/journal entries suggested in the last 3 days
+      // (same minimum cadence as EMAIL_INTERVALS[1]) so the same 1-2 words
+      // don't repeat every single day. Before the suggestion_log table
+      // existed, Step 6 advanced due_at on every send, which naturally
+      // rotated the pool; now that sending no longer advances the schedule
+      // by itself (see Step 6 below — user rating is the only thing that
+      // does), this window is what keeps content rotating for users who
+      // never open the "Đã gợi ý" tab to rate a word. selectEmailContent's
+      // own fallback (pickMultipleFromRows) still allows a repeat if
+      // literally nothing else is eligible (e.g. only 1 saved word total).
+      const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
       const { data: recentLogs } = await supabase
-        .from("email_log")
-        .select("entry_ids")
+        .from("suggestion_log")
+        .select("entry_id")
         .eq("user_id", user_id)
-        .eq("status", "sent")
-        .gte("created_at", since);
+        .in("entry_type", ["translate_history", "journal_entries"])
+        .gte("shown_at", since);
 
-      const recentIds = (recentLogs || []).flatMap(l => l.entry_ids || []);
+      const recentIds = (recentLogs || []).map(l => l.entry_id).filter(Boolean);
 
       const picked = await selectEmailContent(supabase, user_id, { lastEntryIds: recentIds });
 
@@ -306,8 +314,12 @@ export const sendSlotEmail = inngest.createFunction(
           : []),
       ];
 
+      // Email đã gửi thành công ở Step 4 — một lỗi ghi log ở đây không nên
+      // làm cả lượt gửi bị coi là "failed" (khác Step 6 cũ: lúc đó lỗi DB
+      // nghĩa là lịch ôn chưa cập nhật, nên phải throw để Inngest retry.
+      // Giờ đây chỉ là nhật ký tham khảo, không ảnh hưởng gì tới việc gửi).
       const { error } = await supabase.from("suggestion_log").insert(rows);
-      if (error) throw new Error(`log-suggestions DB insert failed: ${error.message}`);
+      if (error) console.error(`log-suggestions DB insert failed (non-fatal): ${error.message}`);
     });
 
     await step.sendEvent("reschedule-tomorrow", {

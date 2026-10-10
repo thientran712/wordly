@@ -1,5 +1,6 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildSuggestionItems } from "@/lib/learning/build-suggestion-items";
 
 const PAGE_SIZE_MAX = 50;
 
@@ -29,46 +30,31 @@ export async function GET(request) {
   const journalIds = page.filter(l => l.entry_type === "journal_entries").map(l => l.entry_id);
   const bankIds = page.filter(l => l.entry_type === "bank").map(l => l.bank_word_id);
 
-  const [{ data: translateRows }, { data: journalRows }, { data: bankRows }] = await Promise.all([
+  // Lọc thêm user_id + deleted_at is null trên translate_history/journal_entries:
+  // entry_id trong suggestion_log không tự nó chứng minh quyền sở hữu (log-shown
+  // không kiểm điều này khi ghi), nên phải tự chặn ở đây — nếu không, 1 user có
+  // thể POST id của người khác vào log-shown rồi GET lại được nội dung đó.
+  const [{ data: translateRows, error: tErr }, { data: journalRows, error: jErr }, { data: bankRows, error: bErr }] = await Promise.all([
     translateIds.length
-      ? admin.from("translate_history").select("id, source_text, translated_text, state, due_at, review_count").in("id", translateIds)
+      ? admin.from("translate_history").select("id, source_text, translated_text, state, due_at, review_count")
+          .in("id", translateIds).eq("user_id", user.id).is("deleted_at", null)
       : Promise.resolve({ data: [] }),
     journalIds.length
-      ? admin.from("journal_entries").select("id, content, state, due_at, review_count").in("id", journalIds)
+      ? admin.from("journal_entries").select("id, content, state, due_at, review_count")
+          .in("id", journalIds).eq("user_id", user.id).is("deleted_at", null)
       : Promise.resolve({ data: [] }),
     bankIds.length
-      ? admin.from("words").select("id, word, def_vi, def_en").in("id", bankIds)
+      // words.def_vi KHÔNG tồn tại ở production — chỉ select def_en (xem
+      // build-suggestion-items.js). words là bảng chung, không có user_id.
+      ? admin.from("words").select("id, word, def_en").in("id", bankIds)
       : Promise.resolve({ data: [] }),
   ]);
 
-  const translateMap = new Map((translateRows || []).map(r => [r.id, r]));
-  const journalMap = new Map((journalRows || []).map(r => [r.id, r]));
-  const bankMap = new Map((bankRows || []).map(r => [r.id, r]));
+  if (tErr) return Response.json({ error: tErr.message }, { status: 500 });
+  if (jErr) return Response.json({ error: jErr.message }, { status: 500 });
+  if (bErr) return Response.json({ error: bErr.message }, { status: 500 });
 
-  const items = page.map(log => {
-    if (log.entry_type === "translate_history") {
-      const row = translateMap.get(log.entry_id);
-      return row && {
-        id: log.id, source: log.source, entry_type: log.entry_type, entry_id: log.entry_id,
-        shown_at: log.shown_at, word: row.source_text, meaning: row.translated_text,
-        state: row.state, due_at: row.due_at, review_count: row.review_count,
-      };
-    }
-    if (log.entry_type === "journal_entries") {
-      const row = journalMap.get(log.entry_id);
-      return row && {
-        id: log.id, source: log.source, entry_type: log.entry_type, entry_id: log.entry_id,
-        shown_at: log.shown_at, word: row.content, meaning: null,
-        state: row.state, due_at: row.due_at, review_count: row.review_count,
-      };
-    }
-    const row = bankMap.get(log.bank_word_id);
-    return row && {
-      id: log.id, source: log.source, entry_type: log.entry_type, bank_word_id: log.bank_word_id,
-      shown_at: log.shown_at, word: row.word, meaning: row.def_vi || row.def_en,
-      state: null, due_at: null, review_count: null,
-    };
-  }).filter(Boolean); // referenced row may have been deleted since being logged
+  const items = buildSuggestionItems(page, { translateRows, journalRows, bankRows });
 
   return Response.json({ items, hasMore });
 }

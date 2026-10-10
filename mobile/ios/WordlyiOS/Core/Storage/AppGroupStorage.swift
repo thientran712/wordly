@@ -99,10 +99,18 @@ enum WidgetSync {
         // Mất mạng → giữ nguyên; tải được mà rỗng (tài khoản mới) → ghi rỗng để
         // không còn từ của tài khoản trước trên màn hình khoá
         guard fetchedAny else { return }
+        let store = AppGroupStorage.shared
         let items = AppGroupStorage.items(from: all)
-        AppGroupStorage.shared.saveWords(items)
-        if !items.isEmpty {
-            Task { await APIClient.shared.logWidgetShown(items: items) }
+        let changed = items != store.words
+        store.saveWords(items)
+        if changed {
+            // Chỉ log đúng pool widget sẽ thực sự hiện (theo settings.source),
+            // không log cả 200 dòng lịch sử thô — tránh làm suggestion_log
+            // phình ra với từ chưa bao giờ lên màn hình khoá.
+            let shown = WidgetSchedule.pool(from: items, settings: store.settings)
+            if !shown.isEmpty {
+                Task { await APIClient.shared.logWidgetShown(items: shown) }
+            }
         }
         await refreshBank()
     }
@@ -113,7 +121,13 @@ enum WidgetSync {
         let skill = try? await APIClient.shared.fetchProfile().profile?.skillLevel
         guard force || BankWords.needsRefresh(fetchedAt: store.bankFetchedAt, level: skill, lastLevel: store.bankLevel) else { return }
         guard let words = try? await BankWords.fetch(skill: skill), !words.isEmpty else { return }
+        let changed = words != store.bank
         store.saveBank(words, level: skill)
-        Task { await APIClient.shared.logWidgetShown(items: words) }
+        guard changed else { return }
+        // bankPool() cũng tôn trọng settings (includeBank + không trộn khi "Tự chọn").
+        let shown = WidgetSchedule.bankPool(words, words: store.words, settings: store.settings)
+        if !shown.isEmpty {
+            Task { await APIClient.shared.logWidgetShown(items: shown) }
+        }
     }
 }

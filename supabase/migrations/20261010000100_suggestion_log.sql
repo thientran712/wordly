@@ -11,7 +11,10 @@ CREATE TABLE IF NOT EXISTS suggestion_log (
   source        text NOT NULL CHECK (source IN ('email', 'widget')),
   entry_type    text NOT NULL CHECK (entry_type IN ('translate_history', 'journal_entries', 'bank')),
   entry_id      uuid,
-  bank_word_id  uuid REFERENCES words(id) ON DELETE SET NULL,
+  -- CASCADE, không SET NULL: nếu set null thì dòng entry_type='bank' lập tức
+  -- vi phạm suggestion_log_entry_shape (yêu cầu bank_word_id NOT NULL) và
+  -- không xoá được words nào đã từng được log — xoá luôn dòng log cho sạch.
+  bank_word_id  uuid REFERENCES words(id) ON DELETE CASCADE,
   shown_at      timestamptz NOT NULL DEFAULT now(),
 
   -- entry_id xor bank_word_id, tuỳ entry_type
