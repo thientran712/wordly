@@ -16,6 +16,7 @@ Xem quy trình triển khai từng bước: `docs/superpowers/plans/2026-10-10-v
 | `supabase/.env.example` | — | Bản gốc upstream, CHƯA từng sửa — an toàn commit. `.env` thật (có secret) KHÔNG commit |
 | `supabase/backup.sh` | `/opt/wordly/prod/supabase/backup.sh` | Cron backup hàng ngày (`deploy-wordly`, 20:00 UTC) |
 | `web/docker-compose.yml` | `/opt/wordly/prod/web/docker-compose.yml` | Container Next.js |
+| `web/send-emails-cron.sh` | `/opt/wordly/prod/web/send-emails-cron.sh` | Cron `*/5 * * * *` (`deploy-wordly`) gọi `POST /api/cron/send-emails` — thay Inngest sleepUntil, xem `web/src/lib/email/cron-send-emails.js` |
 | `nginx/wordly.prod.webapp.conf` | `/etc/nginx/sites-available/wordly.prod.webapp.conf` | vhost `app.wordly.skillproof.work`, SSL do certbot tự quản |
 | `nginx/wordly.prod.api.conf` | `/etc/nginx/sites-available/wordly.prod.api.conf` | vhost `api.wordly.skillproof.work` |
 
@@ -48,6 +49,13 @@ SITE_URL=https://app.wordly.skillproof.work
 proxy_busy_buffers_size 32k;` — buffer mặc định nginx quá nhỏ cho cookie
 session Supabase (chứa JWT, có thể dài). Thiếu thì gặp lỗi
 `upstream sent too big header`.
+
+## Crontab trên `deploy-wordly` (VPS)
+
+```
+0 20 * * * /opt/wordly/prod/supabase/backup.sh >> /var/backups/wordly/prod/backup.log 2>&1
+*/5 * * * * /opt/wordly/prod/web/send-emails-cron.sh >> /opt/wordly/prod/web/send-emails-cron.log 2>&1
+```
 
 ## Rủi ro đã biết
 
