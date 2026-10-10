@@ -61,14 +61,29 @@ struct LoginView: View {
                                 Text("Email")
                                     .font(WordlyFonts.body(13, weight: .bold))
                                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                                TextField("your@email.com", text: $email)
-                                    .keyboardType(.emailAddress)
-                                    .autocorrectionDisabled()
-                                    .textInputAutocapitalization(.never)
-                                    .focused($focusedField, equals: .email)
-                                    .submitLabel(.next)
-                                    .onSubmit { focusedField = .password }
-                                    .wordlyInputStyle(focused: focusedField == .email)
+                                ZStack(alignment: .leading) {
+                                    // TextField không có placeholder riêng — iOS tự tô placeholder
+                                    // màu xanh link cho field keyboardType .emailAddress, không
+                                    // override được bằng .foregroundStyle. Tự vẽ placeholder để
+                                    // kiểm soát màu, giống field Mật khẩu bên dưới.
+                                    if email.isEmpty {
+                                        // Text("example@gmail.com") dùng init LocalizedStringKey —
+                                        // SwiftUI tự parse kiểu Markdown và auto-link hoá chuỗi
+                                        // giống email (tô xanh, không override được bằng
+                                        // foregroundStyle). Text(verbatim:) bỏ qua việc parse đó.
+                                        Text(verbatim: "example@gmail.com")
+                                            .foregroundStyle(Color(.placeholderText))
+                                    }
+                                    TextField("", text: $email)
+                                        .keyboardType(.emailAddress)
+                                        .autocorrectionDisabled()
+                                        .textInputAutocapitalization(.never)
+                                        .foregroundStyle(WordlyColors.ink(scheme: scheme))
+                                        .focused($focusedField, equals: .email)
+                                        .submitLabel(.next)
+                                        .onSubmit { focusedField = .password }
+                                }
+                                .wordlyInputStyle(focused: focusedField == .email)
                             }
 
                             // Password
@@ -168,10 +183,7 @@ struct LoginView: View {
                                 }
                             } label: {
                                 HStack(spacing: 10) {
-                                    Text("G")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                                        .foregroundStyle(LinearGradient(colors: [Color(hex: "#4285F4"), Color(hex: "#EA4335"), Color(hex: "#FBBC05"), Color(hex: "#34A853")],
-                                                                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    GoogleLogoIcon(size: 18)
                                     Text("Tiếp tục với Google")
                                         .font(WordlyFonts.body(16, weight: .semibold))
                                         .foregroundStyle(Color(hex: "#1F1F1F"))
@@ -278,7 +290,7 @@ struct SignupView: View {
 
                         VStack(spacing: 14) {
                             WordlyTextField(label: "Tên của bạn", placeholder: "Nguyễn Văn A", text: $name)
-                            WordlyTextField(label: "Email", placeholder: "your@email.com", text: $email,
+                            WordlyTextField(label: "Email", placeholder: "example@gmail.com", text: $email,
                                            keyboardType: .emailAddress, autocap: .never)
                             WordlySecureField(label: "Mật khẩu", placeholder: "Tối thiểu 6 ký tự",
                                              text: $password, show: $showPassword)
@@ -379,7 +391,7 @@ struct ForgotPasswordView: View {
                         }
                     } else {
                         VStack(spacing: 14) {
-                            WordlyTextField(label: "Email", placeholder: "your@email.com", text: $email,
+                            WordlyTextField(label: "Email", placeholder: "example@gmail.com", text: $email,
                                            keyboardType: .emailAddress, autocap: .never)
                                 .padding(.horizontal, 24)
 
@@ -443,12 +455,20 @@ struct WordlyTextField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label).font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.ink(scheme: scheme))
-            TextField(placeholder, text: $text)
-                .keyboardType(keyboardType)
-                .textInputAutocapitalization(autocap)
-                .autocorrectionDisabled()
-                .focused($focused)
-                .wordlyInputStyle(focused: focused)
+            // Placeholder tự vẽ — iOS tô placeholder màu xanh link cho
+            // keyboardType .emailAddress, .foregroundStyle không override được.
+            ZStack(alignment: .leading) {
+                if text.isEmpty {
+                    Text(verbatim: placeholder).foregroundStyle(Color(.placeholderText))
+                }
+                TextField("", text: $text)
+                    .keyboardType(keyboardType)
+                    .textInputAutocapitalization(autocap)
+                    .autocorrectionDisabled()
+                    .foregroundStyle(WordlyColors.ink(scheme: scheme))
+                    .focused($focused)
+            }
+            .wordlyInputStyle(focused: focused)
         }
     }
 }
