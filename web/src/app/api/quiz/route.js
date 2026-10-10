@@ -7,8 +7,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserFast } from "@/lib/auth/get-user-fast";
-import { isUuid } from "@/lib/org/org-context";
 import { buildQuizQuestions, scoreQuiz, QUIZ_MODES, bankWordToQuizWord } from "@/lib/learning/quiz-generation";
+
+/** UUID v4 hợp lệ — dùng để lọc word_id client gửi lên trước khi query DB. */
+function isUuid(value) {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
 
 const MAX_QUESTIONS = 20;
 const DEFAULT_QUESTIONS = 10;
@@ -23,7 +27,6 @@ export async function GET(request) {
   const mode = url.searchParams.get("mode") || "en_to_vi";
   const level = url.searchParams.get("level");
   const source = url.searchParams.get("source") || "saved"; // saved | bank
-  const classId = url.searchParams.get("class_id");
 
   if (!QUIZ_MODES.includes(mode)) {
     return Response.json({ error: `Chế độ không hỗ trợ: ${mode}` }, { status: 400 });
@@ -111,10 +114,6 @@ export async function GET(request) {
   return Response.json({
     questions: safeQuestions,
     mode,
-    // Client gửi lại token này khi nộp để server biết đề nào. Ký bằng cách
-    // nào là việc của GĐ sau; hiện tại server chấm lại từ word_id nên
-    // không cần lưu đề.
-    class_id: isUuid(classId) ? classId : null,
   });
 }
 
@@ -129,7 +128,7 @@ export async function POST(request) {
     return Response.json({ error: "Body không hợp lệ" }, { status: 400 });
   }
 
-  const { answers, mode, class_id, duration_ms } = body || {};
+  const { answers, mode, duration_ms } = body || {};
 
   if (!QUIZ_MODES.includes(mode)) {
     return Response.json({ error: "Chế độ không hợp lệ" }, { status: 400 });
@@ -191,30 +190,6 @@ export async function POST(request) {
 
   const result = scoreQuiz(questions, givenAnswers);
 
-  // Lưu lượt chơi. Nếu thuộc một lớp thì gắn org/membership để giáo viên
-  // theo dõi được.
-  let orgId = null;
-  let membershipId = null;
-
-  if (isUuid(class_id)) {
-    const { data: klass } = await supabase
-      .from("classes")
-      .select("id, org_id")
-      .eq("id", class_id)
-      .maybeSingle();
-
-    if (klass) {
-      orgId = klass.org_id;
-      const { data: m } = await supabase
-        .from("memberships")
-        .select("id")
-        .eq("org_id", klass.org_id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      membershipId = m?.id || null;
-    }
-  }
-
   const wordResults = {};
   for (const [qid, d] of Object.entries(result.details)) {
     wordResults[d.word_id] = d.correct;
@@ -222,9 +197,6 @@ export async function POST(request) {
 
   const { error: saveErr } = await supabase.from("quiz_attempts").insert({
     user_id: user.id,
-    class_id: orgId ? class_id : null,
-    org_id: orgId,
-    membership_id: membershipId,
     mode,
     total: result.total,
     correct: result.correct,
