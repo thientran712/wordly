@@ -3,6 +3,50 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 10/10/2026 (tối) — iOS build 7 chuẩn bị + thay Inngest bằng cron VPS
+
+**iOS (chưa upload TestFlight, đang chờ xác nhận cuối):**
+- Endpoint đổi sang domain tự host: `Secrets.xcconfig` (gitignore) trỏ
+  `app.wordly.skillproof.work` / `api.wordly.skillproof.work`, `ANON_KEY`
+  mới từ self-host. Build simulator thành công, launch không crash, verify
+  bằng ảnh chụp (Info.plist bake đúng domain mới, không còn
+  `placeholder.supabase.co`). **Chưa test login Google/Apple thật trên iOS**
+  (simulator không tap tự động được — cần làm tay trước khi upload build 7).
+- Thêm `GOTRUE.../ADDITIONAL_REDIRECT_URLS` trên VPS cho
+  `com.thientran.wordly://login-callback` (trước đó trống — thiếu thì
+  login app sẽ bị từ chối redirect).
+- UI: logo Google đổi từ chữ "G" gradient tự vẽ sang logo G chính thức 4
+  màu (`GoogleLogoIcon.swift`, vector path thật theo brand guideline).
+  Popup đăng xuất đổi từ `confirmationDialog` (action sheet từ dưới) sang
+  `.alert` (giữa màn hình). Sửa placeholder email tô nhầm màu xanh link hệ
+  thống (lỗi `Text(_:)` dùng init `LocalizedStringKey` tự parse Markdown và
+  auto-link chuỗi giống email — đổi `Text(verbatim:)`).
+- 3/4 UI test fail (`HistoryClearUITests`, `KeyboardDismissUITests`) — ở
+  màn hình KHÔNG liên quan (History, Translate keyboard dismiss), khả năng
+  flaky do cài/gỡ simulator liên tục lúc debug, CHƯA xác nhận chắc chắn là
+  không liên quan.
+
+**Web — thay Inngest bằng cron VPS cho email nhắc học (quyết định của chủ
+dự án, giảm phụ thuộc khi đã tự host):**
+- `scheduleAllSlots`/`sendSlotEmail`/`watchdogReschedule` (Inngest
+  `sleepUntil` tới đúng giờ mỗi user) → cron VPS `*/5 * * * *` gọi
+  `POST /api/cron/send-emails`, tự hỏi DB "ai tới giờ gửi" (polling thay
+  event-driven). Logic chọn nội dung/gửi/ghi log giữ nguyên y hệt bản cũ.
+  `isSlotDueNow()` tách riêng, test TDD 10 ca (RED→GREEN xác nhận).
+- Gỡ mọi `inngest.send()` ở `email-slots`/`email-preferences` (không cần
+  báo lịch — cron tự quét), xóa route `admin/trigger-inngest-all` đã vô
+  dụng. Inngest Cloud giờ chỉ còn `cleanupRateLimitCounters`.
+- **Verify thật trên production:** gọi tay endpoint qua CRON_SECRET → trả
+  đúng dữ liệu thật (`checked: 8` slot). Đợi 1 chu kỳ crontab tự chạy (6
+  phút) → xác nhận log mới xuất hiện tự động, không phải do gọi tay.
+  **Chưa chứng kiến 1 lượt gửi email THẬT** (không có slot nào rơi đúng
+  cửa sổ 5 phút lúc kiểm — gần nhất là slot `00:00` Asia/Saigon, ~1h44
+  sau) — nên theo dõi `send-emails-cron.log` trên VPS ngày mai để xác nhận
+  gửi thật thành công.
+- `npm test` 211/211 (211 = 201 trước + 10 test mới), `eslint` sạch,
+  `next build` sạch. Deploy lên VPS: archive + rebuild image + recreate
+  container, verify 200 cả nội bộ lẫn domain public.
+
 ### 10/10/2026 — Xóa hẳn code B2B (trung tâm tiếng Anh), chuẩn bị hạ tầng VPS
 
 Chủ dự án quyết định bỏ hẳn tính năng B2B (trung tâm/lớp/giáo viên/học
