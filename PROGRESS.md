@@ -3,9 +3,27 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 10/10/2026 (tối) — iOS build 7 chuẩn bị + thay Inngest bằng cron VPS
+### 10/10/2026 (tối) — iOS 1.0.0 BUILD 7 ĐÃ UPLOAD TestFlight + thay Inngest bằng cron VPS
 
-**iOS (chưa upload TestFlight, đang chờ xác nhận cuối):**
+**iOS build 7 — "Upload succeeded" (App Store Connect đang xử lý):**
+Archive Release từ `main` (`4d03585`), `-allowProvisioningUpdates`, export
+`method: app-store-connect` → upload thành công, kèm widget (cùng archive).
+Verify trước khi export: 0 chuỗi `WordlyUIPreview` trong binary Release,
+Info.plist đúng `CFBundleVersion=7`, domain mới
+(`api.wordly.skillproof.work`/`app.wordly.skillproof.work`).
+**3 UI test fail lúc chạy chung session trước → chạy lại riêng từng cái
+trên simulator mới boot sạch → PASS cả 2 (`HistoryClearUITests`,
+`KeyboardDismissUITests`)** — xác nhận đúng là flaky do simulator bị cài/gỡ
+liên tục lúc debug, không phải lỗi thật.
+
+**⚠️ CHƯA test login Google/Apple thật trên iOS trước khi upload** — chỉ
+verify được qua ảnh chụp simulator (launch không crash, màn hình đúng),
+simulator không tap tự động được nên không tự kiểm tra tay OAuth được.
+Chủ dự án quyết định upload luôn, chấp nhận rủi ro này — **cần tự test
+đăng nhập Google/Apple trên máy thật/TestFlight ngay khi bản build 7 xử lý
+xong**, trước khi mời người dùng khác cập nhật.
+
+**iOS (chi tiết thay đổi trong build 7):**
 - Endpoint đổi sang domain tự host: `Secrets.xcconfig` (gitignore) trỏ
   `app.wordly.skillproof.work` / `api.wordly.skillproof.work`, `ANON_KEY`
   mới từ self-host. Build simulator thành công, launch không crash, verify
@@ -21,10 +39,11 @@
   `.alert` (giữa màn hình). Sửa placeholder email tô nhầm màu xanh link hệ
   thống (lỗi `Text(_:)` dùng init `LocalizedStringKey` tự parse Markdown và
   auto-link chuỗi giống email — đổi `Text(verbatim:)`).
-- 3/4 UI test fail (`HistoryClearUITests`, `KeyboardDismissUITests`) — ở
-  màn hình KHÔNG liên quan (History, Translate keyboard dismiss), khả năng
-  flaky do cài/gỡ simulator liên tục lúc debug, CHƯA xác nhận chắc chắn là
-  không liên quan.
+- 3/4 UI test fail lúc chạy chung (`HistoryClearUITests`,
+  `KeyboardDismissUITests`) — **đã xác nhận flaky**: chạy riêng từng test
+  trên simulator mới boot sạch → cả 2 PASS. Đúng như nghi ngờ, do cài/gỡ
+  app liên tục lúc debug làm simulator không kịp ổn định, không phải lỗi
+  thật liên quan tới thay đổi hôm nay.
 
 **Web — thay Inngest bằng cron VPS cho email nhắc học (quyết định của chủ
 dự án, giảm phụ thuộc khi đã tự host):**
