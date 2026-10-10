@@ -1,8 +1,8 @@
 import XCTest
 @testable import Wordly
 
-// Model cho các tính năng mang từ web sang (từ điển AI, quiz, lớp học, vòng
-// quay luyện nói, từ vựng theo chủ đề, email). Fixture sinh từ phản hồi THẬT
+// Model cho các tính năng mang từ web sang (từ điển AI, quiz, vòng quay
+// luyện nói, từ vựng theo chủ đề, email). Fixture sinh từ phản hồi THẬT
 // của production — test này bảo đảm model decode được đúng dữ liệu server trả.
 final class FeatureModelsTests: XCTestCase {
     private func fixture(_ path: String, _ method: String = "GET") throws -> Data {
@@ -27,32 +27,6 @@ final class FeatureModelsTests: XCTestCase {
         XCTAssertEqual(r.result.total, r.result.details.count)
     }
 
-    func testClassesAndJoin() throws {
-        XCTAssertFalse(try decode(OrgsResponse.self, "/api/orgs").orgs.isEmpty)
-        XCTAssertEqual(try decode(ClassesResponse.self, "/api/classes?org_id=x").classes.first?.name, "IELTS FOUNDATION 3")
-        XCTAssertTrue(try decode(JoinClassResponse.self, "/api/join", "POST").ok)
-    }
-
-    func testHomeworkAllQuestionTypes() throws {
-        let r = try decode(HomeworkListResponse.self, "/api/homework?class_id=x")
-        let types = Set(r.homework.flatMap { $0.questions.map(\.type) })
-        XCTAssertEqual(types, ["mcq", "fill", "essay", "match"])
-        let match = try XCTUnwrap(r.homework[0].questions.first { $0.type == "match" })
-        XCTAssertEqual(match.pairs?.lefts.count, 2)
-        XCTAssertEqual(r.homework[1].mySubmission?.status, "graded")
-        let s = try decode(HomeworkSubmitResponse.self, "/api/homework/x/submit", "POST")
-        XCTAssertEqual(s.result?.needsManual, true)
-    }
-
-    func testSessionsMaterialsSpeakingProgress() throws {
-        let s = try decode(ClassSessionsResponse.self, "/api/classes/x/sessions")
-        XCTAssertFalse(s.sessions[0].lessonMaterials.isEmpty)
-        XCTAssertFalse(try decode(MaterialURLResponse.self, "/api/materials/x/url").url.isEmpty)
-        let sp = try decode(SpeakingListResponse.self, "/api/speaking?class_id=x")
-        XCTAssertEqual(sp.prompts[1].mySubmission?.scoreOverall, 7.5)
-        XCTAssertEqual(try decode(ClassProgressResponse.self, "/api/classes/x/progress").className, "IELTS FOUNDATION 3")
-    }
-
     func testSpinner() throws {
         XCTAssertFalse(try decode(SpinnerTopicsResponse.self, "/api/spinner/topics?language=en").topics.isEmpty)
         XCTAssertFalse(try decode(SpinnerQuestionsResponse.self, "/api/spinner/interview?category=behavioral").questions.isEmpty)
@@ -75,20 +49,8 @@ final class FeatureModelsTests: XCTestCase {
     }
 
     // ── Encode: body gửi lên server phải đúng định dạng web đang dùng ──
-    func testHomeworkAnswerEncoding() throws {
-        let answers: [String: HomeworkAnswer] = [
-            "q1": .choice(2),
-            "q2": .text("seen"),
-            "q4": .pairs(["resilient": "kiên cường"]),
-        ]
-        let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(answers)) as? [String: Any]
-        XCTAssertEqual(json?["q1"] as? Int, 2)
-        XCTAssertEqual(json?["q2"] as? String, "seen")
-        XCTAssertEqual((json?["q4"] as? [String: String])?["resilient"], "kiên cường")
-    }
-
     func testQuizSubmitBodyEncoding() throws {
-        let body = QuizSubmitRequest(answers: ["qa": .init(wordId: "w1", given: "hello")], mode: "en_to_vi", classId: nil, durationMs: 1200)
+        let body = QuizSubmitRequest(answers: ["qa": .init(wordId: "w1", given: "hello")], mode: "en_to_vi", durationMs: 1200)
         let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(body)) as? [String: Any]
         let qa = (json?["answers"] as? [String: Any])?["qa"] as? [String: Any]
         XCTAssertEqual(qa?["word_id"] as? String, "w1")

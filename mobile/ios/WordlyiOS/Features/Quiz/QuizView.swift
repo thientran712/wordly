@@ -1,8 +1,7 @@
 import SwiftUI
 
 // Quiz từ vựng — giống web /quiz: chọn chế độ → làm bài → xem kết quả.
-// Câu hỏi sinh từ từ đã lưu (thiếu thì lấy kho từ chung). `classId` có giá trị
-// khi mở từ một lớp học → kết quả tính vào bảng xếp hạng lớp.
+// Câu hỏi sinh từ từ đã lưu (thiếu thì lấy kho từ chung).
 
 enum QuizMode: String, CaseIterable, Identifiable {
     case enToVi = "en_to_vi"
@@ -25,17 +24,14 @@ final class QuizViewModel: ObservableObject {
     @Published var error: String?
     @Published var isLoading = false
 
-    let classId: String?
     private var startedAt: Date?
-
-    init(classId: String? = nil) { self.classId = classId }
 
     func start() async {
         isLoading = true
         error = nil
         defer { isLoading = false }
         do {
-            let r = try await APIClient.shared.fetchQuiz(mode: mode.rawValue, classId: classId)
+            let r = try await APIClient.shared.fetchQuiz(mode: mode.rawValue)
             guard !r.questions.isEmpty else {
                 error = r.error ?? "Chưa đủ từ vựng để tạo quiz. Hãy lưu thêm từ khi dịch."
                 return
@@ -59,7 +55,7 @@ final class QuizViewModel: ObservableObject {
         phase = .submitting
         let ms = startedAt.map { Int(Date().timeIntervalSince($0) * 1000) }
         do {
-            let r = try await APIClient.shared.submitQuiz(session.submitRequest(mode: mode.rawValue, classId: classId, durationMs: ms))
+            let r = try await APIClient.shared.submitQuiz(session.submitRequest(mode: mode.rawValue, durationMs: ms))
             result = r.result
             requeued = r.requeuedWords ?? 0
             phase = .done
@@ -84,11 +80,7 @@ final class QuizViewModel: ObservableObject {
 }
 
 struct QuizView: View {
-    @StateObject private var vm: QuizViewModel
-
-    init(classId: String? = nil) {
-        _vm = StateObject(wrappedValue: QuizViewModel(classId: classId))
-    }
+    @StateObject private var vm = QuizViewModel()
 
     var body: some View {
         ScrollView {

@@ -42,12 +42,6 @@ enum PreviewMode {
         case ("POST", "/api/dictionary"): json = PreviewFixtures.dictionary
         case ("GET", "/api/quiz"): json = PreviewFixtures.quiz
         case ("POST", "/api/quiz"): json = PreviewFixtures.quizResult
-        case ("GET", "/api/orgs"): json = PreviewFixtures.orgs
-        case ("GET", "/api/classes"): json = PreviewFixtures.classes
-        case ("POST", "/api/join"):
-            json = #"{"ok": true, "class_id": "cff0ef10-7302-4d0b-bfff-6a5167c778b0", "class_name": "IELTS FOUNDATION 3"}"#
-        case ("GET", "/api/homework"): json = PreviewFixtures.homework
-        case ("GET", "/api/speaking"): json = PreviewFixtures.speaking
         case ("GET", "/api/spinner/topics"): json = PreviewFixtures.topics
         case ("GET", "/api/spinner/interview"): json = PreviewFixtures.interview
         case ("GET", "/api/spinner/deep-talk"): json = PreviewFixtures.deepTalk
@@ -62,15 +56,7 @@ enum PreviewMode {
         case ("POST", "/api/journal"):
             json = #"{"entry": {"id": "j-new", "content": "New entry", "created_at": "2026-10-06T09:00:00.000000+00:00"}}"#
         case ("PUT", "/api/profile"): json = #"{"success": true, "profile": {"id": "u1", "name": "Thiên"}}"#
-        // Route có id động: /api/classes/<id>/…, /api/homework/<id>/submit, /api/materials/<id>/url
-        case ("GET", _) where parts.count == 4 && parts[1] == "classes" && parts[3] == "sessions":
-            json = PreviewFixtures.sessions
-        case ("GET", _) where parts.count == 4 && parts[1] == "classes" && parts[3] == "progress":
-            json = PreviewFixtures.progress
-        case ("GET", _) where parts.count == 4 && parts[1] == "materials":
-            json = PreviewFixtures.materialURL
-        case ("POST", _) where parts.count == 4 && parts[1] == "homework" && parts[3] == "submit":
-            json = PreviewFixtures.homeworkSubmit
+        // Route có id động: /api/practice/sessions/<id>/title
         case ("POST", _) where parts.count == 5 && parts[1] == "practice" && parts[4] == "title":
             json = #"{"session": {"id": "s1", "title": "Ordering coffee", "created_at": "2026-10-06T07:00:00.000000+00:00", "updated_at": "2026-10-06T07:12:00.000000+00:00"}}"#
         // Xoá mềm: "Xoá hết" trả id mục chưa lưu (h3) để hiện "Hoàn tác"
@@ -123,7 +109,6 @@ enum PreviewScreens {
         case "journal": JournalView()
         case "email": EmailSettingsView()
         case "widget": WidgetSettingsView()
-        case "classes": ClassesListContent()
         default: Text("Không có màn \(name)")
         }
     }

@@ -52,10 +52,9 @@ final class QuizSessionTests: XCTestCase {
         var s = QuizSession(questions: questions)
         s.pick("kiên cường"); _ = s.advance()
         s.pick("lười"); _ = s.advance()
-        let body = s.submitRequest(mode: "en_to_vi", classId: "c1", durationMs: 9000)
+        let body = s.submitRequest(mode: "en_to_vi", durationMs: 9000)
         XCTAssertEqual(body.answers["a"]?.wordId, "w1")
         XCTAssertEqual(body.answers["b"]?.given, "lười")
-        XCTAssertEqual(body.classId, "c1")
         XCTAssertEqual(body.durationMs, 9000)
     }
 

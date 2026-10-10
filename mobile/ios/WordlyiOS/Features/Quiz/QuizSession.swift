@@ -38,7 +38,7 @@ struct QuizSession {
         return false
     }
 
-    func submitRequest(mode: String, classId: String?, durationMs: Int?) -> QuizSubmitRequest {
-        QuizSubmitRequest(answers: answers, mode: mode, classId: classId, durationMs: durationMs)
+    func submitRequest(mode: String, durationMs: Int?) -> QuizSubmitRequest {
+        QuizSubmitRequest(answers: answers, mode: mode, durationMs: durationMs)
     }
 }

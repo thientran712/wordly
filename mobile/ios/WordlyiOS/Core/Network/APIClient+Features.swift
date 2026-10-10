@@ -27,92 +27,12 @@ extension APIClient {
     }
 
     // MARK: Quiz
-    func fetchQuiz(mode: String, count: Int = 10, classId: String? = nil) async throws -> QuizResponse {
-        var path = "/api/quiz?mode=\(mode)&count=\(count)&source=saved"
-        if let classId { path += "&class_id=\(classId)" }
-        return try await request(path: path, responseType: QuizResponse.self)
+    func fetchQuiz(mode: String, count: Int = 10) async throws -> QuizResponse {
+        try await request(path: "/api/quiz?mode=\(mode)&count=\(count)&source=saved", responseType: QuizResponse.self)
     }
 
     func submitQuiz(_ body: QuizSubmitRequest) async throws -> QuizSubmitResponse {
         try await request(path: "/api/quiz", method: "POST", body: body, responseType: QuizSubmitResponse.self)
-    }
-
-    // MARK: Trung tâm + lớp học
-    func fetchOrgs() async throws -> [Org] {
-        try await request(path: "/api/orgs", responseType: OrgsResponse.self).orgs
-    }
-
-    func fetchClasses(orgId: String) async throws -> ClassesResponse {
-        try await request(path: "/api/classes?org_id=\(orgId)", responseType: ClassesResponse.self)
-    }
-
-    func joinClass(code: String) async throws -> JoinClassResponse {
-        struct Body: Encodable { let code: String }
-        return try await request(path: "/api/join", method: "POST", body: Body(code: code), responseType: JoinClassResponse.self)
-    }
-
-    func fetchSessions(classId: String) async throws -> [ClassSession] {
-        try await request(path: "/api/classes/\(classId)/sessions", responseType: ClassSessionsResponse.self).sessions
-    }
-
-    func materialURL(_ material: LessonMaterial) async throws -> URL? {
-        let endpoint = material.kind == "video" ? "video-url" : "url"
-        let r = try await request(path: "/api/materials/\(material.id)/\(endpoint)", responseType: MaterialURLResponse.self)
-        return URL(string: r.url)
-    }
-
-    func fetchHomework(classId: String) async throws -> [Homework] {
-        try await request(path: "/api/homework?class_id=\(classId)", responseType: HomeworkListResponse.self).homework
-    }
-
-    func submitHomework(id: String, answers: [String: HomeworkAnswer], draft: Bool) async throws -> HomeworkSubmitResponse {
-        try await request(path: "/api/homework/\(id)/submit", method: "POST",
-                          body: HomeworkSubmitRequest(answers: answers, draft: draft),
-                          responseType: HomeworkSubmitResponse.self)
-    }
-
-    func fetchSpeaking(classId: String) async throws -> [SpeakingPrompt] {
-        try await request(path: "/api/speaking?class_id=\(classId)", responseType: SpeakingListResponse.self).prompts
-    }
-
-    /// Nộp bài nói 3 bước giống web: xin signed URL → PUT audio thẳng lên
-    /// Storage → đăng ký (server xác minh dung lượng thật).
-    func submitSpeaking(promptId: String, audio: Data, durationMs: Int) async throws {
-        struct UploadBody: Encodable {
-            let action = "upload-url"
-            let mime_type = "audio/mp4"
-            let size_bytes: Int
-            let duration_ms: Int
-        }
-        struct RegisterBody: Encodable { let storage_path: String; let duration_ms: Int }
-
-        let slot = try await request(path: "/api/speaking/\(promptId)/submit", method: "POST",
-                                     body: UploadBody(size_bytes: audio.count, duration_ms: durationMs),
-                                     responseType: SpeakingUploadURLResponse.self)
-        guard let url = URL(string: slot.uploadUrl) else { throw APIError.invalidURL }
-
-        #if DEBUG
-        let skipUpload = PreviewMode.isOn
-        #else
-        let skipUpload = false
-        #endif
-        if !skipUpload {
-            var put = URLRequest(url: url)
-            put.httpMethod = "PUT"
-            put.setValue("audio/mp4", forHTTPHeaderField: "Content-Type")
-            let (_, response) = try await session.upload(for: put, from: audio)
-            guard let http = response as? HTTPURLResponse, http.statusCode < 400 else {
-                throw APIError.serverError("Tải audio lên thất bại")
-            }
-        }
-
-        _ = try await request(path: "/api/speaking/\(promptId)/submit", method: "POST",
-                              body: RegisterBody(storage_path: slot.storagePath, duration_ms: durationMs),
-                              responseType: Ok.self)
-    }
-
-    func fetchMyProgress(classId: String) async throws -> ClassProgressResponse {
-        try await request(path: "/api/classes/\(classId)/progress", responseType: ClassProgressResponse.self)
     }
 
     // MARK: Vòng quay luyện nói
