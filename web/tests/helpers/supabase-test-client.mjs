@@ -155,21 +155,6 @@ export async function createTestUser(tag = "u") {
   return { id: created.user.id, email, password, client };
 }
 
-/** Buộc lấy JWT mới — cần sau khi đổi membership vì org context nằm trong token. */
-export async function refreshUser(user) {
-  const { error } = await user.client.auth.refreshSession();
-  if (error) throw new Error(`refresh session thất bại: ${error.message}`);
-}
-
-/** Đọc custom claims trong JWT hiện tại (để kiểm tra hook nhúng org context). */
-export async function jwtClaims(user) {
-  const { data } = await user.client.auth.getSession();
-  const token = data?.session?.access_token;
-  if (!token) return null;
-  const payload = token.split(".")[1];
-  return JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-}
-
 /**
  * Dọn dẹp: xoá user test và mọi dữ liệu cascade theo.
  * Gọi trong `after()` để không để lại rác trên database.
@@ -182,18 +167,6 @@ export async function cleanupUsers(...users) {
       await admin.auth.admin.deleteUser(u.id);
     } catch {
       // Không làm test fail vì lỗi dọn dẹp
-    }
-  }
-}
-
-/** Xoá các org test theo id. */
-export async function cleanupOrgs(...orgIds) {
-  const admin = adminClient();
-  for (const id of orgIds.filter(Boolean)) {
-    try {
-      await admin.from("organizations").delete().eq("id", id);
-    } catch {
-      // bỏ qua
     }
   }
 }
