@@ -1,5 +1,8 @@
-# Build chỉ cần biến TỒN TẠI để prerender — giá trị thật đến từ runtime env
-# của container (docker-compose --env-file), không bake vào image.
+# NEXT_PUBLIC_* chạy ở trình duyệt — Next.js bake cứng giá trị này vào JS lúc
+# `next build`, không đọc được từ env runtime của container. Phải truyền giá
+# trị THẬT qua --build-arg lúc build image (không phải placeholder) — các
+# secret phía server (SUPABASE_SERVICE_ROLE_KEY, GROQ_API_KEY...) vẫn đọc từ
+# runtime env (`docker-compose --env-file`) như bình thường, không bake vào.
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -7,10 +10,12 @@ RUN npm ci
 
 FROM node:22-alpine AS builder
 WORKDIR /app
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
 RUN npx next build
 
 FROM node:22-alpine AS runner
