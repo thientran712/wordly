@@ -1,12 +1,13 @@
 # Thiết kế: Chuyển hạ tầng Wordly sang VPS tự quản
 
-**Ngày:** 2026-10-10
-**Trạng thái:** Chờ duyệt
+**Ngày:** 2026-10-10 (cập nhật: điền domain + VPS thật, dùng chung VPS)
+**Trạng thái:** Đã duyệt — chờ viết implementation plan
 
 ## 1. Mục tiêu & phạm vi
 
-Chuyển Wordly từ Vercel + Supabase Cloud (managed) sang tự host trên 1 VPS,
-có domain riêng. Mục tiêu chính: **giảm chi phí hạ tầng** khi hướng tới quy mô
+Chuyển Wordly từ Vercel + Supabase Cloud (managed) sang tự host trên 1 VPS
+dùng chung (xem mục "Domain & VPS đã chốt" dưới), domain là subdomain của
+domain hạ tầng chung `skillproof.work`. Mục tiêu chính: **giảm chi phí hạ tầng** khi hướng tới quy mô
 ~1000 người dùng, trong khi **giữ nguyên tối đa code nghiệp vụ hiện tại**
 (Auth, RLS multi-tenant, JWT custom claims `user_orgs`).
 
@@ -24,8 +25,41 @@ có domain riêng. Mục tiêu chính: **giảm chi phí hạ tầng** khi hư�
 - Inngest (durable jobs) — vẫn dùng Inngest Cloud.
 - Groq, DeepL, Google Cloud TTS — không đổi.
 - Cloudflare R2 (lưu video) — không đổi, không liên quan Supabase Storage.
-- Domain cụ thể — dùng placeholder `<domain>` trong spec này; điền domain
-  thật khi triển khai.
+
+**Domain & VPS đã chốt (10/10/2026):**
+- Domain: `wordly.skillproof.work` — KHÔNG phải domain riêng của Wordly.
+  `skillproof.work` là domain gốc đang dùng chung hạ tầng cho nhiều product
+  không liên quan trên cùng VPS (xem dưới) — Wordly dùng subdomain của nó
+  theo đúng pattern 2 product khác đã dùng (`localex.staging.skillproof.work`,
+  `pehub.skillproof.work`).
+- Subdomain cuối: `app.wordly.skillproof.work` (Next.js), `api.wordly.skillproof.work`
+  (Supabase Kong) — đã thay thế mọi placeholder `<domain>` trong các mục dưới.
+- VPS: **DÙNG CHUNG**, không phải VPS riêng cho Wordly — `167.99.74.215`,
+  droplet DigitalOcean `ubuntu-s-2vcpu-4gb-sgp1` (2 vCPU, 4GB RAM, Singapore),
+  Ubuntu 24.04.5 LTS. Đang chạy 2 product khác không liên quan:
+  - `localex` (staging): 4 container — api/webapp/admin/postgres
+  - `pehub` (prod): 2 container — api-blue/db
+  Theo quy ước ATLAS (1 Linux user/app), mỗi product có user riêng
+  (`deploy-localex`, `deploy-pehub` đã có) — sẽ tạo thêm `deploy-wordly`.
+  Docker 29.9.0 + nginx 1.24.0 + certbot đã cài sẵn trên box, không cần cài
+  lại ở bước 1 của quy trình triển khai (mục 5).
+- **Kiểm tài nguyên thực tế (10/10/2026, trước khi thêm Wordly):** `free -h`
+  báo 3.8GB tổng, 971MB đang dùng, ~2.9GB "available". `docker stats` cho
+  thấy 6 container hiện có chỉ dùng tổng ~386MiB RAM thực tế (limit cgroup
+  cao hơn nhiều, ví dụ postgres limit 512MB nhưng dùng 80MB) — tải thực tế
+  nhẹ hơn nhiều so với RAM tổng, đủ chỗ cho ước tính stack Supabase self-host
+  ~1.5-2.3GB ở mục 3. Rủi ro RAM giữ nguyên ghi chú ở mục 6 (theo dõi
+  `docker stats` sau khi lên, có phương án tắt Realtime nếu cần) — chỉ khác
+  là giờ phải theo dõi CẢ tải của `localex`/`pehub` tăng lên cùng lúc, không
+  chỉ tải riêng Wordly.
+- **nginx/SSL theo đúng pattern đã có trên box:** mỗi product 1 file riêng
+  trong `sites-available/` (sẽ tạo `wordly.prod.webapp.conf` +
+  `wordly.prod.api.conf`, không đụng file của `localex`/`pehub`), 1
+  certbot cert gộp cả 2 subdomain Wordly (giống cách cert `localex-staging`
+  gộp 3 domain `api`/`admin`/`app` làm một) — `certbot --nginx -d
+  app.wordly.skillproof.work -d api.wordly.skillproof.work`.
+- Layout `/opt/wordly/prod/{web,supabase}/`, `/var/backups/wordly/prod/`
+  theo đúng mục 5 của `CLAUDE.md` ("Infrastructure").
 
 ## 2. Vì sao tự host Supabase (không viết Auth riêng)
 
@@ -48,8 +82,8 @@ Internet
    │ HTTPS (443)
    ▼
 ┌──────────────── nginx (host, Let's Encrypt SSL) ──────────────────┐
-│  app.<domain>  → proxy → 127.0.0.1:3000   (Next.js container)      │
-│  api.<domain>  → proxy → 127.0.0.1:8000   (Supabase Kong gateway)  │
+│  app.wordly.skillproof.work  → proxy → 127.0.0.1:3000   (Next.js container)      │
+│  api.wordly.skillproof.work  → proxy → 127.0.0.1:8000   (Supabase Kong gateway)  │
 └──────────────────────────────────────────────────────────────────┘
          │                                  │
          ▼                                  ▼
@@ -66,7 +100,7 @@ Internet
          └──► Cloudflare R2 (lưu video — không đổi)
 ```
 
-### Phân bổ RAM trên VPS 4GB (ước tính, theo dõi thực tế sau khi lên)
+### Phân bổ RAM trên VPS dùng chung (4GB tổng, ~2.9GB available trước khi thêm Wordly)
 
 | Service | RAM ước tính |
 |---|---|
@@ -78,14 +112,19 @@ Internet
 | Kong (gateway) | ~100-150 MB |
 | Studio | ~150-200 MB |
 | Next.js container | ~300-500 MB |
-| nginx + OS | ~300-400 MB |
-| **Tổng ước tính** | **~1.5-2.3 GB / 4 GB** |
+| nginx + OS | đã cài sẵn, tính trong 971MB đang dùng của box |
+| **Tổng ước tính thêm cho Wordly** | **~1.2-1.9 GB** |
 
-Code hiện tại không dùng Supabase Realtime (`.channel(...)` — đã grep, không
-có kết quả trong `web/src/`). Nếu RAM căng khi lên production thật, tắt
-container `realtime` trong `docker-compose.yml` là cách giảm tải nhanh nhất,
+`localex` + `pehub` hiện chỉ dùng thực tế ~386MiB RAM (xem mục "Domain & VPS
+đã chốt") dù limit cgroup cao hơn nhiều — cộng ước tính Wordly vẫn nằm trong
+~2.9GB available. Code hiện tại không dùng Supabase Realtime (`.channel(...)`
+— đã grep, không có kết quả trong `web/src/`). Nếu RAM căng khi lên
+production thật (do `localex`/`pehub` tăng tải CÙNG LÚC với Wordly, không
+chỉ riêng Wordly), tắt container `realtime` + đặt `mem_limit` cho mỗi
+service Supabase trong `docker-compose.yml` là cách giảm tải nhanh nhất,
 không ảnh hưởng tính năng — ghi chú này để sẵn, chưa áp dụng ngay theo quyết
-định "giữ nguyên toàn bộ stack, theo dõi rồi nâng cấp VPS nếu cần".
+định "giữ nguyên toàn bộ stack, theo dõi `docker stats` của CẢ BOX rồi quyết
+tắt Realtime hoặc nâng cấp VPS nếu cần".
 
 ## 4. Các thành phần chi tiết
 
@@ -96,7 +135,7 @@ không ảnh hưởng tính năng — ghi chú này để sẵn, chưa áp dụn
 - Volume Postgres mount vào `/opt/wordly/prod/supabase/volumes/db` để dữ
   liệu sống sót qua `docker compose down/up`.
 - `SUPABASE_URL` nội bộ cho các service khác gọi là `http://localhost:8000`
-  qua Kong; public là `https://api.<domain>`.
+  qua Kong; public là `https://api.wordly.skillproof.work`.
 - JWT secret, anon key, service role key: tự sinh bằng script Supabase cung
   cấp, lưu trong `.env` của Supabase stack (chmod 600), **khác** `.env` của
   Next.js app nhưng giá trị key phải khớp giữa 2 phía.
@@ -104,7 +143,7 @@ không ảnh hưởng tính năng — ghi chú này để sẵn, chưa áp dụn
   (`.env` của Supabase stack) — chuyển từ Supabase Cloud dashboard sang biến
   môi trường `GOTRUE_EXTERNAL_GOOGLE_*`, `GOTRUE_EXTERNAL_APPLE_*`. Redirect
   URL đổi từ `*.supabase.co/auth/v1/callback` sang
-  `https://api.<domain>/auth/v1/callback` — phải cập nhật trong Google Cloud
+  `https://api.wordly.skillproof.work/auth/v1/callback` — phải cập nhật trong Google Cloud
   Console và Apple Developer.
 - Custom access token hook (claim `user_orgs`) — hiện là Postgres function
   đăng ký qua Supabase Cloud dashboard. Tự host thì cấu hình qua
@@ -120,7 +159,7 @@ không ảnh hưởng tính năng — ghi chú này để sẵn, chưa áp dụn
   route handlers `/api/*` phải chạy server-side, không dùng `output: export`).
 - Container chạy `next start` trên port 3000 nội bộ, port-map
   `127.0.0.1:3000:3000` (không public trực tiếp, qua nginx).
-- Env vars đổi: `NEXT_PUBLIC_SUPABASE_URL` → `https://api.<domain>`,
+- Env vars đổi: `NEXT_PUBLIC_SUPABASE_URL` → `https://api.wordly.skillproof.work`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY` → key mới sinh từ self-host. Các biến khác
   (`GROQ_API_KEY`, `DEEPL_API_KEY`, `GOOGLE_TTS_*`, Gmail SMTP) không đổi.
 - Bỏ `vercel.json`, `VERCEL_URL` khỏi code nếu có tham chiếu cứng.
@@ -129,12 +168,12 @@ không ảnh hưởng tính năng — ghi chú này để sẵn, chưa áp dụn
 
 ### 4.3. nginx + SSL
 
-- 2 server block: `app.<domain>` (proxy Next.js), `api.<domain>` (proxy
+- 2 server block: `app.wordly.skillproof.work` (proxy Next.js), `api.wordly.skillproof.work` (proxy
   Supabase Kong).
 - `client_max_body_size` đủ lớn cho upload (kiểm tra giới hạn hiện tại nếu
   có upload file qua R2 presigned URL — nếu đã presigned thì nginx không
   nằm trên đường upload, không cần tăng).
-- SSL qua `certbot --nginx -d app.<domain> -d api.<domain>`.
+- SSL qua `certbot --nginx -d app.wordly.skillproof.work -d api.wordly.skillproof.work`.
 - Theo `atlas-maintenance-502`: có trang fallback khi upstream down (tuỳ
   chọn, không bắt buộc cho lần triển khai đầu).
 
@@ -150,8 +189,8 @@ không ảnh hưởng tính năng — ghi chú này để sẵn, chưa áp dụn
 
 ### 4.5. iOS app
 
-- Đổi base URL API: Vercel URL → `https://app.<domain>`.
-- Đổi Supabase client URL + anon key: `*.supabase.co` → `https://api.<domain>`
+- Đổi base URL API: Vercel URL → `https://app.wordly.skillproof.work`.
+- Đổi Supabase client URL + anon key: `*.supabase.co` → `https://api.wordly.skillproof.work`
   + key mới.
 - Cấu hình lại redirect URL cho Google/Apple Sign-In (xem 4.1) — cả phía
   Supabase Auth config và phía Apple Developer / Google Cloud Console.
@@ -161,15 +200,20 @@ không ảnh hưởng tính năng — ghi chú này để sẵn, chưa áp dụn
 
 ## 5. Quy trình triển khai (tổng quan, chi tiết ở plan)
 
-1. Cài Docker + Docker Compose trên VPS (nếu chưa có).
+1. Tạo user `deploy-wordly` (group `docker`, không sudo) + layout
+   `/opt/wordly/prod/{web,supabase}/`, `/var/backups/wordly/prod/` — Docker/
+   nginx/certbot đã có sẵn trên box, không cần cài lại.
 2. Dựng Supabase self-hosted stack, verify Postgres + Auth + PostgREST chạy
    được qua `localhost`.
 3. **Chuyển schema + dữ liệu**: dump từ Supabase Cloud hiện tại
    (`supabase db dump`), restore vào Postgres tự host. Đây là bước rủi ro
    cao nhất — cần kiểm tra kỹ dữ liệu khớp 100% trước khi cắt DNS.
 4. Build + chạy Next.js container, verify nội bộ (`curl localhost:3000`).
-5. Cấu hình nginx + SSL cho cả 2 subdomain.
-6. Trỏ DNS domain thật về VPS (bước này cần domain cụ thể).
+5. Cấu hình nginx (file riêng `wordly.prod.webapp.conf` + `wordly.prod.api.conf`
+   trong `sites-available/`, không đụng file của `localex`/`pehub`) + SSL
+   (`certbot --nginx -d app.wordly.skillproof.work -d api.wordly.skillproof.work`).
+6. Trỏ DNS: thêm 2 record A (`app.wordly`, `api.wordly`) trỏ về `167.99.74.215`
+   tại nơi quản lý DNS của `skillproof.work`.
 7. Verify toàn bộ flow (đăng nhập, dịch, lưu từ, email) trên domain mới
    trước khi đổi iOS app.
 8. Sửa + build lại iOS app, test kỹ, release TestFlight.
@@ -186,8 +230,14 @@ không ảnh hưởng tính năng — ghi chú này để sẵn, chưa áp dụn
 - **Session khác đang code tính năng mới** trên repo — việc đổi env vars,
   middleware liên quan Supabase URL có thể đụng conflict. Cần đồng bộ thời
   điểm merge.
-- **RAM 4GB** có thể không đủ khi traffic tăng — đã có phương án tắt
-  Realtime nếu cần, theo dõi bằng `docker stats` sau khi lên.
+- **VPS dùng chung với `localex`/`pehub`** — RAM hiện đủ dư (xem mục 1 "Domain
+  & VPS đã chốt"), nhưng rủi ro khác với VPS riêng: (a) nếu `localex`/`pehub`
+  tăng tải bất ngờ, Wordly bị ảnh hưởng cùng lúc chứ không cô lập; (b) mọi
+  thao tác trên box (restart Docker daemon, đổi nginx global config, vá OS)
+  ảnh hưởng cả 3 product — cần cẩn trọng, không chỉ test riêng Wordly khi
+  đổi gì ở tầng host; (c) đã có phương án tắt Realtime nếu RAM căng, theo
+  dõi bằng `docker stats` của CẢ BOX (không chỉ container Wordly) sau khi
+  lên.
 - **App iOS đang có người dùng qua TestFlight** — đổi endpoint là breaking
   change, bắt buộc phải build lại, người dùng cũ phải update app mới hoạt
   động lại được sau khi cắt DNS.
