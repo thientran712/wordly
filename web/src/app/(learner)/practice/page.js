@@ -313,6 +313,7 @@ function PracticePageInner() {
       body: JSON.stringify({ title, messages: firstMessages || [], word_id: wordIdParam || undefined }),
     });
     const data = await res.json();
+    if (!res.ok || !data.session) throw new Error("Failed to create session");
     const session = data.session;
     setSessions(prev => [session, ...prev]);
     setActiveSessionId(session.id);
@@ -388,9 +389,9 @@ function PracticePageInner() {
       saveMessages(withReply, sessionId);
 
       // Auto-title the session right after the user's first real message
-      // (currentMessages here is just [kickoff, autoGreeting] from startSession).
-      // Skip if a word context already gave it a meaningful title at creation.
-      if (!wordParam && currentMessages.length === 2) {
+      // (currentMessages here is just [kickoff, autoGreeting] from startSession
+      // for word-tied chats, or [] for a fresh blank-composer chat).
+      if (currentMessages.length <= 2) {
         generateTitle(sessionId, newMessages);
       }
 
@@ -407,7 +408,7 @@ function PracticePageInner() {
       setError("Có lỗi xảy ra. Thử lại nhé!");
       return currentMessages;
     }
-  }, [saveMessages, wordParam, streamReply, generateTitle]);
+  }, [saveMessages, streamReply, generateTitle]);
 
   // ── Send typed text message ────────────────────────────────────────────────
   // If there's no session yet (blank ChatGPT-style composer), create one first
@@ -424,7 +425,12 @@ function PracticePageInner() {
       setSessionState("active");
       // Persist whatever's already on screen (e.g. a word-explainer greeting
       // from startSession) as the session's starting history.
-      sessionId = await createSession(currentMessages);
+      try {
+        sessionId = await createSession(currentMessages);
+      } catch {
+        setError("Có lỗi xảy ra. Thử lại nhé!");
+        return;
+      }
     }
 
     sendMessage(text, currentMessages, sessionId).then((updated) => setMessages(updated));
@@ -579,7 +585,12 @@ function PracticePageInner() {
               const currentMessages = messagesRef.current;
               let sessionId = activeSessionIdRef.current;
               if (!sessionId) {
-                sessionId = await createSessionRef.current(currentMessages);
+                try {
+                  sessionId = await createSessionRef.current(currentMessages);
+                } catch {
+                  setError("Có lỗi xảy ra. Thử lại nhé!");
+                  return;
+                }
               }
               sendMessage(text, currentMessages, sessionId).then(updated => setMessages(updated));
             }
