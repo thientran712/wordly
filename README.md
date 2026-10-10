@@ -6,8 +6,8 @@ Monorepo cho Wordly — web app và app di động dùng chung một backend Sup
 |---|---|---|
 | `web/` | Web app Next.js 16 (UI + API cho cả web lẫn mobile) | Vercel, Root Directory = `web` |
 | `mobile/` | App native — iOS (SwiftUI) ở `mobile/ios/` | App Store |
-| `supabase/` | Cấu hình Supabase CLI + migration B2B (dùng chung) | Chạy tay, xem `CLAUDE.md` |
-| `migrations/` | Migration SQL cũ (B2C), chạy tay trên SQL Editor | Chạy tay |
+| `supabase/` | Cấu hình Supabase CLI + migration (dùng chung web + mobile) | Chạy tay, xem `CLAUDE.md` |
+| `migrations/` | Migration SQL cũ, chạy tay trên SQL Editor | Chạy tay |
 | `docs/` | Tài liệu, spec | — |
 
 ## Web — chạy local
@@ -31,4 +31,4 @@ npx supabase db reset
 
 Hoặc từ `web/`: `npm run db:reset` (script đã trỏ `--workdir ..`).
 
-Chi tiết: `docs/LOCAL-SETUP-B2B.md`. Quy chuẩn làm việc: `CLAUDE.md`.
+Quy chuẩn làm việc: `CLAUDE.md`.

@@ -8,7 +8,6 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 - `PROGRESS.md` — trạng thái hiện tại, đang làm gì, còn gì (đọc đầu mỗi phiên)
 - `PRODUCT.md` — tổng quan sản phẩm, kiến trúc, nợ kỹ thuật
 - `docs/superpowers/specs/` — spec thiết kế đã duyệt
-- `docs/LOCAL-SETUP-B2B.md` — dựng môi trường local + test
 
 **Cấu trúc repo (monorepo):**
 
@@ -25,11 +24,11 @@ Tài liệu này là quy chuẩn làm việc cho mọi phiên. Đọc trước k
 
 | Thư mục | Nội dung |
 |---|---|
-| `app/(auth)`, `app/(learner)`, `app/(org)` | Trang theo nhóm người dùng — route group, **không** thêm vào URL |
+| `app/(auth)`, `app/(learner)` | Trang theo nhóm người dùng — route group, **không** thêm vào URL |
 | `app/api/` | API — là hợp đồng với app iOS, đổi đường dẫn = vỡ app |
-| `components/ui`, `layout`, `home`, `auth`, `org`, `spinner` | UI dùng chung / khung trang / trang chủ / theo tính năng |
+| `components/ui`, `layout`, `home`, `auth`, `spinner` | UI dùng chung / khung trang / trang chủ / theo tính năng |
 | `lib/supabase`, `auth`, `security` | Client Supabase, nhận diện người dùng (cookie + Bearer), rate limit |
-| `lib/ai`, `org`, `learning`, `tuition`, `storage`, `email` | Logic theo domain — logic thuần đặt ở đây để test được |
+| `lib/ai`, `learning`, `storage`, `email` | Logic theo domain — logic thuần đặt ở đây để test được |
 | `inngest/`, `middleware.js` | Job nền; middleware bắt buộc ở `src/` |
 
 Thêm file mới: đặt theo domain, import bằng alias `@/`.
@@ -44,16 +43,15 @@ Thêm file mới: đặt theo domain, import bằng alias `@/`.
 | 2 | **KHÔNG chạy migration lên production/staging** khi chưa được đồng ý | Không có rollback |
 | 3 | **KHÔNG commit `mobile/ios/Config/Secrets.xcconfig`** | Chứa credential thật của app iOS (đã gitignore — kiểm `git status --ignored mobile/` trước khi add) |
 | 4 | **KHÔNG `git add -A`** khi có file untracked chứa secret | Đã từng vô tình commit credential iOS |
-| 5 | **KHÔNG dùng service role** cho request của người dùng | Bypass RLS = rò dữ liệu chéo trung tâm |
+| 5 | **KHÔNG dùng service role** cho request của người dùng | Bypass RLS = rò dữ liệu chéo người dùng |
 | 6 | Đọc `web/node_modules/next/dist/docs/` trước khi viết code Next.js | Next 16 có breaking changes |
 
-### Về đa người thuê (multi-tenant)
+### Về cô lập dữ liệu người dùng
 
-Rò dữ liệu **chéo trung tâm** là sự cố nghiêm trọng nhất có thể xảy ra — mất
-một khách vì thấy dữ liệu khách khác là mất toàn bộ uy tín. Nên:
+Rò dữ liệu **chéo người dùng** là sự cố nghiêm trọng nhất có thể xảy ra (đã
+từng xảy ra, xem `PROGRESS.md` 7/10/2026). Nên:
 
-- Mọi bảng có dữ liệu tenant **phải** bật RLS, không có ngoại lệ
-- Mọi bảng mới **phải** có test cô lập chéo org trước khi coi là xong
+- Mọi bảng có dữ liệu riêng người dùng **phải** bật RLS, không có ngoại lệ
 - Dùng `lib/supabase/server` (anon + RLS) làm mặc định; `createAdminClient()`
   chỉ cho Inngest job và script admin
 
@@ -81,8 +79,8 @@ không chứng minh được nó bắt được lỗi gì.
 | Logic SQL (streak, snapshot) | Mô phỏng bằng JS rồi đối chiếu | Mọi nơi |
 
 **Mẹo quan trọng:** khi logic nằm trong route handler thì không test được.
-Tách ra `web/src/lib/` rồi test ở đó. Ví dụ: `material-validation.js` được tách
-khỏi `api/materials/` chính vì lý do này.
+Tách ra `web/src/lib/` rồi test ở đó. Ví dụ: `quiz-generation.js` tách khỏi
+`api/quiz/` chính vì lý do này.
 
 **Với SQL không chạy được ở local:** viết bản mô phỏng bằng JS, đối chiếu với
 thuật toán đang dùng trong app. Cách này đã bắt được lỗi dấu trong hàm streak
@@ -148,41 +146,11 @@ Nguyên tắc báo cáo:
 
 ## 6. Kiến trúc cần biết
 
-### Ngữ cảnh tổ chức nằm trong JWT
-
-Claim `user_orgs` = `{ org_id: role }` do custom access token hook nhúng vào.
-RLS đọc từ JWT, **không query bảng** (tránh chậm + đệ quy vô hạn trong policy).
-
-**Hệ quả phải nhớ:** đổi membership thì JWT cũ vẫn còn hiệu lực tới 1 giờ.
-Sau khi thêm/xoá người vào org hoặc lớp, client **phải** gọi
-`supabase.auth.refreshSession()`. Không làm thì người dùng không thấy quyền mới.
-
-**Nếu hook chưa bật:** `user_orgs` rỗng → mọi policy chặn hết → hệ thống trông
-như "không ai có quyền gì". Đây là lỗi dễ chẩn đoán sai nhất.
-
-### Dữ liệu học tập KHÔNG mang org_id
-
-`translate_history`, `journal_entries`, `practice_sessions` thuộc **con người**,
-không thuộc trung tâm. Học viên rời trung tâm vẫn giữ tiến độ.
-
-Giáo viên đọc `student_progress_snapshots` (số liệu tổng hợp), **không** đọc
-trực tiếp các bảng trên. Vừa là quyền riêng tư (điểm bán hàng), vừa là
-performance (không join bảng hàng triệu dòng).
-
-### Ba cơ chế khả biến
-
-Trung tâm khác nhau thì giải bằng **dữ liệu**, không phải code riêng:
-
-| Cơ chế | Dùng cho |
-|---|---|
-| `org_settings` | Cấu hình (giờ gửi mail, thang điểm, ngưỡng cảnh báo) |
-| `org_features` | Bật/tắt tính năng — **đồng thời là cơ chế bán gói** |
-| `custom_fields` + `org_field_defs` | Trường dữ liệu riêng của trung tâm |
-
-Đọc cấu hình **luôn** qua `getOrgSetting()`, không query thẳng bảng — để giá trị
-mặc định nằm một chỗ.
-
-**Tuyệt đối tránh:** fork codebase hoặc `if (org === 'ABC')` cho từng khách.
+> Đã bỏ hẳn tính năng B2B (trung tâm/tổ chức, lớp, multi-tenant RLS qua
+> claim JWT `user_orgs`, `org_settings`/`org_features`/`custom_fields`) —
+> xem `docs/superpowers/specs/2026-10-10-remove-b2b-design.md`. Mọi dữ liệu
+> giờ cô lập theo `user_id` qua RLS chuẩn (`auth.uid() = user_id`), không
+> còn khái niệm tổ chức/lớp/membership.
 
 ### Next 16
 
@@ -196,10 +164,12 @@ mặc định nằm một chỗ.
 
 Xếp theo mức độ cần để ý:
 
-1. **Lưu trữ** (Supabase Storage) — lớn nhất, vượt cả AI. Bắt buộc có quota.
-2. **Groq** (Alex, từ điển) — đã cache mạnh
-3. **Google TTS** — đã cache token + audio
-4. **Vercel** — thấp ở quy mô hiện tại
+1. **Groq** (Alex, từ điển) — đã cache mạnh
+2. **Google TTS** — đã cache token + audio (cache ra R2)
+3. **Vercel** — thấp ở quy mô hiện tại
+
+Cloudflare R2 giờ chỉ cache audio TTS (dung lượng nhỏ) — tính năng video
+tốn lưu trữ lớn (B2B) đã xóa, xem `docs/superpowers/specs/2026-10-10-remove-b2b-design.md`.
 
 Thêm tính năng có upload/AI thì phải nghĩ tới quota và cache **ngay từ đầu**.
 
