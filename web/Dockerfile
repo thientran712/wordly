@@ -14,6 +14,11 @@ ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+# Thiếu --build-arg thì ARG rỗng chứ không lỗi — build vẫn "thành công"
+# nhưng bake chuỗi rỗng vào JS phía client (tái diễn lỗi placeholder đã gặp
+# khi lên VPS lần đầu). Chặn ở đây thay vì để lộ ra lúc chạy thật.
+RUN test -n "$NEXT_PUBLIC_SUPABASE_URL" && test -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" || \
+  (echo "THIẾU --build-arg NEXT_PUBLIC_SUPABASE_URL/_ANON_KEY" >&2 && exit 1)
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx next build

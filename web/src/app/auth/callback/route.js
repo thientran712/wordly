@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { safeRedirectPath } from "@/lib/auth/safe-redirect-path";
 import { NextResponse } from "next/server";
 
 export async function GET(request) {
@@ -11,7 +12,7 @@ export async function GET(request) {
   const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
   const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : fallbackOrigin;
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = safeRedirectPath(searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();
