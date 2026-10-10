@@ -96,6 +96,28 @@ final class WidgetScheduleTests: XCTestCase {
         XCTAssertEqual(back, d)
     }
 
+    // Cài đặt cũ (trước khi thêm lockStyle/homeTheme) lưu trong App Group phải
+    // decode được bình thường, 2 khoá mới lấy mặc định thay vì lỗi/crash.
+    func testSettingsDecodeOldDataWithoutStyleKeys() throws {
+        let oldJSON = """
+        {"source":"saved","selectedIds":[],"intervalMinutes":30,
+         "activeStartMinutes":420,"activeEndMinutes":1320,"showMeaning":true,"includeBank":true}
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(WidgetSettings.self, from: oldJSON)
+        XCTAssertEqual(decoded.lockStyle, .full)
+        XCTAssertEqual(decoded.homeTheme, .defaultTheme)
+        XCTAssertEqual(decoded.intervalMinutes, 30, "các field cũ vẫn giữ nguyên giá trị đã lưu")
+    }
+
+    func testSettingsStyleRoundTrip() throws {
+        var s = WidgetSettings()
+        s.lockStyle = .compact
+        s.homeTheme = .sunset
+        let back = try JSONDecoder().decode(WidgetSettings.self, from: JSONEncoder().encode(s))
+        XCTAssertEqual(back.lockStyle, .compact)
+        XCTAssertEqual(back.homeTheme, .sunset)
+    }
+
     // Review: pool rỗng → entries chỉ có 1 entry tại `now` → xin lịch mới ngay lập tức,
     // lặp liên tục, đốt hết lượt cập nhật của widget. Phải chờ ít nhất 30 phút.
     func testReloadDateNeverImmediate() {

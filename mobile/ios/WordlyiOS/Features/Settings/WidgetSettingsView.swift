@@ -40,7 +40,10 @@ final class WidgetSettingsViewModel: ObservableObject {
 
     func toggle(_ id: String) {
         if let i = settings.selectedIds.firstIndex(of: id) { settings.selectedIds.remove(at: i) }
-        else { settings.selectedIds.append(id) }
+        else {
+            settings.selectedIds.append(id)
+            settings.source = .custom  // chọn 1 từ ở đây là chuyển sang chế độ tự chọn
+        }
     }
 
     func setAllDay(_ on: Bool) {
@@ -65,6 +68,7 @@ final class WidgetSettingsViewModel: ObservableObject {
 struct WidgetSettingsView: View {
     @StateObject private var vm = WidgetSettingsViewModel()
     @State private var search = ""
+    @State private var showCustomPicker = false
 
     var body: some View {
         Form {
@@ -73,28 +77,49 @@ struct WidgetSettingsView: View {
                 .listRowInsets(EdgeInsets())
 
             Section {
-                Picker("Hiện từ", selection: $vm.settings.source) {
-                    Text("Đã lưu").tag(WidgetSettings.Source.saved)
-                    Text("Gần đây").tag(WidgetSettings.Source.recent)
-                    Text("Tự chọn").tag(WidgetSettings.Source.custom)
-                }
-                .pickerStyle(.segmented)
-                Toggle(isOn: $vm.settings.includeBank) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Trộn từ mới từ kho")
-                        Text("Xen kẽ 2 từ của bạn : 1 từ mới theo trình độ")
-                            .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                if vm.settings.source == .custom {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Đang dùng danh sách tự chọn")
+                                .font(WordlyFonts.body(14, weight: .semibold))
+                            Text("\(vm.settings.selectedIds.count) từ")
+                                .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                        }
+                        Spacer()
+                        Button("Đổi lại") { vm.settings.source = .saved }
+                            .font(WordlyFonts.body(13, weight: .semibold))
                     }
+                } else {
+                    // Chỉ 2 lựa chọn phổ biến ở màn chính — "Tự chọn" chuyển
+                    // xuống mục "Tùy chỉnh thêm" bên dưới để không làm rối
+                    // (trước đây 3 lựa chọn + 1 toggle phụ thuộc gây khó hiểu).
+                    Picker("Hiện từ", selection: $vm.settings.source) {
+                        Text("Đã lưu").tag(WidgetSettings.Source.saved)
+                        Text("Gần đây").tag(WidgetSettings.Source.recent)
+                    }
+                    .pickerStyle(.segmented)
+                    Toggle(isOn: $vm.settings.includeBank) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Trộn từ mới từ kho")
+                            Text("Xen kẽ 2 từ của bạn : 1 từ mới theo trình độ")
+                                .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                        }
+                    }
+                    .tint(WordlyColors.electric)
                 }
-                .tint(WordlyColors.electric)
-                .disabled(vm.settings.source == .custom)
             } header: {
                 Text("Nguồn từ")
             } footer: {
                 Text(sourceFooter)
             }
 
-            if vm.settings.source == .custom { customPicker }
+            Section {
+                DisclosureGroup("Tự chọn từng từ", isExpanded: $showCustomPicker) {
+                    customPickerContent
+                }
+            } footer: {
+                Text("Chỉ dành riêng những từ bạn chọn, không trộn từ kho.")
+            }
 
             Section("Đổi từ") {
                 Picker("Đổi từ mỗi", selection: $vm.settings.intervalMinutes) {
@@ -104,6 +129,22 @@ struct WidgetSettingsView: View {
                 }
                 Toggle("Hiện nghĩa tiếng Việt", isOn: $vm.settings.showMeaning)
                     .tint(WordlyColors.electric)
+            }
+
+            Section {
+                Picker("Màn hình khoá", selection: $vm.settings.lockStyle) {
+                    Text("Đầy đủ").tag(WidgetSettings.LockStyle.full)
+                    Text("Gọn, chữ to").tag(WidgetSettings.LockStyle.compact)
+                }
+                Picker("Màu nền màn hình chính", selection: $vm.settings.homeTheme) {
+                    Text("Mặc định").tag(WidgetSettings.HomeTheme.defaultTheme)
+                    Text("Hoàng hôn").tag(WidgetSettings.HomeTheme.sunset)
+                    Text("Nửa đêm").tag(WidgetSettings.HomeTheme.midnight)
+                }
+            } header: {
+                Text("Kiểu hiển thị")
+            } footer: {
+                Text("Màn hình khoá chỉ đổi được cỡ chữ/bố cục — iOS tự tô màu đơn sắc, không đổi được nền/viền ở đây.")
             }
 
             Section {
@@ -190,8 +231,8 @@ struct WidgetSettingsView: View {
         .padding(.horizontal, 4)
     }
 
-    private var customPicker: some View {
-        Section {
+    private var customPickerContent: some View {
+        Group {
             TextField("Tìm từ…", text: $search)
             let shown = vm.words.filter { search.isEmpty || $0.word.localizedCaseInsensitiveContains(search) }
             if shown.isEmpty {
@@ -213,8 +254,6 @@ struct WidgetSettingsView: View {
                     }
                 }
             }
-        } header: {
-            Text("Chọn từ (\(vm.settings.selectedIds.count))")
         }
     }
 

@@ -45,6 +45,22 @@ struct WidgetSettings: Codable, Equatable {
     /// Trộn thêm từ mới trong kho từ vựng (không áp dụng cho "Tự chọn")
     var includeBank: Bool = true
 
+    /// Kiểu hiển thị widget MÀN HÌNH KHOÁ — Apple không cho tùy biến màu/nền ở
+    /// đây (OS tự tô đơn sắc theo tint người dùng chọn), chỉ cỡ chữ/đậm/bố cục.
+    enum LockStyle: String, Codable, CaseIterable {
+        case full       // nhãn + từ + nghĩa (hiện tại)
+        case compact    // chỉ từ, cỡ lớn + đậm
+    }
+    var lockStyle: LockStyle = .full
+
+    /// Theme màu nền widget MÀN HÌNH CHÍNH (home screen có hỗ trợ nền tùy ý).
+    enum HomeTheme: String, Codable, CaseIterable {
+        case defaultTheme  // xanh dương → xanh lá (hiện tại)
+        case sunset        // cam → hồng
+        case midnight      // tím đậm → xanh navy
+    }
+    var homeTheme: HomeTheme = .defaultTheme
+
     static let intervals = [15, 30, 60, 120]
 }
 
@@ -60,6 +76,8 @@ extension WidgetSettings {
         activeEndMinutes = try c.decodeIfPresent(Int.self, forKey: .activeEndMinutes) ?? d.activeEndMinutes
         showMeaning = try c.decodeIfPresent(Bool.self, forKey: .showMeaning) ?? d.showMeaning
         includeBank = try c.decodeIfPresent(Bool.self, forKey: .includeBank) ?? d.includeBank
+        lockStyle = try c.decodeIfPresent(LockStyle.self, forKey: .lockStyle) ?? d.lockStyle
+        homeTheme = try c.decodeIfPresent(HomeTheme.self, forKey: .homeTheme) ?? d.homeTheme
     }
 }
 
