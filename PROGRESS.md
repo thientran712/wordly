@@ -33,10 +33,44 @@ liệu "trung tâm demo" `7c0dfec9-...` sẽ mất vĩnh viễn — chủ dự �
 nhận xóa). Sau khi B2B dọn xong, bước tiếp theo là chuyển hạ tầng sang VPS
 tự quản (xem `docs/superpowers/specs/2026-10-10-vps-self-hosted-infra-design.md`).
 
-**Cập nhật:** 10/10/2026 (xóa code B2B, chờ chạy migration — xem mục ngay trên)
-**Branch:** `chore/remove-b2b` (tách từ `main`, CHƯA merge) — xóa hẳn code B2B. `main` vẫn còn nguyên B2B (code + 14/14 migration cũ) cho tới khi branch này merge VÀ migration xóa chạy.
-**Môi trường:** production hiện tại (trên `main`) vẫn là trạng thái B2B cũ — 14/14 migration cũ đã chạy, trung tâm demo (`7c0dfec9-...`) vẫn còn 9/9 tính năng bật, CHƯA bị xóa (migration xóa B2B chưa chạy). R2: bucket `wordly-videos` tạo xong, không đổi.
-**Test:** trên `chore/remove-b2b`: `npm test` 226/227 (1 fail pre-existing không liên quan). Trên `main`: chưa đổi, như lần cập nhật 7/10.
+**Cập nhật:** 10/10/2026 — code B2B đã merge vào `main` (branch `chore/remove-b2b` + `chore/cleanup-b2b-leftovers`), VÀ migration xóa bảng/function B2B đã CHẠY THẬT lên production.
+
+**Migration `20261010000200_remove_b2b.sql` — ĐÃ CHẠY production (10/10/2026):**
+Thứ tự đã làm: (1) tắt "Customize Access Token (JWT) Claims" hook ở Dashboard → Auth → Hooks, (2) test login tài khoản thật → thành công, (3) `supabase link --project-ref blattojsgqyhoxkglind` rồi `supabase db query --linked --file supabase/migrations/20261010000200_remove_b2b.sql`.
+**Verify sau khi chạy:** 6 bảng B2B mẫu (`organizations`, `classes`, `memberships`, `homework`, `tuition_records`, `class_sessions`) + 4 function mẫu (`custom_access_token_hook`, `is_org_member`, `join_class_by_code`, `set_vnpay_secret`) đều không còn tồn tại; 3 cột B2B trên `quiz_attempts` (`org_id`/`class_id`/`membership_id`) đã mất. Dữ liệu B2C nguyên vẹn: `quiz_attempts` 12 dòng, `translate_history` 136 dòng.
+**Trung tâm demo `7c0dfec9-...` đã mất vĩnh viễn** (theo xác nhận xóa trước đó).
+**Chưa làm:** chủ dự án chưa tự test login lại lần nữa sau migration (chỉ test sau khi tắt hook, trước khi chạy migration) — nên thử lại 1 lần khi rảnh để chắc chắn tuyệt đối.
+
+**Branch:** đã merge hết vào `main`. `main` giờ không còn code B2B VÀ không còn bảng/function B2B trên production.
+**Môi trường:** production hiện tại = B2C only. R2: bucket `wordly-videos` tạo xong, không đổi (video B2B dùng storage riêng — xem mục "Còn thiếu dọn dẹp thủ công" bên dưới, chưa kiểm).
+**Test:** `npm test` 226/227 (1 fail pre-existing không liên quan, từ WIP OCR camera translate ở session khác).
+
+**Mục 2 (`PRODUCT.md`) — ĐÃ KIỂM, KHÔNG CẦN SỬA theo hướng B2B:** đọc lại
+toàn bộ, `PRODUCT.md` **không hề mô tả B2B** — giả định trong prompt bàn
+giao sai. File này lỗi thời theo hướng khác (model AI Groq llama-3.1/3.3 cũ
+thay vì Gemini ladder hiện tại ở `ai-models.js`, thiếu R2/video, số liệu
+route API outdated — last touch 6/10/2026, tức TRƯỚC khi B2B deploy 4/9).
+Viết lại toàn bộ là việc riêng, lớn — chủ dự án chọn dừng, chưa làm.
+
+**Mục 3 (dọn dữ liệu/chi phí thật B2B) — ĐÃ XONG 10/10/2026:**
+Kiểm + xóa sau khi xác nhận, verify lại = 0 object còn sót:
+- Storage bucket `lesson-materials`: 0 object từ đầu, không cần làm gì.
+- Storage bucket `speaking-submissions`: xóa 2 object (`seed-0.webm`,
+  `seed-1.webm`, ~23KB mỗi file) của org demo `7c0dfec9-4730-40ad-8e5f-68cec68e0147`
+  qua `supabase.storage.from(...).remove()` (service role) — xóa qua SQL
+  DELETE trên `storage.objects` KHÔNG xóa file thật, phải dùng Storage API.
+- Secret `vnpay_hash_secret_<org_id>` trong Vault: đã sạch từ trước (0 secret
+  tìm thấy) — khả năng tự dọn qua trigger `cleanup_vnpay_secret` khi org demo
+  bị xóa trước đó, hoặc do CASCADE của migration.
+- R2 bucket `wordly-videos`: 77 object tổng, 76 thuộc `tts/*` (cache hợp lệ,
+  giữ nguyên), 1 video sót của org demo (`7c0dfec9-.../.../9711cbde-....mp4`,
+  8KB) — đã xóa qua `DeleteObjectCommand`. List bằng `ListObjectsV2Command`
+  group theo prefix cấp 1 là cách nhanh để soát toàn bucket (77 object, ít,
+  không cần phân trang nhiều).
+
+**Còn lại từ prompt bàn giao 10/10/2026 (chưa làm):**
+4. Hạ tầng VPS tự host (xem `docs/superpowers/specs/2026-10-10-vps-self-hosted-infra-design.md`).
+5. Gợi ý chưa quyết: module TypeScript mới (đấu từ vựng real-time), đổi Auth.js/Lucia thay Supabase Auth — cần brainstorm riêng.
 
 ### 7/10/2026 — Xoá mềm ĐÃ LÊN production + iOS 1.0.0 (build 6) ĐÃ UPLOAD
 
