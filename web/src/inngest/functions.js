@@ -1,7 +1,7 @@
 import { inngest } from "./client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendDailyWordEmail } from "@/lib/email/send-email";
-import { selectEmailContent, selectBankWords, EMAIL_INTERVALS } from "@/lib/email/select-word-for-email";
+import { selectEmailContent, selectBankWords } from "@/lib/email/select-word-for-email";
 
 // Validate a timezone string; fall back to Asia/Ho_Chi_Minh if invalid/empty.
 function safeTimezone(tz) {
@@ -289,49 +289,25 @@ export const sendSlotEmail = inngest.createFunction(
       throw new Error(`Email send failed: ${sendResult.error}`);
     }
 
-    // ── Step 6: advance spaced-repetition schedule for every sent entry ───────
-    // Sets due_at = now + interval[review_count] so the same word isn't picked
-    // again until its next scheduled window. Throws on DB failure so Inngest
-    // retries this step (email already sent — only the schedule update is redone).
-    await step.run("advance-schedule", async () => {
+    // ── Step 6: log every sent entry to suggestion_log ────────────────────────
+    // Gửi email KHÔNG còn tự coi là "đã học tốt" — chỉ ghi nhận đã gợi ý.
+    // due_at/state/review_count chỉ đổi khi user chủ động bấm Dễ/Khó/Bỏ qua
+    // lâu hơn (PATCH /api/learning/schedule). Xem spec 2026-10-10.
+    await step.run("log-suggestions", async () => {
       const supabase = createAdminClient();
-      const now = new Date();
 
-      const buildUpdate = (reviewCount) => {
-        const intervalDays = EMAIL_INTERVALS[Math.min(reviewCount, EMAIL_INTERVALS.length - 1)];
-        const dueAt = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
-        return {
-          state: "review",
-          review_count: reviewCount + 1,
-          last_reviewed_at: now.toISOString(),
-          due_at: dueAt.toISOString(),
-          scheduled_days: intervalDays,
-        };
-      };
+      const rows = [
+        // Bank words have no translate_history row — logged via bank_word_id.
+        ...content.words.map(w => w.step === "bank"
+          ? { user_id, source: "email", entry_type: "bank", bank_word_id: w.id }
+          : { user_id, source: "email", entry_type: "translate_history", entry_id: w.id }),
+        ...(content.journal
+          ? [{ user_id, source: "email", entry_type: "journal_entries", entry_id: content.journal.id }]
+          : []),
+      ];
 
-      const results = await Promise.all([
-        // Bank words have no translate_history row — nothing to reschedule
-        ...content.words.filter(w => w.step !== "bank").map(w =>
-          supabase
-            .from("translate_history")
-            .update(buildUpdate(w.review_count ?? 0))
-            .eq("id", w.id)
-            .eq("user_id", user_id)
-        ),
-        ...(content.journal ? [
-          supabase
-            .from("journal_entries")
-            .update(buildUpdate(content.journal.review_count ?? 0))
-            .eq("id", content.journal.id)
-            .eq("user_id", user_id)
-        ] : []),
-      ]);
-
-      const failed = results.filter(r => r.error);
-      if (failed.length > 0) {
-        const msgs = failed.map(r => r.error.message).join("; ");
-        throw new Error(`advance-schedule DB update failed: ${msgs}`);
-      }
+      const { error } = await supabase.from("suggestion_log").insert(rows);
+      if (error) throw new Error(`log-suggestions DB insert failed: ${error.message}`);
     });
 
     await step.sendEvent("reschedule-tomorrow", {
