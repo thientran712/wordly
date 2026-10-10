@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { History, Trash2, X, Volume2, ChevronDown, Loader2, BookmarkCheck, Undo2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
+import SuggestionHistoryTab from "@/components/home/SuggestionHistoryTab";
 
 async function speak(text, lang = "en-US") {
   try {
@@ -58,6 +59,7 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState("history"); // 'history' | 'suggestions'
   const [confirmClear, setConfirmClear] = useState(false);
   // Thanh "Hoàn tác" sau khi xoá — xoá là xoá mềm, ids lấy từ API
   const [undo, setUndo] = useState(null); // { label, ids, snapshot }
@@ -117,7 +119,7 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
   useEffect(() => { fetchHistory(); }, [fetchHistory, refreshToken]);
 
   // Còn thanh "Hoàn tác" thì vẫn hiện, kể cả khi vừa xoá sạch danh sách
-  if (!isLoggedIn || (groups.length === 0 && !isLoading && !undo)) return null;
+  if (!isLoggedIn) return null;
 
   const showUndo = (label, ids, snapshot) => {
     clearTimeout(undoTimer.current);
@@ -196,56 +198,88 @@ export default function TranslateHistory({ refreshToken, onPick, isLoggedIn = fa
         />
       </div>
 
+      {/* Tab switcher */}
+      {!collapsed && (
+        <div className="flex gap-1 px-4 pt-2" style={{ borderBottom: "1px solid var(--divider)" }}>
+          <button
+            onClick={() => setActiveTab("history")}
+            className="text-xs font-semibold px-3 py-1.5 rounded-t-lg"
+            style={{
+              color: activeTab === "history" ? "var(--electric)" : "var(--ink-soft)",
+              borderBottom: activeTab === "history" ? "2px solid var(--electric)" : "2px solid transparent",
+            }}
+          >
+            Lịch sử dịch
+          </button>
+          <button
+            onClick={() => setActiveTab("suggestions")}
+            className="text-xs font-semibold px-3 py-1.5 rounded-t-lg"
+            style={{
+              color: activeTab === "suggestions" ? "var(--electric)" : "var(--ink-soft)",
+              borderBottom: activeTab === "suggestions" ? "2px solid var(--electric)" : "2px solid transparent",
+            }}
+          >
+            Đã gợi ý
+          </button>
+        </div>
+      )}
+
       {/* Body */}
       {!collapsed && (
-        <div>
-          {groups.map(({ day, dateLabel, entries }) => (
-            <div key={day}>
-              <div
-                className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider sticky top-0"
-                style={{ background: "var(--card-bg)", color: "var(--ink-soft)", zIndex: 1 }}
-              >
-                {dateLabel}
-              </div>
-              {entries.map(entry => (
-                <HistoryEntry
-                  key={entry.id}
-                  entry={entry}
-                  onDelete={() => handleDelete(entry.id)}
-                  onPick={onPick}
-                />
+        <>
+          {activeTab === "history" && (
+            <div>
+              {groups.map(({ day, dateLabel, entries }) => (
+                <div key={day}>
+                  <div
+                    className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider sticky top-0"
+                    style={{ background: "var(--card-bg)", color: "var(--ink-soft)", zIndex: 1 }}
+                  >
+                    {dateLabel}
+                  </div>
+                  {entries.map(entry => (
+                    <HistoryEntry
+                      key={entry.id}
+                      entry={entry}
+                      onDelete={() => handleDelete(entry.id)}
+                      onPick={onPick}
+                    />
+                  ))}
+                </div>
               ))}
-            </div>
-          ))}
 
-          {hasMore && (
-            <div className="px-4 py-3 flex justify-center">
-              <button
-                onClick={loadMore}
-                disabled={isLoadingMore}
-                className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                style={{ background: "var(--hover-bg)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
-              >
-                {isLoadingMore
-                  ? <><Loader2 size={12} className="animate-spin" /> Đang tải...</>
-                  : <><ChevronDown size={12} /> Tải thêm</>}
-              </button>
+              {hasMore && (
+                <div className="px-4 py-3 flex justify-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={isLoadingMore}
+                    className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                    style={{ background: "var(--hover-bg)", color: "var(--electric)", border: "1px solid var(--green-subtle-border)" }}
+                  >
+                    {isLoadingMore
+                      ? <><Loader2 size={12} className="animate-spin" /> Đang tải...</>
+                      : <><ChevronDown size={12} /> Tải thêm</>}
+                  </button>
+                </div>
+              )}
+
+              {/* "Xoá hết" ở cuối danh sách — trước đây nằm sát mũi tên thu gọn, hay bị bấm nhầm */}
+              {unsavedCount > 0 && (
+                <div className="px-4 py-3 flex justify-end" style={{ borderTop: "1px solid var(--divider)" }}>
+                  <button
+                    onClick={() => setConfirmClear(true)}
+                    className="no-min-h flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                    style={{ color: "var(--error)", background: "var(--error-soft)" }}
+                  >
+                    <Trash2 size={12} /> Xoá lịch sử chưa lưu
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
-          {/* "Xoá hết" ở cuối danh sách — trước đây nằm sát mũi tên thu gọn, hay bị bấm nhầm */}
-          {unsavedCount > 0 && (
-            <div className="px-4 py-3 flex justify-end" style={{ borderTop: "1px solid var(--divider)" }}>
-              <button
-                onClick={() => setConfirmClear(true)}
-                className="no-min-h flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
-                style={{ color: "var(--error)", background: "var(--error-soft)" }}
-              >
-                <Trash2 size={12} /> Xoá lịch sử chưa lưu
-              </button>
-            </div>
-          )}
-        </div>
+          {activeTab === "suggestions" && <SuggestionHistoryTab isLoggedIn={isLoggedIn} />}
+        </>
       )}
 
       {undo && (
