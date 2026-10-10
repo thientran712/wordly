@@ -33,11 +33,10 @@ liệu "trung tâm demo" `7c0dfec9-...` sẽ mất vĩnh viễn — chủ dự �
 nhận xóa). Sau khi B2B dọn xong, bước tiếp theo là chuyển hạ tầng sang VPS
 tự quản (xem `docs/superpowers/specs/2026-10-10-vps-self-hosted-infra-design.md`).
 
-**Cập nhật:** 2026-09-08 (Sửa hiệu năng B2B + table/pagination toàn hệ thống — đã kiểm chứng)
-**Branch:** `main` = TOÀN BỘ 10/10 module đã merge và deploy (commit `1ef3fd0`). Không còn branch nào chờ merge.
-**Môi trường:** TOÀN BỘ 14/14 migration đã chạy production (chủ dự án chạy `20260906000100` qua SQL Editor 6/9). R2: bucket `wordly-videos` tạo xong, 5 biến môi trường đã điền vào Vercel, kết nối đã kiểm chứng thật (upload/xác minh/xoá thành công với credential thật).
-**Test:** 259/259 pass (logic thuần) + đã kiểm chứng RLS/hook trên production · build sạch · lint sạch trên toàn bộ file mới
-**Tính năng:** trung tâm demo (`7c0dfec9-...`, gói Pro) đã bật ĐỦ 9/9 tính năng — 6 tính năng mặc định của gói Pro + 3 override thủ công (`speaking_review`, `parent_reports`, `tuition` qua bảng `org_features`, ghi 6/9/2026). Không cần deploy code cho việc này, có hiệu lực trong 60s (cache TTL).
+**Cập nhật:** 10/10/2026 (xóa code B2B, chờ chạy migration — xem mục ngay trên)
+**Branch:** `chore/remove-b2b` (tách từ `main`, CHƯA merge) — xóa hẳn code B2B. `main` vẫn còn nguyên B2B (code + 14/14 migration cũ) cho tới khi branch này merge VÀ migration xóa chạy.
+**Môi trường:** production hiện tại (trên `main`) vẫn là trạng thái B2B cũ — 14/14 migration cũ đã chạy, trung tâm demo (`7c0dfec9-...`) vẫn còn 9/9 tính năng bật, CHƯA bị xóa (migration xóa B2B chưa chạy). R2: bucket `wordly-videos` tạo xong, không đổi.
+**Test:** trên `chore/remove-b2b`: `npm test` 226/227 (1 fail pre-existing không liên quan). Trên `main`: chưa đổi, như lần cập nhật 7/10.
 
 ### 7/10/2026 — Xoá mềm ĐÃ LÊN production + iOS 1.0.0 (build 6) ĐÃ UPLOAD
 
