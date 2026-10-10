@@ -150,16 +150,44 @@ Login Google → thành công. Dịch + lưu từ → thành công, `translate_h
 sau ghi chú 6/10/2026) — Gmail SMTP env copy y nguyên, không đổi, nhưng
 CHƯA xác nhận gửi thật qua domain mới.
 
+**Review toàn branch (fresh reviewer, Opus) sau khi verify xong — 3 lỗi
+mức Important tìm thêm, đã sửa + test TDD + deploy + verify lại:**
+1. Link email (nhắc học...) sẽ trỏ `http://localhost:3000` trên VPS — thiếu
+   `NEXT_PUBLIC_APP_URL`. Đã thêm vào `.env` VPS + `web/.env.example`.
+2. Dockerfile: thiếu `--build-arg` thì build vẫn "thành công" nhưng bake
+   chuỗi rỗng vào JS (tái diễn lỗi #1 ở trên tại lần rebuild sau). Đã thêm
+   `RUN test -n ...` chặn build nếu thiếu — verify RED (thiếu arg → fail
+   đúng), GREEN (đủ arg → qua).
+3. `auth/callback` nhận `next=` không kiểm tra → open redirect
+   (`next=@evil.com`, `next=//evil.com`...), lỗi có từ trước (không phải do
+   lần sửa domain), lộ ra khi review. Tách `safeRedirectPath()` ra
+   `lib/auth/`, 7 test TDD (RED→GREEN), dùng trong route.
+4. 4 lỗi Minor để lại, chưa sửa (không ảnh hưởng người dùng ngay):
+   thiếu build-arg cho GA measurement ID (phân tích thiếu, không phải lỗi
+   chức năng); rủi ro còn lại ở `X-Forwarded-Host` nếu ai đó sửa
+   `docker-compose.yml` trên VPS cho bind `0.0.0.0` (file này không nằm
+   trong git — cùng loại rủi ro với lỗ hổng Postgres/Envoy đã vá ở bước
+   dựng Supabase); route `api/auth/logout` có cùng lỗi `request.url` như
+   callback nhưng là dead code (không ai gọi); Dockerfile thiếu
+   `.dockerignore` + chạy bằng root (hygiene, không phải lỗi).
+
+`npm test` 201/201, `eslint` sạch, `next build` sạch sau fix pass. Deploy
+lại lên VPS, verify: `NEXT_PUBLIC_APP_URL` có trong container, domain public
+vẫn 200.
+
 **Còn lại — cần xác nhận riêng, KHÔNG làm trong lần này (không hoàn tác
 được / breaking change cho user TestFlight):**
 1. Đổi iOS app endpoint (Vercel → `app.wordly.skillproof.work`,
    `*.supabase.co` → `api.wordly.skillproof.work`) + build lại + TestFlight.
 2. Tắt Vercel project + Supabase Cloud project — chỉ làm sau khi theo dõi
    hạ tầng mới ổn định một thời gian.
+3. (Tuỳ chọn, không gấp) Đưa `docker-compose.yml`/nginx config trên VPS vào
+   git để tránh rủi ro cấu hình trôi không ai biết — hiện toàn bộ config
+   hạ tầng chỉ sống trên VPS, không version control.
 
-Chi tiết từng bước + mọi ruling: `docs/superpowers/plans/2026-10-10-vps-self-hosted-migration.md`
-và ledger `.superpowers/sdd/2026-10-10-vps-self-hosted-migration/progress.md`
-(gitignored, chỉ trên máy làm việc này).
+Chi tiết từng bước + mọi ruling: `docs/superpowers/plans/2026-10-10-vps-self-hosted-migration.md`.
+Ledger thực thi (gitignored, đã xoá sau khi review xong — nội dung quan
+trọng đã gộp vào mục này).
 
 **Sự cố nhỏ xảy ra giữa phiên:** session khác (đang làm OCR ảnh/ghi âm,
 cùng checkout không phải worktree) vô tình `git checkout main` rồi merge
