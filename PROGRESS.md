@@ -1,7 +1,37 @@
-# Tiến độ — Wordly for Business (B2B)
+# Tiến độ — Wordly
 
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
+
+### 10/10/2026 — Xóa hẳn code B2B (trung tâm tiếng Anh), chuẩn bị hạ tầng VPS
+
+Chủ dự án quyết định bỏ hẳn tính năng B2B (trung tâm/lớp/giáo viên/học
+sinh/học phí), tập trung hoàn toàn B2C. Đã xóa trên branch
+`chore/remove-b2b` (tách từ `main`, chưa merge): toàn bộ route `(org)`,
+`api/orgs|classes|homework|speaking|materials|tuition|join`, `lib/org/`,
+`lib/tuition/`, `components/org/`, Inngest jobs B2B
+(`src/inngest/org-functions.js`), test tương ứng. Gỡ nhánh B2B khỏi route
+quiz B2C (`api/quiz/route.js` không còn gắn `class_id`/`org_id` vào
+`quiz_attempts`). Giữ lại `cleanupRateLimitCounters` (dọn bảng rate-limit
+Postgres dùng chung toàn hệ thống, B2C) — bị gộp nhầm vào
+`org-functions.js` trước đây, đã chuyển sang `src/inngest/functions.js`.
+
+**Kiểm chứng:** `npm test` 226/227 pass (1 fail pre-existing không liên
+quan, từ tính năng camera OCR đang làm ở session khác). `next build`
+"Compiled successfully", route list xác nhận sạch B2B, `/speak` (Spinner
+B2C) vẫn còn. `eslint` sạch trên các file sửa.
+
+**Đã viết nhưng CHƯA CHẠY:** `supabase/migrations/20261010000200_remove_b2b.sql`
+(DROP 23 bảng + 8 function B2B, drop 3 cột `org_id`/`class_id`/`membership_id`
+khỏi `quiz_attempts`). **Thứ tự bắt buộc trước khi chạy:** tắt Custom Access
+Token Hook trên Supabase Dashboard → Auth → Hooks TRƯỚC, verify login vẫn
+OK, rồi mới chạy migration — sai thứ tự sẽ khiến MỌI user (cả B2C) không
+đăng nhập được.
+
+**Chờ quyết định:** thời điểm chạy migration thật lên production (có dữ
+liệu "trung tâm demo" `7c0dfec9-...` sẽ mất vĩnh viễn — chủ dự án đã xác
+nhận xóa). Sau khi B2B dọn xong, bước tiếp theo là chuyển hạ tầng sang VPS
+tự quản (xem `docs/superpowers/specs/2026-10-10-vps-self-hosted-infra-design.md`).
 
 **Cập nhật:** 2026-09-08 (Sửa hiệu năng B2B + table/pagination toàn hệ thống — đã kiểm chứng)
 **Branch:** `main` = TOÀN BỘ 10/10 module đã merge và deploy (commit `1ef3fd0`). Không còn branch nào chờ merge.
