@@ -75,6 +75,11 @@ export const MODELS = {
   // Chuyển audio thành văn bản (dùng cho chấm bài nói).
   // Giữ ở Groq: Gemini không có endpoint transcription tương thích OpenAI.
   transcribe: [q("whisper-large-v3-turbo"), q("whisper-large-v3")],
+
+  // Đọc ảnh (chụp chữ để dịch). CHỈ Gemini — các model Groq đang dùng ở
+  // "fast"/"quality" (qwen, gpt-oss) không nhận input ảnh, nên không có
+  // bậc dự phòng nhà cung cấp khác cho vai trò này (khác với fast/quality).
+  vision: [g("gemini-2.5-flash"), g("gemini-flash-lite-latest")],
 };
 
 /** Chuẩn hoá phần tử ladder — chịu được cả dạng chuỗi cũ. */
