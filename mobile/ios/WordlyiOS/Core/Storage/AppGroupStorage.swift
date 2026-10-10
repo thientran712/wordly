@@ -99,7 +99,11 @@ enum WidgetSync {
         // Mất mạng → giữ nguyên; tải được mà rỗng (tài khoản mới) → ghi rỗng để
         // không còn từ của tài khoản trước trên màn hình khoá
         guard fetchedAny else { return }
-        AppGroupStorage.shared.saveWords(AppGroupStorage.items(from: all))
+        let items = AppGroupStorage.items(from: all)
+        AppGroupStorage.shared.saveWords(items)
+        if !items.isEmpty {
+            Task { await APIClient.shared.logWidgetShown(items: items) }
+        }
         await refreshBank()
     }
 
@@ -110,5 +114,6 @@ enum WidgetSync {
         guard force || BankWords.needsRefresh(fetchedAt: store.bankFetchedAt, level: skill, lastLevel: store.bankLevel) else { return }
         guard let words = try? await BankWords.fetch(skill: skill), !words.isEmpty else { return }
         store.saveBank(words, level: skill)
+        Task { await APIClient.shared.logWidgetShown(items: words) }
     }
 }

@@ -203,6 +203,20 @@ final class APIClient: ObservableObject {
         )
     }
 
+    // MARK: - Widget suggestion log
+    func logWidgetShown(items: [WidgetWordItem]) async {
+        struct Item: Encodable { let id: String }
+        struct Body: Encodable { let items: [Item] }
+        struct Resp: Decodable { let success: Bool? }
+        // Lỗi không quan trọng — chỉ là log, không chặn người dùng.
+        _ = try? await request(
+            path: "/api/widget/log-shown",
+            method: "POST",
+            body: Body(items: items.map { Item(id: $0.id) }),
+            responseType: Resp.self
+        )
+    }
+
     func saveTranslation(sourceText: String, translatedText: String, direction: String) async throws {
         struct Resp: Decodable { let success: Bool? }
         _ = try await request(
