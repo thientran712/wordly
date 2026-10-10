@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Volume2, X, Loader2, Search, Sparkles } from "lucide-react";
+import { ArrowLeftRight, Volume2, X, Loader2, Search, Sparkles, Camera, Mic } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { lookupWord, normalizeWordKey } from "@/lib/ai/dictionary-client";
 import WordDefinitions from "@/components/ui/WordDefinitions";
@@ -57,6 +57,11 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   const [emailInviteBusy, setEmailInviteBusy] = useState(false);
   const [emailEnabledToast, setEmailEnabledToast] = useState(false);
 
+  const [isReadingImage, setIsReadingImage] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [imageError, setImageError] = useState(null);
+  const [voiceError, setVoiceError] = useState(null);
+
   const debounceRef = useRef(null);
   const suggestRef = useRef(null);
   const inputRef = useRef(null);
@@ -64,6 +69,10 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   const translateReqRef = useRef(0);
   const autoLogRef = useRef(null);
   const autoLogSentRef = useRef(new Set()); // "direction::text" keys already auto-logged this session, avoid duplicate rows while translated text is stable
+  const imageInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const speechRecognitionRef = useRef(null);
 
   const CHAR_LIMIT = 10000;
   const isOverLimit = input.length > CHAR_LIMIT;
@@ -352,6 +361,125 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     setShowSuggestions(true);
   };
 
+  // ── Chụp ảnh để dịch (OCR + dịch trong 1 lần gọi, luôn Anh→Việt) ──────────
+  const handleImagePick = () => imageInputRef.current?.click();
+
+  const handleImageSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // cho phép chọn lại cùng file lần sau
+    if (!file) return;
+
+    setImageError(null);
+    setIsReadingImage(true);
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Không đọc được ảnh"));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch("/api/translate/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImageError(data.error || "Không đọc được ảnh, thử lại nhé");
+        return;
+      }
+
+      setDirection("EN→VI");
+      setWordDetail(null);
+      setSaved(false);
+      setInput(data.source_text);
+      setTranslated(data.translated_text);
+    } catch {
+      setImageError("Mất kết nối. Kiểm tra mạng rồi thử lại nhé.");
+    } finally {
+      setIsReadingImage(false);
+    }
+  };
+
+  // ── Ghi âm để dịch — Web Speech API trước, Whisper dự phòng ───────────────
+  const transcribeWithWhisper = async (blob) => {
+    const form = new FormData();
+    form.append("audio", blob, "recording.webm");
+    const res = await fetch("/api/translate/voice", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Không nghe được giọng nói");
+    return data.text;
+  };
+
+  const startRecordingFallback = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordedChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+        try {
+          const text = await transcribeWithWhisper(blob);
+          suppressSuggestRef.current = true;
+          setWordDetail(null);
+          setSaved(false);
+          setInput(text);
+        } catch (e) {
+          setVoiceError(e.message || "Không nghe được giọng nói, thử lại nhé");
+        } finally {
+          setIsRecording(false);
+        }
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      setVoiceError("Không dùng được micro. Kiểm tra quyền truy cập micro rồi thử lại.");
+    }
+  };
+
+  const handleMicClick = () => {
+    setVoiceError(null);
+
+    if (isRecording) {
+      // Đang ghi (fallback) hoặc đang nghe (Web Speech) — bấm lại để dừng
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      } else if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.stop();
+      }
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = isEN ? "en-US" : "vi-VN";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = (e) => {
+        const text = e.results?.[0]?.[0]?.transcript;
+        if (text) {
+          suppressSuggestRef.current = true;
+          setWordDetail(null);
+          setSaved(false);
+          setInput(text);
+        }
+      };
+      recognition.onerror = () => setVoiceError("Không nghe được giọng nói, thử lại nhé");
+      recognition.onend = () => setIsRecording(false);
+      speechRecognitionRef.current = recognition;
+      recognition.start();
+      setIsRecording(true);
+    } else {
+      mediaRecorderRef.current = null;
+      startRecordingFallback();
+    }
+  };
+
   const [srcLang, tgtLang] = isEN ? ["English", "Tiếng Việt"] : ["Tiếng Việt", "English"];
 
   const dismissKeyboard = () => inputRef.current?.blur();
@@ -458,6 +586,39 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
 
           {/* Action row */}
           <div className="flex items-center gap-2 px-4 pb-3">
+            {/* Chụp ảnh / ghi âm — chỉ hiện khi ô trống, giống Google Dịch */}
+            {!input && (
+              <div className="flex items-center gap-1">
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleImageSelected}
+                />
+                <button
+                  onClick={handleImagePick}
+                  disabled={isReadingImage}
+                  className="no-min-h w-8 h-8 flex items-center justify-center rounded-xl active:scale-95 transition-all disabled:opacity-50"
+                  style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
+                  title="Chụp ảnh để dịch"
+                >
+                  {isReadingImage ? <Loader2 size={15} className="animate-spin" /> : <Camera size={15} />}
+                </button>
+                <button
+                  onClick={handleMicClick}
+                  className="no-min-h w-8 h-8 flex items-center justify-center rounded-xl active:scale-95 transition-all"
+                  style={{
+                    background: isRecording ? "var(--error-soft)" : "var(--hover-bg)",
+                    color: isRecording ? "var(--error)" : "var(--ink-soft)",
+                  }}
+                  title={isRecording ? "Dừng ghi âm" : "Ghi âm để dịch"}
+                >
+                  <Mic size={15} />
+                </button>
+              </div>
+            )}
             {/* Phát âm input — US/UK accent buttons for English, single button for Vietnamese */}
             {input && (isEN ? (
               <div className="flex items-center gap-1">
@@ -529,6 +690,12 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
               </button>
             )}
           </div>
+
+          {(imageError || voiceError) && (
+            <p className="px-4 pb-3 text-xs" style={{ color: "var(--error)" }}>
+              {imageError || voiceError}
+            </p>
+          )}
 
           {/* Suggestions dropdown */}
           {showSuggestions && suggestions.length > 0 && (
