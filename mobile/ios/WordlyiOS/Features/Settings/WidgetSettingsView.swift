@@ -20,8 +20,15 @@ final class WidgetSettingsViewModel: ObservableObject {
     }
 
     var preview: WidgetWordItem? {
-        WidgetSchedule.entries(words: words, bank: bank, settings: settings).first { $0.word != nil }?.word
-            ?? WidgetSchedule.pool(from: words, settings: settings).first
+        upcomingPreview.first
+    }
+
+    /// Vài từ sắp hiện tiếp theo trên widget — xem trước nhiều thẻ, không chỉ 1 từ.
+    var upcomingPreview: [WidgetWordItem] {
+        let scheduled = WidgetSchedule.entries(words: words, bank: bank, settings: settings).compactMap(\.word)
+        if !scheduled.isEmpty { return Array(scheduled.prefix(5)) }
+        if let fallback = WidgetSchedule.pool(from: words, settings: settings).first { return [fallback] }
+        return []
     }
 
     /// Từ kho thực sự được trộn (đã bỏ từ trùng với từ của bạn)
@@ -204,31 +211,43 @@ struct WidgetSettingsView: View {
 
     private var preview: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("XEM TRƯỚC").font(WordlyFonts.body(11, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
+            Text("XEM TRƯỚC — CÁC THẺ SẮP TỚI").font(WordlyFonts.body(11, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
                 .padding(.leading, 12)
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Image(systemName: vm.preview?.fromBank == true ? "sparkles" : "bookmark.fill").font(.system(size: 10))
-                        Text(vm.preview?.fromBank == true ? "Từ mới" : "Đã lưu").font(.system(size: 11, weight: .semibold))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    if vm.upcomingPreview.isEmpty {
+                        previewCard(word: nil, isNow: true)
+                    } else {
+                        ForEach(Array(vm.upcomingPreview.enumerated()), id: \.offset) { i, w in
+                            previewCard(word: w, isNow: i == 0)
+                        }
                     }
-                    .opacity(0.7)
-                    Text(vm.preview?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold))
-                    Text(vm.preview.map { vm.settings.showMeaning ? $0.meaning : "Nghĩa là gì nhỉ? 🤔" } ?? "Lưu từ khi dịch để hiện ở đây")
-                        .font(.system(size: 13)).opacity(0.85).lineLimit(2)
                 }
-                .foregroundStyle(.white)
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.white.opacity(0.18))
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .padding(.horizontal, 4)
             }
-            .padding(18)
-            .background(LinearGradient(colors: [Color(hex: "#1CB0F6"), Color(hex: "#58CC02")], startPoint: .topLeading, endPoint: .bottomTrailing))
-            .clipShape(RoundedRectangle(cornerRadius: 22))
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 4)
+    }
+
+    private func previewCard(word: WidgetWordItem?, isNow: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Image(systemName: word?.fromBank == true ? "sparkles" : "bookmark.fill").font(.system(size: 10))
+                Text(isNow ? "Bây giờ" : "Tiếp theo").font(.system(size: 11, weight: .semibold))
+            }
+            .opacity(0.7)
+            Text(word?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold)).lineLimit(1)
+            Text(word.map { vm.settings.showMeaning ? $0.meaning : "Nghĩa là gì nhỉ? 🤔" } ?? "Lưu từ khi dịch để hiện ở đây")
+                .font(.system(size: 13)).opacity(0.85).lineLimit(2)
+        }
+        .foregroundStyle(.white)
+        .padding(14)
+        .frame(width: 180, alignment: .leading)
+        .background(.white.opacity(isNow ? 0.18 : 0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .padding(isNow ? 4 : 10)
+        .background(LinearGradient(colors: [Color(hex: "#1CB0F6"), Color(hex: "#58CC02")], startPoint: .topLeading, endPoint: .bottomTrailing))
+        .clipShape(RoundedRectangle(cornerRadius: 22))
     }
 
     private var customPickerContent: some View {
