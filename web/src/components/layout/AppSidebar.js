@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Languages, Mic, MessageCircle, NotebookPen, UserCog, Sparkles,
-  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Building2, Zap, GraduationCap,
+  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -25,14 +25,6 @@ const NAV_GROUPS = [
     ],
   },
 ];
-
-// Nhóm "Trung tâm" chỉ hiện với người thuộc ít nhất một tổ chức.
-// Học viên và giáo viên/chủ trung tâm thấy MỤC KHÁC NHAU: học viên vào
-// thẳng "Lớp của tôi" (ngôn ngữ của người học), staff vào "Quản lý trung
-// tâm" (ngôn ngữ của người vận hành). Cùng một trang /org nhưng nhãn khác
-// nhau cho đúng vai trò — tránh bắt học viên hiểu từ "quản lý".
-const ORG_NAV_STAFF = { href: "/org", label: "Quản lý trung tâm", icon: Building2 };
-const ORG_NAV_STUDENT = { href: "/org", label: "Lớp của tôi", icon: GraduationCap };
 
 // Mục tài khoản luôn nằm cuối, tách khỏi các nhóm nội dung — quy ước chuẩn.
 const ACCOUNT_ITEM = { href: "/profile", label: "Hồ sơ", icon: UserCog };
@@ -58,11 +50,6 @@ export default function AppSidebar() {
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isJournalOpen, setIsJournalOpen] = useState(false);
-  const [hasOrgs, setHasOrgs] = useState(false);
-  // Vai trò trong tổ chức quyết định NHÃN menu (không phải quyền truy cập —
-  // quyền do RLS + trang /org tự kiểm). Chỉ để hiện đúng ngôn ngữ cho từng
-  // đối tượng: học viên thấy "Lớp của tôi", staff thấy "Quản lý trung tâm".
-  const [isOrgStaff, setIsOrgStaff] = useState(false);
 
   // Chỉ ĐỒNG BỘ ra DOM, không setState — state đã có giá trị đúng từ lúc
   // khởi tạo. Chạy lại khi theme đổi để nút toggle có tác dụng.
@@ -79,20 +66,6 @@ export default function AppSidebar() {
       .then((data) => {
         if (!data) return;
         setUserName(data.profile?.name || data.email?.split("@")[0] || "");
-
-        // Chỉ hỏi danh sách tổ chức khi đã biết là người dùng đã đăng nhập,
-        // để không thêm một request 401 vô ích cho khách.
-        fetch("/api/orgs")
-          .then((r) => (r.ok ? r.json() : null))
-          .then((d) => {
-            const orgs = d?.orgs ?? [];
-            setHasOrgs(orgs.length > 0);
-            // Là staff nếu owner/teacher ở BẤT KỲ tổ chức nào — người vừa
-            // dạy ở trung tâm này vừa học ở trung tâm khác vẫn thấy nhãn
-            // quản lý, vì đó là vai trò "cao" hơn.
-            setIsOrgStaff(orgs.some((o) => o.role === "owner" || o.role === "teacher"));
-          })
-          .catch(() => {});
       })
       .catch(() => setIsGuest(true));
   }, []);
@@ -121,20 +94,7 @@ export default function AppSidebar() {
 
   if (isAuthPage) return null;
 
-  // Ghép nhóm động: "Trung tâm" chỉ xuất hiện khi người dùng thuộc tổ chức,
-  // và nhãn đổi theo vai trò. Nhóm "Tài khoản" luôn ở cuối.
-  // Thứ tự nhóm phụ thuộc VAI TRÒ, không cố định: owner/teacher đặt
-  // "Trung tâm" LÊN ĐẦU vì đó là công việc chính của họ trên hệ thống —
-  // đăng nhập vào là để quản lý trung tâm, không phải để tự học. Học viên
-  // (hoặc người không thuộc trung tâm nào) vẫn thấy "Học tập" trước vì đó
-  // là lý do chính họ dùng Wordly.
-  const orgGroup = hasOrgs
-    ? [{ title: "Trung tâm", items: [isOrgStaff ? ORG_NAV_STAFF : ORG_NAV_STUDENT] }]
-    : [];
-
-  const navGroups = isOrgStaff
-    ? [...orgGroup, ...NAV_GROUPS, { title: "Tài khoản", items: [ACCOUNT_ITEM] }]
-    : [...NAV_GROUPS, ...orgGroup, { title: "Tài khoản", items: [ACCOUNT_ITEM] }];
+  const navGroups = [...NAV_GROUPS, { title: "Tài khoản", items: [ACCOUNT_ITEM] }];
 
   return (
     <>
