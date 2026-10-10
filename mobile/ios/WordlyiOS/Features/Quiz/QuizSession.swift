@@ -4,11 +4,19 @@ import Foundation
 /// khoá câu đó, bấm "Tiếp" mới sang câu sau; câu cuối thì báo nộp bài.
 /// Server KHÔNG gửi đáp án đúng trước khi nộp, nên chấm điểm luôn ở server.
 struct QuizSession {
+    /// Kết quả chấm ngay 1 câu (POST /api/quiz/check) — ôn và biết đúng/sai
+    /// từng từ ngay, không phải đợi làm hết cả bài (quyết định 10/10/2026).
+    struct CheckedResult: Equatable {
+        let correct: Bool
+        let correctAnswer: String?
+    }
+
     let questions: [QuizQuestion]
     private(set) var index = 0
     private(set) var picked: String?
     private(set) var answers: [String: QuizSubmitRequest.Answer] = [:]
     private(set) var isFinished: Bool
+    private var checkedResults: [String: CheckedResult] = [:]
 
     init(questions: [QuizQuestion]) {
         self.questions = questions
@@ -24,6 +32,12 @@ struct QuizSession {
         guard picked == nil, let q = current else { return }
         picked = option
         answers[q.id] = .init(wordId: q.wordId, given: option)
+    }
+
+    func checkedResult(for questionId: String) -> CheckedResult? { checkedResults[questionId] }
+
+    mutating func recordCheck(questionId: String, correct: Bool, correctAnswer: String?) {
+        checkedResults[questionId] = CheckedResult(correct: correct, correctAnswer: correctAnswer)
     }
 
     /// Sang câu tiếp. Trả `true` khi vừa xong câu cuối (cần nộp bài).

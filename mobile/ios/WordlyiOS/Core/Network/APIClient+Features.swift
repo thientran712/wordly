@@ -35,6 +35,11 @@ extension APIClient {
         try await request(path: "/api/quiz", method: "POST", body: body, responseType: QuizSubmitResponse.self)
     }
 
+    /// Chấm ngay 1 câu sau khi chọn — không có tác dụng phụ (không lưu lượt chơi).
+    func checkQuizAnswer(_ body: QuizCheckRequest) async throws -> QuizCheckResponse {
+        try await request(path: "/api/quiz/check", method: "POST", body: body, responseType: QuizCheckResponse.self)
+    }
+
     // MARK: Vòng quay luyện nói
     func fetchSpinnerTopics() async throws -> [SpinnerItem] {
         try await request(path: "/api/spinner/topics?language=en", responseType: SpinnerTopicsResponse.self).topics

@@ -83,6 +83,27 @@ struct QuizSubmitResponse: Decodable {
     }
 }
 
+// Chấm ngay 1 câu sau khi chọn (POST /api/quiz/check) — báo đúng/sai ngay
+// thay vì phải làm hết cả bài mới biết, xem QuizSession.checkedAnswers.
+struct QuizCheckRequest: Encodable {
+    let wordId: String
+    let mode: String
+    let given: String
+    enum CodingKeys: String, CodingKey {
+        case mode, given
+        case wordId = "word_id"
+    }
+}
+
+struct QuizCheckResponse: Decodable, Equatable {
+    let correct: Bool
+    let correctAnswer: String?
+    enum CodingKeys: String, CodingKey {
+        case correct
+        case correctAnswer = "correct_answer"
+    }
+}
+
 struct QuizResult: Decodable, Equatable {
     struct Detail: Decodable, Equatable {
         let correct: Bool

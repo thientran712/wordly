@@ -46,7 +46,18 @@ final class QuizViewModel: ObservableObject {
     }
 
     func pick(_ option: String) {
+        guard let q = session.current else { return }
         session.pick(option)
+        Task {
+            do {
+                let r = try await APIClient.shared.checkQuizAnswer(
+                    .init(wordId: q.wordId, mode: mode.rawValue, given: option))
+                session.recordCheck(questionId: q.id, correct: r.correct, correctAnswer: r.correctAnswer)
+            } catch {
+                // Không chặn làm bài nếu chấm-ngay lỗi mạng — vẫn nộp được cả
+                // bài bình thường ở cuối, chỉ là không có phản hồi tức thì.
+            }
+        }
     }
 
     func next() async {
@@ -81,6 +92,20 @@ final class QuizViewModel: ObservableObject {
 
 struct QuizView: View {
     @StateObject private var vm = QuizViewModel()
+
+    private func optionBackground(isPicked: Bool, isCorrectAnswer: Bool, isWrongPick: Bool) -> Color {
+        if isCorrectAnswer { return WordlyColors.grassSoft }
+        if isWrongPick { return WordlyColors.errorSoft }
+        if isPicked { return WordlyColors.electricSubtle }
+        return WordlyColors.cardBG
+    }
+
+    private func optionBorder(isPicked: Bool, isCorrectAnswer: Bool, isWrongPick: Bool) -> Color {
+        if isCorrectAnswer { return WordlyColors.grass }
+        if isWrongPick { return WordlyColors.error }
+        if isPicked { return WordlyColors.electric }
+        return WordlyColors.cardBorder
+    }
 
     var body: some View {
         ScrollView {
@@ -170,7 +195,13 @@ struct QuizView: View {
                 .wordlyCard()
 
                 VStack(spacing: 10) {
+                    // Chấm ngay khi chọn (POST /api/quiz/check) — ôn và biết
+                    // đúng/sai TỪNG từ ngay, không phải đợi nộp hết cả bài.
+                    let checked = vm.session.checkedResult(for: q.id)
                     ForEach(q.options, id: \.self) { option in
+                        let isPicked = vm.session.picked == option
+                        let isCorrectAnswer = checked != nil && option == checked?.correctAnswer
+                        let isWrongPick = isPicked && checked?.correct == false
                         Button { vm.pick(option) } label: {
                             HStack {
                                 Text(option)
@@ -178,15 +209,21 @@ struct QuizView: View {
                                     .foregroundStyle(WordlyColors.ink)
                                     .multilineTextAlignment(.leading)
                                 Spacer()
-                                if vm.session.picked == option {
+                                if checked != nil && (isCorrectAnswer || isWrongPick) {
+                                    Image(systemName: isCorrectAnswer ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .foregroundStyle(isCorrectAnswer ? WordlyColors.grass : WordlyColors.error)
+                                } else if isPicked && checked == nil {
+                                    ProgressView().controlSize(.small)
+                                } else if isPicked {
                                     Image(systemName: "checkmark.circle.fill").foregroundStyle(WordlyColors.electric)
                                 }
                             }
                             .padding(16)
-                            .background(vm.session.picked == option ? WordlyColors.electricSubtle : WordlyColors.cardBG)
+                            .background(optionBackground(isPicked: isPicked, isCorrectAnswer: isCorrectAnswer, isWrongPick: isWrongPick))
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             .overlay(RoundedRectangle(cornerRadius: 14)
-                                .stroke(vm.session.picked == option ? WordlyColors.electric : WordlyColors.cardBorder, lineWidth: vm.session.picked == option ? 2 : 1))
+                                .stroke(optionBorder(isPicked: isPicked, isCorrectAnswer: isCorrectAnswer, isWrongPick: isWrongPick),
+                                        lineWidth: isPicked || isCorrectAnswer ? 2 : 1))
                         }
                         .buttonStyle(.plain)
                         .disabled(vm.session.picked != nil && vm.session.picked != option)
