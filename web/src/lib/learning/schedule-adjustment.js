@@ -49,3 +49,27 @@ export function computeScheduleUpdate(current, rating) {
     scheduled_days: intervalDays,
   };
 }
+
+const VALID_ENTRY_TYPES = new Set(["translate_history", "journal_entries"]);
+
+/**
+ * Kiểm tra body của PATCH /api/learning/schedule.
+ * entry_type='bank' bị chặn: từ kho không có row cá nhân để cập nhật
+ * due_at/state/review_count.
+ * Trả về { error: string | null }.
+ */
+export function validateScheduleRequest({ entry_type, entry_id, rating } = {}) {
+  if (entry_type === "bank") {
+    return { error: "Không thể điều chỉnh lịch ôn cho từ kho (bank) — không có dữ liệu cá nhân để lưu." };
+  }
+  if (!VALID_ENTRY_TYPES.has(entry_type)) {
+    return { error: `entry_type không hợp lệ: ${entry_type}` };
+  }
+  if (!entry_id || typeof entry_id !== "string") {
+    return { error: "Thiếu entry_id" };
+  }
+  if (!VALID_RATINGS.has(rating)) {
+    return { error: `rating không hợp lệ: ${rating}` };
+  }
+  return { error: null };
+}
