@@ -68,9 +68,80 @@ Kiểm + xóa sau khi xác nhận, verify lại = 0 object còn sót:
   group theo prefix cấp 1 là cách nhanh để soát toàn bucket (77 object, ít,
   không cần phân trang nhiều).
 
-**Còn lại từ prompt bàn giao 10/10/2026 (chưa làm):**
-4. Hạ tầng VPS tự host (xem `docs/superpowers/specs/2026-10-10-vps-self-hosted-infra-design.md`).
+**Còn lại từ prompt bàn giao 10/10/2026:**
 5. Gợi ý chưa quyết: module TypeScript mới (đấu từ vựng real-time), đổi Auth.js/Lucia thay Supabase Auth — cần brainstorm riêng.
+
+### 10/10/2026 — Mục 4: Hạ tầng VPS tự host — HẠ TẦNG SỐNG trên domain mới, CHƯA cắt DNS thật
+
+Branch `chore/vps-self-hosted-infra` (tách từ `main`, chưa merge). Plan chi
+tiết: `docs/superpowers/plans/2026-10-10-vps-self-hosted-migration.md`
+(ledger đầy đủ từng bước + ruling ở
+`.superpowers/sdd/2026-10-10-vps-self-hosted-migration/progress.md`, gitignored).
+
+**Domain & VPS:** `wordly.skillproof.work` — subdomain của hạ tầng chung
+`skillproof.work`, KHÔNG phải domain riêng. VPS **dùng chung**
+`167.99.74.215` (DigitalOcean `ubuntu-s-2vcpu-4gb-sgp1`, Ubuntu 24.04) với
+2 product khác không liên quan (`localex` staging, `pehub` prod) — đã kiểm
+không đụng tài nguyên/port/container của 2 app đó ở mọi bước.
+
+**Đã xong (verify thật, không suy đoán):**
+- User `deploy-wordly` (group `docker`, không sudo) + layout
+  `/opt/wordly/prod/{web,supabase}/`, `/var/backups/wordly/prod/`.
+- Supabase self-hosted (Docker Compose chính thức) — dùng **Envoy**
+  ("api-gw"), KHÔNG phải Kong như spec gốc giả định (bản mới của
+  `supabase/supabase`). 11/11 container healthy.
+  **Lỗ hổng bảo mật tự phát hiện + đã vá:** `docker-compose.yml` mặc định
+  bind Postgres (5432, 6543 qua pooler) và gateway (8000) ra `0.0.0.0` —
+  kiểm bằng `nc` từ máy local xác nhận **cả 3 cổng thật sự mở ra internet**,
+  bỏ qua `ufw` (Docker tự thêm rule iptables, lỗi kinh điển Docker+ufw). Đã
+  sửa bind `127.0.0.1` cho cả 3, verify lại = không còn truy cập được từ
+  ngoài, nội bộ vẫn hoạt động đúng.
+- Migrate schema + data từ Supabase Cloud (`supabase db dump`) sang Postgres
+  self-host (`docker exec ... psql`, không có `psql` local nên pipe qua SSH
+  stdin). **Đối chiếu row-count khớp 100%** trên 6 bảng mẫu: `translate_history`
+  136/136, `journal_entries` 6/6, `profiles` 44/44, `quiz_attempts` 12/12,
+  `email_log` 296/296, `words` 7504/7504. File dump tạm (chứa dữ liệu người
+  dùng thật) đã xoá khỏi máy local sau khi verify.
+- `custom_access_token_hook` — xác nhận KHÔNG còn tồn tại ở cả self-host
+  VÀ Cloud (migration xóa B2B đã `DROP FUNCTION` nó) → phần "cấu hình lại
+  hook JWT" trong spec gốc **không còn cần làm nữa**, B2B removal đã giải
+  quyết luôn việc này.
+- `web/Dockerfile` (multi-stage) + `output: "standalone"` trong
+  `next.config.mjs` — build + chạy local verify HTTP 200. Container chạy
+  trên VPS ở `127.0.0.1:13500`, verify HTTP 200, không trùng port với
+  container nào khác trên box.
+- nginx vhost `wordly.prod.webapp.conf` + `wordly.prod.api.conf` (HTTP, port
+  80) — `nginx -t` sạch, `nginx -s reload` (không restart) — verify `localex`/
+  `pehub` vẫn 200 sau reload, Wordly app/api vhost hoạt động đúng qua Host
+  header (401 không có `apikey` trên route `/auth/v1/health` là hành vi
+  ĐÚNG của Envoy, không phải lỗi).
+- Backup Postgres: cron `deploy-wordly` 20:00 UTC (3h sáng giờ VN) hàng
+  ngày, giữ 7 bản. Test chạy tay 1 lần: file `.sql.gz` ~974KB tạo thành
+  công. **Sửa 1 lỗi tự phát hiện:** cron log ban đầu trỏ `/var/log/` —
+  `deploy-wordly` không có quyền viết (sẽ fail âm thầm mỗi đêm) — đã đổi
+  sang `/var/backups/wordly/prod/backup.log`.
+
+**CHƯA làm — cần chủ dự án:**
+1. **DNS:** `app.wordly.skillproof.work` / `api.wordly.skillproof.work`
+   chưa có record A nào (`dig` rỗng) — cần thêm 2 record A trỏ
+   `167.99.74.215` ở nơi quản lý DNS của `skillproof.work`. Chặn: SSL
+   certbot, verify end-to-end, cắt DNS thật.
+2. **OAuth Google/Apple:** Client ID/Secret chỉ có trong Supabase Cloud
+   Dashboard → Auth → Providers, không có cách đọc lại qua API — cần chủ
+   dự án cung cấp (dùng `atlas-secret-handoff`) để điền
+   `GOTRUE_EXTERNAL_GOOGLE_*`/`GOTRUE_EXTERNAL_APPLE_*` vào
+   `/opt/wordly/prod/supabase/.env`. Chặn: login thật trên domain mới.
+3. Sau (1)+(2): cấp SSL certbot, verify end-to-end (login, dịch, lưu từ,
+   lịch sử cũ hiển thị, email) trên domain mới — RỒI MỚI tính đến đổi iOS
+   app endpoint và tắt Vercel/Supabase Cloud (2 việc này KHÔNG làm trong
+   plan này, cần xác nhận thời điểm riêng vì không hoàn tác được/breaking
+   change cho user TestFlight).
+
+**Sự cố nhỏ xảy ra giữa phiên:** session khác (đang làm OCR ảnh/ghi âm,
+cùng checkout không phải worktree) vô tình `git checkout main` rồi merge
+tính năng của họ giữa lúc tôi đang SSH làm VPS — không mất dữ liệu (đã
+merge `main` vào branch VPS, cả 2 bên đều còn), nhưng là bài học: 2 session
+cùng checkout cần báo nhau trước khi đổi branch.
 
 ### 7/10/2026 — Xoá mềm ĐÃ LÊN production + iOS 1.0.0 (build 6) ĐÃ UPLOAD
 
