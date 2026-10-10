@@ -105,9 +105,11 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showChangePassword) { ChangePasswordView() }
-            .confirmationDialog("Đăng xuất khỏi Wordly?", isPresented: $confirmSignOut, titleVisibility: .visible) {
-                Button("Đăng xuất", role: .destructive) { Task { await authManager.signOut() } }
+            .alert("Đăng xuất khỏi Wordly?", isPresented: $confirmSignOut) {
                 Button("Huỷ", role: .cancel) {}
+                Button("Đăng xuất", role: .destructive) { Task { await authManager.signOut() } }
+            } message: {
+                Text("Bạn cần đăng nhập lại để tiếp tục học.")
             }
         }
     }
