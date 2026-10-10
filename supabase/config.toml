@@ -54,18 +54,12 @@ double_confirm_changes = true
 # Local: tắt xác minh email để test nhanh, không phải mở Inbucket mỗi lần.
 enable_confirmations = false
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Custom Access Token Hook — MẤU CHỐT của multi-tenancy
-#
-# Hook này nhúng claim `user_orgs` = { org_id: role } vào JWT. Toàn bộ RLS
-# đọc từ claim đó thay vì query bảng (tránh chậm + đệ quy vô hạn).
-#
-# Không bật hook thì `user_orgs` rỗng → mọi policy chặn hết → hệ thống trông
-# như "không có quyền gì cả". Đây là chỗ dễ quên nhất khi dựng môi trường mới.
-#
-# Trên production: bật tay ở Dashboard → Authentication → Hooks →
-# Custom Access Token, trỏ tới public.custom_access_token_hook.
-# ══════════════════════════════════════════════════════════════════════════════
+# Custom Access Token Hook đã tắt — tính năng B2B (multi-tenancy, claim
+# `user_orgs`) đã bị xóa khỏi hệ thống, xem
+# docs/superpowers/specs/2026-10-10-remove-b2b-design.md. Function
+# custom_access_token_hook() không còn tồn tại sau migration
+# 20261010000200_remove_b2b.sql — bật hook này lên sẽ làm MỌI login local
+# (kể cả B2C) fail.
 [auth.hook.custom_access_token]
-enabled = true
+enabled = false
 uri = "pg-functions://postgres/public/custom_access_token_hook"
