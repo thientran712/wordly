@@ -7,6 +7,7 @@ struct TranslateView: View {
     @StateObject private var tts = TTSManager.shared
     @EnvironmentObject private var router: AppRouter
     @FocusState private var inputFocused: Bool
+    @State private var showCamera = false
 
     var body: some View {
         NavigationStack {
@@ -14,6 +15,12 @@ struct TranslateView: View {
                 VStack(spacing: 14) {
                     languageBar
                     inputCard
+                    if let imageError = vm.imageError {
+                        Text(imageError).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.error)
+                    }
+                    if let dictationError = vm.dictation.error {
+                        Text(dictationError).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.error)
+                    }
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
                     dictionarySection
@@ -39,6 +46,16 @@ struct TranslateView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toast($vm.toast)
             .onChange(of: vm.inputText) { _, text in vm.onInputChanged(text) }
+            .sheet(isPresented: $showCamera) {
+                CameraPicker(
+                    onPick: { image in
+                        showCamera = false
+                        vm.handleImagePicked(image)
+                    },
+                    onCancel: { showCamera = false }
+                )
+                .ignoresSafeArea()
+            }
         }
     }
 
@@ -99,17 +116,43 @@ struct TranslateView: View {
                     } else {
                         speakChip("VI", lang: "vi-VN", text: vm.inputText)
                     }
-                } else if UIPasteboard.general.hasStrings {
-                    Button {
-                        vm.inputText = UIPasteboard.general.string ?? ""
-                    } label: {
-                        Label("Dán", systemImage: "doc.on.clipboard")
-                            .font(WordlyFonts.body(13, weight: .bold))
-                            .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(WordlyColors.hoverBG)
-                            .foregroundStyle(WordlyColors.inkSoft)
-                            .clipShape(Capsule())
+                } else {
+                    if UIPasteboard.general.hasStrings {
+                        Button {
+                            vm.inputText = UIPasteboard.general.string ?? ""
+                        } label: {
+                            Label("Dán", systemImage: "doc.on.clipboard")
+                                .font(WordlyFonts.body(13, weight: .bold))
+                                .padding(.horizontal, 12).padding(.vertical, 8)
+                                .background(WordlyColors.hoverBG)
+                                .foregroundStyle(WordlyColors.inkSoft)
+                                .clipShape(Capsule())
+                        }
                     }
+                    Button {
+                        showCamera = true
+                    } label: {
+                        if vm.isReadingImage {
+                            ProgressView().frame(width: 34, height: 34)
+                        } else {
+                            Image(systemName: "camera.fill").frame(width: 34, height: 34)
+                        }
+                    }
+                    .background(WordlyColors.hoverBG)
+                    .foregroundStyle(WordlyColors.inkSoft)
+                    .clipShape(Circle())
+                    .disabled(vm.isReadingImage)
+                    .accessibilityLabel("Chụp ảnh để dịch")
+                    Button {
+                        Task { await vm.toggleDictation() }
+                    } label: {
+                        Image(systemName: vm.isDictating ? "mic.fill" : "mic")
+                            .frame(width: 34, height: 34)
+                    }
+                    .background(vm.isDictating ? WordlyColors.error.opacity(0.15) : WordlyColors.hoverBG)
+                    .foregroundStyle(vm.isDictating ? WordlyColors.error : WordlyColors.inkSoft)
+                    .clipShape(Circle())
+                    .accessibilityLabel(vm.isDictating ? "Dừng ghi âm" : "Ghi âm để dịch")
                 }
                 Spacer()
                 Text("\(vm.inputText.count)/\(vm.charLimit)")

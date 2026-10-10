@@ -42,6 +42,21 @@ final class TranslateLogicTests: XCTestCase {
         XCTAssertTrue(tracker.shouldLog(direction: "EN→VI", text: "hello"))
     }
 
+    // Ảnh gửi lên /api/translate/image dạng data URL — khớp route web
+    // (image-validation.js: `^data:([^;]+);base64,(.*)$`).
+    func testImageDataURLFormat() {
+        let url = TranslateLogic.imageDataURL(jpegData: Data([0xFF, 0xD8]))
+        XCTAssertTrue(url.hasPrefix("data:image/jpeg;base64,"))
+        XCTAssertEqual(url, "data:image/jpeg;base64,/9g=")
+    }
+
+    func testTranslateImageResponseDecodes() throws {
+        let json = #"{"source_text":"Hello","translated_text":"Xin chào"}"#
+        let r = try JSONDecoder().decode(TranslateImageResponse.self, from: Data(json.utf8))
+        XCTAssertEqual(r.sourceText, "Hello")
+        XCTAssertEqual(r.translatedText, "Xin chào")
+    }
+
     func testHistoryEntryDecodesSavedFlag() throws {
         let json = #"{"id":"1","source_text":"a","translated_text":"b","direction":"EN→VI","saved_at":"2026-10-06T08:00:00Z","is_saved":true}"#
         let e = try JSONDecoder().decode(TranslateHistoryEntry.self, from: Data(json.utf8))

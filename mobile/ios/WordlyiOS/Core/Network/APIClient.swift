@@ -195,6 +195,18 @@ final class APIClient: ObservableObject {
         )
     }
 
+    /// Dịch bằng ảnh chụp — gửi base64, server (Gemini vision) OCR + dịch
+    /// trong 1 lần gọi. Giới hạn 5MB/jpeg-png-webp-heic được chặn ở server;
+    /// client chỉ cần gửi đúng data URL.
+    func translateImage(dataURL: String) async throws -> TranslateImageResponse {
+        try await request(
+            path: "/api/translate/image",
+            method: "POST",
+            body: TranslateImageRequest(image: dataURL),
+            responseType: TranslateImageResponse.self
+        )
+    }
+
     // MARK: - Translate History
     func fetchHistory(limit: Int = 20, offset: Int = 0) async throws -> TranslateHistoryResponse {
         try await request(

@@ -48,6 +48,25 @@ struct TranslateResponse: Codable {
     }
 }
 
+// Dịch bằng ảnh (OCR + dịch trong 1 lần gọi vision AI) — khớp
+// web/src/app/api/translate/image/route.js. Ảnh gửi dạng data URL base64,
+// không multipart (route web nhận JSON {image: "data:image/...;base64,..."}).
+struct TranslateImageRequest: Encodable {
+    let image: String
+}
+
+struct TranslateImageResponse: Decodable {
+    let sourceText: String?
+    let translatedText: String?
+    let error: String?
+
+    enum CodingKeys: String, CodingKey {
+        case sourceText = "source_text"
+        case translatedText = "translated_text"
+        case error
+    }
+}
+
 struct TranslateHistoryEntry: Codable, Identifiable, Equatable {
     let id: String
     let sourceText: String

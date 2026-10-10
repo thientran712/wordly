@@ -1,4 +1,6 @@
 import Foundation
+import UIKit
+import Combine
 
 /// Màn Dịch & tra từ — hành vi giống web (components/home/InlineTranslate.js):
 /// dịch tự động khi gõ, gợi ý từ (Datamuse), từ điển AI cho từ đơn, tự ghi lịch
@@ -31,6 +33,8 @@ final class TranslateViewModel: ObservableObject {
     /// Tăng mỗi khi lịch sử đổi (tự ghi / lưu) để danh sách lịch sử tải lại.
     @Published var historyVersion = 0
 
+    init() { observeDictation() }
+
     let charLimit = 10_000
     var isOverLimit: Bool { inputText.count > charLimit }
     var canSave: Bool { !inputText.trimmingCharacters(in: .whitespaces).isEmpty && !translatedText.isEmpty && !isTranslating }
@@ -45,6 +49,19 @@ final class TranslateViewModel: ObservableObject {
     private var suppressSuggestions = false
     /// Đổi inputText bằng code (chọn mục lịch sử) → onChange của ô nhập không xử lý lại.
     private var skipNextChange = false
+
+    // MARK: Chụp ảnh / ghi âm dịch (giống web InlineTranslate.js)
+    @Published var isReadingImage = false
+    @Published var imageError: String?
+    @Published var isDictating = false
+    let dictation = DictationManager()
+    private var dictationSubscription: AnyCancellable?
+
+    private func observeDictation() {
+        dictationSubscription = dictation.$isListening
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.isDictating = $0 }
+    }
 
     // MARK: Gõ chữ
     func onInputChanged(_ text: String) {
@@ -220,6 +237,53 @@ final class TranslateViewModel: ObservableObject {
             saved = false
             toast = "Không lưu được, thử lại nhé"
         }
+    }
+
+    // MARK: Chụp ảnh dịch — gửi thẳng ảnh gốc (giống web, không resize/crop
+    // client-side), server (Gemini vision) OCR + dịch cùng lúc.
+    func handleImagePicked(_ image: UIImage) {
+        guard let jpeg = image.jpegData(compressionQuality: 0.85) else {
+            imageError = "Không đọc được ảnh, thử lại nhé"
+            return
+        }
+        guard jpeg.count <= TranslateLogic.maxImageBytes else {
+            imageError = "Ảnh quá lớn (tối đa 5MB), thử lại nhé"
+            return
+        }
+        imageError = nil
+        isReadingImage = true
+        direction = .enToVi  // web luôn cố định chiều ảnh EN→VI
+        Task {
+            defer { isReadingImage = false }
+            do {
+                let r = try await api.translateImage(dataURL: TranslateLogic.imageDataURL(jpegData: jpeg))
+                guard let source = r.sourceText, let translated = r.translatedText, !source.isEmpty else {
+                    imageError = r.error ?? "Không tìm thấy chữ trong ảnh"
+                    return
+                }
+                skipNextChange = false
+                inputText = source
+                translatedText = translated
+                translateCache["\(direction.rawValue)::\(source)"] = translated
+                saved = false
+                scheduleAutoLog()
+            } catch {
+                imageError = "Mất kết nối — thử lại nhé"
+            }
+        }
+    }
+
+    // MARK: Ghi âm dịch — lấy text bằng Speech framework on-device rồi dịch
+    // qua pipeline sẵn có (DeepL), giống web nhưng không cần fallback Whisper.
+    func toggleDictation() async {
+        if dictation.isListening {
+            dictation.stop()
+            let text = dictation.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty { inputText = text }
+            return
+        }
+        guard await dictation.requestPermissions() else { return }
+        dictation.start(localeId: direction == .enToVi ? "en-US" : "vi-VN")
     }
 
     /// Nhận một mục từ lịch sử để xem lại.
