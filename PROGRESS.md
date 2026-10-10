@@ -121,21 +121,45 @@ không đụng tài nguyên/port/container của 2 app đó ở mọi bước.
   `deploy-wordly` không có quyền viết (sẽ fail âm thầm mỗi đêm) — đã đổi
   sang `/var/backups/wordly/prod/backup.log`.
 
-**CHƯA làm — cần chủ dự án:**
-1. **DNS:** `app.wordly.skillproof.work` / `api.wordly.skillproof.work`
-   chưa có record A nào (`dig` rỗng) — cần thêm 2 record A trỏ
-   `167.99.74.215` ở nơi quản lý DNS của `skillproof.work`. Chặn: SSL
-   certbot, verify end-to-end, cắt DNS thật.
-2. **OAuth Google/Apple:** Client ID/Secret chỉ có trong Supabase Cloud
-   Dashboard → Auth → Providers, không có cách đọc lại qua API — cần chủ
-   dự án cung cấp (dùng `atlas-secret-handoff`) để điền
-   `GOTRUE_EXTERNAL_GOOGLE_*`/`GOTRUE_EXTERNAL_APPLE_*` vào
-   `/opt/wordly/prod/supabase/.env`. Chặn: login thật trên domain mới.
-3. Sau (1)+(2): cấp SSL certbot, verify end-to-end (login, dịch, lưu từ,
-   lịch sử cũ hiển thị, email) trên domain mới — RỒI MỚI tính đến đổi iOS
-   app endpoint và tắt Vercel/Supabase Cloud (2 việc này KHÔNG làm trong
-   plan này, cần xác nhận thời điểm riêng vì không hoàn tác được/breaking
-   change cho user TestFlight).
+**CẬP NHẬT 10/10/2026 (cuối ngày) — HẠ TẦNG MỚI SỐNG, ĐÃ VERIFY END-TO-END
+BẰNG LOGIN THẬT. DNS + OAuth đã xong (chủ dự án tự làm).**
+
+**3 lỗi chỉ lộ ra khi test login thật (không bắt được bằng curl/200), đều
+đã sửa + deploy + verify lại:**
+1. `web/Dockerfile` bake `NEXT_PUBLIC_SUPABASE_URL=placeholder...` lúc build
+   — Next.js inline biến `NEXT_PUBLIC_*` vào JS phía client ngay lúc build,
+   KHÔNG đọc được từ env runtime container. Browser gọi thẳng
+   `placeholder.supabase.co` → `DNS_PROBE_FINISHED_NXDOMAIN`. Sửa: Dockerfile
+   nhận `ARG`, build lại với `--build-arg` giá trị thật từ `.env` tự host.
+2. nginx `upstream sent too big header` trên `/auth/callback` — cookie
+   session Supabase (chứa JWT) vượt buffer mặc định nginx. Sửa: thêm
+   `proxy_buffer_size 16k; proxy_buffers 4 16k; proxy_busy_buffers_size 32k;`
+   vào cả 2 vhost Wordly.
+3. Redirect sau login nhảy ra hostname nội bộ container
+   (`https://2007961e65f5:3000`) thay vì domain thật — `auth/callback/route.js`
+   dùng `new URL(request.url).origin`; Vercel tự xử lý đúng nên lỗi này
+   chưa từng lộ ra trước đây, chỉ lộ khi tự host sau nginx. Sửa: ưu tiên đọc
+   header `X-Forwarded-Host`/`X-Forwarded-Proto` (thêm `X-Forwarded-Host`
+   vào nginx, trước đó thiếu).
+
+**Verify end-to-end bằng tài khoản thật (chủ dự án tự làm, không suy đoán):**
+Login Google → thành công. Dịch + lưu từ → thành công, `translate_history`
+136→137 (xác nhận qua query DB trực tiếp). Lịch sử 136 từ migrate hiển thị
+đầy đủ trên trang chủ. **Chưa kiểm:** gửi email thử — tìm trong code
+`(learner)/profile*` không còn thấy nút "gửi email thử" (có thể đã bỏ từ
+sau ghi chú 6/10/2026) — Gmail SMTP env copy y nguyên, không đổi, nhưng
+CHƯA xác nhận gửi thật qua domain mới.
+
+**Còn lại — cần xác nhận riêng, KHÔNG làm trong lần này (không hoàn tác
+được / breaking change cho user TestFlight):**
+1. Đổi iOS app endpoint (Vercel → `app.wordly.skillproof.work`,
+   `*.supabase.co` → `api.wordly.skillproof.work`) + build lại + TestFlight.
+2. Tắt Vercel project + Supabase Cloud project — chỉ làm sau khi theo dõi
+   hạ tầng mới ổn định một thời gian.
+
+Chi tiết từng bước + mọi ruling: `docs/superpowers/plans/2026-10-10-vps-self-hosted-migration.md`
+và ledger `.superpowers/sdd/2026-10-10-vps-self-hosted-migration/progress.md`
+(gitignored, chỉ trên máy làm việc này).
 
 **Sự cố nhỏ xảy ra giữa phiên:** session khác (đang làm OCR ảnh/ghi âm,
 cùng checkout không phải worktree) vô tình `git checkout main` rồi merge
