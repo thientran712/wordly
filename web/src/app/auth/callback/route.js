@@ -1,23 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect-path";
+import { requestOrigin } from "@/lib/auth/request-origin";
 import { NextResponse } from "next/server";
 
 export async function GET(request) {
-  const { searchParams, origin: fallbackOrigin } = new URL(request.url);
-  // Sau nginx (self-host VPS), request.url phản ánh host nội bộ Next.js
-  // server nhìn thấy (vd. hostname container), không phải domain thật —
-  // Vercel tự xử lý đúng nên lỗi này không lộ ra trước đây. Ưu tiên
-  // X-Forwarded-Host/-Proto do nginx gắn.
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
-  const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : fallbackOrigin;
+  const { searchParams } = new URL(request.url);
+  const origin = requestOrigin(request);
   const code = searchParams.get("code");
   const next = safeRedirectPath(searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }

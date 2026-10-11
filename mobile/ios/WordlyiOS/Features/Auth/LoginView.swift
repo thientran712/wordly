@@ -352,61 +352,68 @@ struct SignupView: View {
 }
 
 // MARK: - Forgot Password
+// Hai bước ngay trong app: gửi mã 6 số qua email → nhập mã + mật khẩu mới.
+// Trước đây gửi link, mở link trên Safari/Gmail không đổi được phiên (mã PKCE
+// nằm trong app) nên rơi về trang chủ web, không đặt được mật khẩu.
 struct ForgotPasswordView: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.colorScheme) var scheme
     @Environment(\.dismiss) var dismiss
     @State private var email = ""
+    @State private var codeSent = false
+    @State private var code = ""
+    @State private var password = ""
+    @State private var confirm = ""
+    @State private var showPassword = false
     @State private var isLoading = false
-    @State private var success = false
     @State private var errorMsg: String?
+    @State private var info: String?
 
     var body: some View {
         NavigationStack {
             ZStack {
                 WordlyColors.bg(scheme: scheme).ignoresSafeArea()
-                VStack(spacing: 24) {
-                    Spacer()
-                    Text("🔑")
-                        .font(WordlyFonts.body(56))
-                    Text("Quên mật khẩu")
-                        .font(WordlyFonts.display(28))
-                        .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                    Text("Nhập email để nhận link đặt lại mật khẩu")
-                        .font(WordlyFonts.body(14, weight: .medium))
-                        .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                        .multilineTextAlignment(.center)
+                ScrollView {
+                    VStack(spacing: 20) {
+                        Text("🔑").font(WordlyFonts.body(56)).padding(.top, 32)
+                        Text(codeSent ? "Đặt mật khẩu mới" : "Quên mật khẩu")
+                            .font(WordlyFonts.display(28))
+                            .foregroundStyle(WordlyColors.ink(scheme: scheme))
+                        Text(codeSent ? "Nhập mã 6 số vừa gửi tới \(email)" : "Nhập email, chúng tôi gửi mã xác nhận 6 số")
+                            .font(WordlyFonts.body(14, weight: .medium))
+                            .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
 
-                    if success {
-                        VStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(WordlyFonts.body(40))
-                                .foregroundStyle(WordlyColors.electric)
-                            Text("Đã gửi email!")
-                                .font(WordlyFonts.body(16, weight: .bold))
-                                .foregroundStyle(WordlyColors.electric)
-                            Text("Kiểm tra hộp thư của bạn")
-                                .font(WordlyFonts.body(14))
-                                .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                        }
-                    } else {
                         VStack(spacing: 14) {
-                            WordlyTextField(label: "Email", placeholder: "example@gmail.com", text: $email,
-                                           keyboardType: .emailAddress, autocap: .never)
-                                .padding(.horizontal, 24)
+                            if codeSent {
+                                WordlyTextField(label: "Mã xác nhận", placeholder: "123456", text: $code,
+                                               keyboardType: .numberPad, autocap: .never)
+                                    .textContentType(.oneTimeCode)
+                                WordlySecureField(label: "Mật khẩu mới", placeholder: "Ít nhất 6 ký tự",
+                                                  text: $password, show: $showPassword)
+                                WordlySecureField(label: "Nhập lại mật khẩu", placeholder: "Nhập lại mật khẩu mới",
+                                                  text: $confirm, show: $showPassword)
+                            } else {
+                                WordlyTextField(label: "Email", placeholder: "example@gmail.com", text: $email,
+                                               keyboardType: .emailAddress, autocap: .never)
+                            }
 
                             if let err = errorMsg {
                                 Text(err).font(WordlyFonts.body(13, weight: .medium))
                                     .foregroundStyle(WordlyColors.error)
-                                    .padding(.horizontal, 24)
+                            }
+                            if let info {
+                                Text(info).font(WordlyFonts.body(13, weight: .medium))
+                                    .foregroundStyle(WordlyColors.electric)
                             }
 
                             Button {
-                                Task { await reset() }
+                                Task { codeSent ? await updatePassword() : await sendCode() }
                             } label: {
                                 HStack(spacing: 8) {
                                     if isLoading { ProgressView().tint(WordlyColors.onElectric).scaleEffect(0.85) }
-                                    Text(isLoading ? "Đang gửi..." : "Gửi link đặt lại")
+                                    Text(codeSent ? "Đổi mật khẩu" : (isLoading ? "Đang gửi..." : "Gửi mã xác nhận"))
                                         .font(WordlyFonts.body(16, weight: .bold))
                                 }
                                 .frame(maxWidth: .infinity).padding(.vertical, 16)
@@ -414,12 +421,19 @@ struct ForgotPasswordView: View {
                                 .foregroundStyle(WordlyColors.onElectric)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                             }
-                            .disabled(email.isEmpty || isLoading)
-                            .padding(.horizontal, 24)
+                            .disabled(isLoading || (codeSent ? code.isEmpty || password.isEmpty : email.isEmpty))
+
+                            if codeSent {
+                                Button("Gửi lại mã") { Task { await sendCode(resend: true) } }
+                                    .font(WordlyFonts.body(14, weight: .semibold))
+                                    .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                                    .disabled(isLoading)
+                            }
                         }
+                        .padding(.horizontal, 24)
                     }
-                    Spacer()
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -430,14 +444,32 @@ struct ForgotPasswordView: View {
         }
     }
 
-    private func reset() async {
+    private func sendCode(resend: Bool = false) async {
+        isLoading = true
+        errorMsg = nil
+        info = nil
+        defer { isLoading = false }
+        do {
+            try await authManager.resetPassword(email: email.trimmingCharacters(in: .whitespaces))
+            codeSent = true
+            if resend { info = "Đã gửi mã mới, kiểm tra hộp thư (cả mục Spam)" }
+        } catch {
+            errorMsg = "Không gửi được mã, thử lại sau ít phút."
+        }
+    }
+
+    private func updatePassword() async {
+        errorMsg = ResetPasswordLogic.error(code: code, password: password, confirm: confirm)
+        guard errorMsg == nil else { return }
         isLoading = true
         defer { isLoading = false }
         do {
-            try await authManager.resetPassword(email: email)
-            success = true
+            try await authManager.resetPassword(email: email.trimmingCharacters(in: .whitespaces),
+                                                code: ResetPasswordLogic.normalizedCode(code),
+                                                newPassword: password)
+            dismiss()   // verifyOTP đã đăng nhập luôn → app vào màn chính
         } catch {
-            errorMsg = error.localizedDescription
+            errorMsg = "Mã không đúng hoặc đã hết hạn. Bấm \"Gửi lại mã\" để nhận mã mới."
         }
     }
 }

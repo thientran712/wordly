@@ -154,6 +154,16 @@ final class AuthManager: ObservableObject {
         try await supabase.auth.resetPasswordForEmail(email)
     }
 
+    /// Xác nhận mã 6 số trong email đặt lại mật khẩu (tạo phiên đăng nhập) rồi đổi mật khẩu.
+    func resetPassword(email: String, code: String, newPassword: String) async throws {
+        try await supabase.auth.verifyOTP(email: email, token: code, type: .recovery)
+        let user = try await supabase.auth.update(user: UserAttributes(password: newPassword))
+        // Mã recovery phát sự kiện passwordRecovery (không phải signedIn) —
+        // trình nghe authStateChanges bỏ qua, nên tự vào trạng thái đăng nhập.
+        currentUser = user
+        isAuthenticated = true
+    }
+
     // MARK: - Change Password
     func changePassword(newPassword: String) async throws {
         try await supabase.auth.update(user: UserAttributes(password: newPassword))

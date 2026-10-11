@@ -107,11 +107,12 @@ export async function middleware(request) {
 
   const isCronApi = path.startsWith("/api/cron") || path.startsWith("/api/admin");
   const isInngestApi = path.startsWith("/api/inngest");
-  const isAuthCallback = path.startsWith("/auth/callback");
+  const isAuthCallback = path.startsWith("/auth/callback") || path === "/auth/confirm";
   // Public pages: homepage (guest can use translate), auth pages, speaking-practice spinner (guest can try it)
   // /privacy, /support: App Store bắt buộc URL công khai, không cần đăng nhập.
+  // /email-templates/*: GoTrue tải mẫu email qua URL công khai.
   const isPublicPage = path === "/" || isAuthPage || path.startsWith("/speak")
-    || path === "/privacy" || path === "/support";
+    || path === "/privacy" || path === "/support" || path.startsWith("/email-templates/");
 
   // SECURITY: strip any client-supplied auth headers first so a guest can never
   // spoof x-user-id to impersonate another user. We only ever set these from the
@@ -137,8 +138,10 @@ export async function middleware(request) {
     return response;
   }
 
-  // Auth pages — redirect logged-in users to home
-  if (userId && isAuthPage) {
+  // Auth pages — redirect logged-in users to home. Trừ /reset-password: người
+  // dùng tới đây SAU khi link email đã tạo phiên — đẩy về trang chủ là mất
+  // bước đặt mật khẩu mới.
+  if (userId && isAuthPage && path !== "/reset-password") {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
