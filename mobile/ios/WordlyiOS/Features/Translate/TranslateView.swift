@@ -18,12 +18,6 @@ struct TranslateView: View {
                 VStack(spacing: 14) {
                     languageBar
                     inputCard
-                    if let imageError = vm.imageError {
-                        Text(imageError).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.error)
-                    }
-                    if let dictationError = vm.dictation.error {
-                        Text(dictationError).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.error)
-                    }
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
                     dictionarySection
@@ -48,6 +42,9 @@ struct TranslateView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toast($vm.toast)
+            .toast($vm.imageError, systemImage: "exclamationmark.triangle.fill", color: WordlyColors.error, duration: 5)
+            .toast(Binding(get: { vm.dictation.error }, set: { vm.dictation.error = $0 }),
+                   systemImage: "exclamationmark.triangle.fill", color: WordlyColors.error, duration: 5)
             .onChange(of: vm.inputText) { _, text in vm.onInputChanged(text) }
             .sheet(isPresented: $showCamera) {
                 CameraPicker(

@@ -263,7 +263,7 @@ final class TranslateViewModel: ObservableObject {
             return
         }
         guard jpeg.count <= TranslateLogic.maxImageBytes else {
-            imageError = "Ảnh quá lớn (tối đa 5MB), thử lại nhé"
+            imageError = "Ảnh quá lớn (tối đa \(TranslateLogic.maxImageBytes / 1024 / 1024)MB), thử lại nhé"
             return
         }
         imageError = nil

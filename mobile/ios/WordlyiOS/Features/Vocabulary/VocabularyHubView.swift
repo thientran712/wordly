@@ -65,6 +65,8 @@ struct SavedWordsView: View {
     @StateObject private var vm = SavedWordsViewModel()
     @StateObject private var tts = TTSManager.shared
     @EnvironmentObject private var router: AppRouter
+    @State private var selected: TranslateHistoryEntry?
+    @State private var detailDetent: PresentationDetent = .fraction(0.75)
 
     var body: some View {
         ScrollView {
@@ -104,6 +106,10 @@ struct SavedWordsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await vm.load() }
         .refreshable { await vm.load() }
+        .sheet(item: $selected) { entry in
+            SavedWordDetailSheet(entry: entry)
+                .presentationDetents([.fraction(0.75), .large], selection: $detailDetent)
+        }
     }
 
     private var widgetCard: some View {
@@ -154,11 +160,17 @@ struct SavedWordsView: View {
 
     private func row(_ entry: TranslateHistoryEntry) -> some View {
         HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.sourceText).font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
-                Text(entry.translatedText).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft).lineLimit(2)
+            Button {
+                selected = entry
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.sourceText).font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                    Text(entry.translatedText).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft).lineLimit(2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            Spacer()
+            .buttonStyle(.plain)
             Button {
                 Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") }
             } label: {
@@ -184,5 +196,77 @@ struct SavedWordsView: View {
             }
         }
         .padding(.vertical, 10)
+    }
+}
+
+/// Chi tiết 1 từ đã lưu — cùng kiểu popup với TopicWordDetailSheet (3/4 màn
+/// hình). Từ đơn tiếng Anh thì tra từ điển AI (như ở tab Dịch) để có đầy đủ
+/// nghĩa/ví dụ; câu/cụm từ hoặc chiều VI→EN thì chỉ hiện bản dịch đã lưu.
+struct SavedWordDetailSheet: View {
+    let entry: TranslateHistoryEntry
+    @StateObject private var tts = TTSManager.shared
+    @EnvironmentObject private var router: AppRouter
+    @Environment(\.dismiss) private var dismiss
+    @State private var dictionary: TranslateViewModel.DictionaryState = .hidden
+
+    private var canLookUp: Bool {
+        entry.direction == "EN→VI" && TranslateLogic.isSingleWord(entry.sourceText)
+    }
+
+    var body: some View {
+        ScrollView {
+            switch dictionary {
+            case .loaded(let detail):
+                DictionaryCard(detail: detail, tts: tts) {
+                    dismiss()
+                    router.practice(word: entry.sourceText)
+                }
+                .padding(20)
+            default:
+                fallback
+            }
+        }
+        .screenBackground()
+        .task {
+            guard canLookUp else { return }
+            dictionary = .loading
+            if let detail = try? await APIClient.shared.lookupWord(entry.sourceText) {
+                dictionary = .loaded(detail)
+            } else {
+                dictionary = .notFound
+            }
+        }
+    }
+
+    private var fallback: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(entry.sourceText).font(WordlyFonts.display(28)).foregroundStyle(WordlyColors.ink)
+            HStack(spacing: 10) {
+                Button { Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") } } label: {
+                    Label("Phát âm", systemImage: "speaker.wave.2.fill")
+                        .font(WordlyFonts.body(13, weight: .bold))
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(WordlyColors.electricSubtle)
+                        .foregroundStyle(WordlyColors.electric)
+                        .clipShape(Capsule())
+                }
+            }
+            if dictionary == .loading {
+                ProgressView().tint(WordlyColors.electric).frame(maxWidth: .infinity).padding(.top, 8)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Nghĩa").font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
+                    Text(entry.translatedText).font(WordlyFonts.body(17)).foregroundStyle(WordlyColors.ink)
+                }
+            }
+            Button {
+                dismiss()
+                router.practice(word: entry.sourceText)
+            } label: {
+                Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+            }
+            .buttonStyle(ElectricButtonStyle(isFullWidth: true))
+        }
+        .padding(20)
     }
 }

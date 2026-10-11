@@ -135,7 +135,7 @@ struct HistoryView: View {
                         .textCase(.uppercase)
                     ) {
                         ForEach(group.entries) { entry in
-                            HistoryEntryRow(entry: entry, onPick: onPick)
+                            HistoryEntryRow(entry: entry, onPick: onPick, onDelete: { vm.delete(id: entry.id) })
                                 .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) { vm.delete(id: entry.id) } label: {
                                         Label("Xoá", systemImage: "trash")
@@ -181,7 +181,7 @@ struct HistoryView: View {
                     .background(WordlyColors.cardBG(scheme: scheme))
 
                 ForEach(group.entries) { entry in
-                    HistoryEntryRow(entry: entry, onPick: onPick)
+                    HistoryEntryRow(entry: entry, onPick: onPick, onDelete: { vm.delete(id: entry.id) })
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                     Divider().padding(.leading, 16)
@@ -214,6 +214,7 @@ struct HistoryView: View {
 struct HistoryEntryRow: View {
     let entry: TranslateHistoryEntry
     var onPick: ((TranslateHistoryEntry) -> Void)?
+    var onDelete: (() -> Void)? = nil
     @StateObject private var tts = TTSManager.shared
     @Environment(\.colorScheme) var scheme
     @State private var showActions = false

@@ -21,7 +21,7 @@ enum TranslateLogic {
 
     /// Ảnh gửi lên /api/translate/image dạng data URL base64 — giữ khớp
     /// web (image-validation.js: mime phải trong whitelist, không multipart).
-    static let maxImageBytes = 5 * 1024 * 1024
+    static let maxImageBytes = 10 * 1024 * 1024
     static func imageDataURL(jpegData: Data) -> String {
         "data:image/jpeg;base64,\(jpegData.base64EncodedString())"
     }
