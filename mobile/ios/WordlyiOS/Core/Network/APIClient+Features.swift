@@ -117,6 +117,12 @@ extension APIClient {
         _ = try await request(path: "/api/profile", method: "PUT", body: Body(timezone: tz), responseType: Ok.self)
     }
 
+    // MARK: Tài khoản
+    /// Xoá vĩnh viễn tài khoản + toàn bộ dữ liệu (Apple Guideline 5.1.1(v)).
+    func deleteAccount() async throws {
+        _ = try await request(path: "/api/account", method: "DELETE", responseType: Ok.self)
+    }
+
     // MARK: Luyện nói với Alex — tự đặt tiêu đề phiên
     func generateSessionTitle(id: String, messages: [ChatMessage]) async throws -> String? {
         struct Body: Encodable { let messages: [ChatMessage] }

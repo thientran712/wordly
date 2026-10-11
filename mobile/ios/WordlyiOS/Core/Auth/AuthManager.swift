@@ -138,6 +138,17 @@ final class AuthManager: ObservableObject {
         isAuthenticated = false
     }
 
+    /// Xoá tài khoản trên server rồi dọn phiên trên máy. User đã bị xoá nên
+    /// gọi signOut lên server sẽ lỗi — chỉ xoá phiên local.
+    func deleteAccount() async throws {
+        try await APIClient.shared.deleteAccount()
+        try? await supabase.auth.signOut(scope: .local)
+        AppGroupStorage.shared.clearWords()
+        AppGroupStorage.shared.deleteHomeBackgroundImage()
+        currentUser = nil
+        isAuthenticated = false
+    }
+
     // MARK: - Forgot Password
     func resetPassword(email: String) async throws {
         try await supabase.auth.resetPasswordForEmail(email)

@@ -44,9 +44,9 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Wordly cần camera để chụp ảnh và dịch chữ trong ảnh.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Wordly cần mic để luyện nói với Alex và để ghi âm dịch giọng nói.</string>
+	<string>Wordly dùng mic để bạn nói rồi dịch ngay câu vừa nói.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Wordly dùng nhận dạng giọng nói để chuyển lời nói của bạn thành văn bản khi luyện nói với Alex hoặc dịch giọng nói.</string>
+	<string>Wordly nhận dạng giọng nói ngay trên máy để chuyển lời bạn nói thành chữ rồi dịch.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>PlusJakartaSans-Regular.ttf</string>

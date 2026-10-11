@@ -12,6 +12,9 @@ struct ProfileView: View {
     @State private var emailSummary = ""
     @State private var streak: StreakResponse?
     @FocusState private var nameFieldFocused: Bool
+    @State private var confirmDelete = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
 
     private let levels = ["A1", "A2", "B1", "B2", "C1", "C2"]
     private let goals: [(String, String)] = [
@@ -77,7 +80,7 @@ struct ProfileView: View {
                     .pickerStyle(.segmented)
                 }
 
-                Section("Tài khoản") {
+                Section {
                     if vm.authProvider == "email" {
                         Button { showChangePassword = true } label: {
                             settingRow("key.fill", WordlyColors.duoOrange, "Đổi mật khẩu", nil)
@@ -86,6 +89,17 @@ struct ProfileView: View {
                     Button(role: .destructive) { confirmSignOut = true } label: {
                         settingRow("rectangle.portrait.and.arrow.right", WordlyColors.error, "Đăng xuất", nil)
                     }
+                    Button(role: .destructive) { confirmDelete = true } label: {
+                        HStack {
+                            settingRow("trash.fill", WordlyColors.error, "Xoá tài khoản", nil)
+                            if isDeleting { ProgressView() }
+                        }
+                    }
+                    .disabled(isDeleting)
+                } header: {
+                    Text("Tài khoản")
+                } footer: {
+                    if let deleteError { Text(deleteError).foregroundStyle(WordlyColors.error) }
                 }
 
                 Section {
@@ -114,6 +128,23 @@ struct ProfileView: View {
                 Button("Đăng xuất", role: .destructive) { Task { await authManager.signOut() } }
             } message: {
                 Text("Bạn cần đăng nhập lại để tiếp tục học.")
+            }
+            .alert("Xoá vĩnh viễn tài khoản?", isPresented: $confirmDelete) {
+                Button("Huỷ", role: .cancel) {}
+                Button("Xoá tài khoản", role: .destructive) {
+                    Task {
+                        isDeleting = true
+                        deleteError = nil
+                        do {
+                            try await authManager.deleteAccount()
+                        } catch {
+                            deleteError = "Không xoá được tài khoản, thử lại sau."
+                        }
+                        isDeleting = false
+                    }
+                }
+            } message: {
+                Text("Toàn bộ từ đã lưu, lịch sử dịch, sổ tay và cài đặt nhắc học sẽ bị xoá và không khôi phục được.")
             }
             }
         }

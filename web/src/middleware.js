@@ -109,7 +109,9 @@ export async function middleware(request) {
   const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback");
   // Public pages: homepage (guest can use translate), auth pages, speaking-practice spinner (guest can try it)
-  const isPublicPage = path === "/" || isAuthPage || path.startsWith("/speak");
+  // /privacy, /support: App Store bắt buộc URL công khai, không cần đăng nhập.
+  const isPublicPage = path === "/" || isAuthPage || path.startsWith("/speak")
+    || path === "/privacy" || path === "/support";
 
   // SECURITY: strip any client-supplied auth headers first so a guest can never
   // spoof x-user-id to impersonate another user. We only ever set these from the
