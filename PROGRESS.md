@@ -3,6 +3,56 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/10/2026 — BUILD 11 ĐÃ UPLOAD + PR #10 (chờ merge)
+
+**Trạng thái:** build 11 "Upload succeeded" (archive: CFBundleVersion 11 cho app +
+widget, 0 chuỗi `WordlyUIPreview`). Nhánh `chore/ios-build-11` đã push, **PR #10
+vào `main` chưa merge**. Web trên VPS = đúng code của PR (deploy lần cuối từ
+`6126c2c`, sau đó chỉ đổi iOS). 119/119 unit test iOS, 228/228 test web; UI test
+mới: `HistoryPickUITests`, `SavedWordSheetUITests`, `WidgetDeepLinkUITests`,
+`ProfileScreenUITests`, `PendingSignupUITests` đều pass.
+
+**Đã làm trong build 11 (so với build 10):**
+- Widget: bỏ ảnh nền (crash), chỉ hiện từ + nghĩa (bỏ nhãn/logo, chữ tự thu nhỏ
+  trước khi cắt "…"), căn trái/giữa/phải, bấm widget mở đúng từ (Đã lưu / Từ mới
+  + popup), đăng xuất thì nhắc đăng nhập (xoá cả lô từ kho).
+- `HomeStyle` giải mã chịu thiếu khoá (trước đây thiếu khoá → mất hết cài đặt widget).
+- Màn Cá nhân làm lại: tên 1 chỗ → màn "Hồ sơ học tập" (Lưu trên bản nháp), link
+  Chính sách quyền riêng tư + Hỗ trợ, version gọn.
+- Popup nghĩa (Đã lưu / Từ mới) căn trái, cao vừa nội dung (`FitContentSheet`).
+- Lịch sử dịch: chọn mục → cuộn lên đầu, không tự tra từ điển; nhấn giữ xoá
+  (**commit 4ebd9e7 trước đây báo xong nhưng quên gắn contextMenu** — giờ mới chạy
+  thật); bấm vào khoảng trống giữa dòng giờ ăn.
+- Ẩn nút "Gửi email thử". Chữ/viền chế độ sáng đậm hơn (ink #2B2B2B, phụ #5E5E5E,
+  mờ #8C8C8C, viền #D9D9D9).
+- Hiệu năng: lịch sử dịch không còn dựng lại view mỗi 10s (làm mới ngầm), gõ nhanh
+  không báo "Mất kết nối" sai, tab Đã lưu 1 lần gọi `?saved=1` (0,2s), cache bản
+  dịch phía server (dịch lại 0,98s → 0,26s, đo production), mở app chỉ đồng bộ
+  widget khi đã quá 5 phút.
+
+**Production (đã làm, đã kiểm):**
+- **Trigger `on_auth_user_created` bị mất từ lúc chuyển sang self-host** (baseline
+  chỉ dump schema public) → tài khoản mới không có hồ sơ, `/api/profile` 500. Đã
+  chạy migration `20261012000100_restore_new_user_trigger` (46/46 user có hồ sơ,
+  test user mới tự có hồ sơ). `/api/profile` GET dùng `maybeSingle`.
+- `support@wordly.skillproof.work` chuyển tiếp về Gmail qua ImprovMX (MX + SPF ở GoDaddy).
+
+**Chưa làm / còn treo:**
+1. **Merge PR #10** vào `main`.
+2. **Nộp App Store**: chọn build 11, điền mật khẩu tài khoản demo
+   `huythien7122+wordlytest@gmail.com`. Ảnh `docs/app-store/screenshots-6.9/` chụp
+   trước khi đổi màn widget/Cá nhân — nên chạy lại `AppStoreScreenshotTests`.
+   Hồ sơ nộp (artifact "Wordly App Store Kit") còn ghi build 9/10.
+3. Kiểm trên máy thật (simulator không làm được): bấm widget thật mở đúng từ; hiển
+   thị widget màn hình khoá/chính với căn lề + chữ dài; nhập mã OTP từ email thật.
+4. Cài đặt email "tải lâu": server đo ~0,2s, chưa tái hiện được — nhờ thử lại trên
+   build 11 (có thể do tài khoản thiếu hồ sơ, đã sửa bằng migration).
+5. Xoá tài khoản chưa thu hồi token Sign in with Apple (Apple khuyến nghị).
+6. Nợ có từ trước: `/api/translate-history` dùng service role (`createAdminClient`)
+   cho request người dùng — trái quy tắc 5, có lọc `user_id` nhưng nên chuyển sang
+   client RLS.
+7. Luyện nói với Alex đang ẩn bằng `AppRouter.alexPracticeEnabled = false`.
+
 ### 11/10/2026 (khuya) — BUILD 10: đăng ký + quên mật khẩu bằng mã OTP
 
 **Build 10 — "Upload succeeded"** (0 chuỗi WordlyUIPreview, CFBundleVersion 10).
