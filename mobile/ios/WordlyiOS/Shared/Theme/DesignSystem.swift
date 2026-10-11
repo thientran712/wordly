@@ -26,11 +26,13 @@ enum WordlyColors {
     static let surface         = adaptive(light: "#F7F7F7", dark: "#1A2930")
     static let surfaceElevated = adaptive(light: "#FFFFFF", dark: "#1F2E36")
     static let cardBG          = adaptive(light: "#FFFFFF", dark: "#1F2E36")
-    static let cardBorder      = adaptive(light: Color(hex: "#E5E5E5"), dark: Color.white.opacity(0.08))
-    static let ink             = adaptive(light: "#3C3C3C", dark: "#FFFFFF")
-    static let inkSoft         = adaptive(light: "#777777", dark: "#AFAFAF")
-    static let inkGhost        = adaptive(light: "#AFAFAF", dark: "#6B7A80")
-    static let divider         = adaptive(light: Color(hex: "#E5E5E5"), dark: Color.white.opacity(0.08))
+    // Chế độ sáng đậm hơn web một chút (12/10/2026) — bản web (#3C3C3C/#777777/
+    // #AFAFAF/#E5E5E5) trên nền trắng trông nhạt, nhất là tab Dịch.
+    static let cardBorder      = adaptive(light: Color(hex: "#D9D9D9"), dark: Color.white.opacity(0.08))
+    static let ink             = adaptive(light: "#2B2B2B", dark: "#FFFFFF")
+    static let inkSoft         = adaptive(light: "#5E5E5E", dark: "#AFAFAF")
+    static let inkGhost        = adaptive(light: "#8C8C8C", dark: "#6B7A80")
+    static let divider         = adaptive(light: Color(hex: "#D9D9D9"), dark: Color.white.opacity(0.08))
     static let hoverBG         = adaptive(light: Color(hex: "#F7F7F7"), dark: Color.white.opacity(0.06))
     static let inputBG         = adaptive(light: Color(hex: "#F7F7F7"), dark: Color.white.opacity(0.05))
     static let inputBorder     = adaptive(light: Color(hex: "#E5E5E5"), dark: Color.white.opacity(0.12))
