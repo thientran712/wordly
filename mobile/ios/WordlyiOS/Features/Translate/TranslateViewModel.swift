@@ -54,13 +54,29 @@ final class TranslateViewModel: ObservableObject {
     @Published var isReadingImage = false
     @Published var imageError: String?
     @Published var isDictating = false
+    @Published var dictationLevel: Float = 0
     let dictation = DictationManager()
-    private var dictationSubscription: AnyCancellable?
+    private var dictationCancellables: Set<AnyCancellable> = []
 
+    /// Dịch ngay khi đang nói, không đợi dừng ghi âm — đẩy transcript từng
+    /// phần (partial results của Speech framework) vào `inputText` giống
+    /// gõ tay, tự chạy qua debounce dịch (300ms) đã có sẵn.
     private func observeDictation() {
-        dictationSubscription = dictation.$isListening
+        dictation.$isListening
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in self?.isDictating = $0 }
+            .store(in: &dictationCancellables)
+        dictation.$audioLevel
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.dictationLevel = $0 }
+            .store(in: &dictationCancellables)
+        dictation.$transcript
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] text in
+                guard let self, self.dictation.isListening else { return }
+                self.inputText = text
+            }
+            .store(in: &dictationCancellables)
     }
 
     // MARK: Gõ chữ
@@ -278,11 +294,10 @@ final class TranslateViewModel: ObservableObject {
     func toggleDictation() async {
         if dictation.isListening {
             dictation.stop()
-            let text = dictation.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty { inputText = text }
             return
         }
         guard await dictation.requestPermissions() else { return }
+        clear()
         dictation.start(localeId: direction == .enToVi ? "en-US" : "vi-VN")
     }
 

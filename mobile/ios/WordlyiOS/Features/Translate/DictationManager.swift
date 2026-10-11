@@ -12,11 +12,15 @@ final class DictationManager: NSObject, ObservableObject {
     @Published var isListening = false
     @Published var transcript = ""
     @Published var error: String?
+    /// Mức âm lượng 0...1 để vẽ sóng âm động trên UI — lấy mẫu thưa (~12
+    /// lần/giây) từ buffer audio, không cập nhật mỗi buffer (quá dày, phí).
+    @Published var audioLevel: Float = 0
 
     private var recognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
+    private var lastLevelUpdate = Date.distantPast
 
     func requestPermissions() async -> Bool {
         let speechStatus = await withCheckedContinuation { continuation in
@@ -54,8 +58,14 @@ final class DictationManager: NSObject, ObservableObject {
             let inputNode = audioEngine.inputNode
             let format = inputNode.outputFormat(forBus: 0)
             inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+                let level = DictationManager.normalizedLevel(of: buffer)
                 Task { @MainActor [weak self] in
-                    self?.recognitionRequest?.append(buffer)
+                    guard let self else { return }
+                    self.recognitionRequest?.append(buffer)
+                    let now = Date()
+                    guard now.timeIntervalSince(self.lastLevelUpdate) > 0.08 else { return }
+                    self.lastLevelUpdate = now
+                    self.audioLevel = level
                 }
             }
 
@@ -86,6 +96,21 @@ final class DictationManager: NSObject, ObservableObject {
         recognitionRequest = nil
         recognitionTask = nil
         isListening = false
+        audioLevel = 0
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    // nonisolated: an toàn tính trên thread audio real-time của installTap,
+    // giống decibels() của SpeechManager — không chạm self ở đây.
+    private nonisolated static func normalizedLevel(of buffer: AVAudioPCMBuffer) -> Float {
+        guard let channelData = buffer.floatChannelData?[0] else { return 0 }
+        let frameLength = Int(buffer.frameLength)
+        guard frameLength > 0 else { return 0 }
+        var sum: Float = 0
+        for i in 0..<frameLength { sum += abs(channelData[i]) }
+        let rms = sum / Float(frameLength)
+        let dB = 20 * log10(rms)
+        guard dB.isFinite else { return 0 }
+        return min(max((dB + 50) / 50, 0), 1)
     }
 }

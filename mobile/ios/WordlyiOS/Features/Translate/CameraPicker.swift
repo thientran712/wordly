@@ -1,15 +1,17 @@
 import SwiftUI
 import UIKit
 
-/// Chụp ảnh để dịch (giống nút Camera ở web InlineTranslate.js, `capture="environment"`).
-/// Simulator/máy không có camera thì tự chuyển sang chọn ảnh từ thư viện.
+/// Chụp ảnh hoặc chọn ảnh có sẵn để dịch (web chỉ chụp qua `capture="environment"`,
+/// iOS có thêm chọn từ thư viện vì tiện hơn). Simulator không có camera thì
+/// tự chuyển sang thư viện dù `sourceType` yêu cầu camera.
 struct CameraPicker: UIViewControllerRepresentable {
+    var sourceType: UIImagePickerController.SourceType
     var onPick: (UIImage) -> Void
     var onCancel: () -> Void
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
+        picker.sourceType = UIImagePickerController.isSourceTypeAvailable(sourceType) ? sourceType : .photoLibrary
         picker.delegate = context.coordinator
         return picker
     }
