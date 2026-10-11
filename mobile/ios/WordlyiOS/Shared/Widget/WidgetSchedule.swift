@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // Dùng chung cho app + widget (cùng được biên dịch vào 2 target, xem project.yml).
 // App lưu danh sách từ + cài đặt vào App Group; widget đọc ra và dựng lịch hiển thị.
@@ -83,6 +84,16 @@ struct WidgetSettings: Codable, Equatable {
     var homeStyle: HomeStyle = HomeStyle()
 
     static let intervals = [15, 30, 60, 120]
+}
+
+extension WidgetSettings.TextWeight {
+    var swiftUIWeight: Font.Weight {
+        switch self {
+        case .light: return .light
+        case .regular: return .regular
+        case .bold: return .bold
+        }
+    }
 }
 
 extension WidgetSettings {

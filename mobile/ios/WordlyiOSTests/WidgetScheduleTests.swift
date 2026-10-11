@@ -106,6 +106,7 @@ final class WidgetScheduleTests: XCTestCase {
         let decoded = try JSONDecoder().decode(WidgetSettings.self, from: oldJSON)
         XCTAssertEqual(decoded.lockStyle, .full)
         XCTAssertEqual(decoded.homeTheme, .defaultTheme)
+        XCTAssertEqual(decoded.homeStyle, WidgetSettings.HomeStyle(), "dữ liệu cũ (trước khi có homeStyle) decode ra mặc định, không lỗi")
         XCTAssertEqual(decoded.intervalMinutes, 30, "các field cũ vẫn giữ nguyên giá trị đã lưu")
     }
 
@@ -113,9 +114,14 @@ final class WidgetScheduleTests: XCTestCase {
         var s = WidgetSettings()
         s.lockStyle = .compact
         s.homeTheme = .sunset
+        s.homeStyle.bgHex1 = "#FF0000"
+        s.homeStyle.wordWeight = .light
+        s.homeStyle.wordItalic = true
+        s.homeStyle.imageOverlay = .light
         let back = try JSONDecoder().decode(WidgetSettings.self, from: JSONEncoder().encode(s))
         XCTAssertEqual(back.lockStyle, .compact)
         XCTAssertEqual(back.homeTheme, .sunset)
+        XCTAssertEqual(back.homeStyle, s.homeStyle)
     }
 
     // Review: pool rỗng → entries chỉ có 1 entry tại `now` → xin lịch mới ngay lập tức,

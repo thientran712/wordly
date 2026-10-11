@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import UIKit
 
 // Widget từ vựng — màn hình khoá (chữ nhật, tròn, một dòng) + màn hình chính
 // (nhỏ, vừa). Đọc từ + cài đặt mà app lưu vào App Group (AppGroupStorage), lịch
@@ -17,7 +18,7 @@ struct WordlyEntry: TimelineEntry {
     /// Có từ nhưng đang ngoài khung giờ hiển thị
     let resting: Bool
     let lockStyle: WidgetSettings.LockStyle
-    let homeTheme: WidgetSettings.HomeTheme
+    let homeStyle: WidgetSettings.HomeStyle
 }
 
 struct WordlyProvider: TimelineProvider {
@@ -25,7 +26,7 @@ struct WordlyProvider: TimelineProvider {
 
     func placeholder(in context: Context) -> WordlyEntry {
         WordlyEntry(date: Date(), word: Self.sample, showMeaning: true, resting: false,
-                    lockStyle: .full, homeTheme: .defaultTheme)
+                    lockStyle: .full, homeStyle: WidgetSettings.HomeStyle())
     }
 
     func getSnapshot(in context: Context, completion: @escaping (WordlyEntry) -> Void) {
@@ -33,7 +34,7 @@ struct WordlyProvider: TimelineProvider {
         let first = WidgetSchedule.entries(words: loadWords(), bank: loadWords(bankKey), settings: settings)
             .first { $0.word != nil }?.word
         completion(WordlyEntry(date: Date(), word: first ?? Self.sample, showMeaning: settings.showMeaning, resting: false,
-                               lockStyle: settings.lockStyle, homeTheme: settings.homeTheme))
+                               lockStyle: settings.lockStyle, homeStyle: settings.homeStyle))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WordlyEntry>) -> Void) {
@@ -45,7 +46,7 @@ struct WordlyProvider: TimelineProvider {
         let schedule = WidgetSchedule.entries(words: words, bank: bank, settings: settings)
         let entries = schedule.map {
             WordlyEntry(date: $0.date, word: $0.word, showMeaning: settings.showMeaning, resting: hasWords && $0.word == nil,
-                       lockStyle: settings.lockStyle, homeTheme: settings.homeTheme)
+                       lockStyle: settings.lockStyle, homeStyle: settings.homeStyle)
         }
         // Hết lịch thì xin lịch mới (app cũng gọi reload khi dữ liệu đổi)
         completion(Timeline(entries: entries, policy: .after(WidgetSchedule.reloadDate(entries: schedule))))
@@ -70,7 +71,7 @@ struct WordlyWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: WordlyProvider()) { entry in
             WordlyWidgetEntryView(entry: entry)
-                .containerBackground(for: .widget) { WidgetBackground(theme: entry.homeTheme) }
+                .containerBackground(for: .widget) { WidgetBackground(style: entry.homeStyle) }
         }
         .configurationDisplayName("Wordly — Từ vựng")
         .description("Từ bạn đã lưu xen kẽ từ mới trong kho, trên màn hình khoá và màn hình chính. Chỉnh trong app: Cá nhân → Widget.")
@@ -80,25 +81,37 @@ struct WordlyWidget: Widget {
 
 private struct WidgetBackground: View {
     @Environment(\.widgetFamily) private var family
-    let theme: WidgetSettings.HomeTheme
+    let style: WidgetSettings.HomeStyle
+
     var body: some View {
         if family.isAccessory {
+            // Màn hình khoá không đổi được màu (OS tự tô) — style chỉ áp dụng
+            // cho widget màn hình chính, nơi containerBackground cho phép nền tùy ý.
             Color.clear
+        } else if let image = Self.loadBackgroundImage() {
+            Image(uiImage: image).resizable().scaledToFill()
+                .overlay(overlayColor.opacity(overlayOpacity))
         } else {
-            LinearGradient(colors: theme.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [Color(hex: style.bgHex1), Color(hex: style.bgHex2)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
-}
 
-private extension WidgetSettings.HomeTheme {
-    // Màn hình khoá không đổi được màu (OS tự tô) — theme chỉ áp dụng cho
-    // widget màn hình chính, nơi containerBackground cho phép nền tùy ý.
-    var colors: [Color] {
-        switch self {
-        case .defaultTheme: return [Color(hex: "#131F24"), Color(hex: "#1F2E36")]
-        case .sunset: return [Color(hex: "#FF7A59"), Color(hex: "#C2185B")]
-        case .midnight: return [Color(hex: "#2E1A47"), Color(hex: "#0F1B3D")]
+    private var overlayColor: Color { style.imageOverlay == .light ? .white : .black }
+    private var overlayOpacity: Double {
+        switch style.imageOverlay {
+        case .none: return 0
+        case .dark: return 0.45
+        case .light: return 0.35
         }
+    }
+
+    private static func loadBackgroundImage() -> UIImage? {
+        guard let url = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: appGroup)?
+            .appendingPathComponent("widget_home_bg.jpg"),
+            let data = try? Data(contentsOf: url) else { return nil }
+        return UIImage(data: data)
     }
 }
 
@@ -238,13 +251,15 @@ struct HomeSmall: View {
             Spacer(minLength: 0)
             if let w = entry.word {
                 Text(w.word)
-                    .font(WordlyFonts.display(22))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 22, weight: entry.homeStyle.wordWeight.swiftUIWeight))
+                    .italic(entry.homeStyle.wordItalic)
+                    .foregroundStyle(Color(hex: entry.homeStyle.wordColorHex))
                     .lineLimit(2)
                     .minimumScaleFactor(0.6)
                 Text(entry.showMeaning ? w.meaning : "Nghĩa là gì nhỉ? 🤔")
-                    .font(WordlyFonts.body(13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .font(.system(size: 13, weight: entry.homeStyle.meaningWeight.swiftUIWeight))
+                    .italic(entry.homeStyle.meaningItalic)
+                    .foregroundStyle(Color(hex: entry.homeStyle.meaningColorHex).opacity(0.85))
                     .lineLimit(2)
             } else {
                 Text(entry.resting ? "🌙" : "📖").font(.system(size: 30))
@@ -270,13 +285,15 @@ struct HomeMedium: View {
                 Spacer(minLength: 0)
                 if let w = entry.word {
                     Text(w.word)
-                        .font(WordlyFonts.display(28))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 28, weight: entry.homeStyle.wordWeight.swiftUIWeight))
+                        .italic(entry.homeStyle.wordItalic)
+                        .foregroundStyle(Color(hex: entry.homeStyle.wordColorHex))
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                     Text(entry.showMeaning ? w.meaning : "Đoán nghĩa rồi mở app kiểm tra nhé 🤔")
-                        .font(WordlyFonts.body(14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.75))
+                        .font(.system(size: 14, weight: entry.homeStyle.meaningWeight.swiftUIWeight))
+                        .italic(entry.homeStyle.meaningItalic)
+                        .foregroundStyle(Color(hex: entry.homeStyle.meaningColorHex).opacity(0.85))
                         .lineLimit(2)
                 } else {
                     Text(entry.resting ? "🌙 Đang ngoài giờ học" : "📖 Chưa có từ nào")

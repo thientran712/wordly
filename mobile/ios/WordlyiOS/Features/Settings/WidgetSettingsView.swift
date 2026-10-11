@@ -147,15 +147,15 @@ struct WidgetSettingsView: View {
                     Text("Đầy đủ").tag(WidgetSettings.LockStyle.full)
                     Text("Gọn, chữ to").tag(WidgetSettings.LockStyle.compact)
                 }
-                Picker("Màu nền màn hình chính", selection: $vm.settings.homeTheme) {
-                    Text("Mặc định").tag(WidgetSettings.HomeTheme.defaultTheme)
-                    Text("Hoàng hôn").tag(WidgetSettings.HomeTheme.sunset)
-                    Text("Nửa đêm").tag(WidgetSettings.HomeTheme.midnight)
+                NavigationLink {
+                    HomeStyleView(vm: vm)
+                } label: {
+                    Text("Màn hình chính")
                 }
             } header: {
                 Text("Kiểu hiển thị")
             } footer: {
-                Text("Màn hình khoá chỉ đổi được cỡ chữ/bố cục — iOS tự tô màu đơn sắc, không đổi được nền/viền ở đây.")
+                Text("Màn hình khoá chỉ đổi được cỡ chữ/bố cục — iOS tự tô màu đơn sắc. Màn hình chính tuỳ biến đầy đủ: màu, đậm/nghiêng, cả ảnh nền riêng.")
             }
 
             Section {
