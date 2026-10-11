@@ -42,6 +42,8 @@ enum PreviewMode {
         case ("POST", "/api/dictionary"): json = PreviewFixtures.dictionary
         case ("GET", "/api/quiz"): json = PreviewFixtures.quiz
         case ("POST", "/api/quiz"): json = PreviewFixtures.quizResult
+        case ("POST", "/api/quiz/check"):
+            json = #"{"correct": true, "correct_answer": "văn học, tác phẩm văn chương"}"#
         case ("GET", "/api/spinner/topics"): json = PreviewFixtures.topics
         case ("GET", "/api/spinner/interview"): json = PreviewFixtures.interview
         case ("GET", "/api/spinner/deep-talk"): json = PreviewFixtures.deepTalk

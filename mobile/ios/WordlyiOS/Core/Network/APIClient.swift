@@ -92,7 +92,13 @@ final class APIClient: ObservableObject {
         useWebBase: Bool
     ) async throws -> T {
         #if DEBUG
-        if PreviewMode.isOn, let data = PreviewMode.fixture(path: path, method: method) {
+        if PreviewMode.isOn {
+            // Không có dữ liệu mẫu thì báo lỗi, KHÔNG gọi mạng: gọi thật sẽ
+            // nhận 401 (không có phiên) → AuthRecovery đăng xuất → văng về
+            // màn đăng nhập giữa lúc đang chụp màn hình/chạy UI test.
+            guard let data = PreviewMode.fixture(path: path, method: method) else {
+                throw APIError.serverError("preview: chưa có dữ liệu mẫu cho \(method) \(path)")
+            }
             return try decoder.decode(T.self, from: data)
         }
         #endif
