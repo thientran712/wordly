@@ -34,7 +34,20 @@ final class AppGroupStorage {
         }
     }
 
+    /// Đã đăng xuất → widget nhắc đăng nhập thay vì xoay từ. Widget đọc khoá này
+    /// trực tiếp (WordlyWidget.swift, `signedOutKey`).
+    static let signedOutKey = "wordly.widget.signedOut"
+    var signedOut: Bool {
+        get { defaults?.bool(forKey: Self.signedOutKey) ?? false }
+        set { defaults?.set(newValue, forKey: Self.signedOutKey) }
+    }
+
     func saveWords(_ words: [WidgetWordItem]) {
+        if signedOut {
+            // Đăng nhập lại: đồng bộ được từ là đã có phiên
+            signedOut = false
+            WidgetCenter.shared.reloadAllTimelines()
+        }
         guard words != self.words else { return }
         defaults?.set(try? JSONEncoder().encode(words), forKey: Self.wordsKey)
         WidgetCenter.shared.reloadAllTimelines()
@@ -55,10 +68,15 @@ final class AppGroupStorage {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Đăng xuất: xoá từ vựng (riêng tư) của tài khoản khỏi màn hình khoá.
+    /// Đăng xuất: xoá từ vựng của tài khoản và cả lô từ kho (nếu không, widget
+    /// vẫn xoay từ kho như chưa đăng xuất), widget chuyển sang nhắc đăng nhập.
+    /// Giữ cài đặt widget (màu, căn lề…) cho lần đăng nhập sau.
     func clearWords() {
         defaults?.removeObject(forKey: Self.wordsKey)
+        defaults?.removeObject(forKey: Self.bankKey)
         defaults?.removeObject(forKey: Self.bankFetchedAtKey)
+        defaults?.removeObject(forKey: Self.bankLevelKey)
+        signedOut = true
         WidgetCenter.shared.reloadAllTimelines()
     }
 

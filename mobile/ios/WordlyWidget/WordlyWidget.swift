@@ -13,6 +13,7 @@ private let appGroup = Bundle.main.object(forInfoDictionaryKey: "WordlyAppGroup"
 private let wordsKey = "wordly.widget.items"
 private let settingsKey = "wordly.widget.settings"
 private let bankKey = "wordly.widget.bank"
+private let signedOutKey = "wordly.widget.signedOut"   // AppGroupStorage.signedOutKey
 
 struct WordlyEntry: TimelineEntry {
     let date: Date
@@ -23,6 +24,8 @@ struct WordlyEntry: TimelineEntry {
     let lockStyle: WidgetSettings.LockStyle
     let homeStyle: WidgetSettings.HomeStyle
     let textAlign: WidgetSettings.TextAlign
+    /// Đã đăng xuất trong app → nhắc đăng nhập, không xoay từ
+    var signedOut = false
 }
 
 struct WordlyProvider: TimelineProvider {
@@ -42,6 +45,13 @@ struct WordlyProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WordlyEntry>) -> Void) {
         let settings = loadSettings()
+        if UserDefaults(suiteName: appGroup)?.bool(forKey: signedOutKey) == true {
+            // App gọi reloadAllTimelines khi đăng nhập lại → không cần tự xin lịch mới
+            var e = entry(date: Date(), word: nil, resting: false, settings: settings)
+            e.signedOut = true
+            completion(Timeline(entries: [e], policy: .never))
+            return
+        }
         let words = loadWords()
         let bank = loadWords(bankKey)
         let hasWords = !WidgetSchedule.pool(from: words, settings: settings).isEmpty
@@ -144,7 +154,7 @@ struct LockRectangular: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: align.frame)
             .widgetAccentable()
         } else {
-            LockMessage(resting: entry.resting, align: align)
+            LockMessage(resting: entry.resting, signedOut: entry.signedOut, align: align)
         }
     }
 }
@@ -162,7 +172,7 @@ struct LockCircular: View {
                     .multilineTextAlignment(.center)
                     .padding(4)
             } else {
-                Image(systemName: entry.resting ? "moon.zzz.fill" : "character.book.closed")
+                Image(systemName: entry.signedOut ? "person.crop.circle.badge.exclamationmark" : (entry.resting ? "moon.zzz.fill" : "character.book.closed"))
             }
         }
         .widgetAccentable()
@@ -175,19 +185,20 @@ struct LockInline: View {
         if let w = entry.word {
             Text(entry.showMeaning ? "\(w.word) — \(w.meaning)" : w.word)
         } else {
-            Text(entry.resting ? "🌙 Wordly nghỉ ngơi" : "📖 Mở Wordly để lưu từ")
+            Text(entry.signedOut ? "📖 Đăng nhập Wordly" : (entry.resting ? "🌙 Wordly nghỉ ngơi" : "📖 Mở Wordly để lưu từ"))
         }
     }
 }
 
 struct LockMessage: View {
     let resting: Bool
+    var signedOut = false
     var align: WidgetSettings.TextAlign = .leading
     var body: some View {
         VStack(alignment: align.horizontal, spacing: 2) {
-            Text(resting ? "🌙 Đang ngoài giờ học" : "📖 Wordly")
+            Text(resting && !signedOut ? "🌙 Đang ngoài giờ học" : "📖 Wordly")
                 .font(.system(size: 14, weight: .bold))
-            Text(resting ? "Từ vựng sẽ quay lại theo giờ bạn đặt" : "Mở app và lưu từ để hiện ở đây")
+            Text(signedOut ? "Đăng nhập để hiện từ vựng" : (resting ? "Từ vựng sẽ quay lại theo giờ bạn đặt" : "Mở app và lưu từ để hiện ở đây"))
                 .font(.system(size: 12))
                 .opacity(0.8)
                 .lineLimit(2)
@@ -224,7 +235,7 @@ struct HomeWord: View {
                     .minimumScaleFactor(0.6)
             } else {
                 Text(entry.resting ? "🌙" : "📖").font(.system(size: 30))
-                Text(entry.resting ? "Ngoài giờ học" : "Lưu từ trong app để hiện ở đây")
+                Text(entry.signedOut ? "Đăng nhập Wordly để hiện từ vựng" : (entry.resting ? "Ngoài giờ học" : "Lưu từ trong app để hiện ở đây"))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color(hex: style.meaningColorHex).opacity(0.85))
                     .minimumScaleFactor(0.7)
