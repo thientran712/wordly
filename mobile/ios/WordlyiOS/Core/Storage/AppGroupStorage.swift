@@ -62,36 +62,14 @@ final class AppGroupStorage {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Ảnh nền widget MÀN HÌNH CHÍNH — lưu file (không qua UserDefaults, ảnh
-    /// nặng hơn giới hạn hợp lý của defaults) vào container chung App Group
-    /// để widget extension đọc được. Đã resize/nén nhỏ trước khi lưu (xem
-    /// WidgetImageStore) — widget chỉ cần vài trăm px, không cần ảnh gốc.
-    private var homeBackgroundImageURL: URL? {
-        FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: WordlyConfig.appGroup)?
-            .appendingPathComponent("widget_home_bg.jpg")
-    }
-
-    func saveHomeBackgroundImageData(_ data: Data) {
-        guard let url = homeBackgroundImageURL else { return }
-        try? data.write(to: url, options: .atomic)
-        WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    func homeBackgroundImageData() -> Data? {
-        guard let url = homeBackgroundImageURL else { return nil }
-        return try? Data(contentsOf: url)
-    }
-
+    /// Dọn file ảnh nền widget còn sót từ build 9–10 (tính năng ảnh nền đã bỏ
+    /// vì gây crash).
     func deleteHomeBackgroundImage() {
-        guard let url = homeBackgroundImageURL else { return }
+        guard let url = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: WordlyConfig.appGroup)?
+            .appendingPathComponent("widget_home_bg.jpg"),
+              FileManager.default.fileExists(atPath: url.path) else { return }
         try? FileManager.default.removeItem(at: url)
-        WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    var hasHomeBackgroundImage: Bool {
-        guard let url = homeBackgroundImageURL else { return false }
-        return FileManager.default.fileExists(atPath: url.path)
     }
 
     /// Lịch sử dịch → từ cho widget: chỉ Anh→Việt, bỏ trùng, giữ thứ tự mới nhất trước.

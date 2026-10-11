@@ -61,14 +61,11 @@ struct WidgetSettings: Codable, Equatable {
     }
     var homeTheme: HomeTheme = .defaultTheme
 
-    /// Tuỳ biến đầy đủ widget MÀN HÌNH CHÍNH — màu nền/gradient hoặc ảnh nền
-    /// riêng (lưu file ở App Group, xem AppGroupStorage.homeBackgroundImage),
-    /// màu chữ, đậm/nghiêng/nhạt cho từ và nghĩa riêng nhau.
+    /// Tuỳ biến widget MÀN HÌNH CHÍNH — màu nền/gradient, màu chữ, đậm/
+    /// nghiêng/nhạt cho từ và nghĩa riêng nhau. (Ảnh nền từ thư viện đã bỏ
+    /// 11/10/2026 vì gây crash; dữ liệu cũ còn khoá imageOverlay vẫn đọc được.)
     enum TextWeight: String, Codable, CaseIterable {
         case light, regular, bold
-    }
-    enum ImageOverlay: String, Codable, CaseIterable {
-        case none, dark, light
     }
     struct HomeStyle: Codable, Equatable {
         var bgHex1: String = "#1CB0F6"
@@ -79,11 +76,45 @@ struct WidgetSettings: Codable, Equatable {
         var meaningWeight: TextWeight = .regular
         var wordItalic: Bool = false
         var meaningItalic: Bool = false
-        var imageOverlay: ImageOverlay = .dark
     }
     var homeStyle: HomeStyle = HomeStyle()
 
+    /// Căn lề chữ trên widget (màn hình khoá chữ nhật + màn hình chính).
+    enum TextAlign: String, Codable, CaseIterable {
+        case leading, center, trailing
+    }
+    var textAlign: TextAlign = .leading
+
     static let intervals = [15, 30, 60, 120]
+}
+
+extension WidgetSettings.HomeStyle {
+    // Bộ giải mã tự sinh báo lỗi khi thiếu khoá (không lấy giá trị mặc định)
+    // → kéo hỏng cả WidgetSettings, người dùng mất hết cài đặt widget.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = Self()
+        bgHex1 = try c.decodeIfPresent(String.self, forKey: .bgHex1) ?? d.bgHex1
+        bgHex2 = try c.decodeIfPresent(String.self, forKey: .bgHex2) ?? d.bgHex2
+        wordColorHex = try c.decodeIfPresent(String.self, forKey: .wordColorHex) ?? d.wordColorHex
+        meaningColorHex = try c.decodeIfPresent(String.self, forKey: .meaningColorHex) ?? d.meaningColorHex
+        wordWeight = try c.decodeIfPresent(WidgetSettings.TextWeight.self, forKey: .wordWeight) ?? d.wordWeight
+        meaningWeight = try c.decodeIfPresent(WidgetSettings.TextWeight.self, forKey: .meaningWeight) ?? d.meaningWeight
+        wordItalic = try c.decodeIfPresent(Bool.self, forKey: .wordItalic) ?? d.wordItalic
+        meaningItalic = try c.decodeIfPresent(Bool.self, forKey: .meaningItalic) ?? d.meaningItalic
+    }
+}
+
+extension WidgetSettings.TextAlign {
+    var horizontal: HorizontalAlignment {
+        switch self { case .leading: .leading; case .center: .center; case .trailing: .trailing }
+    }
+    var frame: Alignment {
+        switch self { case .leading: .leading; case .center: .center; case .trailing: .trailing }
+    }
+    var multiline: TextAlignment {
+        switch self { case .leading: .leading; case .center: .center; case .trailing: .trailing }
+    }
 }
 
 extension WidgetSettings.TextWeight {
@@ -111,6 +142,7 @@ extension WidgetSettings {
         lockStyle = try c.decodeIfPresent(LockStyle.self, forKey: .lockStyle) ?? d.lockStyle
         homeTheme = try c.decodeIfPresent(HomeTheme.self, forKey: .homeTheme) ?? d.homeTheme
         homeStyle = try c.decodeIfPresent(HomeStyle.self, forKey: .homeStyle) ?? d.homeStyle
+        textAlign = try c.decodeIfPresent(TextAlign.self, forKey: .textAlign) ?? d.textAlign
     }
 }
 

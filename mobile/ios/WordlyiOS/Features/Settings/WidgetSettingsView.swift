@@ -17,6 +17,7 @@ final class WidgetSettingsViewModel: ObservableObject {
         settings = AppGroupStorage.shared.settings
         words = AppGroupStorage.shared.words
         bank = AppGroupStorage.shared.bank
+        AppGroupStorage.shared.deleteHomeBackgroundImage()
     }
 
     var preview: WidgetWordItem? {
@@ -143,6 +144,12 @@ struct WidgetSettingsView: View {
             }
 
             Section {
+                Picker("Căn chữ", selection: $vm.settings.textAlign) {
+                    Image(systemName: "text.alignleft").tag(WidgetSettings.TextAlign.leading)
+                    Image(systemName: "text.aligncenter").tag(WidgetSettings.TextAlign.center)
+                    Image(systemName: "text.alignright").tag(WidgetSettings.TextAlign.trailing)
+                }
+                .pickerStyle(.segmented)
                 Picker("Màn hình khoá", selection: $vm.settings.lockStyle) {
                     Text("Đầy đủ").tag(WidgetSettings.LockStyle.full)
                     Text("Gọn, chữ to").tag(WidgetSettings.LockStyle.compact)
@@ -150,12 +157,12 @@ struct WidgetSettingsView: View {
                 NavigationLink {
                     HomeStyleView(vm: vm)
                 } label: {
-                    Text("Màn hình chính")
+                    Text("Màu & chữ màn hình chính")
                 }
             } header: {
                 Text("Kiểu hiển thị")
             } footer: {
-                Text("Màn hình khoá chỉ đổi được cỡ chữ/bố cục — iOS tự tô màu đơn sắc. Màn hình chính tuỳ biến đầy đủ: màu, đậm/nghiêng, cả ảnh nền riêng.")
+                Text("Căn chữ áp dụng cho cả màn hình khoá và màn hình chính. Màn hình khoá iOS tự tô màu đơn sắc; màn hình chính đổi được màu nền, màu chữ, đậm/nghiêng.")
             }
 
             Section {
@@ -234,19 +241,19 @@ struct WidgetSettingsView: View {
     }
 
     private func previewCard(word: WidgetWordItem?, isNow: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Image(systemName: word?.fromBank == true ? "sparkles" : "bookmark.fill").font(.system(size: 10))
-                Text(isNow ? "Bây giờ" : "Tiếp theo").font(.system(size: 11, weight: .semibold))
-            }
-            .opacity(0.7)
-            Text(word?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold)).lineLimit(1)
+        let align = vm.settings.textAlign
+        return VStack(alignment: align.horizontal, spacing: 2) {
+            Text(isNow ? "Bây giờ" : "Tiếp theo").font(.system(size: 11, weight: .semibold)).opacity(0.7)
+            Text(word?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold))
+                .lineLimit(1).minimumScaleFactor(0.5)
             Text(word.map { vm.settings.showMeaning ? $0.meaning : "Nghĩa là gì nhỉ? 🤔" } ?? "Lưu từ khi dịch để hiện ở đây")
-                .font(.system(size: 13)).opacity(0.85).lineLimit(2)
+                .font(.system(size: 13)).opacity(0.85)
+                .lineLimit(2).minimumScaleFactor(0.6)
         }
+        .multilineTextAlignment(align.multiline)
         .foregroundStyle(.white)
         .padding(14)
-        .frame(width: 180, alignment: .leading)
+        .frame(width: 180, alignment: align.frame)
         .background(.white.opacity(isNow ? 0.18 : 0.1))
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .padding(isNow ? 4 : 10)
