@@ -3,7 +3,13 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 10/10/2026 (đêm) — iOS BUILD 8: xong code, ARCHIVE SUCCEEDED, **CHỜ đăng nhập Xcode để upload TestFlight**
+### 11/10/2026 — iOS 1.0.0 BUILD 8 ĐÃ UPLOAD TestFlight
+
+Đăng nhập lại Xcode bằng Apple ID `huythien712@icloud.com` (program "TRAN PHAN
+HUY THIEN") → export lại từ archive có sẵn (không build lại) →
+**"Upload succeeded"**, App Store Connect đang xử lý. Chưa test tay các tính
+năng mới (chụp ảnh dịch, ghi âm dịch, quiz chấm ngay từng câu, widget settings
+mới) trên TestFlight/máy thật — chỉ kiểm qua build sạch + 102/102 unit test.
 
 **Đã làm xong, đã commit, 102/102 unit test pass (full suite), build Debug/Release sạch:**
 1. Luyện nói: gỡ nút "Xong" thừa góc trên vòng quay chủ đề (`1c6c8e6`-nhánh SpeakSpinnerView, đã có từ trước, thấy kèm batch này).
@@ -16,16 +22,13 @@
    - Thêm `NSCameraUsageDescription` vào `project.yml`, cập nhật mô tả mic/speech cho rõ dùng cả 2 tính năng.
 
 **Build 8 (`CURRENT_PROJECT_VERSION=8`, bump `6df52f2`):**
-- `xcodegen generate` → Debug build OK → 102/102 test pass → Archive Release (`-allowProvisioningUpdates`) → **ARCHIVE SUCCEEDED** (app + widget, team `929P8F77XX`).
-- **Export (cả `method: app-store-connect` tự upload VÀ export .ipa thường) đều FAIL: "No Accounts" / "No signing certificate iOS Distribution found".**
-  → Xcode trên máy này hiện **không có Apple ID nào đăng nhập** (khác hẳn build 5-7 chạy trót lọt trước đây — session Xcode đã hết hạn hoặc bị đăng xuất).
-  → **Cần chủ dự án: mở Xcode → Settings (⌘,) → Accounts → đăng nhập lại Apple ID (có thể cần 2FA) → bấm "Download Manual Profiles" hoặc để Automatic signing tự tạo lại cert Distribution.**
-  → Sau khi đăng nhập xong, archive đã có sẵn tại
-  `/private/tmp/claude-501/.../scratchpad/build8/Wordly.xcarchive` (session-local,
-  mất khi session kết thúc) — chỉ cần export lại, hoặc mở Xcode Organizer → Archives → chọn bản 1.0.0 (8) → Distribute App, không cần build lại từ đầu.
+`xcodegen generate` → Debug build OK → 102/102 test pass → Archive Release
+(`-allowProvisioningUpdates`, team `929P8F77XX`) → export `app-store-connect`
+→ **"Upload succeeded"** (sau khi đăng nhập lại Apple ID ở Xcode — máy này bị
+đăng xuất, chặn export lần đầu, xem log cũ nếu cần debug lại tình huống này).
 
 **Chờ quyết định / chờ hành động của chủ dự án:**
-- Đăng nhập Xcode để export + upload build 8 lên TestFlight (chặn duy nhất còn lại).
+- Test tay các tính năng mới trên TestFlight khi Apple xử lý xong (chụp ảnh dịch, ghi âm dịch, quiz chấm ngay từng câu, widget settings mới).
 
 ---
 
