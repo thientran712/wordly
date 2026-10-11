@@ -3,6 +3,33 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 11/10/2026 (tối) — BUILD 9 ĐÃ UPLOAD + chuẩn bị nộp App Store
+
+**Build 9 — "Upload succeeded"**: gồm mọi thay đổi từ sau build 8 (nhấn giữ xoá
+lịch sử, popup nghĩa từ đã lưu, ghi âm dịch trực tiếp + chọn ảnh thư viện,
+tuỳ biến widget màn hình chính, ẩn Alex, nút sửa tên, **xoá tài khoản**). Kiểm
+archive: CFBundleVersion 9, 0 chuỗi `WordlyUIPreview`, mô tả quyền mic mới.
+102/102 unit test, 215/215 test web.
+
+**Đã deploy production (web + VPS):**
+- `DELETE /api/account` — test thật bằng user tạm: user có `email_slots` (FK duy
+  nhất không ON DELETE CASCADE) xoá sạch, user 404, 0 dòng sót.
+- Trang công khai `/privacy`, `/support` (200 qua HTTPS, không sidebar).
+- nginx webapp `client_max_body_size` 1m → 15m (backup `/root/wordly.prod.webapp.conf.bak-*`,
+  `nginx -t` + reload). Body 14.6MB đi qua được.
+
+**Hồ sơ App Store**: artifact "Wordly App Store Kit" (tên, mô tả, từ khoá đã đếm
+ký tự, App Privacy, độ tuổi, ghi chú reviewer); ảnh 6.9" ở
+`docs/app-store/screenshots-6.9/` (chụp lại: UI test `AppStoreScreenshotTests`).
+
+**Chờ chủ dự án:**
+- **SMTP GoTrue hỏng từ lúc migrate** — `SMTP_HOST=supabase-mail` (container không
+  tồn tại) → mọi email xác nhận/đặt lại mật khẩu đều lỗi. Đang chờ verify domain
+  trên Resend + API key để đổi sang `smtp.resend.com`.
+- Hộp thư `support@wordly.skillproof.work` (trang Support công khai địa chỉ này).
+- Mật khẩu tài khoản demo cho Apple reviewer.
+- Chưa có: thu hồi token Sign in with Apple khi xoá tài khoản (Apple khuyến nghị).
+
 ### 11/10/2026 — iOS 1.0.0 BUILD 8 ĐÃ UPLOAD TestFlight
 
 Đăng nhập lại Xcode bằng Apple ID `huythien712@icloud.com` (program "TRAN PHAN
