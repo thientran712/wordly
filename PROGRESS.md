@@ -3,6 +3,22 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 11/10/2026 (khuya) — BUILD 10: đăng ký + quên mật khẩu bằng mã OTP
+
+**Build 10 — "Upload succeeded"** (0 chuỗi WordlyUIPreview, CFBundleVersion 10).
+111/111 unit test, 220/220 test web, UI test `PendingSignupUITests` pass.
+
+- Quên mật khẩu: gửi mã 6 số → nhập mã + mật khẩu mới trong app. Đăng ký: nhập
+  mã 6 số trong app rồi vào học luôn. Email đang chờ xác nhận được nhớ qua các
+  lần mở app; đăng nhập bằng email chưa xác nhận tự gửi mã mới.
+- Link email cũ rơi về trang chủ vì: redirect chưa cho web, app không kèm
+  redirect, middleware đẩy người đã đăng nhập khỏi /reset-password, và mã PKCE
+  nằm trong app. Đã sửa cả 4 (web dùng `/auth/confirm` + token_hash).
+- GoTrue: mẫu email tiếng Việt `web/public/email-templates/` (mã + link web),
+  `GOTRUE_MAILER_OTP_EXP=3600`, redirect cho phép `https://app.wordly.skillproof.work/**`.
+- Đã kiểm hành vi GoTrue thật cho 6 kịch bản (xem commit 90637b1).
+- **Bản nộp App Store nên chọn build 10.**
+
 ### 11/10/2026 (tối) — BUILD 9 ĐÃ UPLOAD + chuẩn bị nộp App Store
 
 **Build 9 — "Upload succeeded"**: gồm mọi thay đổi từ sau build 8 (nhấn giữ xoá
