@@ -84,7 +84,6 @@ struct SavedWordsView: View {
     @StateObject private var tts = TTSManager.shared
     @EnvironmentObject private var router: AppRouter
     @State private var selected: TranslateHistoryEntry?
-    @State private var detailDetent: PresentationDetent = .fraction(0.75)
 
     var body: some View {
         ScrollView {
@@ -126,7 +125,6 @@ struct SavedWordsView: View {
         .refreshable { await vm.load() }
         .sheet(item: $selected) { entry in
             SavedWordDetailSheet(entry: entry)
-                .presentationDetents([.fraction(0.75), .large], selection: $detailDetent)
         }
     }
 
@@ -234,7 +232,7 @@ struct SavedWordDetailSheet: View {
     }
 
     var body: some View {
-        ScrollView {
+        FitContentSheet {
             switch dictionary {
             case .loaded(let detail):
                 DictionaryCard(detail: detail, tts: tts) {
@@ -260,7 +258,10 @@ struct SavedWordDetailSheet: View {
 
     private var fallback: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(entry.sourceText).font(WordlyFonts.display(28)).foregroundStyle(WordlyColors.ink)
+            // Câu dài dùng cỡ chữ đọc được, không dùng chữ tiêu đề lớn như từ đơn
+            Text(entry.sourceText)
+                .font(TranslateLogic.isSingleWord(entry.sourceText) ? WordlyFonts.display(28) : WordlyFonts.body(20, weight: .bold))
+                .foregroundStyle(WordlyColors.ink)
             HStack(spacing: 10) {
                 Button { Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") } } label: {
                     Label("Phát âm", systemImage: "speaker.wave.2.fill")

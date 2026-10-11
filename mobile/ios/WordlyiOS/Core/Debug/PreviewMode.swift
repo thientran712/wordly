@@ -76,7 +76,8 @@ enum PreviewMode {
       {"id": "h1", "is_saved": true, "source_text": "ephemeral", "translated_text": "thoáng qua, không bền", "direction": "EN→VI", "saved_at": "2026-10-06T08:15:02.123456+00:00"},
       {"id": "h2", "is_saved": true, "source_text": "resilient", "translated_text": "kiên cường, mau phục hồi", "direction": "EN→VI", "saved_at": "2026-10-06T02:40:10.5+00:00"},
       {"id": "h3", "source_text": "cơ hội", "translated_text": "opportunity", "direction": "VI→EN", "saved_at": "2026-10-05T14:05:00+00:00"},
-      {"id": "h4", "is_saved": true, "source_text": "meticulous", "translated_text": "tỉ mỉ, kỹ lưỡng", "direction": "EN→VI", "saved_at": "2026-10-03T11:30:00.000001+00:00"}
+      {"id": "h4", "is_saved": true, "source_text": "meticulous", "translated_text": "tỉ mỉ, kỹ lưỡng", "direction": "EN→VI", "saved_at": "2026-10-03T11:30:00.000001+00:00"},
+      {"id": "h5", "is_saved": true, "source_text": "Practice makes perfect, so keep going every day.", "translated_text": "Có công mài sắt có ngày nên kim, nên hãy tiếp tục mỗi ngày.", "direction": "EN→VI", "saved_at": "2026-10-02T09:00:00+00:00"}
     ]}
     """#
 
