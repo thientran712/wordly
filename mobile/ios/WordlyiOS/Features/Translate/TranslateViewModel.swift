@@ -312,11 +312,9 @@ final class TranslateViewModel: ObservableObject {
         saved = entry.isSaved == true
         suggestions = []
         _ = autoLog.shouldLog(direction: direction.rawValue, text: entry.sourceText)
-        if direction == .enToVi, TranslateLogic.isSingleWord(entry.sourceText) {
-            Task { await lookUp(entry.sourceText) }
-        } else {
-            dictionary = .hidden
-        }
+        // Không tự tra từ điển AI (tính phí theo lượt, và chậm) — từ đơn tiếng
+        // Anh thì hiện nút "Tra nghĩa" để người dùng tự bấm (xem canLookUp).
+        dictionary = .hidden
         Task {
             try? await Task.sleep(for: .seconds(1))
             suppressSuggestions = false

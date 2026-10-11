@@ -14,9 +14,10 @@ struct TranslateView: View {
 
     var body: some View {
         NavigationStack {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 14) {
-                    languageBar
+                    languageBar.id("translateTop")
                     inputCard
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
@@ -24,11 +25,14 @@ struct TranslateView: View {
                     HistoryView(isEmbedded: true) { entry in
                         vm.load(entry: entry)
                         inputFocused = false
+                        // Mục lịch sử nằm dưới cùng — cuộn lên để thấy ngay bản dịch vừa mở
+                        withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo("translateTop", anchor: .top) }
                     }
                     .id(vm.historyVersion)
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
+            }
             }
             .scrollDismissesKeyboard(.interactively)
             .screenBackground()

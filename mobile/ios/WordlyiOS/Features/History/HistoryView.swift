@@ -267,8 +267,18 @@ struct HistoryEntryRow: View {
                     }
                 }
             }
+            // .plain chỉ nhận chạm ở phần có nội dung — thiếu dòng này thì bấm
+            // vào khoảng trống giữa dòng (Spacer) không có tác dụng.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            if let onDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Label("Xoá khỏi lịch sử", systemImage: "trash")
+                }
+            }
+        }
     }
 }
 
