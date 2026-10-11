@@ -3,8 +3,7 @@ import SwiftUI
 // Tab Từ vựng: từ bạn đã lưu (kèm lượt từ widget sắp hiện — từ của bạn xen kẽ
 // từ mới trong kho) và kho từ theo chủ đề.
 struct VocabularyHubView: View {
-    enum Mode: Hashable, CaseIterable { case saved, topics }
-    @State private var mode: Mode = .saved
+    @EnvironmentObject private var router: AppRouter
     // Giữ ở đây (không phải trong SavedWordsView) để KHÔNG bị huỷ và tải lại
     // mỗi lần đổi qua "Kho theo chủ đề" rồi đổi lại — trước đây đổi tab là
     // SavedWordsView bị tạo mới hoàn toàn (switch trong Group), load() chạy
@@ -14,13 +13,13 @@ struct VocabularyHubView: View {
     var body: some View {
         NavigationStack {
             Group {
-                switch mode {
+                switch router.vocabMode {
                 case .saved: SavedWordsView(vm: savedVM)
                 case .topics: TopicVocabularyView()
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                HubPicker(options: Mode.allCases, selection: $mode,
+                HubPicker(options: AppRouter.VocabMode.allCases, selection: $router.vocabMode,
                           title: { $0 == .saved ? "Đã lưu" : "Từ mới" },
                           icon: { $0 == .saved ? "bookmark.fill" : "square.grid.2x2.fill" })
                     .background(WordlyColors.background)
@@ -125,6 +124,14 @@ struct SavedWordsView: View {
         .refreshable { await vm.load() }
         .sheet(item: $selected) { entry in
             SavedWordDetailSheet(entry: entry)
+        }
+        // Bấm widget (từ của bạn) → mở popup từ đó
+        .onChange(of: router.widgetWord, initial: true) { _, link in
+            guard let link, !link.fromBank else { return }
+            router.widgetWord = nil
+            selected = vm.saved.first { $0.id == link.id }
+                ?? TranslateHistoryEntry(id: link.id, sourceText: link.word, translatedText: link.meaning,
+                                         direction: "EN→VI", savedAt: "", isSaved: true)
         }
     }
 

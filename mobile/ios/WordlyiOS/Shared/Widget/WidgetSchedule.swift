@@ -319,3 +319,53 @@ enum WidgetSchedule {
         return result
     }
 }
+
+/// Link khi bấm widget: `wordly://word?id=…&w=…&m=…&bank=1`. Widget tạo, app
+/// đọc để mở đúng từ (Từ vựng > Đã lưu hoặc Từ mới + popup nghĩa). Kèm sẵn
+/// từ + nghĩa để app hiện được ngay, không phải chờ tải danh sách.
+struct WidgetDeepLink: Equatable {
+    static let scheme = "wordly"
+    static let host = "word"
+    private static let bankPrefix = "bank-"
+
+    let id: String
+    let word: String
+    let meaning: String
+    let fromBank: Bool
+
+    /// Id trong bảng `words` (màn Từ mới) — từ kho có id dạng "bank-<id>".
+    var bankWordId: String? {
+        fromBank && id.hasPrefix(Self.bankPrefix) ? String(id.dropFirst(Self.bankPrefix.count)) : nil
+    }
+
+    init(item: WidgetWordItem) {
+        id = item.id
+        word = item.word
+        meaning = item.meaning
+        fromBank = item.fromBank
+    }
+
+    init?(url: URL) {
+        guard url.scheme == Self.scheme, url.host == Self.host,
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return nil }
+        func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+        guard let id = value("id"), !id.isEmpty, let word = value("w"), !word.isEmpty else { return nil }
+        self.id = id
+        self.word = word
+        meaning = value("m") ?? ""
+        fromBank = value("bank") == "1"
+    }
+
+    var url: URL? {
+        var c = URLComponents()
+        c.scheme = Self.scheme
+        c.host = Self.host
+        c.queryItems = [
+            URLQueryItem(name: "id", value: id),
+            URLQueryItem(name: "w", value: word),
+            URLQueryItem(name: "m", value: meaning),
+            URLQueryItem(name: "bank", value: fromBank ? "1" : "0"),
+        ]
+        return c.url
+    }
+}

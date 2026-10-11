@@ -53,6 +53,7 @@ final class TopicVocabularyViewModel: ObservableObject {
 
 struct TopicVocabularyView: View {
     @StateObject private var vm = TopicVocabularyViewModel()
+    @EnvironmentObject private var router: AppRouter
     @State private var selected: TopicWord?
 
     var body: some View {
@@ -88,6 +89,21 @@ struct TopicVocabularyView: View {
         .task { if case .idle = vm.state { await vm.reload() } }
         .sheet(item: $selected) { word in
             TopicWordDetailSheet(word: word)
+        }
+        // Bấm widget (từ mới trong kho) → mở popup ngay bằng từ + nghĩa trong
+        // link, rồi tải đủ chi tiết (ví dụ, cụm từ…) thay vào cùng popup.
+        .onChange(of: router.widgetWord, initial: true) { _, link in
+            guard let link, link.fromBank else { return }
+            router.widgetWord = nil
+            let id = link.bankWordId ?? link.id
+            selected = TopicWord(id: id, word: link.word, pos: nil, level: nil, defEn: link.meaning, exEn: nil,
+                                 phonetic: nil, topic: nil, topicLabel: nil, collocations: nil, usageNotes: nil)
+            Task {
+                let found = try? await APIClient.shared.fetchWordsByTopic(exam: nil, topic: nil, level: nil,
+                                                                          query: link.word, offset: 0, withCounts: false)
+                    .words.first { $0.id == id }
+                if let found, selected?.id == id { selected = found }
+            }
         }
     }
 

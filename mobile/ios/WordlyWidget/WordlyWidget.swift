@@ -119,13 +119,17 @@ struct WordlyWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        switch family {
-        case .accessoryRectangular: LockRectangular(entry: entry)
-        case .accessoryCircular: LockCircular(entry: entry)
-        case .accessoryInline: LockInline(entry: entry)
-        case .systemMedium: HomeWord(entry: entry, wordSize: 30, meaningSize: 16, meaningLines: 3)
-        default: HomeWord(entry: entry, wordSize: 24, meaningSize: 14, meaningLines: 4)
+        Group {
+            switch family {
+            case .accessoryRectangular: LockRectangular(entry: entry)
+            case .accessoryCircular: LockCircular(entry: entry)
+            case .accessoryInline: LockInline(entry: entry)
+            case .systemMedium: HomeWord(entry: entry, wordSize: 30, meaningSize: 16, meaningLines: 3)
+            default: HomeWord(entry: entry, wordSize: 24, meaningSize: 14, meaningLines: 4)
+            }
         }
+        // Bấm widget → app mở đúng từ đang hiện (Từ vựng > Đã lưu / Từ mới + popup)
+        .widgetURL(entry.signedOut ? nil : entry.word.flatMap { WidgetDeepLink(item: $0).url })
     }
 }
 
