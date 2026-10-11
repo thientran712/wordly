@@ -5,12 +5,17 @@ import SwiftUI
 struct VocabularyHubView: View {
     enum Mode: Hashable, CaseIterable { case saved, topics }
     @State private var mode: Mode = .saved
+    // Giữ ở đây (không phải trong SavedWordsView) để KHÔNG bị huỷ và tải lại
+    // mỗi lần đổi qua "Kho theo chủ đề" rồi đổi lại — trước đây đổi tab là
+    // SavedWordsView bị tạo mới hoàn toàn (switch trong Group), load() chạy
+    // lại từ đầu mỗi lần, cảm giác giật/lag dù dữ liệu không đổi.
+    @StateObject private var savedVM = SavedWordsViewModel()
 
     var body: some View {
         NavigationStack {
             Group {
                 switch mode {
-                case .saved: SavedWordsView()
+                case .saved: SavedWordsView(vm: savedVM)
                 case .topics: TopicVocabularyView()
                 }
             }
@@ -29,9 +34,22 @@ final class SavedWordsViewModel: ObservableObject {
     @Published var saved: [TranslateHistoryEntry] = []
     @Published var upcoming: [WidgetWordItem] = []
     @Published var isLoading = true
+    /// `.task` chạy lại mỗi lần SavedWordsView được dựng lại (đổi qua "Kho
+    /// theo chủ đề" rồi đổi lại) — chỉ tải thật khi chưa có dữ liệu, tránh
+    /// gọi lại 4 trang API + refresh bank mỗi lần chuyển tab (cảm giác lag).
+    private var hasLoadedOnce = false
+
+    func loadIfNeeded() async {
+        guard !hasLoadedOnce else { return }
+        await load()
+    }
 
     func load() async {
+        hasLoadedOnce = true
         isLoading = saved.isEmpty
+        // Hiện ngay bằng dữ liệu đã đồng bộ cho widget từ trước (tức thì,
+        // không chờ network) — tránh khoảng trống rồi bật ra đột ngột (giật).
+        refreshUpcoming()
         var all: [TranslateHistoryEntry] = []
         var offset = 0
         while offset < 200 {
@@ -62,7 +80,7 @@ final class SavedWordsViewModel: ObservableObject {
 }
 
 struct SavedWordsView: View {
-    @StateObject private var vm = SavedWordsViewModel()
+    @ObservedObject var vm: SavedWordsViewModel
     @StateObject private var tts = TTSManager.shared
     @EnvironmentObject private var router: AppRouter
     @State private var selected: TranslateHistoryEntry?
@@ -104,7 +122,7 @@ struct SavedWordsView: View {
         .screenBackground()
         .navigationTitle("Từ vựng")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await vm.load() }
+        .task { await vm.loadIfNeeded() }
         .refreshable { await vm.load() }
         .sheet(item: $selected) { entry in
             SavedWordDetailSheet(entry: entry)

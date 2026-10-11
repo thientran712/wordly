@@ -53,13 +53,34 @@ struct WidgetSettings: Codable, Equatable {
     }
     var lockStyle: LockStyle = .full
 
-    /// Theme màu nền widget MÀN HÌNH CHÍNH (home screen có hỗ trợ nền tùy ý).
+    /// Theme màu nền widget MÀN HÌNH CHÍNH — bản cũ (3 preset cố định), giữ
+    /// lại chỉ để decode dữ liệu cũ không lỗi; không còn dùng để vẽ (xem `homeStyle`).
     enum HomeTheme: String, Codable, CaseIterable {
-        case defaultTheme  // xanh dương → xanh lá (hiện tại)
-        case sunset        // cam → hồng
-        case midnight      // tím đậm → xanh navy
+        case defaultTheme, sunset, midnight
     }
     var homeTheme: HomeTheme = .defaultTheme
+
+    /// Tuỳ biến đầy đủ widget MÀN HÌNH CHÍNH — màu nền/gradient hoặc ảnh nền
+    /// riêng (lưu file ở App Group, xem AppGroupStorage.homeBackgroundImage),
+    /// màu chữ, đậm/nghiêng/nhạt cho từ và nghĩa riêng nhau.
+    enum TextWeight: String, Codable, CaseIterable {
+        case light, regular, bold
+    }
+    enum ImageOverlay: String, Codable, CaseIterable {
+        case none, dark, light
+    }
+    struct HomeStyle: Codable, Equatable {
+        var bgHex1: String = "#1CB0F6"
+        var bgHex2: String = "#58CC02"
+        var wordColorHex: String = "#FFFFFF"
+        var meaningColorHex: String = "#FFFFFF"
+        var wordWeight: TextWeight = .bold
+        var meaningWeight: TextWeight = .regular
+        var wordItalic: Bool = false
+        var meaningItalic: Bool = false
+        var imageOverlay: ImageOverlay = .dark
+    }
+    var homeStyle: HomeStyle = HomeStyle()
 
     static let intervals = [15, 30, 60, 120]
 }
@@ -78,6 +99,7 @@ extension WidgetSettings {
         includeBank = try c.decodeIfPresent(Bool.self, forKey: .includeBank) ?? d.includeBank
         lockStyle = try c.decodeIfPresent(LockStyle.self, forKey: .lockStyle) ?? d.lockStyle
         homeTheme = try c.decodeIfPresent(HomeTheme.self, forKey: .homeTheme) ?? d.homeTheme
+        homeStyle = try c.decodeIfPresent(HomeStyle.self, forKey: .homeStyle) ?? d.homeStyle
     }
 }
 
