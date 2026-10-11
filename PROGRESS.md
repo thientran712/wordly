@@ -23,9 +23,9 @@ ký tự, App Privacy, độ tuổi, ghi chú reviewer); ảnh 6.9" ở
 `docs/app-store/screenshots-6.9/` (chụp lại: UI test `AppStoreScreenshotTests`).
 
 **Chờ chủ dự án:**
-- **SMTP GoTrue hỏng từ lúc migrate** — `SMTP_HOST=supabase-mail` (container không
-  tồn tại) → mọi email xác nhận/đặt lại mật khẩu đều lỗi. Đang chờ verify domain
-  trên Resend + API key để đổi sang `smtp.resend.com`.
+- ✅ (đã sửa) **SMTP GoTrue hỏng từ lúc migrate** (`SMTP_HOST=supabase-mail`, không
+  tồn tại) → giờ qua Resend cổng 2587 (DO chặn 465/587), xem `infra/vps/README.md`.
+  Test `/auth/v1/recover` → 200. Còn cần chủ dự án xác nhận thư tới hộp thư thật.
 - Hộp thư `support@wordly.skillproof.work` (trang Support công khai địa chỉ này).
 - Mật khẩu tài khoản demo cho Apple reviewer.
 - Chưa có: thu hồi token Sign in with Apple khi xoá tài khoản (Apple khuyến nghị).

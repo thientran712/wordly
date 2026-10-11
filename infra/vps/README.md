@@ -50,6 +50,26 @@ proxy_busy_buffers_size 32k;` — buffer mặc định nginx quá nhỏ cho cook
 session Supabase (chứa JWT, có thể dài). Thiếu thì gặp lỗi
 `upstream sent too big header`.
 
+## SMTP của GoTrue (email xác nhận / đặt lại mật khẩu)
+
+Khác email nhắc học (Gmail + Nodemailer trong web). GoTrue gửi qua **Resend**:
+
+```
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=2587          # KHÔNG dùng 465/587 — DigitalOcean chặn cổng SMTP ra ngoài
+SMTP_USER=resend
+SMTP_PASS=<Resend API key>
+SMTP_ADMIN_EMAIL=noreply@wordly.skillproof.work
+SMTP_SENDER_NAME=Wordly
+```
+
+- 2465 cũng thông nhưng GoTrue chỉ bật TLS ngay từ đầu khi cổng == 465; ở 2465 nó
+  chờ STARTTLS → timeout 504. Phải là **2587** (STARTTLS).
+- Đổi `.env` xong phải `docker compose up -d --no-deps --force-recreate auth`
+  (restart không đọc lại env).
+- Trước 11/10/2026 giá trị là mặc định upstream (`supabase-mail`, container không
+  tồn tại) → mọi email auth đều lỗi từ lúc migrate.
+
 ## Crontab trên `deploy-wordly` (VPS)
 
 ```
