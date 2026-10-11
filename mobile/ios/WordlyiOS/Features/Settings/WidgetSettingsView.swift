@@ -74,8 +74,6 @@ final class WidgetSettingsViewModel: ObservableObject {
 
 struct WidgetSettingsView: View {
     @StateObject private var vm = WidgetSettingsViewModel()
-    @State private var search = ""
-    @State private var showCustomPicker = false
 
     var body: some View {
         Form {
@@ -121,8 +119,14 @@ struct WidgetSettingsView: View {
             }
 
             Section {
-                DisclosureGroup("Tự chọn từng từ", isExpanded: $showCustomPicker) {
-                    customPickerContent
+                NavigationLink {
+                    CustomWordPickerView(vm: vm)
+                } label: {
+                    HStack {
+                        Text("Tự chọn từng từ")
+                        Spacer()
+                        Text("\(vm.settings.selectedIds.count) từ").foregroundStyle(WordlyColors.inkSoft)
+                    }
                 }
             } footer: {
                 Text("Chỉ dành riêng những từ bạn chọn, không trộn từ kho.")
@@ -248,32 +252,6 @@ struct WidgetSettingsView: View {
         .padding(isNow ? 4 : 10)
         .background(LinearGradient(colors: [Color(hex: "#1CB0F6"), Color(hex: "#58CC02")], startPoint: .topLeading, endPoint: .bottomTrailing))
         .clipShape(RoundedRectangle(cornerRadius: 22))
-    }
-
-    private var customPickerContent: some View {
-        Group {
-            TextField("Tìm từ…", text: $search)
-            let shown = vm.words.filter { search.isEmpty || $0.word.localizedCaseInsensitiveContains(search) }
-            if shown.isEmpty {
-                Text("Chưa có từ nào — dịch và lưu từ trước nhé.").foregroundStyle(WordlyColors.inkSoft)
-            }
-            ForEach(shown) { w in
-                Button { vm.toggle(w.id) } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text(w.word).font(WordlyFonts.body(15, weight: .semibold)).foregroundStyle(WordlyColors.ink)
-                                if w.isSaved { Image(systemName: "bookmark.fill").font(.system(size: 10)).foregroundStyle(WordlyColors.duoOrange) }
-                            }
-                            Text(w.meaning).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft).lineLimit(1)
-                        }
-                        Spacer()
-                        Image(systemName: vm.settings.selectedIds.contains(w.id) ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(vm.settings.selectedIds.contains(w.id) ? WordlyColors.electric : WordlyColors.inkGhost)
-                    }
-                }
-            }
-        }
     }
 
     private func step(_ n: Int, _ text: String) -> some View {
