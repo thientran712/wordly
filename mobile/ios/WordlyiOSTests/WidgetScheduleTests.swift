@@ -36,6 +36,49 @@ final class WidgetScheduleTests: XCTestCase {
         XCTAssertEqual(WidgetSchedule.pool(from: unsaved, settings: s).count, 3)
     }
 
+    // "Dịch gần đây" (bỏ chọn "Đã lưu") = chỉ những từ đã dịch mà chưa bấm Lưu
+    func testUnsavedSourceShowsOnlyUnsavedWords() {
+        var s = WidgetSettings()
+        s.source = .unsaved
+        XCTAssertEqual(WidgetSchedule.pool(from: words, settings: s).map(\.id), ["2"])
+    }
+
+    // Từ nào cũng đã lưu mà chỉ chọn "Dịch gần đây" → vẫn hiện từ, không để widget trống
+    func testUnsavedFallsBackToAllWhenEverythingSaved() {
+        var s = WidgetSettings()
+        s.source = .unsaved
+        let saved = words.map { WidgetWordItem(id: $0.id, word: $0.word, meaning: $0.meaning, isSaved: true) }
+        XCTAssertEqual(WidgetSchedule.pool(from: saved, settings: s).count, 3)
+    }
+
+    // Hai ô chọn "Đã lưu" / "Dịch gần đây" ↔ source
+    func testSourceCheckboxes() {
+        var s = WidgetSettings()
+        s.setSources(saved: true, recent: true)
+        XCTAssertEqual(s.source, .recent)
+        XCTAssertTrue(s.includesSaved && s.includesRecent)
+        s.setSources(saved: true, recent: false)
+        XCTAssertEqual(s.source, .saved)
+        XCTAssertTrue(s.includesSaved && !s.includesRecent)
+        s.setSources(saved: false, recent: true)
+        XCTAssertEqual(s.source, .unsaved)
+        XCTAssertTrue(!s.includesSaved && s.includesRecent)
+    }
+
+    // Không cho bỏ chọn cả hai — widget sẽ không còn nguồn nào
+    func testSourceCheckboxesKeepAtLeastOne() {
+        var s = WidgetSettings()
+        s.source = .saved
+        s.setSources(saved: false, recent: false)
+        XCTAssertEqual(s.source, .saved)
+    }
+
+    func testCustomSourceChecksNeitherBox() {
+        var s = WidgetSettings()
+        s.source = .custom
+        XCTAssertFalse(s.includesSaved || s.includesRecent)
+    }
+
     func testActiveWindow() {
         var s = WidgetSettings()
         s.activeStartMinutes = 7 * 60

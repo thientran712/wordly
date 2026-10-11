@@ -134,32 +134,73 @@ struct WordlyWidgetEntryView: View {
 }
 
 // MARK: - Màn hình khoá
-// lockStyle .full: từ + nghĩa. .compact: từ cỡ lớn, nghĩa nhỏ 1 dòng — Apple
-// không cho đổi màu/nền ở đây, chỉ cỡ/đậm/bố cục.
+// lockStyle .full: từ + nghĩa. .compact: từ cỡ lớn, nghĩa nhỏ — Apple không cho
+// đổi màu/nền ở đây, chỉ cỡ/đậm/bố cục.
+//
+// Khung chữ nhật cố định ~160×72pt (Apple không có kiểu to hơn). Để tận dụng hết
+// chỗ: thử lần lượt các cỡ chữ, ViewThatFits chọn cỡ to nhất mà nghĩa xuống
+// dòng hết vẫn vừa khung. Không vừa cỡ nào mới thu nhỏ/cắt "…" như trước.
 struct LockRectangular: View {
     let entry: WordlyEntry
     var body: some View {
         let align = entry.textAlign
         if let w = entry.word {
-            VStack(alignment: align.horizontal, spacing: 1) {
-                Text(w.word)
-                    .font(.system(size: entry.lockStyle == .compact ? 24 : 17, weight: entry.lockStyle == .compact ? .heavy : .bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                if entry.showMeaning || entry.lockStyle == .full {
-                    Text(entry.showMeaning ? w.meaning : "Nghĩa là gì nhỉ? 🤔")
-                        .font(.system(size: entry.lockStyle == .compact ? 13 : 14, weight: .medium))
-                        .lineLimit(entry.lockStyle == .compact ? 1 : 2)
-                        .minimumScaleFactor(0.6)
-                        .opacity(0.85)
+            let compact = entry.lockStyle == .compact
+            let meaning: String? = entry.showMeaning ? w.meaning : (compact ? nil : "Nghĩa là gì nhỉ? 🤔")
+            ViewThatFits(in: .vertical) {
+                ForEach(Self.sizes(compact: compact), id: \.self) { size in
+                    LockWordStack(word: w.word, meaning: meaning, size: size, compact: compact, align: align)
                 }
+                LockWordStack(word: w.word, meaning: meaning, size: Self.sizes(compact: compact).last!,
+                              compact: compact, align: align, truncate: true)
             }
-            .multilineTextAlignment(align.multiline)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: align.frame)
             .widgetAccentable()
         } else {
             LockMessage(resting: entry.resting, signedOut: entry.signedOut, align: align)
         }
+    }
+
+    /// Cỡ (từ, nghĩa) thử từ to đến nhỏ.
+    static func sizes(compact: Bool) -> [LockWordStack.Size] {
+        compact
+            ? [.init(word: 24, meaning: 13), .init(word: 22, meaning: 12), .init(word: 20, meaning: 12)]
+            : [.init(word: 17, meaning: 14), .init(word: 17, meaning: 13), .init(word: 15, meaning: 12)]
+    }
+}
+
+struct LockWordStack: View {
+    struct Size: Hashable { let word: CGFloat; let meaning: CGFloat }
+    let word: String
+    let meaning: String?
+    let size: Size
+    let compact: Bool
+    let align: WidgetSettings.TextAlign
+    /// Phương án cuối: giới hạn dòng + thu nhỏ thay vì đòi vừa khung
+    var truncate = false
+
+    var body: some View {
+        VStack(alignment: align.horizontal, spacing: 1) {
+            // Cụm từ ("take something for granted") được xuống 2 dòng thay vì
+            // bị cắt "…"; từ đơn giữ 1 dòng và thu nhỏ — xuống dòng sẽ ngắt giữa chữ.
+            Text(word)
+                .font(.system(size: size.word, weight: compact ? .heavy : .bold))
+                .lineLimit(word.contains(" ") ? 2 : 1)
+                .minimumScaleFactor(0.6)
+            if let meaning {
+                let text = Text(meaning)
+                    .font(.system(size: size.meaning, weight: .medium))
+                    .opacity(0.85)
+                if truncate {
+                    text.lineLimit(compact ? 2 : 3).minimumScaleFactor(0.8)
+                } else {
+                    // Báo chiều cao thật khi xuống dòng hết → ViewThatFits biết có vừa không
+                    text.fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .multilineTextAlignment(align.multiline)
+        .frame(maxWidth: .infinity, alignment: align.frame)
     }
 }
 

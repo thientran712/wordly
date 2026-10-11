@@ -1,8 +1,8 @@
 import SwiftUI
 import WidgetKit
 
-// Cài đặt widget màn hình khoá / màn hình chính: chọn từ hiện (đã lưu / gần
-// đây / tự chọn), đổi từ mỗi bao lâu, khung giờ hiển thị, ẩn nghĩa để tự kiểm tra.
+// Cài đặt widget màn hình khoá / màn hình chính: chọn từ hiện (đã lưu và/hoặc
+// dịch gần đây, hoặc tự chọn), đổi từ mỗi bao lâu, khung giờ hiển thị, ẩn nghĩa để tự kiểm tra.
 // Lưu vào App Group → widget đọc và dựng lịch bằng WidgetSchedule.
 @MainActor
 final class WidgetSettingsViewModel: ObservableObject {
@@ -31,6 +31,9 @@ final class WidgetSettingsViewModel: ObservableObject {
         if let fallback = WidgetSchedule.pool(from: words, settings: settings).first { return [fallback] }
         return []
     }
+
+    var savedCount: Int { words.filter(\.isSaved).count }
+    var unsavedCount: Int { words.count - savedCount }
 
     /// Từ kho thực sự được trộn (đã bỏ từ trùng với từ của bạn)
     var bankInUse: Int { WidgetSchedule.bankPool(bank, words: words, settings: settings).count }
@@ -96,14 +99,18 @@ struct WidgetSettingsView: View {
                             .font(WordlyFonts.body(13, weight: .semibold))
                     }
                 } else {
-                    // Chỉ 2 lựa chọn phổ biến ở màn chính — "Tự chọn" chuyển
-                    // xuống mục "Tùy chỉnh thêm" bên dưới để không làm rối
-                    // (trước đây 3 lựa chọn + 1 toggle phụ thuộc gây khó hiểu).
-                    Picker("Hiện từ", selection: $vm.settings.source) {
-                        Text("Đã lưu").tag(WidgetSettings.Source.saved)
-                        Text("Gần đây").tag(WidgetSettings.Source.recent)
+                    // Hai ô tick thay cho 2 tab "Đã lưu | Gần đây": tab không
+                    // cho thấy chọn được cả hai, và "Gần đây" vốn đã gồm từ đã
+                    // lưu nên người dùng không hiểu hai tab khác nhau chỗ nào.
+                    // "Tự chọn" nằm ở mục riêng bên dưới.
+                    sourceCheckbox("Từ đã lưu", detail: "\(vm.savedCount) từ bạn bấm Lưu khi dịch",
+                                   isOn: vm.settings.includesSaved) {
+                        vm.settings.setSources(saved: !vm.settings.includesSaved, recent: vm.settings.includesRecent)
                     }
-                    .pickerStyle(.segmented)
+                    sourceCheckbox("Từ dịch gần đây", detail: "\(vm.unsavedCount) từ đã dịch nhưng chưa lưu",
+                                   isOn: vm.settings.includesRecent) {
+                        vm.settings.setSources(saved: vm.settings.includesSaved, recent: !vm.settings.includesRecent)
+                    }
                     Toggle(isOn: $vm.settings.includeBank) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Trộn từ mới từ kho")
@@ -214,10 +221,30 @@ struct WidgetSettingsView: View {
 
     private var sourceFooter: String {
         switch vm.settings.source {
-        case .saved: return "Các từ bạn bấm Lưu khi dịch (chưa lưu từ nào thì dùng từ gần đây), trộn thêm từ mới nếu bật."
-        case .recent: return "Mọi từ tiếng Anh bạn đã dịch gần đây."
+        case .saved: return "Chỉ hiện từ đã lưu (chưa lưu từ nào thì dùng từ dịch gần đây)."
+        case .unsaved: return "Chỉ hiện từ đã dịch mà chưa lưu (lưu hết rồi thì dùng mọi từ gần đây)."
+        case .recent: return "Hiện cả từ đã lưu lần từ dịch gần đây. Chọn ít nhất một nguồn."
         case .custom: return "Chỉ những từ bạn chọn bên dưới (\(vm.settings.selectedIds.count) từ) — không trộn từ kho."
         }
+    }
+
+    /// Ô tick nguồn từ. Ô duy nhất đang tick thì bấm không bỏ được (xem setSources).
+    private func sourceCheckbox(_ title: String, detail: String, isOn: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: isOn ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 22))
+                    .foregroundStyle(isOn ? WordlyColors.electric : WordlyColors.inkSoft)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).foregroundStyle(WordlyColors.ink)
+                    Text(detail).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                }
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     private var preview: some View {
