@@ -54,6 +54,9 @@ final class TopicVocabularyViewModel: ObservableObject {
 struct TopicVocabularyView: View {
     @StateObject private var vm = TopicVocabularyViewModel()
     @State private var selected: TopicWord?
+    // Mở sẵn ở 3/4 màn hình — từ nhiều nghĩa trước đây phải scroll mới thấy
+    // nút "Hỏi Alex" ở mức .medium (50%). Vẫn chừa chỗ vuốt xuống để tắt.
+    @State private var wordDetailDetent: PresentationDetent = .fraction(0.75)
 
     var body: some View {
         ScrollView {
@@ -88,7 +91,7 @@ struct TopicVocabularyView: View {
         .task { if case .idle = vm.state { await vm.reload() } }
         .sheet(item: $selected) { word in
             TopicWordDetailSheet(word: word)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.fraction(0.75), .large], selection: $wordDetailDetent)
         }
     }
 
