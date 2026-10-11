@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var confirmSignOut = false
     @State private var emailSummary = ""
     @State private var streak: StreakResponse?
+    @FocusState private var nameFieldFocused: Bool
 
     private let levels = ["A1", "A2", "B1", "B2", "C1", "C2"]
     private let goals: [(String, String)] = [
@@ -20,17 +21,20 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    accountHeader
-                    streakCard
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
+            ScrollViewReader { proxy in
+                Form {
+                    Section {
+                        accountHeader(scrollTo: proxy)
+                        streakCard
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
 
-                Section {
-                    TextField("Tên của bạn", text: $vm.name)
+                    Section {
+                        TextField("Tên của bạn", text: $vm.name)
+                            .focused($nameFieldFocused)
+                            .id("nameField")
                     Picker("Trình độ", selection: $vm.skillLevel) {
                         ForEach(levels, id: \.self) { Text(VocabCatalog.levelLabels[$0] ?? $0).tag($0) }
                     }
@@ -111,10 +115,11 @@ struct ProfileView: View {
             } message: {
                 Text("Bạn cần đăng nhập lại để tiếp tục học.")
             }
+            }
         }
     }
 
-    private var accountHeader: some View {
+    private func accountHeader(scrollTo proxy: ScrollViewProxy) -> some View {
         HStack(spacing: 14) {
             Text(String((vm.name.isEmpty ? vm.email : vm.name).prefix(1)).uppercased())
                 .font(WordlyFonts.display(26))
@@ -123,9 +128,23 @@ struct ProfileView: View {
                 .background(LinearGradient(colors: [WordlyColors.electric, WordlyColors.duoBlue], startPoint: .topLeading, endPoint: .bottomTrailing))
                 .clipShape(Circle())
             VStack(alignment: .leading, spacing: 4) {
-                Text(vm.name.isEmpty ? "Học viên Wordly" : vm.name)
-                    .font(WordlyFonts.body(18, weight: .bold))
-                    .foregroundStyle(WordlyColors.ink)
+                HStack(spacing: 6) {
+                    Text(vm.name.isEmpty ? "Học viên Wordly" : vm.name)
+                        .font(WordlyFonts.body(18, weight: .bold))
+                        .foregroundStyle(WordlyColors.ink)
+                    // Tên nhìn như chữ tĩnh (không giống ô nhập) — thêm nút bút
+                    // chì để biết bấm vào là sửa được, dẫn xuống đúng ô nhập
+                    // tên ở mục "Học tập" bên dưới.
+                    Button {
+                        withAnimation { proxy.scrollTo("nameField", anchor: .center) }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { nameFieldFocused = true }
+                    } label: {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(WordlyColors.inkGhost)
+                    }
+                    .accessibilityLabel("Sửa tên")
+                }
                 Text(vm.email).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft)
                 Badge(text: providerLabel, color: WordlyColors.duoBlue)
             }
