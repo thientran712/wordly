@@ -8,17 +8,22 @@ struct SpeakHubView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                switch router.speakMode {
-                case .alex: PracticeView(vm: practice)
-                case .spinner: SpeakSpinnerView()
+            if AppRouter.alexPracticeEnabled {
+                Group {
+                    switch router.speakMode {
+                    case .alex: PracticeView(vm: practice)
+                    case .spinner: SpeakSpinnerView()
+                    }
                 }
-            }
-            .safeAreaInset(edge: .top, spacing: 0) {
-                HubPicker(options: AppRouter.SpeakMode.allCases, selection: $router.speakMode,
-                          title: \.title,
-                          icon: { $0 == .alex ? "waveform" : "dice.fill" })
-                    .background(WordlyColors.background)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    HubPicker(options: AppRouter.SpeakMode.allCases, selection: $router.speakMode,
+                              title: \.title,
+                              icon: { $0 == .alex ? "waveform" : "dice.fill" })
+                        .background(WordlyColors.background)
+                }
+            } else {
+                // Tạm ẩn Alex — chỉ còn vòng quay chủ đề, không cần picker nữa.
+                SpeakSpinnerView()
             }
         }
     }

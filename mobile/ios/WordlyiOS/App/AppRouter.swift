@@ -4,6 +4,12 @@ import SwiftUI
 /// màn Dịch, Từ vựng theo chủ đề) giống web /practice?word=… .
 @MainActor
 final class AppRouter: ObservableObject {
+    /// Tạm ẩn tính năng Luyện nói với Alex (quyết định 11/10/2026) — đổi lại
+    /// `true` để mở lại, không xoá code. Ẩn mọi nút "Hỏi Alex"/"Học từ này
+    /// với Alex" ở các màn xem chi tiết từ vựng, và ẩn luôn chế độ Alex
+    /// trong tab Luyện nói (chỉ còn Vòng quay chủ đề).
+    static let alexPracticeEnabled = false
+
     /// Tab đầu tiên là Dịch — mở app là dịch ngay, không qua trang tổng quan.
     enum Tab: String, Hashable {
         case translate, vocab, review, speak, profile
@@ -16,7 +22,7 @@ final class AppRouter: ObservableObject {
     }
 
     @Published var selectedTab: Tab = AppRouter.startTab
-    @Published var speakMode: SpeakMode = .alex
+    @Published var speakMode: SpeakMode = alexPracticeEnabled ? .alex : .spinner
 
     private static var startTab: Tab {
         #if DEBUG

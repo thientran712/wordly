@@ -201,8 +201,10 @@ struct SavedWordsView: View {
             }
             .accessibilityLabel("Phát âm")
             Menu {
-                Button { router.practice(word: entry.sourceText) } label: {
-                    Label("Hỏi Alex về từ này", systemImage: "bubble.left.and.text.bubble.right")
+                if AppRouter.alexPracticeEnabled {
+                    Button { router.practice(word: entry.sourceText) } label: {
+                        Label("Hỏi Alex về từ này", systemImage: "bubble.left.and.text.bubble.right")
+                    }
                 }
                 Button { UIPasteboard.general.string = entry.sourceText } label: {
                     Label("Sao chép", systemImage: "doc.on.doc")
@@ -277,13 +279,15 @@ struct SavedWordDetailSheet: View {
                     Text(entry.translatedText).font(WordlyFonts.body(17)).foregroundStyle(WordlyColors.ink)
                 }
             }
-            Button {
-                dismiss()
-                router.practice(word: entry.sourceText)
-            } label: {
-                Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+            if AppRouter.alexPracticeEnabled {
+                Button {
+                    dismiss()
+                    router.practice(word: entry.sourceText)
+                } label: {
+                    Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+                }
+                .buttonStyle(ElectricButtonStyle(isFullWidth: true))
             }
-            .buttonStyle(ElectricButtonStyle(isFullWidth: true))
         }
         .padding(20)
     }

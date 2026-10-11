@@ -193,13 +193,15 @@ struct TopicWordDetailSheet: View {
                 if let notes = word.usageNotes, !notes.isEmpty {
                     labeled("Lưu ý khi dùng", notes)
                 }
-                Button {
-                    dismiss()
-                    router.practice(word: word.word, wordId: word.id)
-                } label: {
-                    Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+                if AppRouter.alexPracticeEnabled {
+                    Button {
+                        dismiss()
+                        router.practice(word: word.word, wordId: word.id)
+                    } label: {
+                        Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+                    }
+                    .buttonStyle(ElectricButtonStyle(isFullWidth: true))
                 }
-                .buttonStyle(ElectricButtonStyle(isFullWidth: true))
             }
             .padding(20)
         }

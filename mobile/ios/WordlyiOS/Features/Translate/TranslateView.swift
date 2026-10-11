@@ -368,6 +368,7 @@ struct DictionaryCard: View {
                     .font(WordlyFonts.display(26))
                     .foregroundStyle(WordlyColors.ink)
                 Spacer()
+                if AppRouter.alexPracticeEnabled {
                 Button(action: onAskAlex) {
                     Label("Hỏi Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
                         .font(WordlyFonts.body(12, weight: .bold))
@@ -376,6 +377,7 @@ struct DictionaryCard: View {
                         .background(WordlyColors.duoBlue.opacity(0.14))
                         .foregroundStyle(WordlyColors.duoBlue)
                         .clipShape(Capsule())
+                }
                 }
             }
             HStack(spacing: 10) {
