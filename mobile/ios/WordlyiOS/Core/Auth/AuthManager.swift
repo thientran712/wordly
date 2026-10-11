@@ -9,6 +9,10 @@ final class AuthManager: ObservableObject {
     @Published var isLoading = true
     @Published var currentUser: User?
     @Published var authError: String?
+    /// Email đã đăng ký nhưng chưa nhập mã — lưu qua các lần mở app (PendingSignupStore).
+    @Published private(set) var pendingSignupEmail: String? = PendingSignupStore().email
+
+    enum SignupOutcome { case codeSent, codeRecentlySent, alreadyRegistered }
 
     let supabase: SupabaseClient
 
@@ -64,14 +68,51 @@ final class AuthManager: ObservableObject {
     // MARK: - Sign In
     func signIn(email: String, password: String) async throws {
         authError = nil
+        let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             let session = try await supabase.auth.signIn(email: email, password: password)
             currentUser = session.user
             isAuthenticated = true
+            if pendingSignupEmail == email.lowercased() { setPendingSignup(nil) }
         } catch {
-            authError = localizedAuthError(error)
+            if errorKind(error) == .emailNotConfirmed {
+                // Đăng ký từ trước nhưng chưa nhập mã (vd. thoát app giữa chừng):
+                // gửi mã mới, màn đăng nhập mở màn nhập mã. Gửi lỗi vì vừa gửi
+                // gần đây thì mã cũ vẫn dùng được — bỏ qua.
+                setPendingSignup(email)
+                try? await supabase.auth.resend(email: email, type: .signup)
+                authError = nil
+            } else {
+                authError = localizedAuthError(error)
+            }
             throw error
         }
+    }
+
+    /// Phân loại lỗi theo error_code của GoTrue.
+    func errorKind(_ error: Error) -> AuthFlow.ErrorKind {
+        AuthFlow.kind(errorCode: (error as? AuthError)?.errorCode.rawValue, message: error.localizedDescription)
+    }
+
+    private func setPendingSignup(_ email: String?) {
+        let store = PendingSignupStore()
+        store.email = email
+        pendingSignupEmail = store.email
+    }
+
+    /// "Dùng email khác" — bỏ nhắc xác nhận email đang chờ.
+    func forgetPendingSignup() { setPendingSignup(nil) }
+
+    /// Nhập mã 6 số trong email xác nhận đăng ký → tài khoản được xác nhận và đăng nhập luôn.
+    func verifySignup(email: String, code: String) async throws {
+        let response = try await supabase.auth.verifyOTP(email: email, token: code, type: .signup)
+        setPendingSignup(nil)
+        currentUser = response.user
+        isAuthenticated = response.session != nil
+    }
+
+    func resendSignupCode(email: String) async throws {
+        try await supabase.auth.resend(email: email, type: .signup)
     }
 
     // MARK: - Google (OAuth qua Supabase, giống web)
@@ -114,19 +155,39 @@ final class AuthManager: ObservableObject {
     }
 
     // MARK: - Sign Up
-    func signUp(email: String, password: String, name: String? = nil) async throws {
+    /// Tạo tài khoản → GoTrue gửi mã 6 số. Chưa đăng nhập cho tới khi nhập đúng mã.
+    func signUp(email: String, password: String, name: String? = nil) async throws -> SignupOutcome {
         authError = nil
+        let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             var metadata: [String: AnyJSON]? = nil
             if let name, !name.isEmpty {
                 metadata = ["name": .string(name)]
             }
-            _ = try await supabase.auth.signUp(email: email, password: password, data: metadata)
-            // After signup, sign in immediately
-            try await signIn(email: email, password: password)
+            let response = try await supabase.auth.signUp(email: email, password: password, data: metadata)
+            // Email đã có tài khoản đã xác nhận: GoTrue không báo lỗi (chống dò
+            // email) mà trả user giả không có identity, và không gửi mã.
+            if response.user.identities?.isEmpty == true { return .alreadyRegistered }
+            if response.session != nil {
+                // Server đang tắt xác nhận email → vào luôn
+                currentUser = response.user
+                isAuthenticated = true
+                return .codeSent
+            }
+            setPendingSignup(email)
+            return .codeSent
         } catch {
-            authError = localizedAuthError(error)
-            throw error
+            switch errorKind(error) {
+            case .rateLimited:
+                // Đăng ký lại cùng email trong vòng 1 phút: mã vừa gửi vẫn dùng được
+                setPendingSignup(email)
+                return .codeRecentlySent
+            case .userExists:
+                return .alreadyRegistered
+            default:
+                authError = localizedAuthError(error)
+                throw error
+            }
         }
     }
 
@@ -171,19 +232,7 @@ final class AuthManager: ObservableObject {
 
     // MARK: - Error localisation
     private func localizedAuthError(_ error: Error) -> String {
-        let msg = error.localizedDescription.lowercased()
-        if msg.contains("invalid login") || msg.contains("invalid email or password") {
-            return "Email hoặc mật khẩu không đúng"
-        }
-        if msg.contains("email not confirmed") {
-            return "Vui lòng xác nhận email trước khi đăng nhập"
-        }
-        if msg.contains("user already registered") {
-            return "Email này đã được đăng ký"
-        }
-        if msg.contains("network") || msg.contains("internet") {
-            return "Lỗi kết nối mạng. Kiểm tra internet và thử lại."
-        }
-        return error.localizedDescription
+        let kind = errorKind(error)
+        return kind == .other ? error.localizedDescription : AuthFlow.message(for: kind)
     }
 }

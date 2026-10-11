@@ -14,6 +14,9 @@ struct LoginView: View {
     /// Nonce gốc của lần Sign in with Apple đang chạy (Apple nhận bản băm)
     @State private var appleNonce = ""
     @FocusState private var focusedField: Field?
+    /// Mở màn nhập mã xác nhận cho email chưa xác nhận
+    @State private var verifyEmail: String?
+    @State private var verifySentAt: Date?
 
     enum Field { case email, password }
 
@@ -124,6 +127,30 @@ struct LoginView: View {
                             }
                         }
                         .padding(.horizontal, 24)
+
+                        // Đăng ký từ trước nhưng chưa nhập mã (thoát app giữa chừng)
+                        if let pending = authManager.pendingSignupEmail {
+                            Button {
+                                verifySentAt = nil
+                                verifyEmail = pending
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "envelope.badge.fill").font(WordlyFonts.body(16))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Chưa xác nhận email").font(WordlyFonts.body(13, weight: .bold))
+                                        Text(pending).font(WordlyFonts.body(12)).lineLimit(1)
+                                    }
+                                    Spacer()
+                                    Text("Nhập mã").font(WordlyFonts.body(13, weight: .bold))
+                                }
+                                .foregroundStyle(WordlyColors.electric)
+                                .padding(12)
+                                .background(WordlyColors.electric.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 24)
+                        }
 
                         // Error
                         if let error = authManager.authError {
@@ -248,6 +275,19 @@ struct LoginView: View {
         }
         .sheet(isPresented: $showSignup) { SignupView() }
         .sheet(isPresented: $showForgotPassword) { ForgotPasswordView() }
+        .sheet(isPresented: Binding(get: { verifyEmail != nil }, set: { if !$0 { verifyEmail = nil } })) {
+            NavigationStack {
+                ZStack {
+                    WordlyColors.bg(scheme: scheme).ignoresSafeArea()
+                    SignupCodeView(email: verifyEmail ?? "", lastSent: verifySentAt) { verifyEmail = nil }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Đóng") { verifyEmail = nil }.foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                    }
+                }
+            }
+        }
     }
 
     private func login() async {
@@ -255,7 +295,15 @@ struct LoginView: View {
         focusedField = nil
         isLoading = true
         defer { isLoading = false }
-        try? await authManager.signIn(email: email, password: password)
+        do {
+            try await authManager.signIn(email: email, password: password)
+        } catch {
+            // Email chưa xác nhận: AuthManager đã gửi mã mới → mở màn nhập mã
+            if authManager.errorKind(error) == .emailNotConfirmed {
+                verifySentAt = Date()
+                verifyEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
     }
 }
 
@@ -271,11 +319,17 @@ struct SignupView: View {
     @State private var isLoading = false
     @State private var showPassword = false
     @State private var localError: String?
+    /// Đăng ký xong → chuyển sang nhập mã 6 số cho email này
+    @State private var codeEmail: String?
+    @State private var codeSentAt: Date?
 
     var body: some View {
         NavigationStack {
             ZStack {
                 WordlyColors.bg(scheme: scheme).ignoresSafeArea()
+                if let codeEmail {
+                    SignupCodeView(email: codeEmail, lastSent: codeSentAt) { self.codeEmail = nil }
+                } else {
                 ScrollView {
                     VStack(spacing: 24) {
                         VStack(spacing: 8) {
@@ -329,6 +383,7 @@ struct SignupView: View {
                         .padding(.bottom, 32)
                     }
                 }
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -346,8 +401,15 @@ struct SignupView: View {
         guard password == confirmPassword else { localError = "Mật khẩu xác nhận không khớp"; return }
         isLoading = true
         defer { isLoading = false }
-        try? await authManager.signUp(email: email, password: password, name: name.isEmpty ? nil : name)
-        if authManager.isAuthenticated { dismiss() }
+        guard let outcome = try? await authManager.signUp(email: email, password: password, name: name.isEmpty ? nil : name) else { return }
+        if authManager.isAuthenticated { dismiss(); return }
+        switch outcome {
+        case .codeSent, .codeRecentlySent:
+            codeSentAt = Date()
+            codeEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        case .alreadyRegistered:
+            localError = AuthFlow.message(for: .userExists)
+        }
     }
 }
 
@@ -368,6 +430,7 @@ struct ForgotPasswordView: View {
     @State private var isLoading = false
     @State private var errorMsg: String?
     @State private var info: String?
+    @State private var lastSent: Date?
 
     var body: some View {
         NavigationStack {
@@ -424,10 +487,10 @@ struct ForgotPasswordView: View {
                             .disabled(isLoading || (codeSent ? code.isEmpty || password.isEmpty : email.isEmpty))
 
                             if codeSent {
-                                Button("Gửi lại mã") { Task { await sendCode(resend: true) } }
-                                    .font(WordlyFonts.body(14, weight: .semibold))
-                                    .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                                    .disabled(isLoading)
+                                ResendCodeButton(lastSent: lastSent, isBusy: isLoading) { Task { await sendCode(resend: true) } }
+                                Text("Không thấy email? Xem cả mục Spam/Quảng cáo.")
+                                    .font(WordlyFonts.body(12))
+                                    .foregroundStyle(WordlyColors.inkGhost)
                             }
                         }
                         .padding(.horizontal, 24)
@@ -452,9 +515,16 @@ struct ForgotPasswordView: View {
         do {
             try await authManager.resetPassword(email: email.trimmingCharacters(in: .whitespaces))
             codeSent = true
+            lastSent = Date()
             if resend { info = "Đã gửi mã mới, kiểm tra hộp thư (cả mục Spam)" }
         } catch {
-            errorMsg = "Không gửi được mã, thử lại sau ít phút."
+            let kind = authManager.errorKind(error)
+            if kind == .rateLimited {
+                // Mã gửi chưa tới 1 phút trước vẫn dùng được → cho nhập mã luôn
+                codeSent = true
+                lastSent = Date()
+            }
+            errorMsg = AuthFlow.message(for: kind)
         }
     }
 
@@ -469,7 +539,8 @@ struct ForgotPasswordView: View {
                                                 newPassword: password)
             dismiss()   // verifyOTP đã đăng nhập luôn → app vào màn chính
         } catch {
-            errorMsg = "Mã không đúng hoặc đã hết hạn. Bấm \"Gửi lại mã\" để nhận mã mới."
+            let kind = authManager.errorKind(error)
+            errorMsg = AuthFlow.message(for: [.network, .weakPassword].contains(kind) ? kind : .codeInvalid)
         }
     }
 }
