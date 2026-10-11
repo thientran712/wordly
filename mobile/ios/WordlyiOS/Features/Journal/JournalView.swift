@@ -6,8 +6,8 @@ struct JournalView: View {
     @State private var showAddSheet = false
     @FocusState private var inputFocused: Bool
 
-    // Được push từ Trang chủ (nằm trong NavigationStack của tab) — không tự
-    // bọc NavigationStack, nếu không sẽ lồng hai stack.
+    // Đổi qua lại với QuizView bằng HubPicker trong tab Ôn tập (ReviewHubView)
+    // — không tự bọc NavigationStack, nếu không sẽ lồng hai stack.
     var body: some View {
         ZStack {
             WordlyColors.bg(scheme: scheme).ignoresSafeArea()
@@ -31,7 +31,7 @@ struct JournalView: View {
             }
         }
         .navigationTitle("Sổ tay câu hay")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .task { await vm.fetch() }
         .refreshable { await vm.fetch() }
     }
