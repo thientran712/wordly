@@ -123,7 +123,14 @@ final class TranslateViewModel: ObservableObject {
                 translateCache[key] = result
                 translatedText = result
             } catch {
-                toast = "Mất kết nối — thử lại nhé"
+                // Gõ tiếp → yêu cầu cũ bị huỷ (URLSession ném lỗi huỷ) — không phải
+                // mất mạng; trước đây hiện "Mất kết nối" sai mỗi khi gõ nhanh.
+                guard !Task.isCancelled else { return }
+                if case APIError.serverError(let m) = error, m.contains("429") {
+                    toast = "Bạn dịch hơi nhanh, chờ vài giây rồi thử lại nhé"
+                } else {
+                    toast = "Mất kết nối — thử lại nhé"
+                }
                 return
             }
         }

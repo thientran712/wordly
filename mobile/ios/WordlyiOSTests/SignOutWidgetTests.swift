@@ -29,3 +29,14 @@ final class SignOutWidgetTests: XCTestCase {
         XCTAssertFalse(store.signedOut)
     }
 }
+
+// Mở app (scenePhase active) chỉ đồng bộ widget khi lần trước đã cũ — tránh
+// tranh mạng với màn đang tải mỗi lần chuyển qua lại giữa app.
+final class WidgetSyncThrottleTests: XCTestCase {
+    func testRefreshOnlyWhenStale() {
+        let t0 = Date(timeIntervalSince1970: 0)
+        XCTAssertTrue(WidgetSync.isStale(lastRefresh: nil, now: t0))
+        XCTAssertFalse(WidgetSync.isStale(lastRefresh: t0, now: t0.addingTimeInterval(120)))
+        XCTAssertTrue(WidgetSync.isStale(lastRefresh: t0, now: t0.addingTimeInterval(301)))
+    }
+}

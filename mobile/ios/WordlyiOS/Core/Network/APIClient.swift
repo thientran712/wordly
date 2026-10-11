@@ -221,6 +221,14 @@ final class APIClient: ObservableObject {
         )
     }
 
+    /// Chỉ từ đã lưu (tối đa 200) trong 1 lần gọi — `?saved=1` của web.
+    func fetchSavedHistory() async throws -> [TranslateHistoryEntry] {
+        try await request(
+            path: "/api/translate-history?saved=1&limit=200",
+            responseType: TranslateHistoryResponse.self
+        ).history
+    }
+
     // MARK: - Widget suggestion log
     func logWidgetShown(items: [WidgetWordItem]) async {
         struct Item: Encodable { let id: String }

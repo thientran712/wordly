@@ -22,13 +22,12 @@ struct TranslateView: View {
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
                     dictionarySection
-                    HistoryView(isEmbedded: true) { entry in
+                    HistoryView(isEmbedded: true, reloadToken: vm.historyVersion) { entry in
                         vm.load(entry: entry)
                         inputFocused = false
                         // Mục lịch sử nằm dưới cùng — cuộn lên để thấy ngay bản dịch vừa mở
                         withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo("translateTop", anchor: .top) }
                     }
-                    .id(vm.historyVersion)
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)

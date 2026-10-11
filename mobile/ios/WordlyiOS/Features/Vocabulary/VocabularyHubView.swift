@@ -49,17 +49,13 @@ final class SavedWordsViewModel: ObservableObject {
         // Hiện ngay bằng dữ liệu đã đồng bộ cho widget từ trước (tức thì,
         // không chờ network) — tránh khoảng trống rồi bật ra đột ngột (giật).
         refreshUpcoming()
-        var all: [TranslateHistoryEntry] = []
-        var offset = 0
-        while offset < 200 {
-            guard let page = try? await APIClient.shared.fetchHistory(limit: 50, offset: offset) else { break }
-            all += page.history
-            if !page.hasMore { break }
-            offset += 50
+        // 1 lần gọi chỉ lấy từ đã lưu (trước đây lật tuần tự tới 4 trang lịch sử
+        // rồi tự lọc → tab Đã lưu chờ cả giây mới hiện).
+        if let all = try? await APIClient.shared.fetchSavedHistory() {
+            // Một từ lưu nhiều lần chỉ hiện một dòng
+            var seen = Set<String>()
+            saved = all.filter { $0.isSaved == true && seen.insert(WordMix.normalize($0.sourceText)).inserted }
         }
-        // Một từ lưu nhiều lần chỉ hiện một dòng
-        var seen = Set<String>()
-        saved = all.filter { $0.isSaved == true && seen.insert(WordMix.normalize($0.sourceText)).inserted }
         isLoading = false
         await WidgetSync.refreshBank()
         refreshUpcoming()

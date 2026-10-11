@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clearAllTargets } from "@/lib/learning/history-delete";
+import { parseHistoryQuery } from "@/lib/learning/history-query";
 
 export async function POST(request) {
   const user = await getUserFast();
@@ -91,17 +92,17 @@ export async function GET(request) {
   const user = await getUserFast();
   if (!user) return Response.json({ history: [], hasMore: false });
 
-  const { searchParams } = new URL(request.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
-  const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
+  const { limit, offset, savedOnly } = parseHistoryQuery(new URL(request.url).searchParams);
 
   const admin = createAdminClient();
   // Fetch limit+1 to know if there are more rows without a separate count query.
-  const { data } = await admin
+  let query = admin
     .from("translate_history")
     .select("id, source_text, translated_text, direction, saved_at, is_saved")
     .eq("user_id", user.id)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  if (savedOnly) query = query.eq("is_saved", true);
+  const { data } = await query
     .order("saved_at", { ascending: false })
     .range(offset, offset + limit);
 
