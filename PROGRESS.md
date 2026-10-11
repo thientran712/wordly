@@ -26,7 +26,9 @@ ký tự, App Privacy, độ tuổi, ghi chú reviewer); ảnh 6.9" ở
 - ✅ (đã sửa) **SMTP GoTrue hỏng từ lúc migrate** (`SMTP_HOST=supabase-mail`, không
   tồn tại) → giờ qua Resend cổng 2587 (DO chặn 465/587), xem `infra/vps/README.md`.
   Test `/auth/v1/recover` → 200. Còn cần chủ dự án xác nhận thư tới hộp thư thật.
-- Hộp thư `support@wordly.skillproof.work` (trang Support công khai địa chỉ này).
+- ✅ (đã xong) Hộp thư `support@wordly.skillproof.work` — ImprovMX chuyển tiếp về
+  `huythien7122@gmail.com` (MX `wordly` → mx1/mx2.improvmx.com + SPF, DNS ở GoDaddy).
+  Thư thử đã tới Gmail.
 - Mật khẩu tài khoản demo cho Apple reviewer.
 - Chưa có: thu hồi token Sign in with Apple khi xoá tài khoản (Apple khuyến nghị).
 
