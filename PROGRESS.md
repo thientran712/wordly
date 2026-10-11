@@ -3,6 +3,20 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/10/2026 — BUILD 12 ĐÃ UPLOAD: widget màn hình khoá dùng hết khung + nguồn từ dạng ô tick (branch `feat/widget-lock-layout-nguon-tu`, đã push, CHƯA PR)
+
+**Build 12:** commit tính năng + bump `CURRENT_PROJECT_VERSION=12`, archive Release
+(team `929P8F77XX`), kiểm archive: app + widget đều 1.0.0 (12), 0 chuỗi
+`WordlyUIPreview`, domain `api/app.wordly.skillproof.work` → export
+`app-store-connect` → **"Upload succeeded"**. Branch xếp trên `chore/ios-build-11`
+(PR #10) → merge PR #10 trước rồi mới mở PR cho branch này.
+
+- **Khung chữ nhật màn hình khoá** (`accessoryRectangular`) là kiểu lớn nhất Apple cho, ~160×72pt, không làm to hơn được. Đã cân nhắc và **bỏ**: 2 widget ghép cạnh nhau (chủ dự án thấy tệ), Live Activity (hết hạn sau ~8 tiếng, đổi từ phải push từ server, dễ bị từ chối khi duyệt app).
+- `LockRectangular` giờ dùng `ViewThatFits` để thử từ cỡ chữ to nhất xuống, nghĩa xuống dòng hết (tới 3–4 dòng). Không vừa cỡ nào mới cắt "…". Cụm nhiều chữ được xuống 2 dòng; từ đơn giữ 1 dòng (thu nhỏ). Đã render bằng `ImageRenderer` ở 157×72 và 172×76 với 5 từ mẫu để kiểm tra bằng mắt (test tạm, đã xoá).
+- **Nguồn từ**: bỏ 2 tab "Đã lưu | Gần đây", thay bằng 2 ô tick "Từ đã lưu" / "Từ dịch gần đây", tick 1 hoặc cả 2, không bỏ được cả 2. Thêm `Source.unsaved` (dịch nhưng chưa lưu). Cả 2 = `.recent` cũ, nên cài đặt cũ không đổi nghĩa.
+- Bằng chứng: `WordlyiOSTests` 124/124 pass (thêm 5 test nguồn từ, đã thấy fail trước khi viết code), app + widget build sạch.
+- **Chưa kiểm**: chưa xem trên màn hình khoá máy thật/simulator. Chưa biết iOS có chừa lề trong khung không; nếu có, cỡ chữ sẽ tự lùi xuống một nấc. Chưa chụp màn cài đặt mới (cần đăng nhập).
+
 ### 12/10/2026 — Lộ service_role key Supabase Cloud → đã PAUSE project Cloud
 
 **Sự cố:** GitHub secret scanning (repo **public**) báo 2 cảnh báo:
