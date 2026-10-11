@@ -11,54 +11,21 @@ struct ProfileView: View {
     @State private var confirmSignOut = false
     @State private var emailSummary = ""
     @State private var streak: StreakResponse?
-    @FocusState private var nameFieldFocused: Bool
     @State private var confirmDelete = false
     @State private var isDeleting = false
     @State private var deleteError: String?
 
-    private let levels = ["A1", "A2", "B1", "B2", "C1", "C2"]
-    private let goals: [(String, String)] = [
-        ("daily", "💬 Giao tiếp hàng ngày"), ("toeic", "📊 TOEIC"), ("ielts", "🎓 IELTS"),
-        ("business", "💼 Kinh doanh"), ("travel", "✈️ Du lịch"),
-    ]
-
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
-                Form {
-                    Section {
-                        accountHeader(scrollTo: proxy)
-                        streakCard
-                    }
+            Form {
+                // Tên chỉ hiện một chỗ; cả khối là lối vào màn sửa hồ sơ (có mũi tên ›)
+                Section {
+                    NavigationLink { EditProfileView(vm: vm) } label: { accountHeader }
+                }
+
+                Section { streakCard }
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-
-                    Section {
-                        TextField("Tên của bạn", text: $vm.name)
-                            .focused($nameFieldFocused)
-                            .id("nameField")
-                    Picker("Trình độ", selection: $vm.skillLevel) {
-                        ForEach(levels, id: \.self) { Text(VocabCatalog.levelLabels[$0] ?? $0).tag($0) }
-                    }
-                    Picker("Mục tiêu", selection: $vm.learningGoal) {
-                        ForEach(goals, id: \.0) { Text($0.1).tag($0.0) }
-                    }
-                    Button {
-                        Task { await vm.save() }
-                    } label: {
-                        HStack {
-                            if vm.isSaving { ProgressView() }
-                            Text(vm.saveSuccess ? "Đã lưu ✓" : "Lưu thay đổi")
-                        }
-                    }
-                    .foregroundStyle(WordlyColors.electric)
-                    .disabled(vm.isSaving)
-                } header: {
-                    Text("Học tập")
-                } footer: {
-                    Text("Alex dùng trình độ và mục tiêu để chọn cách nói chuyện phù hợp với bạn.")
-                }
 
                 Section("Nhắc học") {
                     NavigationLink { EmailSettingsView() } label: {
@@ -99,16 +66,28 @@ struct ProfileView: View {
                 } header: {
                     Text("Tài khoản")
                 } footer: {
-                    if let deleteError { Text(deleteError).foregroundStyle(WordlyColors.error) }
+                    if let deleteError {
+                        Text(deleteError).foregroundStyle(WordlyColors.error)
+                    } else {
+                        Text(providerLabel)
+                    }
                 }
 
                 Section {
-                    Text("Wordly \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))")
-                        .font(WordlyFonts.body(12))
-                        .foregroundStyle(WordlyColors.inkGhost)
+                    Link(destination: webURL("/privacy")) {
+                        settingRow("hand.raised.fill", WordlyColors.duoBlue, "Chính sách quyền riêng tư", nil)
+                    }
+                    Link(destination: webURL("/support")) {
+                        settingRow("questionmark.circle.fill", WordlyColors.electric, "Hỗ trợ & liên hệ", nil)
+                    }
+                } header: {
+                    Text("Thông tin")
+                } footer: {
+                    // Version làm chú thích của mục cuối — trước đây là cả một Section riêng, dư khoảng trắng
+                    Text("Wordly \(appVersion)")
                         .frame(maxWidth: .infinity)
+                        .padding(.top, 4)
                 }
-                .listRowBackground(Color.clear)
             }
             .scrollContentBackground(.hidden)
             .screenBackground()
@@ -146,42 +125,36 @@ struct ProfileView: View {
             } message: {
                 Text("Toàn bộ từ đã lưu, lịch sử dịch, sổ tay và cài đặt nhắc học sẽ bị xoá và không khôi phục được.")
             }
-            }
         }
     }
 
-    private func accountHeader(scrollTo proxy: ScrollViewProxy) -> some View {
+    private var appVersion: String {
+        let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        let b = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+        return "\(v) (\(b))"
+    }
+
+    private func webURL(_ path: String) -> URL {
+        URL(string: WordlyConfig.webBaseURL + path)!
+    }
+
+    private var accountHeader: some View {
         HStack(spacing: 14) {
             Text(String((vm.name.isEmpty ? vm.email : vm.name).prefix(1)).uppercased())
-                .font(WordlyFonts.display(26))
+                .font(WordlyFonts.display(24))
                 .foregroundStyle(WordlyColors.onElectric)
-                .frame(width: 60, height: 60)
+                .frame(width: 56, height: 56)
                 .background(LinearGradient(colors: [WordlyColors.electric, WordlyColors.duoBlue], startPoint: .topLeading, endPoint: .bottomTrailing))
                 .clipShape(Circle())
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(vm.name.isEmpty ? "Học viên Wordly" : vm.name)
-                        .font(WordlyFonts.body(18, weight: .bold))
-                        .foregroundStyle(WordlyColors.ink)
-                    // Tên nhìn như chữ tĩnh (không giống ô nhập) — thêm nút bút
-                    // chì để biết bấm vào là sửa được, dẫn xuống đúng ô nhập
-                    // tên ở mục "Học tập" bên dưới.
-                    Button {
-                        withAnimation { proxy.scrollTo("nameField", anchor: .center) }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { nameFieldFocused = true }
-                    } label: {
-                        Image(systemName: "pencil.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundStyle(WordlyColors.inkGhost)
-                    }
-                    .accessibilityLabel("Sửa tên")
-                }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(vm.name.isEmpty ? "Thêm tên của bạn" : vm.name)
+                    .font(WordlyFonts.body(18, weight: .bold))
+                    .foregroundStyle(vm.name.isEmpty ? WordlyColors.inkSoft : WordlyColors.ink)
                 Text(vm.email).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft)
-                Badge(text: providerLabel, color: WordlyColors.duoBlue)
+                Text(vm.learningSummary).font(WordlyFonts.body(12, weight: .semibold)).foregroundStyle(WordlyColors.electric)
             }
-            Spacer()
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
     }
 
     private var streakCard: some View {
@@ -320,7 +293,19 @@ final class ProfileViewModel: ObservableObject {
     @Published var learningGoal = "daily"
     @Published var isLoading = true
     @Published var isSaving = false
-    @Published var saveSuccess = false
+
+    static let levels = ["A1", "A2", "B1", "B2", "C1", "C2"]
+    static let goals: [(String, String)] = [
+        ("daily", "💬 Giao tiếp hàng ngày"), ("toeic", "📊 TOEIC"), ("ielts", "🎓 IELTS"),
+        ("business", "💼 Kinh doanh"), ("travel", "✈️ Du lịch"),
+    ]
+
+    /// "Trình độ B1 · 🎓 IELTS" — dòng tóm tắt dưới tên ở đầu trang Cá nhân.
+    var learningSummary: String {
+        let level = VocabCatalog.levelLabels[skillLevel] ?? skillLevel
+        let goal = Self.goals.first { $0.0 == learningGoal }?.1 ?? learningGoal
+        return "\(level) · \(goal)"
+    }
 
     func fetchProfile() async {
         isLoading = true
@@ -335,20 +320,24 @@ final class ProfileViewModel: ObservableObject {
         isLoading = false
     }
 
-    func save() async {
+    /// Ghi hồ sơ; chỉ cập nhật trạng thái hiển thị khi server lưu thành công.
+    func save(name: String, skillLevel: String, learningGoal: String) async -> Bool {
         isSaving = true
+        defer { isSaving = false }
         do {
             _ = try await APIClient.shared.updateProfile(
                 name: name.isEmpty ? nil : name,
                 skillLevel: skillLevel,
                 learningGoal: learningGoal
             )
-            saveSuccess = true
+            self.name = name
+            self.skillLevel = skillLevel
+            self.learningGoal = learningGoal
             // Đổi trình độ → widget đổi lô từ kho theo trình độ mới
             Task { await WidgetSync.refreshBank() }
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
-            saveSuccess = false
-        } catch {}
-        isSaving = false
+            return true
+        } catch {
+            return false
+        }
     }
 }
