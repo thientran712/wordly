@@ -3,6 +3,42 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/10/2026 — Lộ service_role key Supabase Cloud → đã PAUSE project Cloud
+
+**Sự cố:** GitHub secret scanning (repo **public**) báo 2 cảnh báo:
+- **#1 — lộ thật:** JWT `service_role` (legacy) của Supabase Cloud
+  `blattojsgqyhoxkglind` hardcode trong `scripts/fetch-audio-urls.mjs`, commit
+  `80382b6` (tháng 5/2026). File hiện tại đã đọc từ env, nhưng key vẫn nằm
+  trong lịch sử git công khai → coi như đã lộ, rewrite history vô ích.
+- **#2 — báo nhầm:** `whsec_…` trong `infra/vps/supabase/docker-compose.yml:246`
+  là placeholder mẫu của Supabase (base64 "This is an example of a shorter
+  Base64 string"), dòng bị comment.
+
+**Đã làm (cách A — cắt hẳn Cloud, iOS đã chạy self-host từ build 7):**
+- Backup lần cuối Cloud bằng `supabase db dump --linked` (schema + data + roles)
+  → `~/wordly-cloud-backup-2026-10-12/` (ngoài repo, `chmod 600`, có PII +
+  password hash — **không đưa vào git**). Có đủ `auth.users`/`identities` + mọi
+  bảng public. Gói Free không có backup nào khác.
+- Chủ dự án pause project Cloud. Kiểm: `supabase projects list` → `INACTIVE`;
+  `curl blattojsgqyhoxkglind.supabase.co/rest/v1/` → không kết nối (000);
+  `app.wordly.skillproof.work` vẫn 200, `api.…/auth/v1/health` vẫn 401 (như trước).
+  → Key bị lộ hết tác dụng. Ai còn giữ build iOS 1–6 sẽ không dùng được nữa.
+
+- Đóng 2 cảnh báo GitHub qua `gh api`: #1 → `revoked`, #2 → `false_positive`.
+- Chủ dự án chọn xoá hạ tầng cũ **ngay** (không đợi 2–4 tuần):
+  - Gỡ project Vercel `davids-projects-f609008f/wordly` (`vercel project rm`) —
+    trước đó kiểm DNS `app`/`api.wordly.skillproof.work` đều trỏ VPS
+    167.99.74.215, Vercel không gắn domain riêng nào của Wordly.
+  - **Xoá hẳn** project Supabase Cloud `blattojsgqyhoxkglind` ("Deleted project",
+    không còn trong `supabase projects list`). Dữ liệu Cloud giờ **chỉ còn** bản
+    dump ở `~/wordly-cloud-backup-2026-10-12/`.
+  - Lệnh `supabase db query --linked --project-ref blattojsgqyhoxkglind` trong
+    tài liệu cũ không còn dùng được — migration giờ chạy trên self-host.
+- `web/.env.local`: `NEXT_PUBLIC_SUPABASE_URL` đã đổi sang
+  `https://api.wordly.skillproof.work`; 2 key (anon + service role, lấy từ
+  `/opt/wordly/prod/supabase/.env` trên VPS) nhập qua `atlas-secret-handoff`.
+  Lưu ý: dev local giờ chạm **dữ liệu production** self-host.
+
 ### 12/10/2026 — BUILD 11 ĐÃ UPLOAD + PR #10 (chờ merge)
 
 **Trạng thái:** build 11 "Upload succeeded" (archive: CFBundleVersion 11 cho app +
