@@ -21,7 +21,7 @@ struct VocabularyHubView: View {
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 HubPicker(options: Mode.allCases, selection: $mode,
-                          title: { $0 == .saved ? "Đã lưu" : "Kho theo chủ đề" },
+                          title: { $0 == .saved ? "Đã lưu" : "Từ mới" },
                           icon: { $0 == .saved ? "bookmark.fill" : "square.grid.2x2.fill" })
                     .background(WordlyColors.background)
             }
