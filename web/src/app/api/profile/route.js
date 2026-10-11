@@ -9,11 +9,13 @@ export async function GET() {
 
   const supabase = await createClient();
 
+  // maybeSingle: thiếu dòng profiles (vd. trigger tạo hồ sơ từng bị mất khi
+  // chuyển sang self-host) thì trả profile null, không 500 cả màn Cá nhân.
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
