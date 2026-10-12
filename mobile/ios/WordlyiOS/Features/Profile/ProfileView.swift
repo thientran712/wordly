@@ -116,6 +116,8 @@ struct ProfileView: View {
                         deleteError = nil
                         do {
                             try await authManager.deleteAccount()
+                        } catch where AccountDeletion.isCancellation(error) {
+                            // Tự đóng sheet Apple — không xoá, không báo lỗi
                         } catch {
                             deleteError = "Không xoá được tài khoản, thử lại sau."
                         }
@@ -123,7 +125,11 @@ struct ProfileView: View {
                     }
                 }
             } message: {
-                Text("Toàn bộ từ đã lưu, lịch sử dịch, sổ tay và cài đặt nhắc học sẽ bị xoá và không khôi phục được.")
+                if authManager.isAppleUser {
+                    Text("Toàn bộ từ đã lưu, lịch sử dịch, sổ tay và cài đặt nhắc học sẽ bị xoá và không khôi phục được. Bạn sẽ xác nhận với Apple một lần nữa.")
+                } else {
+                    Text("Toàn bộ từ đã lưu, lịch sử dịch, sổ tay và cài đặt nhắc học sẽ bị xoá và không khôi phục được.")
+                }
             }
         }
     }
