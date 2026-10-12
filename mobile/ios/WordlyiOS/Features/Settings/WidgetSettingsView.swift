@@ -12,11 +12,13 @@ final class WidgetSettingsViewModel: ObservableObject {
     @Published var words: [WidgetWordItem]
     @Published var bank: [WidgetWordItem]
     @Published var syncing = false
+    @Published var phonetics: [String: String]
 
     init() {
         settings = AppGroupStorage.shared.settings
         words = AppGroupStorage.shared.words
         bank = AppGroupStorage.shared.bank
+        phonetics = AppGroupStorage.shared.phonetics
         AppGroupStorage.shared.deleteHomeBackgroundImage()
     }
 
@@ -46,6 +48,8 @@ final class WidgetSettingsViewModel: ObservableObject {
         await WidgetSync.refreshBank(force: bank.isEmpty)
         words = AppGroupStorage.shared.words
         bank = AppGroupStorage.shared.bank
+        await WidgetSync.refreshPhonetics()
+        phonetics = AppGroupStorage.shared.phonetics
         syncing = false
     }
 
@@ -205,11 +209,14 @@ struct WidgetSettingsView: View {
                 Text("\(vm.words.count) từ của bạn (\(vm.words.filter(\.isSaved).count) đã lưu) + \(vm.bankInUse) từ mới từ kho hôm nay. Từ trùng được lọc bỏ; mỗi vòng xáo thứ tự khác nhau.")
             }
 
-            Section("Thêm widget vào màn hình khoá") {
+            Section {
+                Text("Thêm widget vào màn hình khoá").font(WordlyFonts.body(13, weight: .semibold))
                 step(1, "Khoá máy, rồi nhấn giữ màn hình khoá.")
                 step(2, "Chọn Tuỳ chỉnh → Màn hình khoá.")
                 step(3, "Bấm vào ô widget dưới đồng hồ, tìm “Wordly”.")
                 step(4, "Chọn kiểu chữ nhật (từ + nghĩa) hoặc tròn, rồi Xong.")
+            } footer: {
+                Text("iOS luôn đặt hàng widget ở giữa màn hình khi hàng chưa đủ chỗ. Muốn Wordly sát mép trái: đặt Wordly đầu hàng rồi thêm 2 widget tròn (pin, thời tiết…) bên phải cho kín hàng.")
             }
         }
         .scrollContentBackground(.hidden)
@@ -273,6 +280,9 @@ struct WidgetSettingsView: View {
             Text(isNow ? "Bây giờ" : "Tiếp theo").font(.system(size: 11, weight: .semibold)).opacity(0.7)
             Text(word?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold))
                 .lineLimit(1).minimumScaleFactor(0.5)
+            if let p = word.flatMap({ WidgetPhonetic.phonetic(for: $0.word, cache: vm.phonetics) }) {
+                Text(p).font(.system(size: 12)).opacity(0.75).lineLimit(1)
+            }
             Text(word.map { vm.settings.showMeaning ? $0.meaning : "Nghĩa là gì nhỉ? 🤔" } ?? "Lưu từ khi dịch để hiện ở đây")
                 .font(.system(size: 13)).opacity(0.85)
                 .lineLimit(2).minimumScaleFactor(0.6)

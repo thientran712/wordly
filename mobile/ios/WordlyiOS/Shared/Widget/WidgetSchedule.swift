@@ -387,3 +387,44 @@ struct WidgetDeepLink: Equatable {
         return c.url
     }
 }
+
+/// Phiên âm US trên widget. App tra qua /api/dictionary (đã cache trong DB) rồi
+/// lưu bảng từ → phiên âm vào App Group; widget chỉ đọc. Câu thì không có phiên
+/// âm — vừa vô nghĩa vừa tốn một lượt tra AI.
+enum WidgetPhonetic {
+    static let cacheKey = "wordly.widget.phonetics"
+    /// Cụm từ dài nhất còn tra (vd "take something for granted")
+    static let maxWords = 4
+
+    static func eligible(_ text: String) -> Bool {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty, !t.contains(where: { ".?!,;:".contains($0) }) else { return false }
+        return t.split(whereSeparator: \.isWhitespace).count <= maxWords
+    }
+
+    static func key(_ text: String) -> String { WordMix.normalize(text) }
+
+    /// "rɪˈzɪljənt" → "/rɪˈzɪljənt/"; rỗng → nil (đã tra nhưng không có)
+    static func display(_ raw: String?) -> String? {
+        let t = (raw ?? "").trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "/")))
+        return t.isEmpty ? nil : "/\(t)/"
+    }
+
+    static func phonetic(for word: String, cache: [String: String]) -> String? {
+        guard eligible(word) else { return nil }
+        return display(cache[key(word)])
+    }
+
+    /// Từ sắp hiện mà chưa có trong cache (giá trị rỗng = đã tra, không có → không tra lại).
+    static func wordsToFetch(upcoming: [WidgetWordItem], cache: [String: String], limit: Int) -> [String] {
+        var seen = Set<String>()
+        var out: [String] = []
+        for item in upcoming where eligible(item.word) {
+            let k = key(item.word)
+            guard cache[k] == nil, seen.insert(k).inserted else { continue }
+            out.append(k)
+            if out.count == limit { break }
+        }
+        return out
+    }
+}

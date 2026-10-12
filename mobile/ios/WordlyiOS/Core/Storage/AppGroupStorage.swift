@@ -68,6 +68,23 @@ final class AppGroupStorage {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Bảng từ (đã chuẩn hoá) → phiên âm US cho widget, xem WidgetPhonetic.
+    var phonetics: [String: String] {
+        defaults?.dictionary(forKey: WidgetPhonetic.cacheKey) as? [String: String] ?? [:]
+    }
+
+    func savePhonetics(_ found: [String: String]) {
+        guard !found.isEmpty else { return }
+        var all = phonetics.merging(found) { _, new in new }
+        // Không để phình mãi: quá 2000 từ thì chỉ giữ từ widget còn dùng
+        if all.count > 2000 {
+            let inUse = Set((words + bank).map { WidgetPhonetic.key($0.word) })
+            all = all.filter { inUse.contains($0.key) }
+        }
+        defaults?.set(all, forKey: WidgetPhonetic.cacheKey)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     /// Đăng xuất: xoá từ vựng của tài khoản và cả lô từ kho (nếu không, widget
     /// vẫn xoay từ kho như chưa đăng xuất), widget chuyển sang nhắc đăng nhập.
     /// Giữ cài đặt widget (màu, căn lề…) cho lần đăng nhập sau.
@@ -157,6 +174,27 @@ enum WidgetSync {
             }
         }
         await refreshBank()
+        await refreshPhonetics()
+    }
+
+    /// Tra phiên âm cho những từ sắp lên widget mà chưa có. Mỗi lần tối đa 12
+    /// từ, tuần tự — /api/dictionary giới hạn 40 lượt/phút/người và dùng chung
+    /// với tra từ trong app. Từ đã cache trong DB thì không tốn lượt AI.
+    static func refreshPhonetics(limit: Int = 12) async {
+        let store = AppGroupStorage.shared
+        let upcoming = WidgetSchedule.entries(words: store.words, bank: store.bank, settings: store.settings)
+            .compactMap(\.word)
+        let todo = WidgetPhonetic.wordsToFetch(upcoming: upcoming, cache: store.phonetics, limit: limit)
+        var found: [String: String] = [:]
+        for word in todo {
+            // Lỗi mạng/giới hạn → bỏ qua, lần sau tra lại; tra được mà không có → lưu rỗng
+            do {
+                found[word] = try await APIClient.shared.lookupWord(word)?.phoneticUs ?? ""
+            } catch {
+                continue
+            }
+        }
+        store.savePhonetics(found)
     }
 
     /// Lô từ kho mới mỗi ngày, hoặc khi đổi trình độ (`force` khi vừa sửa hồ sơ).
