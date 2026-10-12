@@ -119,8 +119,11 @@ extension APIClient {
 
     // MARK: Tài khoản
     /// Xoá vĩnh viễn tài khoản + toàn bộ dữ liệu (Apple Guideline 5.1.1(v)).
-    func deleteAccount() async throws {
-        _ = try await request(path: "/api/account", method: "DELETE", responseType: Ok.self)
+    /// Có code Apple → gửi kèm để server thu hồi token Apple; không có → không gửi body (như cũ).
+    func deleteAccount(appleAuthorizationCode: String? = nil) async throws {
+        _ = try await request(path: "/api/account", method: "DELETE",
+                              body: AccountDeletion.body(appleAuthorizationCode: appleAuthorizationCode),
+                              responseType: Ok.self)
     }
 
     // MARK: Luyện nói với Alex — tự đặt tiêu đề phiên

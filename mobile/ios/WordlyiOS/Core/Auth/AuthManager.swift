@@ -199,10 +199,20 @@ final class AuthManager: ObservableObject {
         isAuthenticated = false
     }
 
+    /// Người dùng đăng nhập bằng Apple → xoá tài khoản phải xác nhận lại với Apple.
+    var isAppleUser: Bool { AccountDeletion.isAppleUser(currentUser) }
+
     /// Xoá tài khoản trên server rồi dọn phiên trên máy. User đã bị xoá nên
     /// gọi signOut lên server sẽ lỗi — chỉ xoá phiên local.
+    /// Người dùng Apple: xin lại authorizationCode trước để server thu hồi token
+    /// Apple (Guideline 5.1.1(v)); huỷ sheet Apple → throw AppleReauthError.cancelled,
+    /// tài khoản KHÔNG bị xoá.
     func deleteAccount() async throws {
-        try await APIClient.shared.deleteAccount()
+        try await AccountDeletion.run(
+            isAppleUser: isAppleUser,
+            reauthorize: { try await AppleReauth.authorizationCode() },
+            deleteOnServer: { try await APIClient.shared.deleteAccount(appleAuthorizationCode: $0) }
+        )
         try? await supabase.auth.signOut(scope: .local)
         AppGroupStorage.shared.clearWords()
         AppGroupStorage.shared.deleteHomeBackgroundImage()
