@@ -16,6 +16,13 @@ struct DictionaryDetail: Decodable, Equatable {
     let hasMoreMeanings: Bool?
 }
 
+extension DictionaryDetail {
+    /// Nghĩa Việt ngắn cho widget: `def_vi` của nghĩa đầu tiên; không có → "".
+    var shortMeaningVi: String {
+        (meanings.first?.defs.first?.defVi ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
 struct WordMeaning: Decodable, Equatable, Identifiable {
     var id: String { pos }
     let pos: String

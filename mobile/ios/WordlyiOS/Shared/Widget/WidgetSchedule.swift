@@ -416,15 +416,57 @@ enum WidgetPhonetic {
     }
 
     /// Từ sắp hiện mà chưa có trong cache (giá trị rỗng = đã tra, không có → không tra lại).
-    static func wordsToFetch(upcoming: [WidgetWordItem], cache: [String: String], limit: Int) -> [String] {
+    /// Có `meanings` → từ kho chưa có nghĩa Việt cũng phải tra (kể cả đã có phiên âm
+    /// từ trước), vì cùng một lượt tra trả về cả hai — không tốn thêm lượt nào.
+    static func wordsToFetch(upcoming: [WidgetWordItem], cache: [String: String],
+                             meanings: [String: String]? = nil, limit: Int) -> [String] {
         var seen = Set<String>()
         var out: [String] = []
         for item in upcoming where eligible(item.word) {
             let k = key(item.word)
-            guard cache[k] == nil, seen.insert(k).inserted else { continue }
+            let needsMeaning = item.fromBank && meanings.map { $0[k] == nil } == true
+            guard cache[k] == nil || needsMeaning, seen.insert(k).inserted else { continue }
             out.append(k)
             if out.count == limit { break }
         }
         return out
+    }
+}
+
+/// Nghĩa tiếng Việt cho từ kho trên widget. Kho chỉ có định nghĩa tiếng Anh
+/// (`words.def_en`), nên app lấy `def_vi` trong cùng lượt tra phiên âm
+/// (/api/dictionary) rồi lưu bảng từ (đã chuẩn hoá) → nghĩa Việt vào App Group;
+/// widget chỉ đọc. Chưa tra được → giữ nghĩa cũ, widget không bao giờ trống.
+enum WidgetMeaning {
+    static let cacheKey = "wordly.widget.meaningsVi"
+
+    /// Nghĩa hiện trên widget. Từ của người dùng đã là nghĩa Việt (bản dịch) → giữ nguyên.
+    static func meaning(for item: WidgetWordItem, cache: [String: String]) -> String {
+        guard item.fromBank else { return item.meaning }
+        let vi = (cache[WidgetPhonetic.key(item.word)] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return vi.isEmpty ? item.meaning : vi
+    }
+
+    /// Bản sao của từ với nghĩa hiển thị — giữ id/từ để lịch xoay và link mở app không đổi.
+    static func localized(_ item: WidgetWordItem, cache: [String: String]) -> WidgetWordItem {
+        let shown = meaning(for: item, cache: cache)
+        guard shown != item.meaning else { return item }
+        return WidgetWordItem(id: item.id, word: item.word, meaning: shown, isSaved: item.isSaved, fromBank: item.fromBank)
+    }
+}
+
+/// Gộp kết quả tra mới vào bảng lưu trong App Group (phiên âm, nghĩa Việt).
+enum WidgetLookupCache {
+    static let maxEntries = 2000
+
+    /// Kết quả mới đè kết quả cũ. Không để phình mãi: quá `cap` từ thì chỉ giữ
+    /// từ widget còn dùng (`inUse`, khoá đã chuẩn hoá).
+    static func merged(_ existing: [String: String], with found: [String: String],
+                       inUse: Set<String>, cap: Int = maxEntries) -> [String: String] {
+        var all = existing.merging(found) { _, new in new }
+        if all.count > cap {
+            all = all.filter { inUse.contains($0.key) }
+        }
+        return all
     }
 }

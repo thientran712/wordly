@@ -13,12 +13,14 @@ final class WidgetSettingsViewModel: ObservableObject {
     @Published var bank: [WidgetWordItem]
     @Published var syncing = false
     @Published var phonetics: [String: String]
+    @Published var meaningsVi: [String: String]
 
     init() {
         settings = AppGroupStorage.shared.settings
         words = AppGroupStorage.shared.words
         bank = AppGroupStorage.shared.bank
         phonetics = AppGroupStorage.shared.phonetics
+        meaningsVi = AppGroupStorage.shared.meaningsVi
         AppGroupStorage.shared.deleteHomeBackgroundImage()
     }
 
@@ -27,9 +29,10 @@ final class WidgetSettingsViewModel: ObservableObject {
     }
 
     /// Vài từ sắp hiện tiếp theo trên widget — xem trước nhiều thẻ, không chỉ 1 từ.
+    /// Từ kho hiện nghĩa Việt giống trên widget (WidgetMeaning).
     var upcomingPreview: [WidgetWordItem] {
         let scheduled = WidgetSchedule.entries(words: words, bank: bank, settings: settings).compactMap(\.word)
-        if !scheduled.isEmpty { return Array(scheduled.prefix(5)) }
+        if !scheduled.isEmpty { return scheduled.prefix(5).map { WidgetMeaning.localized($0, cache: meaningsVi) } }
         if let fallback = WidgetSchedule.pool(from: words, settings: settings).first { return [fallback] }
         return []
     }
@@ -50,6 +53,7 @@ final class WidgetSettingsViewModel: ObservableObject {
         bank = AppGroupStorage.shared.bank
         await WidgetSync.refreshPhonetics()
         phonetics = AppGroupStorage.shared.phonetics
+        meaningsVi = AppGroupStorage.shared.meaningsVi
         syncing = false
     }
 

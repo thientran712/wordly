@@ -69,8 +69,11 @@ final class SavedWordsViewModel: ObservableObject {
         settings.activeEndMinutes = 0
         // Ít từ thì lịch quay vòng lại — chỉ lấy mỗi từ một lần
         var ids = Set<String>()
+        // Từ kho hiện nghĩa Việt giống trên widget (WidgetMeaning)
+        let meaningsVi = store.meaningsVi
         upcoming = Array(WidgetSchedule.entries(words: store.words, bank: store.bank, settings: settings)
             .compactMap(\.word).filter { ids.insert($0.id).inserted }.prefix(4))
+            .map { WidgetMeaning.localized($0, cache: meaningsVi) }
     }
 }
 

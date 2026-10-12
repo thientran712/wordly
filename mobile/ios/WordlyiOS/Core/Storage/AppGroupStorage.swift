@@ -73,15 +73,22 @@ final class AppGroupStorage {
         defaults?.dictionary(forKey: WidgetPhonetic.cacheKey) as? [String: String] ?? [:]
     }
 
-    func savePhonetics(_ found: [String: String]) {
-        guard !found.isEmpty else { return }
-        var all = phonetics.merging(found) { _, new in new }
-        // Không để phình mãi: quá 2000 từ thì chỉ giữ từ widget còn dùng
-        if all.count > 2000 {
-            let inUse = Set((words + bank).map { WidgetPhonetic.key($0.word) })
-            all = all.filter { inUse.contains($0.key) }
+    /// Bảng từ (đã chuẩn hoá) → nghĩa Việt cho từ kho trên widget, xem WidgetMeaning.
+    var meaningsVi: [String: String] {
+        defaults?.dictionary(forKey: WidgetMeaning.cacheKey) as? [String: String] ?? [:]
+    }
+
+    /// Lưu kết quả một đợt tra từ điển: phiên âm + nghĩa Việt (bảng riêng, cùng
+    /// cách chuẩn hoá và cùng giới hạn 2000 từ — dữ liệu phiên âm cũ giữ nguyên).
+    func saveLookups(phonetics found: [String: String], meaningsVi foundVi: [String: String] = [:]) {
+        guard !found.isEmpty || !foundVi.isEmpty else { return }
+        let inUse = Set((words + bank).map { WidgetPhonetic.key($0.word) })
+        if !found.isEmpty {
+            defaults?.set(WidgetLookupCache.merged(phonetics, with: found, inUse: inUse), forKey: WidgetPhonetic.cacheKey)
         }
-        defaults?.set(all, forKey: WidgetPhonetic.cacheKey)
+        if !foundVi.isEmpty {
+            defaults?.set(WidgetLookupCache.merged(meaningsVi, with: foundVi, inUse: inUse), forKey: WidgetMeaning.cacheKey)
+        }
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -177,24 +184,30 @@ enum WidgetSync {
         await refreshPhonetics()
     }
 
-    /// Tra phiên âm cho những từ sắp lên widget mà chưa có. Mỗi lần tối đa 12
-    /// từ, tuần tự — /api/dictionary giới hạn 40 lượt/phút/người và dùng chung
-    /// với tra từ trong app. Từ đã cache trong DB thì không tốn lượt AI.
+    /// Tra phiên âm cho những từ sắp lên widget mà chưa có — cùng lượt tra lấy
+    /// luôn nghĩa Việt cho từ kho (kho chỉ có định nghĩa tiếng Anh). Lịch sắp hiện
+    /// đã gồm từ kho trộn vào. Mỗi lần tối đa 12 từ, tuần tự — /api/dictionary
+    /// giới hạn 40 lượt/phút/người và dùng chung với tra từ trong app. Từ đã cache
+    /// trong DB thì không tốn lượt AI.
     static func refreshPhonetics(limit: Int = 12) async {
         let store = AppGroupStorage.shared
         let upcoming = WidgetSchedule.entries(words: store.words, bank: store.bank, settings: store.settings)
             .compactMap(\.word)
-        let todo = WidgetPhonetic.wordsToFetch(upcoming: upcoming, cache: store.phonetics, limit: limit)
+        let todo = WidgetPhonetic.wordsToFetch(upcoming: upcoming, cache: store.phonetics,
+                                               meanings: store.meaningsVi, limit: limit)
         var found: [String: String] = [:]
+        var foundVi: [String: String] = [:]
         for word in todo {
             // Lỗi mạng/giới hạn → bỏ qua, lần sau tra lại; tra được mà không có → lưu rỗng
             do {
-                found[word] = try await APIClient.shared.lookupWord(word)?.phoneticUs ?? ""
+                let detail = try await APIClient.shared.lookupWord(word)
+                found[word] = detail?.phoneticUs ?? ""
+                foundVi[word] = detail?.shortMeaningVi ?? ""
             } catch {
                 continue
             }
         }
-        store.savePhonetics(found)
+        store.saveLookups(phonetics: found, meaningsVi: foundVi)
     }
 
     /// Lô từ kho mới mỗi ngày, hoặc khi đổi trình độ (`force` khi vừa sửa hồ sơ).

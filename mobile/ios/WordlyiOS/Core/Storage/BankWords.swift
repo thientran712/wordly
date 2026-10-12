@@ -4,8 +4,9 @@ import Supabase
 /// Từ trong kho 7.5k từ (bảng `words`, ai cũng đọc được — RLS "viewable by
 /// everyone") để trộn với từ đã lưu trên widget. Cùng quy tắc với email trên web
 /// (web/src/lib/email/select-word-for-email.js): trình độ hiện tại + một bậc trên.
-/// Production chưa có cột `words.def_vi` → nghĩa hiển thị là định nghĩa tiếng
-/// Anh (`def_en`). Mỗi ngày một lô mới.
+/// Production chưa có cột `words.def_vi` → `meaning` lưu định nghĩa tiếng Anh
+/// (`def_en`) làm dự phòng; nghĩa Việt hiện trên widget do WidgetSync.refreshPhonetics
+/// tra thêm (xem WidgetMeaning). Mỗi ngày một lô mới.
 enum BankWords {
     static let batch = 30
     private static let cefr = ["A1", "A2", "B1", "B2", "C1", "C2"]
