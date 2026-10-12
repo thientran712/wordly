@@ -3,6 +3,14 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/10/2026 (khuya) — BUILD 15 ĐÃ UPLOAD TestFlight: ảnh nền + 26 theme widget (PR #26)
+
+- **Ảnh nền widget màn hình chính** (spec + plan: PR #25). Spike: bản cũ crash vì đọc ảnh trong `body` × tới 200 entry, ảnh lưu 3x (1500 px), giải mã ảnh gốc 48 MP. Bản mới: ImageIO thu nhỏ ≤ 2048 px, lưu 510×510 / 1092×510 scale 1, file có phiên bản, widget đọc **một lần** trong Provider, lỗi → nền màu. Đơn giản hoá so với spec: vị trí/độ phóng không lưu — muốn chỉnh lại thì chọn lại ảnh.
+- **26 theme** (Tailwind, Nord, Dracula, Catppuccin, Gruvbox, Solarized, Tokyo Night, Rosé Pine — MIT) — test bắt buộc WCAG AA ≥ 4.5:1 (mặc định cũ chữ trắng trên xanh chỉ ~2.1–2.4, giữ nguyên cho người dùng cũ). Công tắc tắt gradient (cài đặt cũ vẫn gradient). 24 ô màu thay ColorPicker (bỏ bút lấy màu).
+- Gộp PR #23 (lỗi đăng nhập tự ẩn) + PR #20 (UI test).
+- Bằng chứng: unit iOS **189/189**, UI test bàn phím + widget deep link 5/5, ảnh chụp màn chỉnh khung + màn theme trên simulator. Archive 1.0.0 (15) app + widget, 0 chuỗi `WordlyUIPreview`, domain production, team `929P8F77XX` → **"Upload succeeded"**. Lần upload sau: build 16.
+- **Chưa thử trên iPhone thật (bắt buộc trước khi phát hành):** ảnh camera 48 MP, panorama, PNG trong suốt, ảnh chụp dọc; đổi ảnh 10 lần liên tục; widget chạy qua đêm không crash/trắng; xoá ảnh → nền màu; theme + tắt gradient hiện đúng trên widget thật.
+
 ### 12/10/2026 (tối) — Dọn nợ kỹ thuật trong lúc chờ Apple duyệt: 4 PR mở, CHƯA merge/deploy
 
 Kiểm build 14 trên máy thật (chủ dự án): sheet Apple khi xoá tài khoản ✅, widget nghĩa Việt ✅, độ mờ widget ✅.
