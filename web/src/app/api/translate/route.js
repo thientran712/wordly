@@ -2,7 +2,7 @@ import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
 import { after } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { createLruCache } from "@/lib/translate/translation-cache";
 import { createTieredCache, hybridTranslate } from "@/lib/translate/hybrid-translate";
 import { persistentCacheKey } from "@/lib/translate/translate-routing";
@@ -32,9 +32,9 @@ const lru = createLruCache({ max: 5000, ttlMs: 24 * 60 * 60 * 1000 });
 
 export async function POST(request) {
   const user = await getUserFast();
-  // Client admin như /api/dictionary: bộ đếm rate limit và bảng cache dịch
+  // Client dùng chung như /api/dictionary: bộ đếm rate limit và bảng cache dịch
   // là dữ liệu dùng chung, không phải dữ liệu riêng của người dùng.
-  const supabase = createAdminClient();
+  const supabase = createSharedClient();
   const rl = await checkRateLimitDb({
     supabase,
     scope: "translate",

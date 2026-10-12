@@ -5,7 +5,7 @@
 // bằng 0, không gọi AI, không phải soạn nội dung.
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { buildQuizQuestions, scoreQuiz, QUIZ_MODES, bankWordToQuizWord } from "@/lib/learning/quiz-generation";
 
@@ -67,8 +67,8 @@ export async function GET(request) {
 
   // Không đủ từ đã lưu thì bù bằng kho từ chung.
   if (words.length < 4) {
-    const admin = createAdminClient();
-    let query = admin
+    const shared = createSharedClient();
+    let query = shared
       .from("words")
       .select("id, word, def_en, level")
       .not("def_en", "is", null)
@@ -78,7 +78,7 @@ export async function GET(request) {
 
     // Lấy một cửa sổ ngẫu nhiên để không phải lúc nào cũng ra cùng bộ từ.
     // Không dùng ORDER BY random() vì nó quét toàn bảng 7.5k dòng.
-    const { count: totalWords } = await admin
+    const { count: totalWords } = await shared
       .from("words")
       .select("id", { count: "exact", head: true });
 
@@ -151,7 +151,7 @@ export async function POST(request) {
   // Dựng lại đáp án đúng TỪ DATABASE — không tin đáp án client gửi.
   // Từ có thể đến từ translate_history (từ người học lưu) hoặc words.
   const supabase = await createClient();
-  const admin = createAdminClient();
+  const shared = createSharedClient();
 
   const [savedRes, bankRes] = await Promise.all([
     supabase
@@ -159,7 +159,7 @@ export async function POST(request) {
       .select("id, source_text, translated_text")
       .eq("user_id", user.id)
       .in("id", wordIds.filter(isUuid)),
-    admin.from("words").select("id, word, def_en, level").in("id", wordIds.filter(isUuid)),
+    shared.from("words").select("id, word, def_en, level").in("id", wordIds.filter(isUuid)),
   ]);
 
   const truth = new Map();

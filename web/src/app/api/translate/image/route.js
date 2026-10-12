@@ -4,7 +4,7 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { callAI } from "@/lib/ai/ai-models";
 import { validateImageDataUrl, parseImageTranslateResponse } from "@/lib/translate/image-validation";
 
@@ -30,7 +30,7 @@ Rules:
 export async function POST(request) {
   const user = await getUserFast();
   const rl = await checkRateLimitDb({
-    supabase: createAdminClient(),
+    supabase: createSharedClient(),
     scope: "translate-image",
     clientKey: clientKeyFromRequest(request, user?.id),
     limit: user ? USER_LIMIT : GUEST_LIMIT,

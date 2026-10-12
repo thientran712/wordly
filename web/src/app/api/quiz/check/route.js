@@ -10,7 +10,7 @@
 // nhiễu khác nhau).
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { scoreQuiz, QUIZ_MODES, bankWordToQuizWord } from "@/lib/learning/quiz-generation";
 
@@ -43,7 +43,7 @@ export async function POST(request) {
   // Dựng lại đáp án đúng TỪ DATABASE — không tin đáp án client gửi,
   // giống hệt cách POST /api/quiz làm.
   const supabase = await createClient();
-  const admin = createAdminClient();
+  const shared = createSharedClient();
 
   const [savedRes, bankRes] = await Promise.all([
     supabase
@@ -51,7 +51,7 @@ export async function POST(request) {
       .select("id, source_text, translated_text")
       .eq("user_id", user.id)
       .eq("id", word_id),
-    admin.from("words").select("id, word, def_en, level").eq("id", word_id),
+    shared.from("words").select("id, word, def_en, level").eq("id", word_id),
   ]);
 
   let truth = null;

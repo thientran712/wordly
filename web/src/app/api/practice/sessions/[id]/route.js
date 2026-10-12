@@ -1,5 +1,5 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request, { params }) {
   // Next 16: params là Promise — phải await, nếu không params.id là
@@ -8,7 +8,7 @@ export async function GET(request, { params }) {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("practice_sessions")
     .select("*")
@@ -33,7 +33,7 @@ export async function PATCH(request, { params }) {
   if (body.messages !== undefined) allowed.messages = body.messages;
   allowed.updated_at = new Date().toISOString();
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("practice_sessions")
     .update(allowed)
@@ -53,7 +53,7 @@ export async function DELETE(request, { params }) {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("practice_sessions")
     .delete()

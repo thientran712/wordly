@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clearAllTargets } from "@/lib/learning/history-delete";
 import { parseHistoryQuery } from "@/lib/learning/history-query";
@@ -12,12 +12,12 @@ export async function POST(request) {
     return Response.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const admin = createAdminClient();
+  const supabase = await createClient();
 
   // Every translation gets its own row — same word translated again later
   // is a separate lookup, not an update. is_saved defaults to false (auto
   // log); the "Lưu" button uses PATCH to mark a row as explicitly saved.
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from("translate_history")
     .insert({
       user_id: user.id,
@@ -47,10 +47,10 @@ export async function PATCH(request) {
     return Response.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const admin = createAdminClient();
+  const supabase = await createClient();
   const trimmedSource = source_text.trim();
 
-  const { data: existing } = await admin
+  const { data: existing } = await supabase
     .from("translate_history")
     .select("id")
     .eq("user_id", user.id)
@@ -63,7 +63,7 @@ export async function PATCH(request) {
     .maybeSingle();
 
   if (existing) {
-    const { error } = await admin
+    const { error } = await supabase
       .from("translate_history")
       .update({ is_saved: true, saved_at: new Date().toISOString() })
       .eq("id", existing.id);
@@ -71,7 +71,7 @@ export async function PATCH(request) {
     return Response.json({ success: true, id: existing.id });
   }
 
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from("translate_history")
     .insert({
       user_id: user.id,
@@ -94,9 +94,9 @@ export async function GET(request) {
 
   const { limit, offset, savedOnly } = parseHistoryQuery(new URL(request.url).searchParams);
 
-  const admin = createAdminClient();
+  const supabase = await createClient();
   // Fetch limit+1 to know if there are more rows without a separate count query.
-  let query = admin
+  let query = supabase
     .from("translate_history")
     .select("id, source_text, translated_text, direction, saved_at, is_saved")
     .eq("user_id", user.id)
@@ -120,14 +120,14 @@ export async function DELETE(request) {
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-  const admin = createAdminClient();
+  const supabase = await createClient();
   const now = new Date().toISOString();
 
   let ids;
   if (id) {
     ids = [id];
   } else {
-    const { data, error } = await admin
+    const { data, error } = await supabase
       .from("translate_history")
       .select("id, is_saved, deleted_at")
       .eq("user_id", user.id)
@@ -138,7 +138,7 @@ export async function DELETE(request) {
   }
 
   for (let i = 0; i < ids.length; i += 500) {
-    const { error } = await admin
+    const { error } = await supabase
       .from("translate_history")
       .update({ deleted_at: now })
       .eq("user_id", user.id)

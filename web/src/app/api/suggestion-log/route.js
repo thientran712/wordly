@@ -1,5 +1,5 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { buildSuggestionItems } from "@/lib/learning/build-suggestion-items";
 
 const PAGE_SIZE_MAX = 50;
@@ -12,9 +12,9 @@ export async function GET(request) {
   const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), PAGE_SIZE_MAX);
   const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
 
-  const admin = createAdminClient();
+  const supabase = await createClient();
 
-  const { data: logs, error } = await admin
+  const { data: logs, error } = await supabase
     .from("suggestion_log")
     .select("id, source, entry_type, entry_id, bank_word_id, shown_at")
     .eq("user_id", user.id)
@@ -36,17 +36,17 @@ export async function GET(request) {
   // thể POST id của người khác vào log-shown rồi GET lại được nội dung đó.
   const [{ data: translateRows, error: tErr }, { data: journalRows, error: jErr }, { data: bankRows, error: bErr }] = await Promise.all([
     translateIds.length
-      ? admin.from("translate_history").select("id, source_text, translated_text, state, due_at, review_count")
+      ? supabase.from("translate_history").select("id, source_text, translated_text, state, due_at, review_count")
           .in("id", translateIds).eq("user_id", user.id).is("deleted_at", null)
       : Promise.resolve({ data: [] }),
     journalIds.length
-      ? admin.from("journal_entries").select("id, content, state, due_at, review_count")
+      ? supabase.from("journal_entries").select("id, content, state, due_at, review_count")
           .in("id", journalIds).eq("user_id", user.id).is("deleted_at", null)
       : Promise.resolve({ data: [] }),
     bankIds.length
       // words.def_vi KHÔNG tồn tại ở production — chỉ select def_en (xem
       // build-suggestion-items.js). words là bảng chung, không có user_id.
-      ? admin.from("words").select("id, word, def_en").in("id", bankIds)
+      ? supabase.from("words").select("id, word, def_en").in("id", bankIds)
       : Promise.resolve({ data: [] }),
   ]);
 

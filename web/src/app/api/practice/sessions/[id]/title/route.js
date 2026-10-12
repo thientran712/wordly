@@ -1,5 +1,5 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { callGroq } from "@/lib/ai/ai-models";
 
 
@@ -34,7 +34,7 @@ export async function POST(request, { params }) {
   const title = (data.choices?.[0]?.message?.content || "").trim().replace(/^["']|["']$/g, "");
   if (!title) return Response.json({ error: "Empty title" }, { status: 500 });
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data: updated, error } = await supabase
     .from("practice_sessions")
     .update({ title })

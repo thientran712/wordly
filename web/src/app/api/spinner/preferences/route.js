@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 
 // Guests get null (client falls back to in-memory defaults) instead of 401,
@@ -7,8 +7,8 @@ export async function GET() {
   const user = await getUserFast();
   if (!user) return Response.json({ preferences: null });
 
-  const admin = createAdminClient();
-  const { data } = await admin
+  const supabase = await createClient();
+  const { data } = await supabase
     .from("spinner_preferences")
     .select("language, difficulty")
     .eq("user_id", user.id)
@@ -24,8 +24,8 @@ export async function POST(request) {
 
   if (!user) return Response.json({ ok: true, skipped: true });
 
-  const admin = createAdminClient();
-  const { error } = await admin.from("spinner_preferences").upsert({
+  const supabase = await createClient();
+  const { error } = await supabase.from("spinner_preferences").upsert({
     user_id: user.id,
     language,
     difficulty,

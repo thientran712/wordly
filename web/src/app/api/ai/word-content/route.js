@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { getOrGenerateWordContent } from "@/lib/ai/generate-ai-content";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 
@@ -43,7 +43,7 @@ export async function POST(request) {
     return Response.json({ error: "Missing or invalid required fields" }, { status: 400 });
   }
 
-  const admin = createAdminClient();
+  const admin = createSharedClient();
 
   const { data: existing } = await admin
     .from("word_ai_content")

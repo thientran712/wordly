@@ -3,7 +3,7 @@ import { createSign } from "crypto";
 import { ttsCacheKey, getOrCreateAudio, limitedSynthesize, TtsRateLimitedError } from "@/lib/storage/tts-cache";
 import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
 import { rateLimitResponse } from "@/lib/security/rate-limit";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { getObjectBytes, putObjectBytes } from "@/lib/storage/r2-client";
 
 const TTS_URL = "https://texttospeech.googleapis.com/v1/text:synthesize";
@@ -125,7 +125,7 @@ export async function POST(request) {
       store: r2Store,
       synthesize: limitedSynthesize({
         checks: TTS_LIMITS.map(({ scope, limit, windowMs }) => () =>
-          checkRateLimitDb({ supabase: createAdminClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
+          checkRateLimitDb({ supabase: createSharedClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
         ),
         synthesize: () => synthesize(trimmedText, lang, voiceName),
       }),

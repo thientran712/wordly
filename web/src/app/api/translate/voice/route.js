@@ -6,7 +6,7 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { transcribeAudio } from "@/lib/ai/ai-models";
 import { validateVoiceUpload } from "@/lib/translate/image-validation";
 
@@ -17,7 +17,7 @@ const WINDOW_MS = 60_000;
 export async function POST(request) {
   const user = await getUserFast();
   const rl = await checkRateLimitDb({
-    supabase: createAdminClient(),
+    supabase: createSharedClient(),
     scope: "translate-voice",
     clientKey: clientKeyFromRequest(request, user?.id),
     limit: user ? USER_LIMIT : GUEST_LIMIT,

@@ -1,6 +1,6 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { callGroq } from "@/lib/ai/ai-models";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { rateLimitResponse } from "@/lib/security/rate-limit";
 import { checkRateLimitDb, firstBlockedLimit } from "@/lib/security/rate-limit-db";
 
@@ -57,7 +57,7 @@ export async function POST(request) {
   // đều coi lỗi là "không có gợi ý", không vỡ giao diện.
   const blocked = await firstBlockedLimit(
     VOCAB_SUGGEST_LIMITS.map(({ scope, limit, windowMs }) => () =>
-      checkRateLimitDb({ supabase: createAdminClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
+      checkRateLimitDb({ supabase: createSharedClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
     )
   );
   if (blocked) return rateLimitResponse(blocked);

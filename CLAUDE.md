@@ -52,8 +52,10 @@ Rò dữ liệu **chéo người dùng** là sự cố nghiêm trọng nhất c�
 từng xảy ra, xem `PROGRESS.md` 7/10/2026). Nên:
 
 - Mọi bảng có dữ liệu riêng người dùng **phải** bật RLS, không có ngoại lệ
-- Dùng `lib/supabase/server` (anon + RLS) làm mặc định; `createAdminClient()`
-  chỉ cho Inngest job và script admin
+- Dùng `lib/supabase/server` (anon + RLS) làm mặc định; bảng dùng chung (kho
+  từ, cache, danh mục spinner) đọc qua `createSharedClient()` (chặn bảng người
+  dùng). `createAdminClient()` chỉ cho cron/job/admin — route được phép nằm
+  trong `ADMIN_ALLOWED` của `web/tests/unit/admin-client-usage.test.mjs`
 
 ---
 

@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 
 // Public — matches /api/words* and /api/translate*, guests can browse and
 // spin without an account.
@@ -6,7 +6,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
 
-  const admin = createAdminClient();
+  const admin = createSharedClient();
   let query = admin.from("spinner_deep_talk").select("id, text, category");
   if (category) query = query.eq("category", category);
 

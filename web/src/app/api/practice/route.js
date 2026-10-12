@@ -1,5 +1,6 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { callGroq } from "@/lib/ai/ai-models";
 import { toPlainTextStream } from "@/lib/ai/sse-to-text";
 import { sanitizePracticeMessages } from "@/lib/ai/practice-messages";
@@ -107,7 +108,7 @@ Give your structured first reply as described above.`;
 async function buildVocabContext(user, vocabularyContext) {
   if (vocabularyContext === false) return "";
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { data } = await supabase
       .from("translate_history")
       .select("source_text")
@@ -133,7 +134,7 @@ export async function POST(request) {
 
   const blocked = await firstBlockedLimit(
     PRACTICE_LIMITS.map(({ scope, limit, windowMs }) => () =>
-      checkRateLimitDb({ supabase: createAdminClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
+      checkRateLimitDb({ supabase: createSharedClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
     )
   );
   if (blocked) {
