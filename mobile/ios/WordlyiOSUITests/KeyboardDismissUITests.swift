@@ -22,7 +22,9 @@ final class KeyboardDismissUITests: XCTestCase {
         XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5), "chạm ngoài ô nhập phải đóng bàn phím")
         // Nút vẫn bấm được bình thường: tab khác vẫn chuyển được
         app.tabBars.buttons["Từ vựng"].tap()
-        XCTAssertTrue(app.staticTexts["Từ đã lưu (3)"].waitForExistence(timeout: 10))
+        // Chỉ khớp phần đầu: số từ đã lưu đổi theo dữ liệu mẫu PreviewMode.history
+        let savedHeader = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Từ đã lưu (")).firstMatch
+        XCTAssertTrue(savedHeader.waitForExistence(timeout: 10))
     }
 
     func testTapInsideInputKeepsKeyboard() {
