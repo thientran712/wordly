@@ -3,6 +3,19 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/10/2026 — iOS 1.0.0 BUILD 14 ĐÃ UPLOAD — bản nộp App Store (miễn phí)
+
+**Quyết định:** bản 1.0 **miễn phí** (gói Pro làm ở 1.1). Play nộp App Store; mật khẩu tài khoản demo đã điền trong App Store Connect (chủ dự án). Ảnh nền widget: để sau (xem mục dưới).
+
+**Build 14** = `main` `0316e51` + bump (PR #18, `f781484`):
+- **Thu hồi token Sign in with Apple khi xoá tài khoản** (PR #16, guideline 5.1.1(v)): iOS xác nhận lại với Apple lấy `authorizationCode` → `DELETE /api/account` đổi mã lấy token (`/auth/token`) rồi `/auth/revoke`; thu hồi lỗi vẫn xoá; app cũ không gửi mã vẫn xoá như trước. Key "Sign in with Apple" mới: 4 biến `APPLE_*` trên VPS (`APPLE_PRIVATE_KEY_BASE64` = base64 của cả file PEM). Kiểm thật: gửi Apple mã giả → `invalid_grant` (key được Apple chấp nhận).
+- **Widget hiện nghĩa tiếng Việt cho từ trong kho** (PR #17): lượt tra phiên âm sẵn có lưu thêm `def_vi` (map App Group `wordly.widget.meaningsVi`), không thêm lượt gọi; chưa có thì rơi về `def_en`.
+- **Sửa "Độ mờ" màu widget màn hình chính** (PR #17): `Color.toHex()` vứt alpha → giờ lưu `#AARRGGBB` khi trong suốt.
+- Server đã deploy trước app (image `wordly-web:0316e51`, quay về: `wordly-web:rollback-pre-0316e51`); production: `DELETE /api/account` chưa đăng nhập 401, dịch vẫn chạy.
+- Bằng chứng: unit test iOS **157/157**; UI test 15/16 — `KeyboardDismissUITests/testTapOutsideClosesKeyboardOnTranslate` fail dòng 25 (không thấy "Từ đã lưu (3)" sau khi chuyển tab) và **fail y hệt trên `main` trước thay đổi** → lỗi có từ trước, chưa sửa. Web 301/301. Archive: 1.0.0 (14) app + widget, 0 chuỗi `WordlyUIPreview`, domain production, team `929P8F77XX`, có chuỗi `appleAuthorizationCode` + `wordly.widget.meaningsVi` trong binary → **"Upload succeeded"**.
+- **Chưa kiểm trên máy thật:** sheet xác nhận Apple khi xoá tài khoản, widget hiện nghĩa Việt, độ mờ trên widget thật. **Lần upload sau: build 15.**
+- Máy dev quá tải khi chạy nhiều simulator song song (load ~500–800, kèm `vitest` của dự án khác) → chạy test iOS bằng **một** simulator, `-parallel-testing-enabled NO`.
+
 ### 12/10/2026 — Tối ưu chi phí bên thứ 3: dịch lai + giới hạn Alex ĐÃ DEPLOY production; spec kho từ
 
 **Gemini — ĐÃ ĐỔI trên production:**
