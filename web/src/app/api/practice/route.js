@@ -2,6 +2,24 @@ import { getUserFast } from "@/lib/auth/get-user-fast";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { callGroq } from "@/lib/ai/ai-models";
 import { toPlainTextStream } from "@/lib/ai/sse-to-text";
+import { sanitizePracticeMessages } from "@/lib/ai/practice-messages";
+import { rateLimitResponse } from "@/lib/security/rate-limit";
+import { checkRateLimitDb, firstBlockedLimit } from "@/lib/security/rate-limit-db";
+
+// ── Hạn mức chat với Alex (chặn chi phí AI) ─────────────────────────────
+// Route chỉ cho người đã đăng nhập (không nằm trong PUBLIC_API_PATHS) nên
+// đếm theo user id. Mỗi lượt Alex = một lần gọi Gemini/Groq có trả phí.
+// • 20 lượt/phút: người thật nói bằng giọng mỗi lượt mất ít nhất 5-10 giây
+//   (nói + chờ Alex đọc câu trả lời) → tối đa ~6-10 lượt/phút; 20 là dư
+//   gấp đôi cho người gõ nhanh, nhưng chặn script gọi dồn.
+// • 300 lượt/ngày: một buổi luyện 30 phút ≈ 60-90 lượt → đủ 3-4 buổi dài
+//   mỗi ngày; trần chi phí ≈ 300 × 7,5k token (xem practice-messages.js).
+// Bộ đếm POSTGRES (rate-limit-db.js) — bộ đếm RAM không chặn được gì trên
+// Vercel.
+const PRACTICE_LIMITS = [
+  { scope: "practice-min", limit: 20, windowMs: 60_000 },
+  { scope: "practice-day", limit: 300, windowMs: 86_400_000 },
+];
 
 
 // Shared guardrails appended to every persona prompt — keeps Alex strictly
@@ -113,8 +131,21 @@ export async function POST(request) {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { messages, vocabularyContext, word } = await request.json();
-  if (!Array.isArray(messages)) return Response.json({ error: "Invalid messages" }, { status: 400 });
+  const blocked = await firstBlockedLimit(
+    PRACTICE_LIMITS.map(({ scope, limit, windowMs }) => () =>
+      checkRateLimitDb({ supabase: createAdminClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
+    )
+  );
+  if (blocked) {
+    return rateLimitResponse(blocked, "Bạn trò chuyện với Alex quá nhiều trong thời gian ngắn. Vui lòng thử lại sau.");
+  }
+
+  const { messages: rawMessages, vocabularyContext, word } = await request.json();
+  // Chỉ nhận user/assistant, cắt số lượt + độ dài, bỏ tin "system" của client
+  // — system prompt chỉ được dựng ở server bên dưới.
+  const sanitized = sanitizePracticeMessages(rawMessages);
+  if (!sanitized.ok) return Response.json({ error: sanitized.error }, { status: 400 });
+  const messages = sanitized.messages;
 
   const hasWord = typeof word === "string" && word.trim();
   const systemPrompt = hasWord

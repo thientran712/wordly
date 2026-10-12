@@ -114,3 +114,19 @@ export async function checkRateLimitDb({
 
   return decideFromCount({ count, limit, windowMs, windowStart, now });
 }
+
+/**
+ * Chạy lần lượt nhiều hạn mức (vd. theo phút rồi theo ngày) cho cùng một
+ * route. Dừng ở hạn mức ĐẦU TIÊN chặn — hạn mức sau không bị đếm thêm, để
+ * người bị chặn theo phút không "tiêu" mất lượt trong ngày.
+ *
+ * @param checks mảng hàm async trả về kết quả của checkRateLimitDb
+ * @returns kết quả bị chặn đầu tiên, hoặc null nếu mọi hạn mức đều cho qua
+ */
+export async function firstBlockedLimit(checks) {
+  for (const check of checks) {
+    const result = await check();
+    if (!result.allowed) return result;
+  }
+  return null;
+}
