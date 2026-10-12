@@ -19,7 +19,9 @@
 - Deploy: image `wordly-web:8f7ada9` (build với `--build-arg NEXT_PUBLIC_*` lấy từ `.env` trên VPS) → tag `manual` → `--force-recreate`. Bản quay về: `wordly-web:rollback-pre-8f7ada9`.
 - Bằng chứng trên production: câu → `engine=gemini` (1,7s), "resilient" → `engine=deepl` "kiên cường" (1,0s), gửi lại cùng câu 0,2s (trúng cache), `/api/practice` chưa đăng nhập 401, log 3 phút không lỗi. CI #13/#14 xanh. Chưa kiểm sống: Alex chạm hạn mức 429 (chỉ có unit test).
 
-**Chờ / việc tiếp:**
+**⏸ TẠM DỪNG 12/10/2026 (chủ dự án):** dừng kho từ + các việc tối ưu chi phí còn lại để **tập trung publish app iOS lên App Store**. Mọi thứ dưới đây giữ nguyên trạng thái, làm tiếp sau khi app đã lên store. Worktree còn giữ: `.claude/worktrees/agent-ab12283faf5a4a262` (email Resend, chưa commit), `.claude/worktrees/wordbank-spec` (PR #15). Bản thử kho từ + công cụ trong `data/wordbank/`; công cụ đối chiếu CMUdict (`crosscheck.mjs`) chỉ ở thư mục nháp phiên — viết lại khi làm tiếp.
+
+**Chờ / việc tiếp (sau khi publish):**
 - **Kho từ song ngữ** — spec `docs/superpowers/specs/2026-10-12-wordbank-design.md` (Q1–Q5 đã quyết: dùng danh sách từ có sẵn, Việt→Anh = đảo ngược kho EN + bù ~1–2k mục, dự phòng câu = Groq, âm thanh giữ TTS khi cần + cache, đợt 1 = 10k EN). Bản thử 100 mục đã duyệt → `data/wordbank/batches/0001-pilot-*.json`. Bước tiếp: lô thử 200 từ hiếm.
 - Email Resend (CHƯA commit, worktree `agent-ab12283faf5a4a262`) — bật khi có cả `RESEND_API_KEY` và `EMAIL_FROM`, lô 100, 5 req/s, 262/262 test. Cần xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn ~$30).
 - **Lỗi có sẵn:** cron email đọc `email_slots`/`profiles`/`email_preferences` không phân trang, `max_rows = 1000` → người dùng thứ 1.001+ không nhận email.
