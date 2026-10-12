@@ -1,0 +1,373 @@
+[
+  {
+    "headword": "thất tình",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "adjective",
+        "en": ["heartbroken", "brokenhearted"],
+        "def_vi": "buồn khổ vì vừa chia tay hoặc bị người mình yêu từ chối",
+        "example_vi": "Cô ấy vừa thất tình nên dạo này buồn lắm.",
+        "example_en": "She just got her heart broken, so she's been really down lately."
+      }
+    ],
+    "note_vi": "Người bản xứ hay nói \"get your heart broken\", \"go through a breakup\" hoặc \"get dumped\" (bị đá). Đừng dịch là \"unrequited love\" — đó là \"yêu đơn phương\", chưa chắc đã thất tình."
+  },
+  {
+    "headword": "trì hoãn",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "verb",
+        "en": ["put off", "postpone", "delay"],
+        "def_vi": "dời việc sang thời điểm muộn hơn",
+        "example_vi": "Cuộc họp bị trì hoãn sang tuần sau.",
+        "example_en": "The meeting has been put off until next week."
+      },
+      {
+        "pos": "verb",
+        "en": ["procrastinate", "put things off"],
+        "def_vi": "chần chừ, cứ để việc cần làm tới sát giờ mới làm",
+        "example_vi": "Mình hay trì hoãn tới sát hạn mới làm bài.",
+        "example_en": "I always procrastinate until the last minute."
+      }
+    ],
+    "note_vi": "\"Postpone\" là dời lịch có chủ đích (họp, sự kiện); \"procrastinate\" là trì hoãn vì lười hay ngại, không cần tân ngữ. \"Delay\" thường dùng khi bị chậm ngoài ý muốn (chuyến bay bị delay)."
+  },
+  {
+    "headword": "ngại ngùng",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "adjective",
+        "en": ["shy", "bashful", "self-conscious"],
+        "def_vi": "rụt rè, e thẹn trước người khác",
+        "example_vi": "Đừng ngại ngùng, cứ hỏi đi.",
+        "example_en": "Don't be shy — just ask."
+      },
+      {
+        "pos": "adjective",
+        "en": ["awkward", "uncomfortable", "hesitant"],
+        "def_vi": "thấy không thoải mái, chần chừ khi phải làm điều gì",
+        "example_vi": "Anh ấy ngại ngùng khi phải nhờ bạn bè giúp.",
+        "example_en": "He feels awkward asking his friends for help."
+      }
+    ],
+    "note_vi": "\"Shy\" là tính rụt rè; \"awkward\" là cảm giác ngượng trong một tình huống cụ thể."
+  },
+  {
+    "headword": "tiền thuê nhà",
+    "type": "phrase",
+    "senses": [
+      {
+        "pos": "noun",
+        "en": ["rent"],
+        "def_vi": "khoản tiền trả định kỳ để được ở nhà, phòng của người khác",
+        "example_vi": "Tiền thuê nhà tháng này lại tăng rồi.",
+        "example_en": "The rent went up again this month."
+      }
+    ],
+    "note_vi": "Chỉ cần nói \"rent\", không cần \"house rent\". Hay đi với \"pay the rent\", \"the rent is due\" (tới hạn đóng tiền nhà). \"Rent\" cũng là động từ \"thuê\"."
+  },
+  {
+    "headword": "học phí",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "noun",
+        "en": ["tuition", "tuition fees", "school fees"],
+        "def_vi": "tiền đóng cho trường hoặc trung tâm để được học",
+        "example_vi": "Học phí đại học ngày càng đắt.",
+        "example_en": "College tuition keeps getting more expensive."
+      }
+    ],
+    "note_vi": "Mỹ hay nói \"tuition\"; Anh nói \"tuition fees\" (đại học) hoặc \"school fees\" (trường phổ thông tư)."
+  },
+  {
+    "headword": "ăn cơm",
+    "type": "phrase",
+    "senses": [
+      {
+        "pos": "verb",
+        "en": ["eat", "have a meal", "have dinner", "have lunch"],
+        "def_vi": "ăn bữa chính trong ngày",
+        "example_vi": "Tối nay nhà mình ăn cơm ở nhà.",
+        "example_en": "We're having dinner at home tonight."
+      },
+      {
+        "pos": "verb",
+        "en": ["eat rice"],
+        "def_vi": "ăn cơm gạo (theo nghĩa đen)",
+        "example_vi": "Người Việt ăn cơm gần như mỗi ngày.",
+        "example_en": "Vietnamese people eat rice almost every day."
+      }
+    ],
+    "note_vi": "Thường không dịch sát là \"eat rice\" — ý là ăn bữa cơm. Câu hỏi thăm \"Ăn cơm chưa?\" → \"Have you eaten yet?\". Chọn \"breakfast/lunch/dinner\" theo bữa."
+  },
+  {
+    "headword": "bận",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "adjective",
+        "en": ["busy", "tied up"],
+        "def_vi": "đang có nhiều việc, không rảnh",
+        "example_vi": "Hôm nay mình bận lắm, mai nói chuyện nhé.",
+        "example_en": "I'm really busy today — let's talk tomorrow."
+      },
+      {
+        "pos": "verb",
+        "en": ["wear", "put on"],
+        "def_vi": "(phương ngữ Nam Bộ) mặc quần áo",
+        "example_vi": "Con bận áo khoác vô kẻo lạnh.",
+        "example_en": "Put your jacket on so you don't get cold."
+      }
+    ],
+    "note_vi": "\"Tied up\" thân mật, nghĩa là đang kẹt việc. Nghĩa \"mặc\" chỉ dùng ở miền Nam (\"bận đồ\"). Điện thoại \"máy bận\" → \"the line is busy\"."
+  },
+  {
+    "headword": "nhớ",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "verb",
+        "en": ["remember", "recall"],
+        "def_vi": "giữ được trong trí, nghĩ lại được điều đã biết",
+        "example_vi": "Bạn còn nhớ tên cô ấy không?",
+        "example_en": "Do you still remember her name?"
+      },
+      {
+        "pos": "verb",
+        "en": ["miss"],
+        "def_vi": "mong gặp lại người, nơi chốn hay điều gì đang xa",
+        "example_vi": "Mình nhớ bạn lắm.",
+        "example_en": "I miss you so much."
+      },
+      {
+        "pos": "verb",
+        "en": ["remember to", "don't forget to"],
+        "def_vi": "dùng để nhắc ai làm việc gì",
+        "example_vi": "Nhớ khóa cửa nhé.",
+        "example_en": "Don't forget to lock the door."
+      }
+    ],
+    "note_vi": "Lỗi hay gặp: \"I remember you\" là \"tôi nhớ ra bạn\", còn \"tôi nhớ bạn\" (mong gặp) phải là \"I miss you\"."
+  },
+  {
+    "headword": "thương",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "verb",
+        "en": ["love", "care about", "be fond of"],
+        "def_vi": "yêu quý, gắn bó và muốn che chở ai đó",
+        "example_vi": "Bà thương các cháu lắm.",
+        "example_en": "Grandma really loves her grandkids."
+      },
+      {
+        "pos": "verb",
+        "en": ["feel sorry for", "feel for", "pity"],
+        "def_vi": "cảm thấy xót xa trước hoàn cảnh khổ của người khác",
+        "example_vi": "Thấy con mèo bị bỏ rơi mà thương quá.",
+        "example_en": "I feel so sorry for that abandoned cat."
+      }
+    ],
+    "note_vi": "Ở miền Nam \"thương\" còn là yêu theo nghĩa tình cảm: \"Anh thương em\" → \"I love you\". \"Pity\" có thể nghe như thương hại, kẻ cả; nói \"feel sorry for\" an toàn hơn."
+  },
+  {
+    "headword": "mệt",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "adjective",
+        "en": ["tired", "exhausted", "worn out"],
+        "def_vi": "cạn sức, cần nghỉ ngơi",
+        "example_vi": "Làm cả ngày nên giờ mệt quá.",
+        "example_en": "I've been working all day, so I'm exhausted."
+      },
+      {
+        "pos": "adjective",
+        "en": ["unwell", "not feeling well", "under the weather"],
+        "def_vi": "hơi ốm, trong người không khỏe",
+        "example_vi": "Mẹ hơi mệt nên nằm nghỉ rồi.",
+        "example_en": "Mom isn't feeling well, so she's lying down."
+      }
+    ],
+    "note_vi": "\"Exhausted\" mạnh hơn \"tired\" (mệt rã rời). Khẩu ngữ \"mệt với ông này\" (phiền, chán) → \"He's exhausting\" hoặc \"I'm so done with him\"."
+  },
+  {
+    "headword": "chill",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "adjective",
+        "en": ["relaxed", "laid-back", "chill"],
+        "def_vi": "(tiếng lóng) thư thái, dễ chịu, không khí nhẹ nhàng",
+        "example_vi": "Quán cà phê này chill ghê.",
+        "example_en": "This café has such a relaxed vibe."
+      },
+      {
+        "pos": "verb",
+        "en": ["chill", "chill out", "relax", "hang out"],
+        "def_vi": "(tiếng lóng) đi chơi, thư giãn cho thoải mái",
+        "example_vi": "Cuối tuần đi Đà Lạt chill không?",
+        "example_en": "Want to go chill in Da Lat this weekend?"
+      }
+    ],
+    "note_vi": "Mượn từ tiếng Anh nhưng người Việt dùng rộng hơn, nhất là tả quán xá, nhạc, không gian. Người Anh/Mỹ thường dùng \"chill\" để tả người (dễ tính, thoải mái) hoặc làm động từ; tả nơi chốn thì hay nói \"relaxed\", \"cozy\", \"has a nice vibe\". Trong tiếng Anh \"chill\" còn có nghĩa là lạnh, ớn lạnh (\"a chill in the air\")."
+  },
+  {
+    "headword": "xin lỗi",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "interjection",
+        "en": ["sorry", "I'm sorry"],
+        "def_vi": "lời nhận lỗi",
+        "example_vi": "Xin lỗi, mình đến muộn.",
+        "example_en": "Sorry I'm late."
+      },
+      {
+        "pos": "interjection",
+        "en": ["excuse me"],
+        "def_vi": "lời mở đầu lịch sự khi muốn hỏi hoặc làm phiền ai",
+        "example_vi": "Xin lỗi, cho hỏi nhà vệ sinh ở đâu ạ?",
+        "example_en": "Excuse me, where's the restroom?"
+      },
+      {
+        "pos": "verb",
+        "en": ["apologize", "say sorry"],
+        "def_vi": "nhận lỗi với ai",
+        "example_vi": "Em nên xin lỗi bạn ấy đi.",
+        "example_en": "You should apologize to her."
+      }
+    ],
+    "note_vi": "Muốn gây chú ý hay xin đi qua thì dùng \"excuse me\", không dùng \"sorry\". Động từ: \"apologize to someone for something\"."
+  },
+  {
+    "headword": "cảm ơn",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "interjection",
+        "en": ["thank you", "thanks"],
+        "def_vi": "lời bày tỏ lòng biết ơn",
+        "example_vi": "Cảm ơn bạn nhiều nhé!",
+        "example_en": "Thanks a lot!"
+      },
+      {
+        "pos": "verb",
+        "en": ["thank"],
+        "def_vi": "bày tỏ lòng biết ơn với ai",
+        "example_vi": "Mình muốn cảm ơn mọi người đã giúp đỡ.",
+        "example_en": "I want to thank everyone for their help."
+      }
+    ],
+    "note_vi": "Cũng viết \"cám ơn\". \"Thanks\" thân mật hơn \"thank you\". Đáp lại: \"You're welcome\", \"No problem\" (= không có gì)."
+  },
+  {
+    "headword": "đồng nghiệp",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "noun",
+        "en": ["coworker", "colleague"],
+        "def_vi": "người làm cùng công ty, cùng chỗ làm",
+        "example_vi": "Đồng nghiệp của mình ai cũng dễ thương.",
+        "example_en": "All my coworkers are really nice."
+      }
+    ],
+    "note_vi": "\"Coworker\" phổ biến trong văn nói ở Mỹ; \"colleague\" trang trọng hơn và hay dùng ở Anh. \"Workmate\" là cách nói thân mật kiểu Anh."
+  },
+  {
+    "headword": "tăng ca",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "verb",
+        "en": ["work overtime", "work late", "do overtime"],
+        "def_vi": "làm thêm giờ ngoài giờ làm chính thức",
+        "example_vi": "Tuần này ngày nào mình cũng phải tăng ca.",
+        "example_en": "I've had to work overtime every day this week."
+      }
+    ],
+    "note_vi": "Dân văn phòng hay nói \"OT\"; người bản xứ thường nói \"overtime\". \"Overtime\" còn là danh từ: \"get paid overtime\" (được trả tiền tăng ca). \"Work late\" là ở lại muộn, không nhất thiết được trả thêm."
+  },
+  {
+    "headword": "trà sữa",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "noun",
+        "en": ["milk tea", "bubble tea", "boba"],
+        "def_vi": "đồ uống pha từ trà và sữa, thường có trân châu",
+        "example_vi": "Chiều nay đi uống trà sữa không?",
+        "example_en": "Want to grab some bubble tea this afternoon?"
+      }
+    ],
+    "note_vi": "Trà sữa trân châu kiểu Đài Loan là \"bubble tea\" hoặc \"boba\" (Mỹ). \"Milk tea\" đơn thuần có thể hiểu là trà pha sữa kiểu Anh."
+  },
+  {
+    "headword": "kẹt xe",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "noun",
+        "en": ["traffic jam", "traffic", "gridlock"],
+        "def_vi": "tình trạng xe cộ ùn lại, không đi được",
+        "example_vi": "Giờ cao điểm kẹt xe kinh khủng.",
+        "example_en": "Traffic is terrible during rush hour."
+      },
+      {
+        "pos": "phrase",
+        "en": ["be stuck in traffic", "get stuck in traffic"],
+        "def_vi": "bị mắc kẹt trên đường vì xe đông",
+        "example_vi": "Xin lỗi, mình bị kẹt xe nên đến trễ.",
+        "example_en": "Sorry, I got stuck in traffic."
+      }
+    ],
+    "note_vi": "Miền Bắc nói \"tắc đường\". Người bản xứ hay chỉ nói \"traffic\" (\"The traffic was awful\") thay vì \"traffic jam\"."
+  },
+  {
+    "headword": "nhậu",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "verb",
+        "en": ["go drinking", "go out for drinks", "have a few drinks"],
+        "def_vi": "(khẩu ngữ) tụ tập uống bia rượu kèm đồ ăn, thường với bạn bè",
+        "example_vi": "Tối nay anh em đi nhậu không?",
+        "example_en": "You guys want to go out drinking tonight?"
+      }
+    ],
+    "note_vi": "Tiếng Anh không có một từ tương đương: \"nhậu\" là uống cùng nhau, có đồ ăn, mang tính giao lưu. \"Đồ nhậu\" ≈ \"bar snacks\" / \"drinking food\"; \"quán nhậu\" ≈ \"a casual beer place\". Tránh nói \"He drinks\" vì dễ hiểu thành nghiện rượu."
+  },
+  {
+    "headword": "deadline",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "noun",
+        "en": ["deadline", "due date"],
+        "def_vi": "hạn chót phải hoàn thành công việc",
+        "example_vi": "Mình đang chạy deadline nên tối nay không đi được.",
+        "example_en": "I'm racing to meet a deadline, so I can't make it tonight."
+      }
+    ],
+    "note_vi": "Trong tiếng Anh \"deadline\" chỉ là danh từ. \"Chạy deadline\" → \"rush to meet a deadline\" / \"I'm on a deadline\"; \"trễ deadline\" → \"miss the deadline\"; \"bị deadline dí\" → \"I'm swamped with deadlines\". \"Due date\" hay dùng cho bài tập, hóa đơn."
+  },
+  {
+    "headword": "sếp",
+    "type": "word",
+    "senses": [
+      {
+        "pos": "noun",
+        "en": ["boss", "manager", "supervisor"],
+        "def_vi": "(khẩu ngữ) người quản lý trực tiếp mình ở chỗ làm",
+        "example_vi": "Sếp mình khó tính lắm.",
+        "example_en": "My boss is really demanding."
+      }
+    ],
+    "note_vi": "Gốc từ tiếng Pháp \"chef\". Người Việt hay gọi thẳng \"sếp ơi\", còn người Anh/Mỹ thường gọi sếp bằng tên riêng; gọi \"Boss\" nghe đùa cợt. Văn viết trang trọng dùng \"manager\" hoặc \"supervisor\"."
+  }
+]

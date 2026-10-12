@@ -1,0 +1,633 @@
+[
+ {
+  "lang": "EN",
+  "headword": "bank",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "fair",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "spring",
+  "verdict": "minor",
+  "issues": [
+   "Thiếu nghĩa danh từ rất thông dụng 'suối, nguồn nước' (hot spring = suối nước nóng) — hữu ích hơn nghĩa động từ C1; nên thêm hoặc thay."
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "match",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "patient",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "issue",
+  "verdict": "minor",
+  "issues": [
+   "Ví dụ động từ: 'ban hành một cảnh báo' không tự nhiên — 'ban hành' dùng cho luật/nghị định. Sửa: 'Chính phủ đã đưa ra/phát đi một cảnh báo mới.'"
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "address",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "light",
+  "verdict": "minor",
+  "issues": [
+   "Nghĩa tính từ có 'sáng' nhưng def_en chỉ nói 'not heavy; pale in colour' — thêm 'bright' vào def hoặc bỏ 'sáng'.",
+   "forms có 'lighter' sẽ trùng với danh từ 'lighter' (bật lửa) khi tra ngược — cần xử lý va chạm dạng biến thể."
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "date",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "run",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "record",
+  "verdict": "minor",
+  "issues": [
+   "Gộp hai nghĩa khác nhau (kỷ lục / hồ sơ, bản ghi, đĩa nhạc) vào một sense với def ghép — nên tách thành 2 sense.",
+   "Ví dụ động từ dịch 'thu âm' nhưng danh sách vi chỉ có 'ghi âm' — thêm 'thu âm'."
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "read",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "live",
+  "verdict": "minor",
+  "issues": [
+   "forms có 'lives' — trùng với số nhiều của 'life' (/laɪvz/); tra ngược 'lives' sẽ chỉ ra 'live' /lɪv/, dễ đọc sai. Cần xử lý va chạm hoặc ghi chú."
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "present",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "lead",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "close",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "object",
+  "verdict": "minor",
+  "issues": [
+   "Thiếu nghĩa 'tân ngữ' (ngữ pháp) — rất hữu ích cho người học tiếng Anh; cũng thiếu 'mục đích, mục tiêu'. Nên thêm ít nhất 'tân ngữ'."
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "minute",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "tear",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "wind",
+  "verdict": "minor",
+  "issues": [
+   "forms 'wound' sẽ trùng với danh từ 'wound' (vết thương) khi tra ngược; note có giải thích nhưng dữ liệu tra cứu cần trỏ được tới cả hai mục."
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "resilient",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "procrastinate",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "ubiquitous",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "serendipity",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "awkward",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "commute",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "deadline",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "overwhelmed",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "nostalgic",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "mentor",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "leverage",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "burnout",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "cozy",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "grateful",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "stubborn",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "reluctant",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "thrive",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "cringe",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "vibe",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "hangover",
+  "verdict": "minor",
+  "issues": [
+   "Gloss 'cơn mệt mỏi sau khi say rượu' dài, mang tính giải thích; có thể thêm 'dư âm say xỉn', 'nôn nao sau khi say'.",
+   "example_vi thêm 'hôm qua' không có trong câu gốc và mất ý 'terrible'. Gợi ý: 'Anh ấy tỉnh dậy với cơn nôn nao khủng khiếp sau trận say.'"
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "landlord",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "sibling",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "tuition",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "allergic",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "negotiate",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "eloquent",
+  "verdict": "minor",
+  "issues": [
+   "'lưu loát' = fluent, không phải eloquent (hùng hồn, có sức thuyết phục) — dễ khiến người học nhầm eloquent với fluent; nên bỏ, thay bằng 'có sức thuyết phục'."
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "frugal",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "mortgage",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "abandon",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "receive",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "happy",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "water",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "book",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "go",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "take",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "make",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "get",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "beautiful",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "family",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "work",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "give up",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "look forward to",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "break the ice",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "under the weather",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "piece of cake",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "call it a day",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "run out of",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "figure out",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "hit the sack",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "on the fence",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "take for granted",
+  "verdict": "minor",
+  "issues": [
+   "IPA US /ˈɡrænɪd/ là dạng nuốt âm t khi nói nhanh; dạng chuẩn từ điển là /ˈɡræntɪd/ — nên ghi dạng chuẩn để người học không học dạng rút gọn."
+  ]
+ },
+ {
+  "lang": "EN",
+  "headword": "make ends meet",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "put off",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "look up to",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "get over",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "turn down",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "come up with",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "once in a blue moon",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "cost an arm and a leg",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "EN",
+  "headword": "bite the bullet",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "thất tình",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "trì hoãn",
+  "verdict": "ok",
+  "issues": [
+   "(Không bắt buộc) với cuộc họp, 'bị hoãn/dời' tự nhiên hơn 'bị trì hoãn'."
+  ]
+ },
+ {
+  "lang": "VI",
+  "headword": "ngại ngùng",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "tiền thuê nhà",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "học phí",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "ăn cơm",
+  "verdict": "minor",
+  "issues": [
+   "example_vi 'Tối nay nhà mình ăn cơm ở nhà' lặp 'nhà' gượng; sửa 'Tối nay cả nhà ăn cơm ở nhà' hoặc 'Tối nay mình ăn cơm nhà'."
+  ]
+ },
+ {
+  "lang": "VI",
+  "headword": "bận",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "nhớ",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "thương",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "mệt",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "chill",
+  "verdict": "minor",
+  "issues": [
+   "Note nói người Anh/Mỹ chủ yếu dùng 'chill' tả người — thực tế 'this place is chill', 'chill vibes' tả nơi chốn khá phổ biến trong khẩu ngữ Mỹ; nên làm mềm nhận định."
+  ]
+ },
+ {
+  "lang": "VI",
+  "headword": "xin lỗi",
+  "verdict": "minor",
+  "issues": [
+   "Note 'xin đi qua thì dùng excuse me, không dùng sorry' quá tuyệt đối — tiếng Anh Anh rất hay nói 'Sorry' khi xin đường. Nên ghi 'excuse me' là lựa chọn an toàn, 'sorry' cũng dùng (nhất là ở Anh)."
+  ]
+ },
+ {
+  "lang": "VI",
+  "headword": "cảm ơn",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "đồng nghiệp",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "tăng ca",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "trà sữa",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "kẹt xe",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "nhậu",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "deadline",
+  "verdict": "ok",
+  "issues": []
+ },
+ {
+  "lang": "VI",
+  "headword": "sếp",
+  "verdict": "ok",
+  "issues": []
+ }
+]

@@ -3,7 +3,22 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 12/10/2026 — Tối ưu chi phí bên thứ 3: Gemini production chuyển sang key trả phí; dịch lai đã commit (branch `feat/translate-hybrid-cost`), email Resend đã code
+### 12/10/2026 — iOS 1.0.0 BUILD 14 ĐÃ UPLOAD — bản nộp App Store (miễn phí)
+
+**✅ ĐÃ NỘP APP STORE 12/10/2026** (build 1.0.0 (14), trạng thái *Waiting for Review*, Apple hẹn ≤ 48 giờ; phát hành thủ công — *Manually release*). App Privacy khai đúng 3 loại khớp `PrivacyInfo.xcprivacy`: Name, Email Address, Other User Content (App Functionality, linked, không tracking) — lần đầu bị chặn "Unable to Add for Review" vì đã tick thừa 9 loại chưa Set Up nên không Publish được. Ảnh chụp: giao diện ASC mới đòi cỡ "iPhone with Dynamic Island (medium display)" 1206×2622 → thu nhỏ từ bộ 6.9" vào `docs/app-store/screenshots-6.3/`. Hồ sơ nộp: artifact "Wordly App Store Kit" (đã cập nhật build 14). Trang `/privacy` đã sửa cho khớp hồ sơ (Gemini dịch câu, DeepL chỉ từ/cụm ngắn) — PR #19, deploy `feac028`, đã kiểm trên production.
+
+**Quyết định:** bản 1.0 **miễn phí** (gói Pro làm ở 1.1). Play nộp App Store; mật khẩu tài khoản demo đã điền trong App Store Connect (chủ dự án). Ảnh nền widget: để sau (xem mục dưới).
+
+**Build 14** = `main` `0316e51` + bump (PR #18, `f781484`):
+- **Thu hồi token Sign in with Apple khi xoá tài khoản** (PR #16, guideline 5.1.1(v)): iOS xác nhận lại với Apple lấy `authorizationCode` → `DELETE /api/account` đổi mã lấy token (`/auth/token`) rồi `/auth/revoke`; thu hồi lỗi vẫn xoá; app cũ không gửi mã vẫn xoá như trước. Key "Sign in with Apple" mới: 4 biến `APPLE_*` trên VPS (`APPLE_PRIVATE_KEY_BASE64` = base64 của cả file PEM). Kiểm thật: gửi Apple mã giả → `invalid_grant` (key được Apple chấp nhận).
+- **Widget hiện nghĩa tiếng Việt cho từ trong kho** (PR #17): lượt tra phiên âm sẵn có lưu thêm `def_vi` (map App Group `wordly.widget.meaningsVi`), không thêm lượt gọi; chưa có thì rơi về `def_en`.
+- **Sửa "Độ mờ" màu widget màn hình chính** (PR #17): `Color.toHex()` vứt alpha → giờ lưu `#AARRGGBB` khi trong suốt.
+- Server đã deploy trước app (image `wordly-web:0316e51`, quay về: `wordly-web:rollback-pre-0316e51`); production: `DELETE /api/account` chưa đăng nhập 401, dịch vẫn chạy.
+- Bằng chứng: unit test iOS **157/157**; UI test 15/16 — `KeyboardDismissUITests/testTapOutsideClosesKeyboardOnTranslate` fail dòng 25 (không thấy "Từ đã lưu (3)" sau khi chuyển tab) và **fail y hệt trên `main` trước thay đổi** → lỗi có từ trước, chưa sửa. Web 301/301. Archive: 1.0.0 (14) app + widget, 0 chuỗi `WordlyUIPreview`, domain production, team `929P8F77XX`, có chuỗi `appleAuthorizationCode` + `wordly.widget.meaningsVi` trong binary → **"Upload succeeded"**.
+- **Chưa kiểm trên máy thật:** sheet xác nhận Apple khi xoá tài khoản, widget hiện nghĩa Việt, độ mờ trên widget thật. **Lần upload sau: build 15.**
+- Máy dev quá tải khi chạy nhiều simulator song song (load ~500–800, kèm `vitest` của dự án khác) → chạy test iOS bằng **một** simulator, `-parallel-testing-enabled NO`.
+
+### 12/10/2026 — Tối ưu chi phí bên thứ 3: dịch lai + giới hạn Alex ĐÃ DEPLOY production; spec kho từ
 
 **Gemini — ĐÃ ĐỔI trên production:**
 - Trước đó cả máy dev lẫn production dùng key `…zTKk` của "Gemini Project" (`gen-lang-client-0536362233`, tài khoản huythien712) — **gói miễn phí, dùng chung hạn mức 15 lượt/phút với SkillProof Prod + Staging**. Đo: 25 lượt song song → 17 OK, 8 lỗi 429.
@@ -13,19 +28,26 @@
 - Lưu ý: `gemini-flash-lite-latest` giờ trỏ sang **3.5-flash-lite** (đắt hơn 2.5); `gemini-2.5-flash-lite` đã đóng với tài khoản mới.
 - Tài khoản gcloud `madison.huy@gamuda.com.my` đã thu hồi khỏi máy — **không bao giờ dùng cho Wordly**.
 
-**Code:**
-- `feat/translate-hybrid-cost` (ĐÃ commit, chưa merge/deploy) — ≤3 từ → DeepL, câu → Gemini 3.5 Flash-Lite (lỗi → DeepL), cache theo câu RAM + bảng `translation_cache` (migration `20261012000200`, **chưa chạy ở đâu**). 261/261 test. Lý do: đánh giá mù 75 mục — câu Gemini ngang DeepL, từ đơn Gemini bịa từ 5/40.
-- Email Resend (CHƯA commit, worktree `agent-ab12283faf5a4a262`) — bật khi có cả `RESEND_API_KEY` và `EMAIL_FROM`, lô 100, 5 req/s. 262/262 test.
+**Đã deploy production (PR #13 + #14 đã merge vào `main`, `web/` của `main` = bản đang chạy):**
+- **Dịch lai** (PR #13): ≤3 từ → DeepL, câu → Gemini 3.5 Flash-Lite (lỗi → DeepL), cache theo câu RAM + bảng `translation_cache`. Migration `20261012000200` chạy trên production trong một transaction (RLS bật, chỉ `service_role`/`postgres` có quyền). Lý do: đánh giá mù 75 mục — câu Gemini ngang DeepL, từ đơn Gemini bịa từ 5/40.
+- **Giới hạn AI** (PR #14): Alex 20/phút + 300/ngày, chỉ gửi 20 tin gần nhất, ≤1.500 ký tự/tin, bỏ role `system` từ client; gợi ý từ 20/phút + 200/ngày.
+- Deploy: image `wordly-web:8f7ada9` (build với `--build-arg NEXT_PUBLIC_*` lấy từ `.env` trên VPS) → tag `manual` → `--force-recreate`. Bản quay về: `wordly-web:rollback-pre-8f7ada9`.
+- Bằng chứng trên production: câu → `engine=gemini` (1,7s), "resilient" → `engine=deepl` "kiên cường" (1,0s), gửi lại cùng câu 0,2s (trúng cache), `/api/practice` chưa đăng nhập 401, log 3 phút không lỗi. CI #13/#14 xanh. Chưa kiểm sống: Alex chạm hạn mức 429 (chỉ có unit test).
 
-**Chờ quyết định:**
-- **Migration `translation_cache` ĐÃ CHẠY trên production** (12/10, chủ dự án duyệt; một transaction, RLS bật, chỉ `service_role`/`postgres` có quyền). Code cũ không dùng bảng → vô hại.
-- **Deploy dịch lai + giới hạn Alex (commit gộp `8f7ada9`, branch local `deploy/2026-10-12-cost`) — DỞ:** code đã lên VPS (`/opt/wordly/prod/web/build-8f7ada9`), image cũ đã tag `wordly-web:rollback-pre-8f7ada9`; build image lỗi vì thiếu `--build-arg NEXT_PUBLIC_SUPABASE_*` và auto mode chặn tiếp các lệnh deploy. Production vẫn chạy image cũ. Cần chủ dự án cho quyền ssh deploy hoặc tự chạy lệnh build.
-- Branch `fix/ai-cost-limits` (Alex 20/phút + 300/ngày, chỉ gửi 20 tin gần nhất, ≤1.500 ký tự/tin, bỏ role `system` từ client; gợi ý từ 20/phút + 200/ngày) — đã commit local, 250/250 test. Chưa push (auto mode chặn `git push`).
-- Resend: xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn ~$30).
+**⏸ TẠM DỪNG 12/10/2026 (chủ dự án):** dừng kho từ + các việc tối ưu chi phí còn lại để **tập trung publish app iOS lên App Store**. Mọi thứ dưới đây giữ nguyên trạng thái, làm tiếp sau khi app đã lên store. Worktree còn giữ: `.claude/worktrees/agent-ab12283faf5a4a262` (email Resend, chưa commit), `.claude/worktrees/wordbank-spec` (PR #15). Bản thử kho từ + công cụ trong `data/wordbank/`; công cụ đối chiếu CMUdict (`crosscheck.mjs`) chỉ ở thư mục nháp phiên — viết lại khi làm tiếp.
+
+**Ảnh nền widget màn hình chính — ĐỂ SAU (chủ dự án 12/10/2026), yêu cầu số 1: KHÔNG được crash.**
+- Từng có (commit `a3e15a7`) rồi bị gỡ ở `b377767` "vì gây crash" — nguyên nhân gốc chưa từng được ghi. Bản cũ: `PhotosPicker` → `UIImage(data:)` ảnh gốc → thu 500px → JPEG → App Group → widget `UIImage(data:)` + `scaledToFill`, không có bước cắt.
+- Nghi vấn cần kiểm trước khi code: (a) app giải mã ảnh gốc 48MP (~200MB) trước khi thu nhỏ; (b) widget vượt ngân sách bộ nhớ (~30MB); (c) ảnh quá cỡ/lệch tỉ lệ khung widget; (d) ghi file không atomic khi widget đang đọc.
+- Thiết kế đã thống nhất: chỉ widget màn hình chính (nhỏ + vừa); chọn ảnh → **màn hình chỉnh khung** 2 tab Nhỏ (vuông) / Vừa (ngang), kéo để di chuyển + chụm để phóng to (luôn phủ kín khung), xem trước có chữ đè lên, thanh làm tối, Lưu / Xoá ảnh nền. Chống crash: không bao giờ giải mã ảnh gốc (ImageIO downsample), lưu đúng cỡ pixel từng loại widget, ghi `.atomic`, widget đọc bằng downsample + rơi về nền màu khi lỗi, test với ảnh 8000×6000/48MP, **bắt buộc thử trên iPhone thật** trước khi phát hành.
+
+**Chờ / việc tiếp (sau khi publish):**
+- **Kho từ song ngữ** — spec `docs/superpowers/specs/2026-10-12-wordbank-design.md` (Q1–Q5 đã quyết: dùng danh sách từ có sẵn, Việt→Anh = đảo ngược kho EN + bù ~1–2k mục, dự phòng câu = Groq, âm thanh giữ TTS khi cần + cache, đợt 1 = 10k EN). Bản thử 100 mục đã duyệt → `data/wordbank/batches/0001-pilot-*.json`. Bước tiếp: lô thử 200 từ hiếm.
+- Email Resend (CHƯA commit, worktree `agent-ab12283faf5a4a262`) — bật khi có cả `RESEND_API_KEY` và `EMAIL_FROM`, lô 100, 5 req/s, 262/262 test. Cần xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn ~$30).
 - **Lỗi có sẵn:** cron email đọc `email_slots`/`profiles`/`email_preferences` không phân trang, `max_rows = 1000` → người dùng thứ 1.001+ không nhận email.
-- **DeepL production là gói FREE** (500k ký tự/tháng) — đủ khi chỉ còn dịch từ ≤3 từ; khi có kho từ thì tắt hẳn.
-- Kho từ song ngữ: đang làm bản thử 100 mục (thư mục nháp phiên, chưa vào repo) — Claude sinh + agent rà soát độc lập + đối chiếu DeepL/CMUdict/Wiktionary. Spec chính thức viết sau khi chủ dự án chấm bản thử.
-- Chiến lược giá đề xuất: Miễn phí / Pro 29k/tháng / Pro năm 249k, hạn mức theo gói (Alex 20 lượt/ngày ở Pro — hạn mức 300/ngày hiện tại chỉ là chống lạm dụng, người chat hết mức tốn ~94k đ/tháng). Chưa duyệt, cần spec (StoreKit + bảng quyền lợi + hạn mức theo gói).
+- **DeepL production là gói FREE** (500k ký tự/tháng) — đủ khi chỉ còn dịch từ ≤3 từ; tắt hẳn ở giai đoạn 3 của kho từ.
+- Chiến lược giá đề xuất: Miễn phí / Pro 29k/tháng / Pro năm 249k, hạn mức theo gói (Alex ~20 lượt/ngày ở Pro — 300/ngày hiện tại chỉ chống lạm dụng; người chat hết mức tốn ~94k đ/tháng). Chưa duyệt, cần spec (StoreKit + bảng quyền lợi + hạn mức theo gói).
+- VPS còn chạy container `localex-staging-postgres-1`, `pehub-db-db-1` (RAM ~2GB trống / 4GB).
 
 **Quyết định của chủ dự án (12/10/2026):**
 - **Phát âm giữ nguyên Google TTS Neural2** cho cả từ lẫn câu (EN-US, EN-GB, VI) — chất lượng hiện tại đạt yêu cầu. KHÔNG chuyển sang giọng trên máy (iOS/trình duyệt đọc tệ), không đổi sang Chirp 3 HD.

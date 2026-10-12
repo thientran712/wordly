@@ -1,0 +1,2713 @@
+[
+  {
+    "headword": "bank",
+    "type": "word",
+    "forms": [
+      "banks",
+      "banked",
+      "banking"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/bæŋk/",
+        "ipa_uk": "/bæŋk/",
+        "vi": [
+          "ngân hàng"
+        ],
+        "def_en": "a business that keeps money for customers and lends money",
+        "example_en": "I need to go to the bank to open an account.",
+        "example_vi": "Tôi cần ra ngân hàng để mở tài khoản.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/bæŋk/",
+        "ipa_uk": "/bæŋk/",
+        "vi": [
+          "bờ sông",
+          "bờ"
+        ],
+        "def_en": "the raised ground along the side of a river or lake",
+        "example_en": "We had a picnic on the bank of the river.",
+        "example_vi": "Chúng tôi đi dã ngoại bên bờ sông.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "fair",
+    "type": "word",
+    "forms": [
+      "fairer",
+      "fairest",
+      "fairs"
+    ],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/fɛr/",
+        "ipa_uk": "/feə/",
+        "vi": [
+          "công bằng",
+          "hợp lý"
+        ],
+        "def_en": "treating everyone equally and reasonably",
+        "example_en": "It isn't fair that he got more cake than me.",
+        "example_vi": "Thật không công bằng khi anh ấy được nhiều bánh hơn tôi.",
+        "cefr": "A2"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/fɛr/",
+        "ipa_uk": "/feə/",
+        "vi": [
+          "hội chợ"
+        ],
+        "def_en": "an event where people show or sell goods, or where there are rides and games",
+        "example_en": "We visited a book fair last weekend.",
+        "example_vi": "Cuối tuần trước chúng tôi đi hội chợ sách.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "spring",
+    "type": "word",
+    "forms": [
+      "springs",
+      "sprang",
+      "sprung",
+      "springing"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/sprɪŋ/",
+        "ipa_uk": "/sprɪŋ/",
+        "vi": [
+          "mùa xuân"
+        ],
+        "def_en": "the season between winter and summer",
+        "example_en": "Flowers start to bloom in spring.",
+        "example_vi": "Hoa bắt đầu nở vào mùa xuân.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/sprɪŋ/",
+        "ipa_uk": "/sprɪŋ/",
+        "vi": [
+          "lò xo"
+        ],
+        "def_en": "a twisted piece of metal that goes back to its shape after being pressed",
+        "example_en": "The old sofa has a broken spring.",
+        "example_vi": "Chiếc ghế sofa cũ bị gãy một cái lò xo.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/sprɪŋ/",
+        "ipa_uk": "/sprɪŋ/",
+        "vi": [
+          "bật dậy",
+          "nhảy lên",
+          "lao tới"
+        ],
+        "def_en": "to move or jump suddenly and quickly",
+        "example_en": "The cat sprang onto the table.",
+        "example_vi": "Con mèo nhảy phóc lên bàn.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "match",
+    "type": "word",
+    "forms": [
+      "matches",
+      "matched",
+      "matching"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/mætʃ/",
+        "ipa_uk": "/mætʃ/",
+        "vi": [
+          "trận đấu"
+        ],
+        "def_en": "a sports competition between two players or teams",
+        "example_en": "Did you watch the football match last night?",
+        "example_vi": "Tối qua bạn có xem trận bóng đá không?",
+        "cefr": "A2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/mætʃ/",
+        "ipa_uk": "/mætʃ/",
+        "vi": [
+          "hợp với",
+          "khớp với",
+          "tương xứng"
+        ],
+        "def_en": "to look good together or be the same as something",
+        "example_en": "Your shoes match your bag.",
+        "example_vi": "Đôi giày của bạn hợp với chiếc túi.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/mætʃ/",
+        "ipa_uk": "/mætʃ/",
+        "vi": [
+          "que diêm"
+        ],
+        "def_en": "a small stick that makes a flame when you rub it on a rough surface",
+        "example_en": "He lit the candle with a match.",
+        "example_vi": "Anh ấy châm nến bằng một que diêm.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "patient",
+    "type": "word",
+    "forms": [
+      "patients"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈpeɪʃənt/",
+        "ipa_uk": "/ˈpeɪʃənt/",
+        "vi": [
+          "bệnh nhân"
+        ],
+        "def_en": "a person who is getting medical care",
+        "example_en": "The doctor is seeing a patient right now.",
+        "example_vi": "Bác sĩ đang khám cho một bệnh nhân.",
+        "cefr": "A2"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈpeɪʃənt/",
+        "ipa_uk": "/ˈpeɪʃənt/",
+        "vi": [
+          "kiên nhẫn",
+          "nhẫn nại"
+        ],
+        "def_en": "able to wait calmly without getting annoyed",
+        "example_en": "Please be patient, the bus will come soon.",
+        "example_vi": "Hãy kiên nhẫn nhé, xe buýt sắp tới rồi.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "issue",
+    "type": "word",
+    "forms": [
+      "issues",
+      "issued",
+      "issuing"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈɪʃu/",
+        "ipa_uk": "/ˈɪʃuː/",
+        "vi": [
+          "vấn đề"
+        ],
+        "def_en": "a problem or important topic that people discuss",
+        "example_en": "Climate change is a serious issue.",
+        "example_vi": "Biến đổi khí hậu là một vấn đề nghiêm trọng.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈɪʃu/",
+        "ipa_uk": "/ˈɪʃuː/",
+        "vi": [
+          "số (báo, tạp chí)",
+          "ấn bản"
+        ],
+        "def_en": "one edition of a magazine or newspaper",
+        "example_en": "I bought the latest issue of the magazine.",
+        "example_vi": "Tôi đã mua số mới nhất của tạp chí đó.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ˈɪʃu/",
+        "ipa_uk": "/ˈɪʃuː/",
+        "vi": [
+          "cấp",
+          "ban hành",
+          "phát hành"
+        ],
+        "def_en": "to officially give or announce something",
+        "example_en": "The government issued a new warning.",
+        "example_vi": "Chính phủ đã ban hành một cảnh báo mới.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "address",
+    "type": "word",
+    "forms": [
+      "addresses",
+      "addressed",
+      "addressing"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈædrɛs/",
+        "ipa_uk": "/əˈdres/",
+        "vi": [
+          "địa chỉ"
+        ],
+        "def_en": "the details of where a person lives or where something can be found",
+        "example_en": "What's your email address?",
+        "example_vi": "Địa chỉ email của bạn là gì?",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/əˈdrɛs/",
+        "ipa_uk": "/əˈdres/",
+        "vi": [
+          "giải quyết",
+          "xử lý"
+        ],
+        "def_en": "to start dealing with a problem",
+        "example_en": "We need to address this problem quickly.",
+        "example_vi": "Chúng ta cần giải quyết vấn đề này nhanh chóng.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/əˈdrɛs/",
+        "ipa_uk": "/əˈdres/",
+        "vi": [
+          "phát biểu trước",
+          "nói chuyện với"
+        ],
+        "def_en": "to speak formally to a group of people",
+        "example_en": "The president addressed the nation on TV.",
+        "example_vi": "Tổng thống phát biểu trước toàn dân trên truyền hình.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Danh từ kiểu Mỹ thường nhấn âm 1 (AD-dress); động từ và kiểu Anh nhấn âm 2 (ad-DRESS)."
+  },
+  {
+    "headword": "light",
+    "type": "word",
+    "forms": [
+      "lights",
+      "lit",
+      "lighted",
+      "lighting",
+      "lighter",
+      "lightest"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/laɪt/",
+        "ipa_uk": "/laɪt/",
+        "vi": [
+          "ánh sáng",
+          "đèn"
+        ],
+        "def_en": "the brightness that lets us see, or a lamp that gives it",
+        "example_en": "Please turn off the light.",
+        "example_vi": "Làm ơn tắt đèn đi.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/laɪt/",
+        "ipa_uk": "/laɪt/",
+        "vi": [
+          "nhẹ",
+          "nhạt (màu)",
+          "sáng"
+        ],
+        "def_en": "not heavy; or pale in colour",
+        "example_en": "This bag is very light.",
+        "example_vi": "Cái túi này rất nhẹ.",
+        "cefr": "A2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/laɪt/",
+        "ipa_uk": "/laɪt/",
+        "vi": [
+          "thắp",
+          "châm",
+          "đốt"
+        ],
+        "def_en": "to make something start burning",
+        "example_en": "She lit a candle.",
+        "example_vi": "Cô ấy thắp một ngọn nến.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "date",
+    "type": "word",
+    "forms": [
+      "dates",
+      "dated",
+      "dating"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/deɪt/",
+        "ipa_uk": "/deɪt/",
+        "vi": [
+          "ngày (tháng)",
+          "ngày"
+        ],
+        "def_en": "a particular day of the month or year",
+        "example_en": "What's the date today?",
+        "example_vi": "Hôm nay là ngày mấy?",
+        "cefr": "A1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/deɪt/",
+        "ipa_uk": "/deɪt/",
+        "vi": [
+          "buổi hẹn hò",
+          "cuộc hẹn"
+        ],
+        "def_en": "a romantic meeting between two people",
+        "example_en": "They went on their first date last week.",
+        "example_vi": "Tuần trước họ có buổi hẹn hò đầu tiên.",
+        "cefr": "A2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/deɪt/",
+        "ipa_uk": "/deɪt/",
+        "vi": [
+          "hẹn hò"
+        ],
+        "def_en": "to have a romantic relationship with someone",
+        "example_en": "She has been dating him for two years.",
+        "example_vi": "Cô ấy đã hẹn hò với anh ấy được hai năm.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "run",
+    "type": "word",
+    "forms": [
+      "runs",
+      "ran",
+      "running"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/rʌn/",
+        "ipa_uk": "/rʌn/",
+        "vi": [
+          "chạy"
+        ],
+        "def_en": "to move quickly on your feet",
+        "example_en": "I run in the park every morning.",
+        "example_vi": "Sáng nào tôi cũng chạy bộ trong công viên.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/rʌn/",
+        "ipa_uk": "/rʌn/",
+        "vi": [
+          "điều hành",
+          "quản lý",
+          "kinh doanh"
+        ],
+        "def_en": "to be in charge of a business or organization",
+        "example_en": "My parents run a small restaurant.",
+        "example_vi": "Bố mẹ tôi kinh doanh một nhà hàng nhỏ.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/rʌn/",
+        "ipa_uk": "/rʌn/",
+        "vi": [
+          "cuộc chạy",
+          "buổi chạy bộ"
+        ],
+        "def_en": "a period of running",
+        "example_en": "Let's go for a run after work.",
+        "example_vi": "Tan làm mình đi chạy bộ nhé.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "record",
+    "type": "word",
+    "forms": [
+      "records",
+      "recorded",
+      "recording"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈrɛkɚd/",
+        "ipa_uk": "/ˈrekɔːd/",
+        "vi": [
+          "kỷ lục",
+          "hồ sơ",
+          "bản ghi",
+          "đĩa nhạc"
+        ],
+        "def_en": "the best result ever achieved, or written information kept about something",
+        "example_en": "She broke the world record.",
+        "example_vi": "Cô ấy đã phá kỷ lục thế giới.",
+        "cefr": "A2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/rɪˈkɔrd/",
+        "ipa_uk": "/rɪˈkɔːd/",
+        "vi": [
+          "ghi âm",
+          "ghi hình",
+          "ghi lại"
+        ],
+        "def_en": "to store sound or pictures, or to write information down",
+        "example_en": "The band is recording a new album.",
+        "example_vi": "Ban nhạc đang thu âm một album mới.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": "Danh từ nhấn âm 1 (RE-cord), động từ nhấn âm 2 (re-CORD)."
+  },
+  {
+    "headword": "read",
+    "type": "word",
+    "forms": [
+      "reads",
+      "reading"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/rid/",
+        "ipa_uk": "/riːd/",
+        "vi": [
+          "đọc"
+        ],
+        "def_en": "to look at written words and understand them",
+        "example_en": "I read a book before bed.",
+        "example_vi": "Tôi đọc sách trước khi đi ngủ.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/rid/",
+        "ipa_uk": "/riːd/",
+        "vi": [
+          "cuốn sách (bài viết) đáng đọc"
+        ],
+        "def_en": "something that is enjoyable or interesting to read",
+        "example_en": "This novel is a great read.",
+        "example_vi": "Cuốn tiểu thuyết này rất đáng đọc.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Quá khứ và quá khứ phân từ cũng viết là \"read\" nhưng đọc là /rɛd/ (giống \"red\"), khác với hiện tại /riːd/."
+  },
+  {
+    "headword": "live",
+    "type": "word",
+    "forms": [
+      "lives",
+      "lived",
+      "living"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/lɪv/",
+        "ipa_uk": "/lɪv/",
+        "vi": [
+          "sống",
+          "ở"
+        ],
+        "def_en": "to be alive, or to have your home somewhere",
+        "example_en": "I live in Hanoi.",
+        "example_vi": "Tôi sống ở Hà Nội.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/laɪv/",
+        "ipa_uk": "/laɪv/",
+        "vi": [
+          "trực tiếp",
+          "sống"
+        ],
+        "def_en": "happening or broadcast as it happens; or alive",
+        "example_en": "The concert had live music all night.",
+        "example_vi": "Buổi hòa nhạc có nhạc sống suốt đêm.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "adverb",
+        "ipa_us": "/laɪv/",
+        "ipa_uk": "/laɪv/",
+        "vi": [
+          "trực tiếp"
+        ],
+        "def_en": "broadcast at the same time as it happens",
+        "example_en": "The match will be shown live on TV.",
+        "example_vi": "Trận đấu sẽ được truyền hình trực tiếp.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Động từ đọc /lɪv/; tính từ và trạng từ đọc /laɪv/ (như \"livestream\")."
+  },
+  {
+    "headword": "present",
+    "type": "word",
+    "forms": [
+      "presents",
+      "presented",
+      "presenting"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈprɛzənt/",
+        "ipa_uk": "/ˈprezənt/",
+        "vi": [
+          "món quà",
+          "quà"
+        ],
+        "def_en": "something you give to someone, for example on their birthday",
+        "example_en": "I bought a birthday present for my mom.",
+        "example_vi": "Tôi mua quà sinh nhật cho mẹ.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/prɪˈzɛnt/",
+        "ipa_uk": "/prɪˈzent/",
+        "vi": [
+          "trình bày",
+          "thuyết trình",
+          "trao (tặng)"
+        ],
+        "def_en": "to show or explain something to a group; or to give something formally",
+        "example_en": "She will present her project tomorrow.",
+        "example_vi": "Ngày mai cô ấy sẽ thuyết trình dự án của mình.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈprɛzənt/",
+        "ipa_uk": "/ˈprezənt/",
+        "vi": [
+          "có mặt",
+          "hiện tại"
+        ],
+        "def_en": "being in a place; or existing now",
+        "example_en": "All the students were present.",
+        "example_vi": "Tất cả học sinh đều có mặt.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Danh từ/tính từ nhấn âm 1 (PRE-sent), động từ nhấn âm 2 (pre-SENT)."
+  },
+  {
+    "headword": "lead",
+    "type": "word",
+    "forms": [
+      "leads",
+      "led",
+      "leading"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/lid/",
+        "ipa_uk": "/liːd/",
+        "vi": [
+          "dẫn dắt",
+          "lãnh đạo",
+          "dẫn"
+        ],
+        "def_en": "to guide or be in charge of people",
+        "example_en": "She leads a team of ten people.",
+        "example_vi": "Cô ấy lãnh đạo một nhóm mười người.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/lid/",
+        "ipa_uk": "/liːd/",
+        "vi": [
+          "vị trí dẫn đầu"
+        ],
+        "def_en": "the first position in a race or competition",
+        "example_en": "Our team is in the lead.",
+        "example_vi": "Đội chúng ta đang dẫn đầu.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/lɛd/",
+        "ipa_uk": "/led/",
+        "vi": [
+          "chì"
+        ],
+        "def_en": "a soft, heavy grey metal",
+        "example_en": "Old water pipes were often made of lead.",
+        "example_vi": "Ống nước ngày xưa thường làm bằng chì.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Nghĩa \"dẫn dắt\" đọc /liːd/; nghĩa \"chì\" đọc /led/, giống quá khứ \"led\"."
+  },
+  {
+    "headword": "close",
+    "type": "word",
+    "forms": [
+      "closes",
+      "closed",
+      "closing",
+      "closer",
+      "closest"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/kloʊz/",
+        "ipa_uk": "/kləʊz/",
+        "vi": [
+          "đóng",
+          "đóng cửa"
+        ],
+        "def_en": "to move something so that it is shut, or to stop being open",
+        "example_en": "Please close the door.",
+        "example_vi": "Làm ơn đóng cửa lại.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/kloʊs/",
+        "ipa_uk": "/kləʊs/",
+        "vi": [
+          "gần",
+          "thân thiết"
+        ],
+        "def_en": "near in space or time; or having a strong relationship",
+        "example_en": "We are close friends.",
+        "example_vi": "Chúng tôi là bạn thân.",
+        "cefr": "A2"
+      },
+      {
+        "pos": "adverb",
+        "ipa_us": "/kloʊs/",
+        "ipa_uk": "/kləʊs/",
+        "vi": [
+          "gần",
+          "sát"
+        ],
+        "def_en": "at a short distance",
+        "example_en": "Don't stand so close to the fire.",
+        "example_vi": "Đừng đứng sát lửa quá.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Động từ đọc /kləʊz/ (âm cuối /z/); tính từ và trạng từ đọc /kləʊs/ (âm cuối /s/)."
+  },
+  {
+    "headword": "object",
+    "type": "word",
+    "forms": [
+      "objects",
+      "objected",
+      "objecting"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈɑbdʒɛkt/",
+        "ipa_uk": "/ˈɒbdʒɪkt/",
+        "vi": [
+          "đồ vật",
+          "vật thể"
+        ],
+        "def_en": "a thing you can see or touch",
+        "example_en": "There was a strange object in the sky.",
+        "example_vi": "Có một vật thể lạ trên bầu trời.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/əbˈdʒɛkt/",
+        "ipa_uk": "/əbˈdʒekt/",
+        "vi": [
+          "phản đối"
+        ],
+        "def_en": "to say that you do not agree with something",
+        "example_en": "Nobody objected to the plan.",
+        "example_vi": "Không ai phản đối kế hoạch.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Danh từ nhấn âm 1 (OB-ject), động từ nhấn âm 2 (ob-JECT)."
+  },
+  {
+    "headword": "minute",
+    "type": "word",
+    "forms": [
+      "minutes"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈmɪnɪt/",
+        "ipa_uk": "/ˈmɪnɪt/",
+        "vi": [
+          "phút",
+          "lát"
+        ],
+        "def_en": "sixty seconds; or a very short time",
+        "example_en": "Wait a minute, please.",
+        "example_vi": "Làm ơn đợi một lát.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/maɪˈnut/",
+        "ipa_uk": "/maɪˈnjuːt/",
+        "vi": [
+          "rất nhỏ",
+          "li ti",
+          "tỉ mỉ"
+        ],
+        "def_en": "extremely small; or very detailed",
+        "example_en": "The camera can see minute details.",
+        "example_vi": "Máy ảnh có thể thấy những chi tiết rất nhỏ.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Danh từ \"phút\" đọc /ˈmɪnɪt/; tính từ \"rất nhỏ\" đọc /maɪˈnjuːt/. \"minutes\" (số nhiều) còn có nghĩa \"biên bản cuộc họp\"."
+  },
+  {
+    "headword": "tear",
+    "type": "word",
+    "forms": [
+      "tears",
+      "tore",
+      "torn",
+      "tearing"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/tɪr/",
+        "ipa_uk": "/tɪə/",
+        "vi": [
+          "nước mắt"
+        ],
+        "def_en": "a drop of water that comes from your eye when you cry",
+        "example_en": "Tears ran down her face.",
+        "example_vi": "Nước mắt chảy dài trên mặt cô ấy.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/tɛr/",
+        "ipa_uk": "/teə/",
+        "vi": [
+          "xé",
+          "làm rách"
+        ],
+        "def_en": "to pull something apart or make a hole in it",
+        "example_en": "Be careful not to tear the paper.",
+        "example_vi": "Cẩn thận đừng làm rách tờ giấy.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Nghĩa \"nước mắt\" đọc /tɪə/ (giống \"ear\"); nghĩa \"xé\" đọc /teə/ (giống \"air\")."
+  },
+  {
+    "headword": "wind",
+    "type": "word",
+    "forms": [
+      "winds",
+      "wound",
+      "winding"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/wɪnd/",
+        "ipa_uk": "/wɪnd/",
+        "vi": [
+          "gió"
+        ],
+        "def_en": "air that moves outside",
+        "example_en": "The wind is very strong today.",
+        "example_vi": "Hôm nay gió rất mạnh.",
+        "cefr": "A2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/waɪnd/",
+        "ipa_uk": "/waɪnd/",
+        "vi": [
+          "cuộn",
+          "quấn",
+          "lên dây (đồng hồ)"
+        ],
+        "def_en": "to wrap something around something else; or to turn a part to make a machine work",
+        "example_en": "She wound the thread around her finger.",
+        "example_vi": "Cô ấy quấn sợi chỉ quanh ngón tay.",
+        "cefr": "C1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/waɪnd/",
+        "ipa_uk": "/waɪnd/",
+        "vi": [
+          "uốn khúc",
+          "quanh co"
+        ],
+        "def_en": "(of a road or river) to follow a path with many bends",
+        "example_en": "The road winds through the mountains.",
+        "example_vi": "Con đường uốn lượn qua những ngọn núi.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Danh từ \"gió\" đọc /wɪnd/; động từ đọc /waɪnd/. Quá khứ \"wound\" của động từ này đọc /waʊnd/, khác với \"wound\" (vết thương) đọc /wuːnd/."
+  },
+  {
+    "headword": "resilient",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/rɪˈzɪliənt/",
+        "ipa_uk": "/rɪˈzɪliənt/",
+        "vi": [
+          "kiên cường",
+          "bền bỉ",
+          "nhanh hồi phục"
+        ],
+        "def_en": "able to recover quickly after difficulties",
+        "example_en": "Children are often more resilient than adults think.",
+        "example_vi": "Trẻ em thường kiên cường hơn người lớn nghĩ.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "procrastinate",
+    "type": "word",
+    "forms": [
+      "procrastinates",
+      "procrastinated",
+      "procrastinating"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/proʊˈkræstəˌneɪt/",
+        "ipa_uk": "/prəˈkræstɪneɪt/",
+        "vi": [
+          "trì hoãn",
+          "chần chừ",
+          "lần lữa"
+        ],
+        "def_en": "to keep delaying something you should do",
+        "example_en": "I always procrastinate when I have homework.",
+        "example_vi": "Hễ có bài tập là tôi lại trì hoãn.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "ubiquitous",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/juˈbɪkwətəs/",
+        "ipa_uk": "/juːˈbɪkwɪtəs/",
+        "vi": [
+          "có mặt khắp nơi",
+          "phổ biến khắp nơi"
+        ],
+        "def_en": "seeming to be everywhere at the same time",
+        "example_en": "Smartphones are now ubiquitous.",
+        "example_vi": "Điện thoại thông minh giờ có mặt ở khắp nơi.",
+        "cefr": "C2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "serendipity",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˌsɛrənˈdɪpəti/",
+        "ipa_uk": "/ˌserənˈdɪpəti/",
+        "vi": [
+          "sự tình cờ may mắn",
+          "duyên may"
+        ],
+        "def_en": "the luck of finding something good without looking for it",
+        "example_en": "Meeting my best friend on a train was pure serendipity.",
+        "example_vi": "Gặp bạn thân trên chuyến tàu là một sự tình cờ may mắn.",
+        "cefr": "C2"
+      }
+    ],
+    "note_vi": "Tiếng Việt không có một từ tương đương; hiểu là \"tình cờ mà gặp may\"."
+  },
+  {
+    "headword": "awkward",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈɔkwɚd/",
+        "ipa_uk": "/ˈɔːkwəd/",
+        "vi": [
+          "ngượng ngùng",
+          "khó xử",
+          "ngại"
+        ],
+        "def_en": "making you feel embarrassed or uncomfortable",
+        "example_en": "There was an awkward silence after his joke.",
+        "example_vi": "Sau câu đùa của anh ấy là một khoảng im lặng ngượng ngùng.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈɔkwɚd/",
+        "ipa_uk": "/ˈɔːkwəd/",
+        "vi": [
+          "vụng về",
+          "lóng ngóng"
+        ],
+        "def_en": "moving in a way that is not smooth or graceful",
+        "example_en": "He is a bit awkward when he dances.",
+        "example_vi": "Anh ấy hơi vụng về khi nhảy.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "commute",
+    "type": "word",
+    "forms": [
+      "commutes",
+      "commuted",
+      "commuting"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/kəˈmjut/",
+        "ipa_uk": "/kəˈmjuːt/",
+        "vi": [
+          "đi làm (hằng ngày)",
+          "đi lại"
+        ],
+        "def_en": "to travel regularly between home and work or school",
+        "example_en": "I commute to work by motorbike.",
+        "example_vi": "Tôi đi làm bằng xe máy.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/kəˈmjut/",
+        "ipa_uk": "/kəˈmjuːt/",
+        "vi": [
+          "quãng đường đi làm",
+          "chuyến đi làm"
+        ],
+        "def_en": "the regular trip between home and work",
+        "example_en": "My daily commute takes an hour.",
+        "example_vi": "Mỗi ngày tôi mất một tiếng để đi làm.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "deadline",
+    "type": "word",
+    "forms": [
+      "deadlines"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈdɛdˌlaɪn/",
+        "ipa_uk": "/ˈdedlaɪn/",
+        "vi": [
+          "hạn chót",
+          "thời hạn"
+        ],
+        "def_en": "the time or date by which something must be finished",
+        "example_en": "The deadline for the report is Friday.",
+        "example_vi": "Hạn chót nộp báo cáo là thứ Sáu.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Người Việt cũng hay dùng thẳng từ \"deadline\"."
+  },
+  {
+    "headword": "overwhelmed",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˌoʊvɚˈwɛlmd/",
+        "ipa_uk": "/ˌəʊvəˈwelmd/",
+        "vi": [
+          "choáng ngợp",
+          "quá tải",
+          "ngập đầu"
+        ],
+        "def_en": "feeling that you have too much to deal with, or very strong emotion",
+        "example_en": "I feel overwhelmed by all this work.",
+        "example_vi": "Tôi thấy quá tải với đống công việc này.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Là tính từ từ động từ \"overwhelm\" (áp đảo, làm choáng ngợp)."
+  },
+  {
+    "headword": "nostalgic",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/nəˈstældʒɪk/",
+        "ipa_uk": "/nɒˈstældʒɪk/",
+        "vi": [
+          "hoài niệm",
+          "nhớ về quá khứ",
+          "hoài cổ"
+        ],
+        "def_en": "feeling happy and a little sad when thinking about the past",
+        "example_en": "This song makes me feel nostalgic.",
+        "example_vi": "Bài hát này khiến tôi thấy hoài niệm.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "mentor",
+    "type": "word",
+    "forms": [
+      "mentors",
+      "mentored",
+      "mentoring"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈmɛnˌtɔr/",
+        "ipa_uk": "/ˈmentɔː/",
+        "vi": [
+          "người cố vấn",
+          "người hướng dẫn"
+        ],
+        "def_en": "an experienced person who advises and helps a less experienced person",
+        "example_en": "She was my mentor during my first job.",
+        "example_vi": "Chị ấy là người hướng dẫn tôi trong công việc đầu tiên.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ˈmɛnˌtɔr/",
+        "ipa_uk": "/ˈmentɔː/",
+        "vi": [
+          "kèm cặp",
+          "hướng dẫn"
+        ],
+        "def_en": "to advise and help a less experienced person over time",
+        "example_en": "He mentors young engineers at his company.",
+        "example_vi": "Anh ấy kèm cặp các kỹ sư trẻ trong công ty.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "leverage",
+    "type": "word",
+    "forms": [
+      "leverages",
+      "leveraged",
+      "leveraging"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˈlɛvərɪdʒ/",
+        "ipa_uk": "/ˈliːvərɪdʒ/",
+        "vi": [
+          "tận dụng",
+          "khai thác"
+        ],
+        "def_en": "to use something you have to get the best result",
+        "example_en": "We should leverage our customer data.",
+        "example_vi": "Chúng ta nên tận dụng dữ liệu khách hàng.",
+        "cefr": "C1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈlɛvərɪdʒ/",
+        "ipa_uk": "/ˈliːvərɪdʒ/",
+        "vi": [
+          "lợi thế",
+          "sức ảnh hưởng",
+          "đòn bẩy"
+        ],
+        "def_en": "power to influence a situation or other people",
+        "example_en": "Their size gives them leverage in negotiations.",
+        "example_vi": "Quy mô lớn mang lại cho họ lợi thế khi đàm phán.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Tiếng Anh Mỹ đọc /ˈlɛv-/, tiếng Anh Anh đọc /ˈliːv-/."
+  },
+  {
+    "headword": "burnout",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈbɝnˌaʊt/",
+        "ipa_uk": "/ˈbɜːnaʊt/",
+        "vi": [
+          "tình trạng kiệt sức",
+          "sự kiệt quệ"
+        ],
+        "def_en": "extreme tiredness caused by working too hard for too long",
+        "example_en": "Many nurses are suffering from burnout.",
+        "example_vi": "Nhiều y tá đang rơi vào tình trạng kiệt sức.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "cozy",
+    "type": "word",
+    "forms": [
+      "cozier",
+      "coziest"
+    ],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈkoʊzi/",
+        "ipa_uk": "/ˈkəʊzi/",
+        "vi": [
+          "ấm cúng",
+          "dễ chịu"
+        ],
+        "def_en": "warm, comfortable and relaxing",
+        "example_en": "This café is small but cozy.",
+        "example_vi": "Quán cà phê này nhỏ nhưng ấm cúng.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Tiếng Anh Anh viết là \"cosy\"."
+  },
+  {
+    "headword": "grateful",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈɡreɪtfəl/",
+        "ipa_uk": "/ˈɡreɪtfəl/",
+        "vi": [
+          "biết ơn"
+        ],
+        "def_en": "feeling or showing thanks",
+        "example_en": "I'm grateful for your help.",
+        "example_vi": "Tôi rất biết ơn sự giúp đỡ của bạn.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "stubborn",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈstʌbɚn/",
+        "ipa_uk": "/ˈstʌbən/",
+        "vi": [
+          "bướng bỉnh",
+          "cứng đầu"
+        ],
+        "def_en": "refusing to change your mind or behaviour",
+        "example_en": "My little brother is very stubborn.",
+        "example_vi": "Em trai tôi rất bướng bỉnh.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈstʌbɚn/",
+        "ipa_uk": "/ˈstʌbən/",
+        "vi": [
+          "cứng đầu (khó tẩy)",
+          "dai dẳng"
+        ],
+        "def_en": "difficult to remove or get rid of",
+        "example_en": "This soap removes stubborn stains.",
+        "example_vi": "Xà phòng này tẩy sạch vết bẩn cứng đầu.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "reluctant",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/rɪˈlʌktənt/",
+        "ipa_uk": "/rɪˈlʌktənt/",
+        "vi": [
+          "miễn cưỡng",
+          "ngần ngại",
+          "không muốn"
+        ],
+        "def_en": "not wanting to do something",
+        "example_en": "She was reluctant to speak in front of the class.",
+        "example_vi": "Cô ấy ngần ngại nói trước cả lớp.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "thrive",
+    "type": "word",
+    "forms": [
+      "thrives",
+      "thrived",
+      "throve",
+      "thriving"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/θraɪv/",
+        "ipa_uk": "/θraɪv/",
+        "vi": [
+          "phát triển mạnh",
+          "thịnh vượng",
+          "phát đạt"
+        ],
+        "def_en": "to grow or develop very well",
+        "example_en": "These plants thrive in hot weather.",
+        "example_vi": "Những cây này phát triển mạnh khi trời nóng.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "cringe",
+    "type": "word",
+    "forms": [
+      "cringes",
+      "cringed",
+      "cringing"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/krɪndʒ/",
+        "ipa_uk": "/krɪndʒ/",
+        "vi": [
+          "thấy ngượng thay",
+          "rùng mình",
+          "co rúm người"
+        ],
+        "def_en": "to feel very embarrassed or uncomfortable about something",
+        "example_en": "I cringe when I watch my old videos.",
+        "example_vi": "Xem lại video cũ của mình là tôi thấy ngượng chín người.",
+        "cefr": "C1"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/krɪndʒ/",
+        "ipa_uk": "/krɪndʒ/",
+        "vi": [
+          "gây ngượng",
+          "sượng"
+        ],
+        "def_en": "(informal) so embarrassing that it makes people uncomfortable",
+        "example_en": "His dance moves were so cringe.",
+        "example_vi": "Mấy động tác nhảy của anh ta sượng thật sự.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Nghĩa tính từ là tiếng lóng, chủ yếu trên mạng; giới trẻ Việt cũng dùng thẳng từ \"cringe\"."
+  },
+  {
+    "headword": "vibe",
+    "type": "word",
+    "forms": [
+      "vibes",
+      "vibed",
+      "vibing"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/vaɪb/",
+        "ipa_uk": "/vaɪb/",
+        "vi": [
+          "không khí",
+          "cảm giác",
+          "năng lượng"
+        ],
+        "def_en": "(informal) the feeling a person or place gives you",
+        "example_en": "This place has a really relaxing vibe.",
+        "example_vi": "Chỗ này có không khí thật thư giãn.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/vaɪb/",
+        "ipa_uk": "/vaɪb/",
+        "vi": [
+          "hợp nhau",
+          "hợp cạ"
+        ],
+        "def_en": "(informal) to get along well with someone",
+        "example_en": "We vibed from the first day we met.",
+        "example_vi": "Chúng tôi hợp nhau ngay từ ngày đầu gặp mặt.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Từ thân mật, dùng trong văn nói; người Việt trẻ cũng dùng thẳng \"vibe\"."
+  },
+  {
+    "headword": "hangover",
+    "type": "word",
+    "forms": [
+      "hangovers"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈhæŋˌoʊvɚ/",
+        "ipa_uk": "/ˈhæŋəʊvə/",
+        "vi": [
+          "cơn mệt mỏi sau khi say rượu"
+        ],
+        "def_en": "the headache and sick feeling after drinking too much alcohol",
+        "example_en": "He woke up with a terrible hangover.",
+        "example_vi": "Anh ấy thức dậy, người mệt rã rời vì say rượu hôm qua.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈhæŋˌoʊvɚ/",
+        "ipa_uk": "/ˈhæŋəʊvə/",
+        "vi": [
+          "tàn dư",
+          "di chứng"
+        ],
+        "def_en": "something that remains from an earlier time",
+        "example_en": "This rule is a hangover from the old system.",
+        "example_vi": "Quy định này là tàn dư của hệ thống cũ.",
+        "cefr": "C2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "landlord",
+    "type": "word",
+    "forms": [
+      "landlords"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈlændˌlɔrd/",
+        "ipa_uk": "/ˈlændlɔːd/",
+        "vi": [
+          "chủ nhà (cho thuê)",
+          "chủ trọ"
+        ],
+        "def_en": "a person who rents a house or room to others",
+        "example_en": "My landlord raised the rent again.",
+        "example_vi": "Chủ nhà lại tăng tiền thuê.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Chủ nhà là nữ có thể gọi là \"landlady\"."
+  },
+  {
+    "headword": "sibling",
+    "type": "word",
+    "forms": [
+      "siblings"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈsɪblɪŋ/",
+        "ipa_uk": "/ˈsɪblɪŋ/",
+        "vi": [
+          "anh chị em ruột"
+        ],
+        "def_en": "a brother or sister",
+        "example_en": "Do you have any siblings?",
+        "example_vi": "Bạn có anh chị em nào không?",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "tuition",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/tuˈɪʃən/",
+        "ipa_uk": "/tjuˈɪʃən/",
+        "vi": [
+          "học phí"
+        ],
+        "def_en": "(mainly US) the money you pay to study at a school or university",
+        "example_en": "Tuition at this university is very expensive.",
+        "example_vi": "Học phí của trường đại học này rất đắt.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/tuˈɪʃən/",
+        "ipa_uk": "/tjuˈɪʃən/",
+        "vi": [
+          "việc dạy kèm",
+          "sự giảng dạy"
+        ],
+        "def_en": "(mainly UK) teaching, especially to one person or a small group",
+        "example_en": "She gets extra tuition in maths.",
+        "example_vi": "Cô bé được học kèm thêm môn toán.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Ở Mỹ \"tuition\" thường là học phí; ở Anh học phí thường gọi là \"tuition fees\"."
+  },
+  {
+    "headword": "allergic",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/əˈlɝdʒɪk/",
+        "ipa_uk": "/əˈlɜːdʒɪk/",
+        "vi": [
+          "dị ứng"
+        ],
+        "def_en": "having a bad physical reaction to something you eat, touch or breathe",
+        "example_en": "I'm allergic to seafood.",
+        "example_vi": "Tôi bị dị ứng hải sản.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Dùng với giới từ \"to\": allergic to something."
+  },
+  {
+    "headword": "negotiate",
+    "type": "word",
+    "forms": [
+      "negotiates",
+      "negotiated",
+      "negotiating"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/nɪˈɡoʊʃiˌeɪt/",
+        "ipa_uk": "/nɪˈɡəʊʃieɪt/",
+        "vi": [
+          "đàm phán",
+          "thương lượng",
+          "mặc cả"
+        ],
+        "def_en": "to discuss something to reach an agreement",
+        "example_en": "She negotiated a higher salary.",
+        "example_vi": "Cô ấy đã thương lượng được mức lương cao hơn.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "eloquent",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈɛləkwənt/",
+        "ipa_uk": "/ˈeləkwənt/",
+        "vi": [
+          "hùng hồn",
+          "có tài ăn nói",
+          "lưu loát"
+        ],
+        "def_en": "able to speak or write clearly and persuasively",
+        "example_en": "He gave an eloquent speech.",
+        "example_vi": "Anh ấy đã có một bài phát biểu hùng hồn.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "frugal",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈfruɡəl/",
+        "ipa_uk": "/ˈfruːɡəl/",
+        "vi": [
+          "tiết kiệm",
+          "căn cơ"
+        ],
+        "def_en": "careful not to spend more money than necessary",
+        "example_en": "My grandparents lived a frugal life.",
+        "example_vi": "Ông bà tôi sống rất tiết kiệm.",
+        "cefr": "C1"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈfruɡəl/",
+        "ipa_uk": "/ˈfruːɡəl/",
+        "vi": [
+          "đạm bạc",
+          "đơn sơ"
+        ],
+        "def_en": "(of a meal) simple and cheap",
+        "example_en": "We had a frugal dinner of rice and vegetables.",
+        "example_vi": "Chúng tôi ăn bữa tối đạm bạc với cơm và rau.",
+        "cefr": "C2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "mortgage",
+    "type": "word",
+    "forms": [
+      "mortgages",
+      "mortgaged",
+      "mortgaging"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈmɔrɡɪdʒ/",
+        "ipa_uk": "/ˈmɔːɡɪdʒ/",
+        "vi": [
+          "khoản vay thế chấp",
+          "khoản vay mua nhà"
+        ],
+        "def_en": "a loan from a bank to buy a house, paid back over many years",
+        "example_en": "They took out a mortgage to buy the apartment.",
+        "example_vi": "Họ vay thế chấp để mua căn hộ.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ˈmɔrɡɪdʒ/",
+        "ipa_uk": "/ˈmɔːɡɪdʒ/",
+        "vi": [
+          "thế chấp"
+        ],
+        "def_en": "to use your property as a guarantee for a loan",
+        "example_en": "He mortgaged his house to start a business.",
+        "example_vi": "Anh ấy thế chấp nhà để khởi nghiệp.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Chữ \"t\" câm: đọc là MOR-gij."
+  },
+  {
+    "headword": "abandon",
+    "type": "word",
+    "forms": [
+      "abandons",
+      "abandoned",
+      "abandoning"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/əˈbændən/",
+        "ipa_uk": "/əˈbændən/",
+        "vi": [
+          "bỏ rơi",
+          "bỏ lại",
+          "bỏ hoang"
+        ],
+        "def_en": "to leave someone or something and not come back",
+        "example_en": "Someone abandoned a puppy on the street.",
+        "example_vi": "Ai đó đã bỏ rơi một chú cún ngoài đường.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/əˈbændən/",
+        "ipa_uk": "/əˈbændən/",
+        "vi": [
+          "từ bỏ",
+          "bỏ dở"
+        ],
+        "def_en": "to stop doing or planning something before it is finished",
+        "example_en": "They abandoned the project because of the cost.",
+        "example_vi": "Họ từ bỏ dự án vì chi phí.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "receive",
+    "type": "word",
+    "forms": [
+      "receives",
+      "received",
+      "receiving"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/rɪˈsiv/",
+        "ipa_uk": "/rɪˈsiːv/",
+        "vi": [
+          "nhận",
+          "nhận được"
+        ],
+        "def_en": "to get something that someone gives or sends you",
+        "example_en": "Did you receive my email?",
+        "example_vi": "Bạn đã nhận được email của tôi chưa?",
+        "cefr": "A2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/rɪˈsiv/",
+        "ipa_uk": "/rɪˈsiːv/",
+        "vi": [
+          "đón nhận",
+          "tiếp đón"
+        ],
+        "def_en": "to react to something or someone in a particular way",
+        "example_en": "The film was well received by critics.",
+        "example_vi": "Bộ phim được giới phê bình đón nhận nồng nhiệt.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "happy",
+    "type": "word",
+    "forms": [
+      "happier",
+      "happiest"
+    ],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈhæpi/",
+        "ipa_uk": "/ˈhæpi/",
+        "vi": [
+          "vui",
+          "vui vẻ",
+          "hạnh phúc"
+        ],
+        "def_en": "feeling pleased and satisfied",
+        "example_en": "I'm so happy to see you!",
+        "example_vi": "Gặp bạn mình vui quá!",
+        "cefr": "A1"
+      },
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈhæpi/",
+        "ipa_uk": "/ˈhæpi/",
+        "vi": [
+          "sẵn lòng",
+          "vui lòng"
+        ],
+        "def_en": "willing to do something",
+        "example_en": "I'm happy to help you.",
+        "example_vi": "Tôi sẵn lòng giúp bạn.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "water",
+    "type": "word",
+    "forms": [
+      "waters",
+      "watered",
+      "watering"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈwɔtɚ/",
+        "ipa_uk": "/ˈwɔːtə/",
+        "vi": [
+          "nước"
+        ],
+        "def_en": "the clear liquid in rivers and seas that people drink",
+        "example_en": "Can I have a glass of water?",
+        "example_vi": "Cho tôi xin một cốc nước được không?",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ˈwɔtɚ/",
+        "ipa_uk": "/ˈwɔːtə/",
+        "vi": [
+          "tưới (nước)"
+        ],
+        "def_en": "to give water to plants",
+        "example_en": "Don't forget to water the plants.",
+        "example_vi": "Đừng quên tưới cây nhé.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "book",
+    "type": "word",
+    "forms": [
+      "books",
+      "booked",
+      "booking"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/bʊk/",
+        "ipa_uk": "/bʊk/",
+        "vi": [
+          "sách",
+          "cuốn sách"
+        ],
+        "def_en": "a set of printed pages fastened together for reading",
+        "example_en": "I'm reading a good book.",
+        "example_vi": "Tôi đang đọc một cuốn sách hay.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/bʊk/",
+        "ipa_uk": "/bʊk/",
+        "vi": [
+          "đặt (chỗ, vé, phòng)",
+          "đặt trước"
+        ],
+        "def_en": "to arrange to have a seat, room or ticket in advance",
+        "example_en": "I booked a table for two.",
+        "example_vi": "Tôi đã đặt một bàn cho hai người.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "go",
+    "type": "word",
+    "forms": [
+      "goes",
+      "went",
+      "gone",
+      "going"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ɡoʊ/",
+        "ipa_uk": "/ɡəʊ/",
+        "vi": [
+          "đi"
+        ],
+        "def_en": "to move or travel from one place to another",
+        "example_en": "I go to school by bus.",
+        "example_vi": "Tôi đi học bằng xe buýt.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ɡoʊ/",
+        "ipa_uk": "/ɡəʊ/",
+        "vi": [
+          "trở nên",
+          "bị"
+        ],
+        "def_en": "to change and become different, often worse",
+        "example_en": "The milk has gone bad.",
+        "example_vi": "Sữa bị hỏng rồi.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/ɡoʊ/",
+        "ipa_uk": "/ɡəʊ/",
+        "vi": [
+          "lượt",
+          "lần thử"
+        ],
+        "def_en": "an attempt to do something; a turn",
+        "example_en": "Let me have a go.",
+        "example_vi": "Để tôi thử xem.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "take",
+    "type": "word",
+    "forms": [
+      "takes",
+      "took",
+      "taken",
+      "taking"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/teɪk/",
+        "ipa_uk": "/teɪk/",
+        "vi": [
+          "lấy",
+          "cầm",
+          "mang (theo)",
+          "đưa"
+        ],
+        "def_en": "to get hold of something, or carry it or someone with you",
+        "example_en": "Take an umbrella with you.",
+        "example_vi": "Mang theo ô đi.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/teɪk/",
+        "ipa_uk": "/teɪk/",
+        "vi": [
+          "mất (thời gian)",
+          "cần"
+        ],
+        "def_en": "to need a certain amount of time",
+        "example_en": "It takes ten minutes to walk there.",
+        "example_vi": "Đi bộ tới đó mất mười phút.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": "\"take\" kết hợp với rất nhiều từ: take a bus (đi xe buýt), take medicine (uống thuốc), take a photo (chụp ảnh)."
+  },
+  {
+    "headword": "make",
+    "type": "word",
+    "forms": [
+      "makes",
+      "made",
+      "making"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/meɪk/",
+        "ipa_uk": "/meɪk/",
+        "vi": [
+          "làm",
+          "tạo ra",
+          "nấu"
+        ],
+        "def_en": "to create or produce something",
+        "example_en": "My mom is making dinner.",
+        "example_vi": "Mẹ tôi đang nấu bữa tối.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/meɪk/",
+        "ipa_uk": "/meɪk/",
+        "vi": [
+          "khiến",
+          "làm cho",
+          "bắt"
+        ],
+        "def_en": "to cause someone to do or feel something",
+        "example_en": "That movie made me cry.",
+        "example_vi": "Bộ phim đó làm tôi khóc.",
+        "cefr": "A2"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/meɪk/",
+        "ipa_uk": "/meɪk/",
+        "vi": [
+          "hãng",
+          "nhãn hiệu"
+        ],
+        "def_en": "the company that produced a car or machine",
+        "example_en": "What make is your car?",
+        "example_vi": "Xe của bạn là hãng gì?",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "get",
+    "type": "word",
+    "forms": [
+      "gets",
+      "got",
+      "gotten",
+      "getting"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ɡɛt/",
+        "ipa_uk": "/ɡet/",
+        "vi": [
+          "nhận được",
+          "lấy",
+          "có được",
+          "mua"
+        ],
+        "def_en": "to receive, obtain or buy something",
+        "example_en": "I got a message from her.",
+        "example_vi": "Tôi nhận được tin nhắn của cô ấy.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ɡɛt/",
+        "ipa_uk": "/ɡet/",
+        "vi": [
+          "trở nên",
+          "bị"
+        ],
+        "def_en": "to become",
+        "example_en": "It's getting dark.",
+        "example_vi": "Trời đang tối dần.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": "Quá khứ phân từ: Mỹ dùng \"gotten\", Anh dùng \"got\"."
+  },
+  {
+    "headword": "beautiful",
+    "type": "word",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "adjective",
+        "ipa_us": "/ˈbjutəfəl/",
+        "ipa_uk": "/ˈbjuːtɪfəl/",
+        "vi": [
+          "đẹp",
+          "xinh đẹp"
+        ],
+        "def_en": "very pleasant to look at or listen to",
+        "example_en": "What a beautiful beach!",
+        "example_vi": "Bãi biển đẹp quá!",
+        "cefr": "A1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "family",
+    "type": "word",
+    "forms": [
+      "families"
+    ],
+    "senses": [
+      {
+        "pos": "noun",
+        "ipa_us": "/ˈfæməli/",
+        "ipa_uk": "/ˈfæməli/",
+        "vi": [
+          "gia đình"
+        ],
+        "def_en": "a group of people related to each other, such as parents and children",
+        "example_en": "I have dinner with my family every evening.",
+        "example_vi": "Tối nào tôi cũng ăn cơm với gia đình.",
+        "cefr": "A1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "work",
+    "type": "word",
+    "forms": [
+      "works",
+      "worked",
+      "working"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/wɝk/",
+        "ipa_uk": "/wɜːk/",
+        "vi": [
+          "làm việc",
+          "làm"
+        ],
+        "def_en": "to do a job, especially for money",
+        "example_en": "She works at a hospital.",
+        "example_vi": "Cô ấy làm việc ở bệnh viện.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "noun",
+        "ipa_us": "/wɝk/",
+        "ipa_uk": "/wɜːk/",
+        "vi": [
+          "công việc",
+          "việc làm",
+          "tác phẩm"
+        ],
+        "def_en": "a job or activity; or something created by an artist",
+        "example_en": "I have a lot of work today.",
+        "example_vi": "Hôm nay tôi có nhiều việc.",
+        "cefr": "A1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/wɝk/",
+        "ipa_uk": "/wɜːk/",
+        "vi": [
+          "hoạt động",
+          "có tác dụng",
+          "chạy"
+        ],
+        "def_en": "to function correctly or have the result you want",
+        "example_en": "My phone doesn't work.",
+        "example_vi": "Điện thoại của tôi không hoạt động.",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "give up",
+    "type": "phrasal_verb",
+    "forms": [
+      "gives up",
+      "gave up",
+      "given up",
+      "giving up"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌɡɪv ˈʌp/",
+        "ipa_uk": "/ˌɡɪv ˈʌp/",
+        "vi": [
+          "từ bỏ",
+          "bỏ cuộc",
+          "bỏ (thói quen)"
+        ],
+        "def_en": "to stop trying, or to stop doing a habit",
+        "example_en": "Don't give up, you're almost there!",
+        "example_vi": "Đừng bỏ cuộc, sắp tới đích rồi!",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": "Theo sau là danh từ hoặc V-ing: give up smoking (bỏ thuốc lá)."
+  },
+  {
+    "headword": "look forward to",
+    "type": "phrasal_verb",
+    "forms": [
+      "looks forward to",
+      "looked forward to",
+      "looking forward to"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/lʊk ˈfɔrwɚd tu/",
+        "ipa_uk": "/lʊk ˈfɔːwəd tuː/",
+        "vi": [
+          "mong chờ",
+          "trông đợi",
+          "háo hức chờ"
+        ],
+        "def_en": "to feel happy and excited about something that will happen",
+        "example_en": "I'm looking forward to the holiday.",
+        "example_vi": "Tôi đang rất mong chờ kỳ nghỉ.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "\"to\" ở đây là giới từ nên theo sau là danh từ hoặc V-ing: look forward to seeing you (KHÔNG phải \"to see\")."
+  },
+  {
+    "headword": "break the ice",
+    "type": "idiom",
+    "forms": [
+      "breaks the ice",
+      "broke the ice",
+      "broken the ice",
+      "breaking the ice"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌbreɪk ði ˈaɪs/",
+        "ipa_uk": "/ˌbreɪk ði ˈaɪs/",
+        "vi": [
+          "phá vỡ sự ngại ngùng",
+          "phá băng",
+          "mở đầu câu chuyện"
+        ],
+        "def_en": "to make people who have just met feel more relaxed",
+        "example_en": "He told a joke to break the ice.",
+        "example_vi": "Anh ấy kể một câu chuyện cười để phá vỡ sự ngại ngùng.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Không liên quan tới băng đá thật; nói về việc làm không khí bớt gượng gạo khi mới gặp."
+  },
+  {
+    "headword": "under the weather",
+    "type": "idiom",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "phrase",
+        "ipa_us": "/ˌʌndɚ ðə ˈwɛðɚ/",
+        "ipa_uk": "/ˌʌndə ðə ˈweðə/",
+        "vi": [
+          "hơi mệt",
+          "không được khỏe",
+          "ốm nhẹ"
+        ],
+        "def_en": "slightly ill",
+        "example_en": "I'm feeling a bit under the weather today.",
+        "example_vi": "Hôm nay tôi thấy trong người hơi mệt.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Không nói về thời tiết; nghĩa là cảm thấy không khỏe."
+  },
+  {
+    "headword": "piece of cake",
+    "type": "idiom",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "phrase",
+        "ipa_us": "/ˌpis əv ˈkeɪk/",
+        "ipa_uk": "/ˌpiːs əv ˈkeɪk/",
+        "vi": [
+          "dễ như ăn kẹo",
+          "dễ ợt",
+          "chuyện nhỏ"
+        ],
+        "def_en": "something very easy to do",
+        "example_en": "The test was a piece of cake.",
+        "example_vi": "Bài kiểm tra dễ như ăn kẹo.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": "Không phải \"miếng bánh\"; nghĩa là việc rất dễ."
+  },
+  {
+    "headword": "call it a day",
+    "type": "idiom",
+    "forms": [
+      "calls it a day",
+      "called it a day",
+      "calling it a day"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌkɔl ɪt ə ˈdeɪ/",
+        "ipa_uk": "/ˌkɔːl ɪt ə ˈdeɪ/",
+        "vi": [
+          "nghỉ thôi",
+          "dừng tay",
+          "kết thúc (việc đang làm)"
+        ],
+        "def_en": "to stop working on something, usually because you have done enough",
+        "example_en": "We've done a lot. Let's call it a day.",
+        "example_vi": "Làm được nhiều rồi. Hôm nay nghỉ thôi.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "run out of",
+    "type": "phrasal_verb",
+    "forms": [
+      "runs out of",
+      "ran out of",
+      "running out of"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌrʌn ˈaʊt əv/",
+        "ipa_uk": "/ˌrʌn ˈaʊt əv/",
+        "vi": [
+          "hết",
+          "cạn"
+        ],
+        "def_en": "to use all of something so that none is left",
+        "example_en": "We've run out of milk.",
+        "example_vi": "Nhà mình hết sữa rồi.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "figure out",
+    "type": "phrasal_verb",
+    "forms": [
+      "figures out",
+      "figured out",
+      "figuring out"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌfɪɡjɚ ˈaʊt/",
+        "ipa_uk": "/ˌfɪɡər ˈaʊt/",
+        "vi": [
+          "tìm ra",
+          "hiểu ra",
+          "nghĩ ra"
+        ],
+        "def_en": "to understand something or find the answer after thinking",
+        "example_en": "I can't figure out how this app works.",
+        "example_vi": "Tôi không hiểu nổi ứng dụng này hoạt động thế nào.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "hit the sack",
+    "type": "idiom",
+    "forms": [
+      "hits the sack",
+      "hit the sack",
+      "hitting the sack"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌhɪt ðə ˈsæk/",
+        "ipa_uk": "/ˌhɪt ðə ˈsæk/",
+        "vi": [
+          "đi ngủ",
+          "lên giường đi ngủ"
+        ],
+        "def_en": "(informal) to go to bed",
+        "example_en": "I'm exhausted. I'm going to hit the sack.",
+        "example_vi": "Mệt quá. Tôi đi ngủ đây.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Không phải \"đánh cái bao\"; là cách nói thân mật cho \"đi ngủ\"."
+  },
+  {
+    "headword": "on the fence",
+    "type": "idiom",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "phrase",
+        "ipa_us": "/ɑn ðə ˈfɛns/",
+        "ipa_uk": "/ɒn ðə ˈfens/",
+        "vi": [
+          "phân vân",
+          "lưỡng lự",
+          "chưa quyết định"
+        ],
+        "def_en": "not yet able to decide between two choices",
+        "example_en": "I'm still on the fence about buying a new phone.",
+        "example_vi": "Tôi vẫn đang phân vân có nên mua điện thoại mới không.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Thường dùng với \"be/sit on the fence\"; không liên quan tới hàng rào thật."
+  },
+  {
+    "headword": "take for granted",
+    "type": "idiom",
+    "forms": [
+      "takes for granted",
+      "took for granted",
+      "taken for granted",
+      "taking for granted"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌteɪk fɚ ˈɡrænɪd/",
+        "ipa_uk": "/ˌteɪk fə ˈɡrɑːntɪd/",
+        "vi": [
+          "coi là đương nhiên",
+          "không biết trân trọng"
+        ],
+        "def_en": "to not value someone or something because they are always there",
+        "example_en": "Don't take your parents' love for granted.",
+        "example_vi": "Đừng coi tình yêu của bố mẹ là điều đương nhiên.",
+        "cefr": "B2"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌteɪk fɚ ˈɡrænɪd/",
+        "ipa_uk": "/ˌteɪk fə ˈɡrɑːntɪd/",
+        "vi": [
+          "mặc định",
+          "cho là chắc chắn"
+        ],
+        "def_en": "to believe something is true without checking it",
+        "example_en": "I took it for granted that you would come.",
+        "example_vi": "Tôi cứ mặc định là bạn sẽ đến.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Cấu trúc: take somebody/something for granted; take it for granted that…"
+  },
+  {
+    "headword": "make ends meet",
+    "type": "idiom",
+    "forms": [
+      "makes ends meet",
+      "made ends meet",
+      "making ends meet"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌmeɪk ˌɛndz ˈmit/",
+        "ipa_uk": "/ˌmeɪk ˌendz ˈmiːt/",
+        "vi": [
+          "kiếm đủ sống",
+          "đủ ăn đủ tiêu",
+          "xoay xở chi tiêu"
+        ],
+        "def_en": "to have just enough money to pay for what you need",
+        "example_en": "She works two jobs to make ends meet.",
+        "example_vi": "Cô ấy làm hai công việc để đủ trang trải cuộc sống.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Hay đi với \"struggle to\": struggle to make ends meet (chật vật kiếm sống)."
+  },
+  {
+    "headword": "put off",
+    "type": "phrasal_verb",
+    "forms": [
+      "puts off",
+      "putting off"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌpʊt ˈɔf/",
+        "ipa_uk": "/ˌpʊt ˈɒf/",
+        "vi": [
+          "trì hoãn",
+          "hoãn lại"
+        ],
+        "def_en": "to delay doing something until later",
+        "example_en": "Stop putting off your homework.",
+        "example_vi": "Đừng trì hoãn làm bài tập nữa.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌpʊt ˈɔf/",
+        "ipa_uk": "/ˌpʊt ˈɒf/",
+        "vi": [
+          "làm mất hứng",
+          "làm chán",
+          "làm ngán"
+        ],
+        "def_en": "to make someone dislike something or not want to do it",
+        "example_en": "The smell put me off the food.",
+        "example_vi": "Cái mùi đó làm tôi hết muốn ăn.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Quá khứ và quá khứ phân từ vẫn là \"put off\"."
+  },
+  {
+    "headword": "look up to",
+    "type": "phrasal_verb",
+    "forms": [
+      "looks up to",
+      "looked up to",
+      "looking up to"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌlʊk ˈʌp tu/",
+        "ipa_uk": "/ˌlʊk ˈʌp tuː/",
+        "vi": [
+          "ngưỡng mộ",
+          "kính trọng",
+          "coi là tấm gương"
+        ],
+        "def_en": "to admire and respect someone",
+        "example_en": "I've always looked up to my older sister.",
+        "example_vi": "Tôi luôn ngưỡng mộ chị gái mình.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "get over",
+    "type": "phrasal_verb",
+    "forms": [
+      "gets over",
+      "got over",
+      "gotten over",
+      "getting over"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌɡɛt ˈoʊvɚ/",
+        "ipa_uk": "/ˌɡet ˈəʊvə/",
+        "vi": [
+          "vượt qua",
+          "khỏi (bệnh)",
+          "quên (người cũ)"
+        ],
+        "def_en": "to recover from an illness, a shock or the end of a relationship",
+        "example_en": "It took her months to get over the breakup.",
+        "example_vi": "Cô ấy mất mấy tháng mới vượt qua được chuyện chia tay.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "turn down",
+    "type": "phrasal_verb",
+    "forms": [
+      "turns down",
+      "turned down",
+      "turning down"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌtɝn ˈdaʊn/",
+        "ipa_uk": "/ˌtɜːn ˈdaʊn/",
+        "vi": [
+          "từ chối",
+          "khước từ"
+        ],
+        "def_en": "to refuse an offer or request",
+        "example_en": "He turned down the job offer.",
+        "example_vi": "Anh ấy đã từ chối lời mời làm việc.",
+        "cefr": "B1"
+      },
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌtɝn ˈdaʊn/",
+        "ipa_uk": "/ˌtɜːn ˈdaʊn/",
+        "vi": [
+          "vặn nhỏ",
+          "giảm (âm lượng, nhiệt độ)"
+        ],
+        "def_en": "to make a machine produce less sound, heat, etc.",
+        "example_en": "Can you turn down the music?",
+        "example_vi": "Bạn vặn nhỏ nhạc được không?",
+        "cefr": "A2"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "come up with",
+    "type": "phrasal_verb",
+    "forms": [
+      "comes up with",
+      "came up with",
+      "coming up with"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌkʌm ˈʌp wɪð/",
+        "ipa_uk": "/ˌkʌm ˈʌp wɪð/",
+        "vi": [
+          "nghĩ ra",
+          "nảy ra",
+          "đưa ra"
+        ],
+        "def_en": "to think of an idea, plan or answer",
+        "example_en": "She came up with a great idea.",
+        "example_vi": "Cô ấy đã nghĩ ra một ý tưởng tuyệt vời.",
+        "cefr": "B1"
+      }
+    ],
+    "note_vi": ""
+  },
+  {
+    "headword": "once in a blue moon",
+    "type": "idiom",
+    "forms": [],
+    "senses": [
+      {
+        "pos": "phrase",
+        "ipa_us": "/ˌwʌns ɪn ə ˌblu ˈmun/",
+        "ipa_uk": "/ˌwʌns ɪn ə ˌbluː ˈmuːn/",
+        "vi": [
+          "năm thì mười họa",
+          "hiếm khi",
+          "rất hiếm hoi"
+        ],
+        "def_en": "very rarely",
+        "example_en": "I only eat fast food once in a blue moon.",
+        "example_vi": "Năm thì mười họa tôi mới ăn đồ ăn nhanh.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Không liên quan tới mặt trăng màu xanh; nghĩa là rất hiếm khi."
+  },
+  {
+    "headword": "cost an arm and a leg",
+    "type": "idiom",
+    "forms": [
+      "costs an arm and a leg",
+      "cost an arm and a leg",
+      "costing an arm and a leg"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌkɔst ən ˌɑrm ənd ə ˈlɛɡ/",
+        "ipa_uk": "/ˌkɒst ən ˌɑːm ənd ə ˈleɡ/",
+        "vi": [
+          "đắt cắt cổ",
+          "rất đắt",
+          "tốn bộn tiền"
+        ],
+        "def_en": "to be very expensive",
+        "example_en": "That new phone costs an arm and a leg.",
+        "example_vi": "Cái điện thoại mới đó đắt cắt cổ.",
+        "cefr": "B2"
+      }
+    ],
+    "note_vi": "Không liên quan tới tay chân thật; nghĩa là cực kỳ đắt."
+  },
+  {
+    "headword": "bite the bullet",
+    "type": "idiom",
+    "forms": [
+      "bites the bullet",
+      "bit the bullet",
+      "bitten the bullet",
+      "biting the bullet"
+    ],
+    "senses": [
+      {
+        "pos": "verb",
+        "ipa_us": "/ˌbaɪt ðə ˈbʊlɪt/",
+        "ipa_uk": "/ˌbaɪt ðə ˈbʊlɪt/",
+        "vi": [
+          "cắn răng chịu đựng",
+          "đành chấp nhận",
+          "cắn răng làm"
+        ],
+        "def_en": "to make yourself do something unpleasant that you have been avoiding",
+        "example_en": "I finally bit the bullet and went to the dentist.",
+        "example_vi": "Cuối cùng tôi cũng cắn răng đi khám răng.",
+        "cefr": "C1"
+      }
+    ],
+    "note_vi": "Không phải \"cắn viên đạn\"; nghĩa là cắn răng làm việc khó chịu không thể tránh."
+  }
+]
