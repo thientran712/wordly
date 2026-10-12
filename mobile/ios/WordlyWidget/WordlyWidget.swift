@@ -28,6 +28,9 @@ struct WordlyEntry: TimelineEntry {
     var signedOut = false
     /// Phiên âm US "/rɪˈzɪljənt/" — nil với câu hoặc khi app chưa tra được
     var phonetic: String? = nil
+    /// Nghĩa hiện trên widget: từ kho dùng nghĩa Việt app đã tra (WidgetMeaning),
+    /// chưa có thì định nghĩa tiếng Anh. `word.meaning` giữ nguyên cho link mở app.
+    var meaning: String = ""
 }
 
 struct WordlyProvider: TimelineProvider {
@@ -35,14 +38,16 @@ struct WordlyProvider: TimelineProvider {
 
     func placeholder(in context: Context) -> WordlyEntry {
         WordlyEntry(date: Date(), word: Self.sample, showMeaning: true, resting: false,
-                    lockStyle: .full, homeStyle: WidgetSettings.HomeStyle(), textAlign: .leading, phonetic: "/rɪˈzɪljənt/")
+                    lockStyle: .full, homeStyle: WidgetSettings.HomeStyle(), textAlign: .leading, phonetic: "/rɪˈzɪljənt/",
+                    meaning: Self.sample.meaning)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (WordlyEntry) -> Void) {
         let settings = loadSettings()
         let first = WidgetSchedule.entries(words: loadWords(), bank: loadWords(bankKey), settings: settings)
             .first { $0.word != nil }?.word
-        completion(entry(date: Date(), word: first ?? Self.sample, resting: false, settings: settings, phonetics: loadPhonetics()))
+        completion(entry(date: Date(), word: first ?? Self.sample, resting: false, settings: settings,
+                         phonetics: loadPhonetics(), meaningsVi: loadMeaningsVi()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WordlyEntry>) -> Void) {
@@ -60,21 +65,27 @@ struct WordlyProvider: TimelineProvider {
             || !WidgetSchedule.bankPool(bank, words: words, settings: settings).isEmpty
         let schedule = WidgetSchedule.entries(words: words, bank: bank, settings: settings)
         let phonetics = loadPhonetics()
+        let meaningsVi = loadMeaningsVi()
         let entries = schedule.map { entry(date: $0.date, word: $0.word, resting: hasWords && $0.word == nil,
-                                           settings: settings, phonetics: phonetics) }
+                                           settings: settings, phonetics: phonetics, meaningsVi: meaningsVi) }
         // Hết lịch thì xin lịch mới (app cũng gọi reload khi dữ liệu đổi)
         completion(Timeline(entries: entries, policy: .after(WidgetSchedule.reloadDate(entries: schedule))))
     }
 
     private func entry(date: Date, word: WidgetWordItem?, resting: Bool, settings: WidgetSettings,
-                       phonetics: [String: String] = [:]) -> WordlyEntry {
+                       phonetics: [String: String] = [:], meaningsVi: [String: String] = [:]) -> WordlyEntry {
         WordlyEntry(date: date, word: word, showMeaning: settings.showMeaning, resting: resting,
                     lockStyle: settings.lockStyle, homeStyle: settings.homeStyle, textAlign: settings.textAlign,
-                    phonetic: word.flatMap { WidgetPhonetic.phonetic(for: $0.word, cache: phonetics) })
+                    phonetic: word.flatMap { WidgetPhonetic.phonetic(for: $0.word, cache: phonetics) },
+                    meaning: word.map { WidgetMeaning.meaning(for: $0, cache: meaningsVi) } ?? "")
     }
 
     private func loadPhonetics() -> [String: String] {
         UserDefaults(suiteName: appGroup)?.dictionary(forKey: WidgetPhonetic.cacheKey) as? [String: String] ?? [:]
+    }
+
+    private func loadMeaningsVi() -> [String: String] {
+        UserDefaults(suiteName: appGroup)?.dictionary(forKey: WidgetMeaning.cacheKey) as? [String: String] ?? [:]
     }
 
     private func loadWords(_ key: String = wordsKey) -> [WidgetWordItem] {
@@ -156,7 +167,7 @@ struct LockRectangular: View {
         let align = entry.textAlign
         if let w = entry.word {
             let compact = entry.lockStyle == .compact
-            let meaning: String? = entry.showMeaning ? w.meaning : (compact ? nil : "Nghĩa là gì nhỉ? 🤔")
+            let meaning: String? = entry.showMeaning ? entry.meaning : (compact ? nil : "Nghĩa là gì nhỉ? 🤔")
             ViewThatFits(in: .vertical) {
                 ForEach(Self.sizes(compact: compact), id: \.self) { size in
                     LockWordStack(word: w.word, phonetic: entry.phonetic, meaning: meaning, size: size,
@@ -249,7 +260,7 @@ struct LockInline: View {
     let entry: WordlyEntry
     var body: some View {
         if let w = entry.word {
-            Text(entry.showMeaning ? "\(w.word) — \(w.meaning)" : w.word)
+            Text(entry.showMeaning ? "\(w.word) — \(entry.meaning)" : w.word)
         } else {
             Text(entry.signedOut ? "📖 Đăng nhập Wordly" : (entry.resting ? "🌙 Wordly nghỉ ngơi" : "📖 Mở Wordly để lưu từ"))
         }
@@ -301,7 +312,7 @@ struct HomeWord: View {
                         .minimumScaleFactor(0.7)
                         .padding(.top, -4)
                 }
-                Text(entry.showMeaning ? w.meaning : "Đoán nghĩa rồi mở app kiểm tra nhé 🤔")
+                Text(entry.showMeaning ? entry.meaning : "Đoán nghĩa rồi mở app kiểm tra nhé 🤔")
                     .font(.system(size: meaningSize, weight: style.meaningWeight.swiftUIWeight))
                     .italic(style.meaningItalic)
                     .foregroundStyle(Color(hex: style.meaningColorHex).opacity(0.9))

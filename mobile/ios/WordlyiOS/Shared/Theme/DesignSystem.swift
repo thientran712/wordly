@@ -219,11 +219,22 @@ extension Color {
     }
 
     /// Dùng khi lưu màu người dùng tự chọn (ColorPicker) vào JSON settings.
+    /// Giữ cả độ mờ (thanh "Độ mờ" của ColorPicker) — trước đây bỏ alpha nên
+    /// kéo độ mờ không có tác dụng.
     func toHex() -> String {
         let ui = UIColor(self)
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         ui.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
+        return Self.hexString(red: r, green: g, blue: b, alpha: a)
+    }
+
+    /// Đục → "#RRGGBB" (như dữ liệu cũ); có độ mờ → "#AARRGGBB", đúng dạng
+    /// `init(hex:)` đọc. Thành phần ngoài 0…1 (màu Display P3) bị kẹp lại.
+    static func hexString(red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat) -> String {
+        func byte(_ v: CGFloat) -> Int { Int((min(max(v, 0), 1) * 255).rounded()) }
+        let rgb = String(format: "%02X%02X%02X", byte(red), byte(green), byte(blue))
+        let a = byte(alpha)
+        return a == 255 ? "#\(rgb)" : String(format: "#%02X", a) + rgb
     }
 }
 
