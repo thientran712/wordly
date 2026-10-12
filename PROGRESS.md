@@ -21,6 +21,11 @@
 
 **⏸ TẠM DỪNG 12/10/2026 (chủ dự án):** dừng kho từ + các việc tối ưu chi phí còn lại để **tập trung publish app iOS lên App Store**. Mọi thứ dưới đây giữ nguyên trạng thái, làm tiếp sau khi app đã lên store. Worktree còn giữ: `.claude/worktrees/agent-ab12283faf5a4a262` (email Resend, chưa commit), `.claude/worktrees/wordbank-spec` (PR #15). Bản thử kho từ + công cụ trong `data/wordbank/`; công cụ đối chiếu CMUdict (`crosscheck.mjs`) chỉ ở thư mục nháp phiên — viết lại khi làm tiếp.
 
+**Ảnh nền widget màn hình chính — ĐỂ SAU (chủ dự án 12/10/2026), yêu cầu số 1: KHÔNG được crash.**
+- Từng có (commit `a3e15a7`) rồi bị gỡ ở `b377767` "vì gây crash" — nguyên nhân gốc chưa từng được ghi. Bản cũ: `PhotosPicker` → `UIImage(data:)` ảnh gốc → thu 500px → JPEG → App Group → widget `UIImage(data:)` + `scaledToFill`, không có bước cắt.
+- Nghi vấn cần kiểm trước khi code: (a) app giải mã ảnh gốc 48MP (~200MB) trước khi thu nhỏ; (b) widget vượt ngân sách bộ nhớ (~30MB); (c) ảnh quá cỡ/lệch tỉ lệ khung widget; (d) ghi file không atomic khi widget đang đọc.
+- Thiết kế đã thống nhất: chỉ widget màn hình chính (nhỏ + vừa); chọn ảnh → **màn hình chỉnh khung** 2 tab Nhỏ (vuông) / Vừa (ngang), kéo để di chuyển + chụm để phóng to (luôn phủ kín khung), xem trước có chữ đè lên, thanh làm tối, Lưu / Xoá ảnh nền. Chống crash: không bao giờ giải mã ảnh gốc (ImageIO downsample), lưu đúng cỡ pixel từng loại widget, ghi `.atomic`, widget đọc bằng downsample + rơi về nền màu khi lỗi, test với ảnh 8000×6000/48MP, **bắt buộc thử trên iPhone thật** trước khi phát hành.
+
 **Chờ / việc tiếp (sau khi publish):**
 - **Kho từ song ngữ** — spec `docs/superpowers/specs/2026-10-12-wordbank-design.md` (Q1–Q5 đã quyết: dùng danh sách từ có sẵn, Việt→Anh = đảo ngược kho EN + bù ~1–2k mục, dự phòng câu = Groq, âm thanh giữ TTS khi cần + cache, đợt 1 = 10k EN). Bản thử 100 mục đã duyệt → `data/wordbank/batches/0001-pilot-*.json`. Bước tiếp: lô thử 200 từ hiếm.
 - Email Resend (CHƯA commit, worktree `agent-ab12283faf5a4a262`) — bật khi có cả `RESEND_API_KEY` và `EMAIL_FROM`, lô 100, 5 req/s, 262/262 test. Cần xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn ~$30).
