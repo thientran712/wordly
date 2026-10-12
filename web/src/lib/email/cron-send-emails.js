@@ -2,7 +2,7 @@
 // cron VPS gọi POST /api/cron/send-emails mỗi 5 phút, hàm này tự hỏi DB
 // "ai tới giờ gửi ngay bây giờ" (polling) thay vì Inngest "ngủ" tới đúng giờ.
 // Xem docs/superpowers/specs/2026-10-10-cron-email-design.md.
-import { isSlotDueNow } from "./cron-schedule.js";
+import { findDueSlots } from "./due-slots.js";
 import { sendDailyWordEmail } from "./send-email.js";
 import { selectEmailContent, selectBankWords } from "./select-word-for-email.js";
 
@@ -91,27 +91,7 @@ async function sendForSlot(supabase, { user_id, slot_id }) {
 /** Quét toàn bộ slot đang bật, gửi email cho những slot tới giờ — gọi từ
  * route cron. `now` truyền vào để test được (mặc định new Date()). */
 export async function runDueEmailSends(supabase, now = new Date()) {
-  const [{ data: prefs }, { data: profiles }, { data: slots }] = await Promise.all([
-    supabase.from("email_preferences").select("user_id, enabled, frequency, custom_days").eq("enabled", true),
-    supabase.from("profiles").select("id, timezone"),
-    supabase.from("email_slots").select("id, user_id, enabled, send_time").eq("enabled", true),
-  ]);
-
-  const prefByUser = new Map((prefs || []).map(p => [p.user_id, p]));
-  const tzByUser = new Map((profiles || []).map(p => [p.id, p.timezone]));
-
-  const dueSlots = (slots || []).filter(slot => {
-    const pref = prefByUser.get(slot.user_id);
-    if (!pref) return false;
-    return isSlotDueNow({
-      sendTime: slot.send_time,
-      timezone: tzByUser.get(slot.user_id),
-      frequency: pref.frequency,
-      customDays: pref.custom_days,
-      now,
-      windowMinutes: WINDOW_MINUTES,
-    });
-  });
+  const { checked, dueSlots } = await findDueSlots(supabase, now, WINDOW_MINUTES);
 
   const results = [];
   for (const slot of dueSlots) {
@@ -123,5 +103,5 @@ export async function runDueEmailSends(supabase, now = new Date()) {
     results.push({ slot_id: slot.id, ...r });
   }
 
-  return { checked: (slots || []).length, due: dueSlots.length, results };
+  return { checked, due: dueSlots.length, results };
 }
