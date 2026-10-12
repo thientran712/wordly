@@ -3,7 +3,7 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 12/10/2026 — Tối ưu chi phí bên thứ 3: Gemini production chuyển sang key trả phí; dịch lai đã commit (branch `feat/translate-hybrid-cost`), email Resend đã code
+### 12/10/2026 — Tối ưu chi phí bên thứ 3: dịch lai + giới hạn Alex ĐÃ DEPLOY production; spec kho từ
 
 **Gemini — ĐÃ ĐỔI trên production:**
 - Trước đó cả máy dev lẫn production dùng key `…zTKk` của "Gemini Project" (`gen-lang-client-0536362233`, tài khoản huythien712) — **gói miễn phí, dùng chung hạn mức 15 lượt/phút với SkillProof Prod + Staging**. Đo: 25 lượt song song → 17 OK, 8 lỗi 429.
@@ -13,19 +13,19 @@
 - Lưu ý: `gemini-flash-lite-latest` giờ trỏ sang **3.5-flash-lite** (đắt hơn 2.5); `gemini-2.5-flash-lite` đã đóng với tài khoản mới.
 - Tài khoản gcloud `madison.huy@gamuda.com.my` đã thu hồi khỏi máy — **không bao giờ dùng cho Wordly**.
 
-**Code:**
-- `feat/translate-hybrid-cost` (ĐÃ commit, chưa merge/deploy) — ≤3 từ → DeepL, câu → Gemini 3.5 Flash-Lite (lỗi → DeepL), cache theo câu RAM + bảng `translation_cache` (migration `20261012000200`, **chưa chạy ở đâu**). 261/261 test. Lý do: đánh giá mù 75 mục — câu Gemini ngang DeepL, từ đơn Gemini bịa từ 5/40.
-- Email Resend (CHƯA commit, worktree `agent-ab12283faf5a4a262`) — bật khi có cả `RESEND_API_KEY` và `EMAIL_FROM`, lô 100, 5 req/s. 262/262 test.
+**Đã deploy production (PR #13 + #14 đã merge vào `main`, `web/` của `main` = bản đang chạy):**
+- **Dịch lai** (PR #13): ≤3 từ → DeepL, câu → Gemini 3.5 Flash-Lite (lỗi → DeepL), cache theo câu RAM + bảng `translation_cache`. Migration `20261012000200` chạy trên production trong một transaction (RLS bật, chỉ `service_role`/`postgres` có quyền). Lý do: đánh giá mù 75 mục — câu Gemini ngang DeepL, từ đơn Gemini bịa từ 5/40.
+- **Giới hạn AI** (PR #14): Alex 20/phút + 300/ngày, chỉ gửi 20 tin gần nhất, ≤1.500 ký tự/tin, bỏ role `system` từ client; gợi ý từ 20/phút + 200/ngày.
+- Deploy: image `wordly-web:8f7ada9` (build với `--build-arg NEXT_PUBLIC_*` lấy từ `.env` trên VPS) → tag `manual` → `--force-recreate`. Bản quay về: `wordly-web:rollback-pre-8f7ada9`.
+- Bằng chứng trên production: câu → `engine=gemini` (1,7s), "resilient" → `engine=deepl` "kiên cường" (1,0s), gửi lại cùng câu 0,2s (trúng cache), `/api/practice` chưa đăng nhập 401, log 3 phút không lỗi. CI #13/#14 xanh. Chưa kiểm sống: Alex chạm hạn mức 429 (chỉ có unit test).
 
-**Chờ quyết định:**
-- **Migration `translation_cache` ĐÃ CHẠY trên production** (12/10, chủ dự án duyệt; một transaction, RLS bật, chỉ `service_role`/`postgres` có quyền). Code cũ không dùng bảng → vô hại.
-- **Deploy dịch lai + giới hạn Alex (commit gộp `8f7ada9`, branch local `deploy/2026-10-12-cost`) — DỞ:** code đã lên VPS (`/opt/wordly/prod/web/build-8f7ada9`), image cũ đã tag `wordly-web:rollback-pre-8f7ada9`; build image lỗi vì thiếu `--build-arg NEXT_PUBLIC_SUPABASE_*` và auto mode chặn tiếp các lệnh deploy. Production vẫn chạy image cũ. Cần chủ dự án cho quyền ssh deploy hoặc tự chạy lệnh build.
-- Branch `fix/ai-cost-limits` (Alex 20/phút + 300/ngày, chỉ gửi 20 tin gần nhất, ≤1.500 ký tự/tin, bỏ role `system` từ client; gợi ý từ 20/phút + 200/ngày) — đã commit local, 250/250 test. Chưa push (auto mode chặn `git push`).
-- Resend: xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn ~$30).
+**Chờ / việc tiếp:**
+- **Kho từ song ngữ** — spec `docs/superpowers/specs/2026-10-12-wordbank-design.md` (Q1–Q5 đã quyết: dùng danh sách từ có sẵn, Việt→Anh = đảo ngược kho EN + bù ~1–2k mục, dự phòng câu = Groq, âm thanh giữ TTS khi cần + cache, đợt 1 = 10k EN). Bản thử 100 mục đã duyệt → `data/wordbank/batches/0001-pilot-*.json`. Bước tiếp: lô thử 200 từ hiếm.
+- Email Resend (CHƯA commit, worktree `agent-ab12283faf5a4a262`) — bật khi có cả `RESEND_API_KEY` và `EMAIL_FROM`, lô 100, 5 req/s, 262/262 test. Cần xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn ~$30).
 - **Lỗi có sẵn:** cron email đọc `email_slots`/`profiles`/`email_preferences` không phân trang, `max_rows = 1000` → người dùng thứ 1.001+ không nhận email.
-- **DeepL production là gói FREE** (500k ký tự/tháng) — đủ khi chỉ còn dịch từ ≤3 từ; khi có kho từ thì tắt hẳn.
-- Kho từ song ngữ: đang làm bản thử 100 mục (thư mục nháp phiên, chưa vào repo) — Claude sinh + agent rà soát độc lập + đối chiếu DeepL/CMUdict/Wiktionary. Spec chính thức viết sau khi chủ dự án chấm bản thử.
-- Chiến lược giá đề xuất: Miễn phí / Pro 29k/tháng / Pro năm 249k, hạn mức theo gói (Alex 20 lượt/ngày ở Pro — hạn mức 300/ngày hiện tại chỉ là chống lạm dụng, người chat hết mức tốn ~94k đ/tháng). Chưa duyệt, cần spec (StoreKit + bảng quyền lợi + hạn mức theo gói).
+- **DeepL production là gói FREE** (500k ký tự/tháng) — đủ khi chỉ còn dịch từ ≤3 từ; tắt hẳn ở giai đoạn 3 của kho từ.
+- Chiến lược giá đề xuất: Miễn phí / Pro 29k/tháng / Pro năm 249k, hạn mức theo gói (Alex ~20 lượt/ngày ở Pro — 300/ngày hiện tại chỉ chống lạm dụng; người chat hết mức tốn ~94k đ/tháng). Chưa duyệt, cần spec (StoreKit + bảng quyền lợi + hạn mức theo gói).
+- VPS còn chạy container `localex-staging-postgres-1`, `pehub-db-db-1` (RAM ~2GB trống / 4GB).
 
 **Quyết định của chủ dự án (12/10/2026):**
 - **Phát âm giữ nguyên Google TTS Neural2** cho cả từ lẫn câu (EN-US, EN-GB, VI) — chất lượng hiện tại đạt yêu cầu. KHÔNG chuyển sang giọng trên máy (iOS/trình duyệt đọc tệ), không đổi sang Chirp 3 HD.
