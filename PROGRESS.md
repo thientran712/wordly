@@ -5,6 +5,8 @@
 
 ### 12/10/2026 — iOS 1.0.0 BUILD 14 ĐÃ UPLOAD — bản nộp App Store (miễn phí)
 
+**✅ ĐÃ NỘP APP STORE 12/10/2026** (build 1.0.0 (14), trạng thái *Waiting for Review*, Apple hẹn ≤ 48 giờ; phát hành thủ công — *Manually release*). App Privacy khai đúng 3 loại khớp `PrivacyInfo.xcprivacy`: Name, Email Address, Other User Content (App Functionality, linked, không tracking) — lần đầu bị chặn "Unable to Add for Review" vì đã tick thừa 9 loại chưa Set Up nên không Publish được. Ảnh chụp: giao diện ASC mới đòi cỡ "iPhone with Dynamic Island (medium display)" 1206×2622 → thu nhỏ từ bộ 6.9" vào `docs/app-store/screenshots-6.3/`. Hồ sơ nộp: artifact "Wordly App Store Kit" (đã cập nhật build 14). Còn treo: trang web `/privacy` vẫn ghi DeepL dịch văn bản — nên sửa thành Gemini dịch câu cho khớp.
+
 **Quyết định:** bản 1.0 **miễn phí** (gói Pro làm ở 1.1). Play nộp App Store; mật khẩu tài khoản demo đã điền trong App Store Connect (chủ dự án). Ảnh nền widget: để sau (xem mục dưới).
 
 **Build 14** = `main` `0316e51` + bump (PR #18, `f781484`):
