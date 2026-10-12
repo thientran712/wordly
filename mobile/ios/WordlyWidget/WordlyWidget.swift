@@ -26,6 +26,8 @@ struct WordlyEntry: TimelineEntry {
     let textAlign: WidgetSettings.TextAlign
     /// Đã đăng xuất trong app → nhắc đăng nhập, không xoay từ
     var signedOut = false
+    /// Phiên âm US "/rɪˈzɪljənt/" — nil với câu hoặc khi app chưa tra được
+    var phonetic: String? = nil
 }
 
 struct WordlyProvider: TimelineProvider {
@@ -33,14 +35,14 @@ struct WordlyProvider: TimelineProvider {
 
     func placeholder(in context: Context) -> WordlyEntry {
         WordlyEntry(date: Date(), word: Self.sample, showMeaning: true, resting: false,
-                    lockStyle: .full, homeStyle: WidgetSettings.HomeStyle(), textAlign: .leading)
+                    lockStyle: .full, homeStyle: WidgetSettings.HomeStyle(), textAlign: .leading, phonetic: "/rɪˈzɪljənt/")
     }
 
     func getSnapshot(in context: Context, completion: @escaping (WordlyEntry) -> Void) {
         let settings = loadSettings()
         let first = WidgetSchedule.entries(words: loadWords(), bank: loadWords(bankKey), settings: settings)
             .first { $0.word != nil }?.word
-        completion(entry(date: Date(), word: first ?? Self.sample, resting: false, settings: settings))
+        completion(entry(date: Date(), word: first ?? Self.sample, resting: false, settings: settings, phonetics: loadPhonetics()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WordlyEntry>) -> Void) {
@@ -57,14 +59,22 @@ struct WordlyProvider: TimelineProvider {
         let hasWords = !WidgetSchedule.pool(from: words, settings: settings).isEmpty
             || !WidgetSchedule.bankPool(bank, words: words, settings: settings).isEmpty
         let schedule = WidgetSchedule.entries(words: words, bank: bank, settings: settings)
-        let entries = schedule.map { entry(date: $0.date, word: $0.word, resting: hasWords && $0.word == nil, settings: settings) }
+        let phonetics = loadPhonetics()
+        let entries = schedule.map { entry(date: $0.date, word: $0.word, resting: hasWords && $0.word == nil,
+                                           settings: settings, phonetics: phonetics) }
         // Hết lịch thì xin lịch mới (app cũng gọi reload khi dữ liệu đổi)
         completion(Timeline(entries: entries, policy: .after(WidgetSchedule.reloadDate(entries: schedule))))
     }
 
-    private func entry(date: Date, word: WidgetWordItem?, resting: Bool, settings: WidgetSettings) -> WordlyEntry {
+    private func entry(date: Date, word: WidgetWordItem?, resting: Bool, settings: WidgetSettings,
+                       phonetics: [String: String] = [:]) -> WordlyEntry {
         WordlyEntry(date: date, word: word, showMeaning: settings.showMeaning, resting: resting,
-                    lockStyle: settings.lockStyle, homeStyle: settings.homeStyle, textAlign: settings.textAlign)
+                    lockStyle: settings.lockStyle, homeStyle: settings.homeStyle, textAlign: settings.textAlign,
+                    phonetic: word.flatMap { WidgetPhonetic.phonetic(for: $0.word, cache: phonetics) })
+    }
+
+    private func loadPhonetics() -> [String: String] {
+        UserDefaults(suiteName: appGroup)?.dictionary(forKey: WidgetPhonetic.cacheKey) as? [String: String] ?? [:]
     }
 
     private func loadWords(_ key: String = wordsKey) -> [WidgetWordItem] {
@@ -134,32 +144,84 @@ struct WordlyWidgetEntryView: View {
 }
 
 // MARK: - Màn hình khoá
-// lockStyle .full: từ + nghĩa. .compact: từ cỡ lớn, nghĩa nhỏ 1 dòng — Apple
-// không cho đổi màu/nền ở đây, chỉ cỡ/đậm/bố cục.
+// lockStyle .full: từ + nghĩa. .compact: từ cỡ lớn, nghĩa nhỏ — Apple không cho
+// đổi màu/nền ở đây, chỉ cỡ/đậm/bố cục.
+//
+// Khung chữ nhật cố định ~160×72pt (Apple không có kiểu to hơn). Để tận dụng hết
+// chỗ: thử lần lượt các cỡ chữ, ViewThatFits chọn cỡ to nhất mà nghĩa xuống
+// dòng hết vẫn vừa khung. Không vừa cỡ nào mới thu nhỏ/cắt "…" như trước.
 struct LockRectangular: View {
     let entry: WordlyEntry
     var body: some View {
         let align = entry.textAlign
         if let w = entry.word {
-            VStack(alignment: align.horizontal, spacing: 1) {
-                Text(w.word)
-                    .font(.system(size: entry.lockStyle == .compact ? 24 : 17, weight: entry.lockStyle == .compact ? .heavy : .bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                if entry.showMeaning || entry.lockStyle == .full {
-                    Text(entry.showMeaning ? w.meaning : "Nghĩa là gì nhỉ? 🤔")
-                        .font(.system(size: entry.lockStyle == .compact ? 13 : 14, weight: .medium))
-                        .lineLimit(entry.lockStyle == .compact ? 1 : 2)
-                        .minimumScaleFactor(0.6)
-                        .opacity(0.85)
+            let compact = entry.lockStyle == .compact
+            let meaning: String? = entry.showMeaning ? w.meaning : (compact ? nil : "Nghĩa là gì nhỉ? 🤔")
+            ViewThatFits(in: .vertical) {
+                ForEach(Self.sizes(compact: compact), id: \.self) { size in
+                    LockWordStack(word: w.word, phonetic: entry.phonetic, meaning: meaning, size: size,
+                                  compact: compact, align: align)
                 }
+                LockWordStack(word: w.word, phonetic: entry.phonetic, meaning: meaning,
+                              size: Self.sizes(compact: compact).last!, compact: compact, align: align, truncate: true)
             }
-            .multilineTextAlignment(align.multiline)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: align.frame)
             .widgetAccentable()
         } else {
             LockMessage(resting: entry.resting, signedOut: entry.signedOut, align: align)
         }
+    }
+
+    /// Cỡ (từ, nghĩa) thử từ to đến nhỏ.
+    static func sizes(compact: Bool) -> [LockWordStack.Size] {
+        compact
+            ? [.init(word: 24, meaning: 13), .init(word: 22, meaning: 12), .init(word: 20, meaning: 12)]
+            : [.init(word: 17, meaning: 14), .init(word: 17, meaning: 13), .init(word: 15, meaning: 12)]
+    }
+}
+
+struct LockWordStack: View {
+    struct Size: Hashable { let word: CGFloat; let meaning: CGFloat }
+    let word: String
+    let phonetic: String?
+    let meaning: String?
+    let size: Size
+    let compact: Bool
+    let align: WidgetSettings.TextAlign
+    /// Phương án cuối: giới hạn dòng + thu nhỏ thay vì đòi vừa khung
+    var truncate = false
+
+    var body: some View {
+        VStack(alignment: align.horizontal, spacing: 1) {
+            // Cụm từ ("take something for granted") được xuống 2 dòng thay vì
+            // bị cắt "…"; từ đơn giữ 1 dòng và thu nhỏ — xuống dòng sẽ ngắt giữa chữ.
+            Text(word)
+                .font(.system(size: size.word, weight: compact ? .heavy : .bold))
+                .lineLimit(word.contains(" ") ? 2 : 1)
+                .minimumScaleFactor(0.6)
+            // Phiên âm nằm giữa từ và nghĩa, nhỏ + nhạt để không tranh với từ
+            if let phonetic {
+                Text(phonetic)
+                    .font(.system(size: max(size.meaning - 2, 11), weight: .regular))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .opacity(0.7)
+            }
+            if let meaning {
+                let text = Text(meaning)
+                    .font(.system(size: size.meaning, weight: .medium))
+                    .opacity(0.85)
+                if truncate {
+                    text.lineLimit(compact ? 2 : 3).minimumScaleFactor(0.8)
+                } else {
+                    // Báo chiều cao thật khi xuống dòng hết → ViewThatFits biết có vừa không
+                    text.fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .multilineTextAlignment(align.multiline)
+        // Trải hết khung để căn trái/phải bám đúng mép khung
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: align.frame)
     }
 }
 
@@ -231,6 +293,14 @@ struct HomeWord: View {
                     .foregroundStyle(Color(hex: style.wordColorHex))
                     .lineLimit(2)
                     .minimumScaleFactor(0.5)
+                if let phonetic = entry.phonetic {
+                    Text(phonetic)
+                        .font(.system(size: max(meaningSize - 1, 11)))
+                        .foregroundStyle(Color(hex: style.meaningColorHex).opacity(0.75))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .padding(.top, -4)
+                }
                 Text(entry.showMeaning ? w.meaning : "Đoán nghĩa rồi mở app kiểm tra nhé 🤔")
                     .font(.system(size: meaningSize, weight: style.meaningWeight.swiftUIWeight))
                     .italic(style.meaningItalic)

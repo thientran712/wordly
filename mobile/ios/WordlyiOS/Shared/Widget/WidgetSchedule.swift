@@ -30,8 +30,9 @@ extension WidgetWordItem {
 struct WidgetSettings: Codable, Equatable {
     enum Source: String, Codable, CaseIterable {
         case saved      // từ đã bấm "Lưu"
-        case recent     // mọi bản dịch Anh→Việt gần đây
+        case recent     // mọi bản dịch Anh→Việt gần đây (= tick cả "Đã lưu" lẫn "Dịch gần đây")
         case custom     // tự chọn từng từ
+        case unsaved    // bản dịch gần đây chưa bấm "Lưu"
     }
 
     var source: Source = .saved
@@ -86,6 +87,20 @@ struct WidgetSettings: Codable, Equatable {
     var textAlign: TextAlign = .leading
 
     static let intervals = [15, 30, 60, 120]
+
+    // Hai ô chọn "Đã lưu" / "Dịch gần đây" trong cài đặt. "Tự chọn" thì không ô nào.
+    var includesSaved: Bool { source == .saved || source == .recent }
+    var includesRecent: Bool { source == .unsaved || source == .recent }
+
+    /// Bỏ chọn cả hai thì giữ nguyên — widget phải còn ít nhất một nguồn.
+    mutating func setSources(saved: Bool, recent: Bool) {
+        switch (saved, recent) {
+        case (true, true): source = .recent
+        case (true, false): source = .saved
+        case (false, true): source = .unsaved
+        case (false, false): break
+        }
+    }
 }
 
 extension WidgetSettings.HomeStyle {
@@ -235,7 +250,7 @@ enum WidgetSchedule {
         let word: WidgetWordItem?
     }
 
-    /// Lọc từ theo nguồn. "Đã lưu" mà chưa lưu từ nào thì dùng từ gần đây để widget không trống.
+    /// Lọc từ theo nguồn. Nguồn đang chọn không có từ nào thì dùng mọi từ gần đây để widget không trống.
     static func pool(from words: [WidgetWordItem], settings: WidgetSettings) -> [WidgetWordItem] {
         switch settings.source {
         case .recent:
@@ -243,6 +258,9 @@ enum WidgetSchedule {
         case .saved:
             let saved = words.filter(\.isSaved)
             return saved.isEmpty ? words : saved
+        case .unsaved:
+            let unsaved = words.filter { !$0.isSaved }
+            return unsaved.isEmpty ? words : unsaved
         case .custom:
             let ids = Set(settings.selectedIds)
             return words.filter { ids.contains($0.id) }
@@ -367,5 +385,46 @@ struct WidgetDeepLink: Equatable {
             URLQueryItem(name: "bank", value: fromBank ? "1" : "0"),
         ]
         return c.url
+    }
+}
+
+/// Phiên âm US trên widget. App tra qua /api/dictionary (đã cache trong DB) rồi
+/// lưu bảng từ → phiên âm vào App Group; widget chỉ đọc. Câu thì không có phiên
+/// âm — vừa vô nghĩa vừa tốn một lượt tra AI.
+enum WidgetPhonetic {
+    static let cacheKey = "wordly.widget.phonetics"
+    /// Cụm từ dài nhất còn tra (vd "take something for granted")
+    static let maxWords = 4
+
+    static func eligible(_ text: String) -> Bool {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty, !t.contains(where: { ".?!,;:".contains($0) }) else { return false }
+        return t.split(whereSeparator: \.isWhitespace).count <= maxWords
+    }
+
+    static func key(_ text: String) -> String { WordMix.normalize(text) }
+
+    /// "rɪˈzɪljənt" → "/rɪˈzɪljənt/"; rỗng → nil (đã tra nhưng không có)
+    static func display(_ raw: String?) -> String? {
+        let t = (raw ?? "").trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "/")))
+        return t.isEmpty ? nil : "/\(t)/"
+    }
+
+    static func phonetic(for word: String, cache: [String: String]) -> String? {
+        guard eligible(word) else { return nil }
+        return display(cache[key(word)])
+    }
+
+    /// Từ sắp hiện mà chưa có trong cache (giá trị rỗng = đã tra, không có → không tra lại).
+    static func wordsToFetch(upcoming: [WidgetWordItem], cache: [String: String], limit: Int) -> [String] {
+        var seen = Set<String>()
+        var out: [String] = []
+        for item in upcoming where eligible(item.word) {
+            let k = key(item.word)
+            guard cache[k] == nil, seen.insert(k).inserted else { continue }
+            out.append(k)
+            if out.count == limit { break }
+        }
+        return out
     }
 }
