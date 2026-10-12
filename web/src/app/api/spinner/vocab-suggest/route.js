@@ -1,5 +1,21 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { callGroq } from "@/lib/ai/ai-models";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimitResponse } from "@/lib/security/rate-limit";
+import { checkRateLimitDb, firstBlockedLimit } from "@/lib/security/rate-limit-db";
+
+// ── Hạn mức gợi ý từ vựng (chặn chi phí AI) ─────────────────────────────
+// Route chỉ cho người đã đăng nhập (không nằm trong PUBLIC_API_PATHS) nên
+// đếm theo user id. Mỗi lần quay câu hỏi = một lần gọi AI, chưa có cache.
+// • 20 lần/phút: quay + đọc câu hỏi + chuẩn bị trả lời mất vài chục giây
+//   mỗi câu, người thật khó quá ~5-10 lần/phút kể cả khi quay liên tục.
+// • 200 lần/ngày: dư cho buổi luyện dài, chặn script gọi cả ngày.
+// Bộ đếm POSTGRES (rate-limit-db.js) — bộ đếm RAM không chặn được gì trên
+// Vercel.
+const VOCAB_SUGGEST_LIMITS = [
+  { scope: "vocab-suggest-min", limit: 20, windowMs: 60_000 },
+  { scope: "vocab-suggest-day", limit: 200, windowMs: 86_400_000 },
+];
 
 
 // Nuances the kind of vocabulary suggested per tab, without changing the
@@ -36,6 +52,15 @@ Return ONLY valid JSON, no markdown, no extra text:
 export async function POST(request) {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Bị chặn trả 429 chuẩn: web (`d.words || []`) và iOS (`try? ... ?? []`)
+  // đều coi lỗi là "không có gợi ý", không vỡ giao diện.
+  const blocked = await firstBlockedLimit(
+    VOCAB_SUGGEST_LIMITS.map(({ scope, limit, windowMs }) => () =>
+      checkRateLimitDb({ supabase: createAdminClient(), scope, clientKey: `u:${user.id}`, limit, windowMs })
+    )
+  );
+  if (blocked) return rateLimitResponse(blocked);
 
   const { question, kind } = await request.json();
   if (!question || typeof question !== "string") {
