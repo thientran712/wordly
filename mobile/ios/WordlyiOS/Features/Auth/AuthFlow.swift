@@ -67,3 +67,44 @@ struct PendingSignupStore {
         }
     }
 }
+
+/// Thông báo lỗi trên màn đăng nhập / đăng ký / quên mật khẩu / nhập mã.
+/// Không ẩn nhanh quá: phải hiện đủ `minVisible` thì sửa ô mới làm tắt (bàn
+/// phím, autofill bắn sự kiện sửa ngay khi lỗi vừa hiện). Không hiện mãi: tự
+/// ẩn sau `autoHide`, riêng lỗi gửi mã quá nhanh giữ tới khi gửi lại được.
+struct AuthErrorBanner: Equatable {
+    static let minVisible: TimeInterval = 1.5
+    static let autoHide: TimeInterval = 8
+
+    private(set) var message: String?
+    private(set) var shownAt: Date?
+    private(set) var hideAfter: TimeInterval = autoHide
+
+    static func hideAfter(kind: AuthFlow.ErrorKind, resendWait: Int) -> TimeInterval {
+        kind == .rateLimited ? max(autoHide, TimeInterval(resendWait)) : autoHide
+    }
+
+    /// nil/rỗng = ẩn — để gán thẳng lỗi từ AuthManager (nil khi bắt đầu lượt mới).
+    mutating func show(_ message: String?, at now: Date = Date(), hideAfter: TimeInterval = autoHide) {
+        guard let message, !message.isEmpty else { clear(); return }
+        self.message = message
+        shownAt = now
+        self.hideAfter = hideAfter
+    }
+
+    mutating func userEdited(at now: Date = Date()) {
+        guard let shownAt, now.timeIntervalSince(shownAt) >= Self.minVisible else { return }
+        clear()
+    }
+
+    mutating func expire(at now: Date = Date()) {
+        guard let shownAt, now.timeIntervalSince(shownAt) >= hideAfter else { return }
+        clear()
+    }
+
+    mutating func clear() {
+        message = nil
+        shownAt = nil
+        hideAfter = Self.autoHide
+    }
+}
