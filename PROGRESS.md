@@ -3,6 +3,27 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/10/2026 (tối) — Dọn nợ kỹ thuật trong lúc chờ Apple duyệt: 4 PR mở, CHƯA merge/deploy
+
+Kiểm build 14 trên máy thật (chủ dự án): sheet Apple khi xoá tài khoản ✅, widget nghĩa Việt ✅, độ mờ widget ✅.
+
+| PR | Việc | Bằng chứng |
+|---|---|---|
+| #20 | UI test bàn phím fail từ build 13 — do dữ liệu mẫu thêm từ đã lưu thứ 4 (`0efdc8f`), không phải lỗi app; test giờ khớp đầu nhãn | `KeyboardDismissUITests` 3/3 |
+| #21 | Cron email bỏ sót người dùng thứ 1.001+ (PostgREST cắt 1000 dòng) → `fetchAllRows` lấy theo trang, `due-slots.js` tách để test | web 304/304, build sạch |
+| #22 | 25 route dùng service role cho request người dùng → dữ liệu riêng qua `createClient()` (RLS), bảng dùng chung qua `createSharedClient()` (chặn bảng người dùng); chỉ 4 route còn admin (`ADMIN_ALLOWED` trong `tests/unit/admin-client-usage.test.mjs`); migration policy cho `spinner_preferences`/`spinner_history` | 317/317 gồm RLS trên Supabase local; smoke HTTP Bearer 25/25 (B không đọc/sửa/xoá được của A) |
+| #23 | Lỗi đăng nhập/đăng ký/quên mật khẩu/nhập mã hiện mãi + lỗi đăng nhập lọt sang sheet Đăng ký → `AuthErrorBanner`: sửa ô ẩn (sau ≥1,5s), tự ẩn 8s, lỗi gửi mã quá nhanh giữ tới khi gửi lại được | iOS unit 165/165; **chưa xem trên simulator/máy thật** |
+
+**Thứ tự deploy PR #22 (bắt buộc):** chạy migration `20261013000100_spinner_user_rls.sql` lên production **trước**, rồi mới deploy web — ngược lại thì spinner trả rỗng/lỗi. Chưa chạy.
+
+**Khác:**
+- Đã xoá 6 worktree đã merge. Nhánh `feat/email-provider-resend` giữ code Resend (commit `aeb12f6`, WIP) — phải rebase sau PR #21 (cùng sửa `cron-send-emails.js`).
+- `widget/log-shown` vẫn ghi `suggestion_log` bằng service role — giữ theo spec 2026-10-10 (bảng chỉ service role ghi).
+- Supabase local chạy được (Docker), nhưng cổng mặc định đang bị dự án khác chiếm → đổi cổng tạm trong `supabase/config.toml` (không commit) + tạo `web/.env.test.local` từ `supabase status`.
+- Simulator duy nhất trên máy: `BedWar-iPhone16`.
+
+**Tiếp theo:** ảnh nền widget (mục dưới) — tái hiện crash trước, rồi spec.
+
 ### 12/10/2026 — iOS 1.0.0 BUILD 14 ĐÃ UPLOAD — bản nộp App Store (miễn phí)
 
 **✅ ĐÃ NỘP APP STORE 12/10/2026** (build 1.0.0 (14), trạng thái *Waiting for Review*, Apple hẹn ≤ 48 giờ; phát hành thủ công — *Manually release*). App Privacy khai đúng 3 loại khớp `PrivacyInfo.xcprivacy`: Name, Email Address, Other User Content (App Functionality, linked, không tracking) — lần đầu bị chặn "Unable to Add for Review" vì đã tick thừa 9 loại chưa Set Up nên không Publish được. Ảnh chụp: giao diện ASC mới đòi cỡ "iPhone with Dynamic Island (medium display)" 1206×2622 → thu nhỏ từ bộ 6.9" vào `docs/app-store/screenshots-6.3/`. Hồ sơ nộp: artifact "Wordly App Store Kit" (đã cập nhật build 14). Trang `/privacy` đã sửa cho khớp hồ sơ (Gemini dịch câu, DeepL chỉ từ/cụm ngắn) — PR #19, deploy `feac028`, đã kiểm trên production.
