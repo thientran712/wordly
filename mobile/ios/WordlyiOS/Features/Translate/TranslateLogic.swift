@@ -18,6 +18,13 @@ enum TranslateLogic {
         guard fetched.first?.lowercased() != exact else { return Array(fetched.prefix(8)) }
         return Array(([exact] + fetched.filter { $0.lowercased() != exact }).prefix(8))
     }
+
+    /// Ảnh gửi lên /api/translate/image dạng data URL base64 — giữ khớp
+    /// web (image-validation.js: mime phải trong whitelist, không multipart).
+    static let maxImageBytes = 10 * 1024 * 1024
+    static func imageDataURL(jpegData: Data) -> String {
+        "data:image/jpeg;base64,\(jpegData.base64EncodedString())"
+    }
 }
 
 /// Web tự ghi bản dịch vào lịch sử sau 10 giây; mỗi (chiều dịch, câu) chỉ ghi

@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { inngest } from "@/inngest/client";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 
 export async function GET() {
@@ -44,8 +43,6 @@ export async function POST(request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  await inngest.send({ name: "email/slot.scheduled", data: { user_id: user.id, slot_id: data.id, triggeredAt: Date.now() } });
-
   return Response.json({ slot: data });
 }
 
@@ -69,22 +66,8 @@ export async function PUT(request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // If time changed or toggled on: cancel old run, schedule new one 4s later so cancel propagates first
-  if (send_time !== undefined || enabled === true) {
-    const triggeredAt = Date.now();
-    await inngest.send([
-      { name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id, triggeredAt } },
-      {
-        name: "email/slot.scheduled",
-        data: { user_id: user.id, slot_id: id, triggeredAt },
-        // Inngest-native delay: deliver this event 4s from now, no server blocking
-        ts: triggeredAt + 4000,
-      },
-    ]);
-  } else if (enabled === false) {
-    await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id, triggeredAt: Date.now() } });
-  }
-
+  // Không cần báo lịch nữa — cron /api/cron/send-emails tự quét email_slots
+  // mỗi 5 phút, thay đổi giờ/bật-tắt tự được nhận trong lần quét kế tiếp.
   return Response.json({ success: true });
 }
 
@@ -106,8 +89,6 @@ export async function DELETE(request) {
   if (count <= 1) return Response.json({ error: "Phải có ít nhất 1 slot" }, { status: 400 });
 
   await admin.from("email_slots").delete().eq("id", id).eq("user_id", user.id);
-
-  await inngest.send({ name: "email/slot.cancelled", data: { user_id: user.id, slot_id: id, triggeredAt: Date.now() } });
 
   return Response.json({ success: true });
 }

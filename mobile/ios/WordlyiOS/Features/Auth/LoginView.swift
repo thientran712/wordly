@@ -14,6 +14,9 @@ struct LoginView: View {
     /// Nonce gốc của lần Sign in with Apple đang chạy (Apple nhận bản băm)
     @State private var appleNonce = ""
     @FocusState private var focusedField: Field?
+    /// Mở màn nhập mã xác nhận cho email chưa xác nhận
+    @State private var verifyEmail: String?
+    @State private var verifySentAt: Date?
 
     enum Field { case email, password }
 
@@ -61,14 +64,29 @@ struct LoginView: View {
                                 Text("Email")
                                     .font(WordlyFonts.body(13, weight: .bold))
                                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                                TextField("your@email.com", text: $email)
-                                    .keyboardType(.emailAddress)
-                                    .autocorrectionDisabled()
-                                    .textInputAutocapitalization(.never)
-                                    .focused($focusedField, equals: .email)
-                                    .submitLabel(.next)
-                                    .onSubmit { focusedField = .password }
-                                    .wordlyInputStyle(focused: focusedField == .email)
+                                ZStack(alignment: .leading) {
+                                    // TextField không có placeholder riêng — iOS tự tô placeholder
+                                    // màu xanh link cho field keyboardType .emailAddress, không
+                                    // override được bằng .foregroundStyle. Tự vẽ placeholder để
+                                    // kiểm soát màu, giống field Mật khẩu bên dưới.
+                                    if email.isEmpty {
+                                        // Text("example@gmail.com") dùng init LocalizedStringKey —
+                                        // SwiftUI tự parse kiểu Markdown và auto-link hoá chuỗi
+                                        // giống email (tô xanh, không override được bằng
+                                        // foregroundStyle). Text(verbatim:) bỏ qua việc parse đó.
+                                        Text(verbatim: "example@gmail.com")
+                                            .foregroundStyle(Color(.placeholderText))
+                                    }
+                                    TextField("", text: $email)
+                                        .keyboardType(.emailAddress)
+                                        .autocorrectionDisabled()
+                                        .textInputAutocapitalization(.never)
+                                        .foregroundStyle(WordlyColors.ink(scheme: scheme))
+                                        .focused($focusedField, equals: .email)
+                                        .submitLabel(.next)
+                                        .onSubmit { focusedField = .password }
+                                }
+                                .wordlyInputStyle(focused: focusedField == .email)
                             }
 
                             // Password
@@ -109,6 +127,30 @@ struct LoginView: View {
                             }
                         }
                         .padding(.horizontal, 24)
+
+                        // Đăng ký từ trước nhưng chưa nhập mã (thoát app giữa chừng)
+                        if let pending = authManager.pendingSignupEmail {
+                            Button {
+                                verifySentAt = nil
+                                verifyEmail = pending
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "envelope.badge.fill").font(WordlyFonts.body(16))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Chưa xác nhận email").font(WordlyFonts.body(13, weight: .bold))
+                                        Text(pending).font(WordlyFonts.body(12)).lineLimit(1)
+                                    }
+                                    Spacer()
+                                    Text("Nhập mã").font(WordlyFonts.body(13, weight: .bold))
+                                }
+                                .foregroundStyle(WordlyColors.electric)
+                                .padding(12)
+                                .background(WordlyColors.electric.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 24)
+                        }
 
                         // Error
                         if let error = authManager.authError {
@@ -168,10 +210,7 @@ struct LoginView: View {
                                 }
                             } label: {
                                 HStack(spacing: 10) {
-                                    Text("G")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                                        .foregroundStyle(LinearGradient(colors: [Color(hex: "#4285F4"), Color(hex: "#EA4335"), Color(hex: "#FBBC05"), Color(hex: "#34A853")],
-                                                                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    GoogleLogoIcon(size: 18)
                                     Text("Tiếp tục với Google")
                                         .font(WordlyFonts.body(16, weight: .semibold))
                                         .foregroundStyle(Color(hex: "#1F1F1F"))
@@ -236,6 +275,19 @@ struct LoginView: View {
         }
         .sheet(isPresented: $showSignup) { SignupView() }
         .sheet(isPresented: $showForgotPassword) { ForgotPasswordView() }
+        .sheet(isPresented: Binding(get: { verifyEmail != nil }, set: { if !$0 { verifyEmail = nil } })) {
+            NavigationStack {
+                ZStack {
+                    WordlyColors.bg(scheme: scheme).ignoresSafeArea()
+                    SignupCodeView(email: verifyEmail ?? "", lastSent: verifySentAt) { verifyEmail = nil }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Đóng") { verifyEmail = nil }.foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                    }
+                }
+            }
+        }
     }
 
     private func login() async {
@@ -243,7 +295,15 @@ struct LoginView: View {
         focusedField = nil
         isLoading = true
         defer { isLoading = false }
-        try? await authManager.signIn(email: email, password: password)
+        do {
+            try await authManager.signIn(email: email, password: password)
+        } catch {
+            // Email chưa xác nhận: AuthManager đã gửi mã mới → mở màn nhập mã
+            if authManager.errorKind(error) == .emailNotConfirmed {
+                verifySentAt = Date()
+                verifyEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
     }
 }
 
@@ -259,11 +319,17 @@ struct SignupView: View {
     @State private var isLoading = false
     @State private var showPassword = false
     @State private var localError: String?
+    /// Đăng ký xong → chuyển sang nhập mã 6 số cho email này
+    @State private var codeEmail: String?
+    @State private var codeSentAt: Date?
 
     var body: some View {
         NavigationStack {
             ZStack {
                 WordlyColors.bg(scheme: scheme).ignoresSafeArea()
+                if let codeEmail {
+                    SignupCodeView(email: codeEmail, lastSent: codeSentAt) { self.codeEmail = nil }
+                } else {
                 ScrollView {
                     VStack(spacing: 24) {
                         VStack(spacing: 8) {
@@ -278,7 +344,7 @@ struct SignupView: View {
 
                         VStack(spacing: 14) {
                             WordlyTextField(label: "Tên của bạn", placeholder: "Nguyễn Văn A", text: $name)
-                            WordlyTextField(label: "Email", placeholder: "your@email.com", text: $email,
+                            WordlyTextField(label: "Email", placeholder: "example@gmail.com", text: $email,
                                            keyboardType: .emailAddress, autocap: .never)
                             WordlySecureField(label: "Mật khẩu", placeholder: "Tối thiểu 6 ký tự",
                                              text: $password, show: $showPassword)
@@ -317,6 +383,7 @@ struct SignupView: View {
                         .padding(.bottom, 32)
                     }
                 }
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -334,67 +401,82 @@ struct SignupView: View {
         guard password == confirmPassword else { localError = "Mật khẩu xác nhận không khớp"; return }
         isLoading = true
         defer { isLoading = false }
-        try? await authManager.signUp(email: email, password: password, name: name.isEmpty ? nil : name)
-        if authManager.isAuthenticated { dismiss() }
+        guard let outcome = try? await authManager.signUp(email: email, password: password, name: name.isEmpty ? nil : name) else { return }
+        if authManager.isAuthenticated { dismiss(); return }
+        switch outcome {
+        case .codeSent, .codeRecentlySent:
+            codeSentAt = Date()
+            codeEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        case .alreadyRegistered:
+            localError = AuthFlow.message(for: .userExists)
+        }
     }
 }
 
 // MARK: - Forgot Password
+// Hai bước ngay trong app: gửi mã 6 số qua email → nhập mã + mật khẩu mới.
+// Trước đây gửi link, mở link trên Safari/Gmail không đổi được phiên (mã PKCE
+// nằm trong app) nên rơi về trang chủ web, không đặt được mật khẩu.
 struct ForgotPasswordView: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.colorScheme) var scheme
     @Environment(\.dismiss) var dismiss
     @State private var email = ""
+    @State private var codeSent = false
+    @State private var code = ""
+    @State private var password = ""
+    @State private var confirm = ""
+    @State private var showPassword = false
     @State private var isLoading = false
-    @State private var success = false
     @State private var errorMsg: String?
+    @State private var info: String?
+    @State private var lastSent: Date?
 
     var body: some View {
         NavigationStack {
             ZStack {
                 WordlyColors.bg(scheme: scheme).ignoresSafeArea()
-                VStack(spacing: 24) {
-                    Spacer()
-                    Text("🔑")
-                        .font(WordlyFonts.body(56))
-                    Text("Quên mật khẩu")
-                        .font(WordlyFonts.display(28))
-                        .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                    Text("Nhập email để nhận link đặt lại mật khẩu")
-                        .font(WordlyFonts.body(14, weight: .medium))
-                        .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                        .multilineTextAlignment(.center)
+                ScrollView {
+                    VStack(spacing: 20) {
+                        Text("🔑").font(WordlyFonts.body(56)).padding(.top, 32)
+                        Text(codeSent ? "Đặt mật khẩu mới" : "Quên mật khẩu")
+                            .font(WordlyFonts.display(28))
+                            .foregroundStyle(WordlyColors.ink(scheme: scheme))
+                        Text(codeSent ? "Nhập mã 6 số vừa gửi tới \(email)" : "Nhập email, chúng tôi gửi mã xác nhận 6 số")
+                            .font(WordlyFonts.body(14, weight: .medium))
+                            .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
 
-                    if success {
-                        VStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(WordlyFonts.body(40))
-                                .foregroundStyle(WordlyColors.electric)
-                            Text("Đã gửi email!")
-                                .font(WordlyFonts.body(16, weight: .bold))
-                                .foregroundStyle(WordlyColors.electric)
-                            Text("Kiểm tra hộp thư của bạn")
-                                .font(WordlyFonts.body(14))
-                                .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                        }
-                    } else {
                         VStack(spacing: 14) {
-                            WordlyTextField(label: "Email", placeholder: "your@email.com", text: $email,
-                                           keyboardType: .emailAddress, autocap: .never)
-                                .padding(.horizontal, 24)
+                            if codeSent {
+                                WordlyTextField(label: "Mã xác nhận", placeholder: "123456", text: $code,
+                                               keyboardType: .numberPad, autocap: .never)
+                                    .textContentType(.oneTimeCode)
+                                WordlySecureField(label: "Mật khẩu mới", placeholder: "Ít nhất 6 ký tự",
+                                                  text: $password, show: $showPassword)
+                                WordlySecureField(label: "Nhập lại mật khẩu", placeholder: "Nhập lại mật khẩu mới",
+                                                  text: $confirm, show: $showPassword)
+                            } else {
+                                WordlyTextField(label: "Email", placeholder: "example@gmail.com", text: $email,
+                                               keyboardType: .emailAddress, autocap: .never)
+                            }
 
                             if let err = errorMsg {
                                 Text(err).font(WordlyFonts.body(13, weight: .medium))
                                     .foregroundStyle(WordlyColors.error)
-                                    .padding(.horizontal, 24)
+                            }
+                            if let info {
+                                Text(info).font(WordlyFonts.body(13, weight: .medium))
+                                    .foregroundStyle(WordlyColors.electric)
                             }
 
                             Button {
-                                Task { await reset() }
+                                Task { codeSent ? await updatePassword() : await sendCode() }
                             } label: {
                                 HStack(spacing: 8) {
                                     if isLoading { ProgressView().tint(WordlyColors.onElectric).scaleEffect(0.85) }
-                                    Text(isLoading ? "Đang gửi..." : "Gửi link đặt lại")
+                                    Text(codeSent ? "Đổi mật khẩu" : (isLoading ? "Đang gửi..." : "Gửi mã xác nhận"))
                                         .font(WordlyFonts.body(16, weight: .bold))
                                 }
                                 .frame(maxWidth: .infinity).padding(.vertical, 16)
@@ -402,12 +484,19 @@ struct ForgotPasswordView: View {
                                 .foregroundStyle(WordlyColors.onElectric)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                             }
-                            .disabled(email.isEmpty || isLoading)
-                            .padding(.horizontal, 24)
+                            .disabled(isLoading || (codeSent ? code.isEmpty || password.isEmpty : email.isEmpty))
+
+                            if codeSent {
+                                ResendCodeButton(lastSent: lastSent, isBusy: isLoading) { Task { await sendCode(resend: true) } }
+                                Text("Không thấy email? Xem cả mục Spam/Quảng cáo.")
+                                    .font(WordlyFonts.body(12))
+                                    .foregroundStyle(WordlyColors.inkGhost)
+                            }
                         }
+                        .padding(.horizontal, 24)
                     }
-                    Spacer()
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -418,14 +507,40 @@ struct ForgotPasswordView: View {
         }
     }
 
-    private func reset() async {
+    private func sendCode(resend: Bool = false) async {
+        isLoading = true
+        errorMsg = nil
+        info = nil
+        defer { isLoading = false }
+        do {
+            try await authManager.resetPassword(email: email.trimmingCharacters(in: .whitespaces))
+            codeSent = true
+            lastSent = Date()
+            if resend { info = "Đã gửi mã mới, kiểm tra hộp thư (cả mục Spam)" }
+        } catch {
+            let kind = authManager.errorKind(error)
+            if kind == .rateLimited {
+                // Mã gửi chưa tới 1 phút trước vẫn dùng được → cho nhập mã luôn
+                codeSent = true
+                lastSent = Date()
+            }
+            errorMsg = AuthFlow.message(for: kind)
+        }
+    }
+
+    private func updatePassword() async {
+        errorMsg = ResetPasswordLogic.error(code: code, password: password, confirm: confirm)
+        guard errorMsg == nil else { return }
         isLoading = true
         defer { isLoading = false }
         do {
-            try await authManager.resetPassword(email: email)
-            success = true
+            try await authManager.resetPassword(email: email.trimmingCharacters(in: .whitespaces),
+                                                code: ResetPasswordLogic.normalizedCode(code),
+                                                newPassword: password)
+            dismiss()   // verifyOTP đã đăng nhập luôn → app vào màn chính
         } catch {
-            errorMsg = error.localizedDescription
+            let kind = authManager.errorKind(error)
+            errorMsg = AuthFlow.message(for: [.network, .weakPassword].contains(kind) ? kind : .codeInvalid)
         }
     }
 }
@@ -443,12 +558,20 @@ struct WordlyTextField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label).font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.ink(scheme: scheme))
-            TextField(placeholder, text: $text)
-                .keyboardType(keyboardType)
-                .textInputAutocapitalization(autocap)
-                .autocorrectionDisabled()
-                .focused($focused)
-                .wordlyInputStyle(focused: focused)
+            // Placeholder tự vẽ — iOS tô placeholder màu xanh link cho
+            // keyboardType .emailAddress, .foregroundStyle không override được.
+            ZStack(alignment: .leading) {
+                if text.isEmpty {
+                    Text(verbatim: placeholder).foregroundStyle(Color(.placeholderText))
+                }
+                TextField("", text: $text)
+                    .keyboardType(keyboardType)
+                    .textInputAutocapitalization(autocap)
+                    .autocorrectionDisabled()
+                    .foregroundStyle(WordlyColors.ink(scheme: scheme))
+                    .focused($focused)
+            }
+            .wordlyInputStyle(focused: focused)
         }
     }
 }

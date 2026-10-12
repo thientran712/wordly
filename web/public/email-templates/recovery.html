@@ -1,0 +1,8 @@
+<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#3C3C3C">
+  <h2 style="margin:0 0 12px;font-size:20px">Đặt lại mật khẩu Wordly</h2>
+  <p style="margin:0 0 16px;font-size:15px;line-height:1.5">Mã xác nhận của bạn (nhập trong app Wordly):</p>
+  <p style="margin:0 0 20px;font-size:32px;font-weight:800;letter-spacing:6px;color:#58A700">{{ .Token }}</p>
+  <p style="margin:0 0 16px;font-size:14px;line-height:1.5;color:#777777">Đang dùng Wordly trên web? Bấm nút dưới để đặt mật khẩu mới:</p>
+  <p style="margin:0 0 24px"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password" style="display:inline-block;background:#58CC02;color:#FFFFFF;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:12px">Đặt lại mật khẩu trên web</a></p>
+  <p style="margin:0;font-size:13px;line-height:1.5;color:#AFAFAF">Mã và link có hiệu lực trong 1 giờ. Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>
+</div>

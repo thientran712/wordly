@@ -2,6 +2,10 @@ import SwiftUI
 
 struct HistoryView: View {
     var isEmbedded: Bool = false
+    /// Tăng lên khi màn ngoài vừa ghi lịch sử (tự ghi / Lưu) → làm mới ngầm.
+    /// Trước đây dùng .id(...) dựng lại cả view mỗi lần: view model mới, số
+    /// đếm thành vòng xoay, danh sách tải lại từ đầu ~10s một lần khi đang dịch.
+    var reloadToken: Int = 0
     var onPick: ((TranslateHistoryEntry) -> Void)? = nil
 
     @StateObject private var vm = HistoryViewModel()
@@ -37,7 +41,7 @@ struct HistoryView: View {
                         .font(WordlyFonts.body(14, weight: .bold))
                         .foregroundStyle(WordlyColors.ink(scheme: scheme))
                     Spacer()
-                    if vm.isLoading {
+                    if vm.isLoading && vm.groups.isEmpty {
                         ProgressView().scaleEffect(0.7).tint(WordlyColors.electric)
                     } else {
                         Text("\(vm.totalCount)")
@@ -71,6 +75,7 @@ struct HistoryView: View {
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(WordlyColors.cardBorder, lineWidth: 1))
         .animation(.easeInOut(duration: 0.2), value: vm.undo)
         .task { await vm.fetchHistory() }
+        .onChange(of: reloadToken) { _, _ in Task { await vm.fetchHistory() } }
         .confirmationDialog("Xoá lịch sử dịch?", isPresented: $confirmClear, titleVisibility: .visible) {
             Button("Xoá \(vm.unsavedCount) mục chưa lưu", role: .destructive) { vm.clearUnsaved() }
             Button("Huỷ", role: .cancel) {}
@@ -135,7 +140,7 @@ struct HistoryView: View {
                         .textCase(.uppercase)
                     ) {
                         ForEach(group.entries) { entry in
-                            HistoryEntryRow(entry: entry, onPick: onPick)
+                            HistoryEntryRow(entry: entry, onPick: onPick, onDelete: { vm.delete(id: entry.id) })
                                 .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) { vm.delete(id: entry.id) } label: {
                                         Label("Xoá", systemImage: "trash")
@@ -181,7 +186,7 @@ struct HistoryView: View {
                     .background(WordlyColors.cardBG(scheme: scheme))
 
                 ForEach(group.entries) { entry in
-                    HistoryEntryRow(entry: entry, onPick: onPick)
+                    HistoryEntryRow(entry: entry, onPick: onPick, onDelete: { vm.delete(id: entry.id) })
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                     Divider().padding(.leading, 16)
@@ -214,6 +219,7 @@ struct HistoryView: View {
 struct HistoryEntryRow: View {
     let entry: TranslateHistoryEntry
     var onPick: ((TranslateHistoryEntry) -> Void)?
+    var onDelete: (() -> Void)? = nil
     @StateObject private var tts = TTSManager.shared
     @Environment(\.colorScheme) var scheme
     @State private var showActions = false
@@ -266,8 +272,18 @@ struct HistoryEntryRow: View {
                     }
                 }
             }
+            // .plain chỉ nhận chạm ở phần có nội dung — thiếu dòng này thì bấm
+            // vào khoảng trống giữa dòng (Spacer) không có tác dụng.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            if let onDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Label("Xoá khỏi lịch sử", systemImage: "trash")
+                }
+            }
+        }
     }
 }
 
@@ -290,6 +306,8 @@ final class HistoryViewModel: ObservableObject {
 
     var totalCount: Int { groups.reduce(0) { $0 + $1.entries.count } }
 
+    /// Giữ dữ liệu đang hiện trong lúc tải lại — chỉ lần đầu (chưa có gì) mới
+    /// hiện vòng xoay.
     func fetchHistory() async {
         isLoading = true
         offset = 0

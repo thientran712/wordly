@@ -1,4 +1,6 @@
 import Foundation
+import UIKit
+import Combine
 
 /// Màn Dịch & tra từ — hành vi giống web (components/home/InlineTranslate.js):
 /// dịch tự động khi gõ, gợi ý từ (Datamuse), từ điển AI cho từ đơn, tự ghi lịch
@@ -31,6 +33,8 @@ final class TranslateViewModel: ObservableObject {
     /// Tăng mỗi khi lịch sử đổi (tự ghi / lưu) để danh sách lịch sử tải lại.
     @Published var historyVersion = 0
 
+    init() { observeDictation() }
+
     let charLimit = 10_000
     var isOverLimit: Bool { inputText.count > charLimit }
     var canSave: Bool { !inputText.trimmingCharacters(in: .whitespaces).isEmpty && !translatedText.isEmpty && !isTranslating }
@@ -45,6 +49,35 @@ final class TranslateViewModel: ObservableObject {
     private var suppressSuggestions = false
     /// Đổi inputText bằng code (chọn mục lịch sử) → onChange của ô nhập không xử lý lại.
     private var skipNextChange = false
+
+    // MARK: Chụp ảnh / ghi âm dịch (giống web InlineTranslate.js)
+    @Published var isReadingImage = false
+    @Published var imageError: String?
+    @Published var isDictating = false
+    @Published var dictationLevel: Float = 0
+    let dictation = DictationManager()
+    private var dictationCancellables: Set<AnyCancellable> = []
+
+    /// Dịch ngay khi đang nói, không đợi dừng ghi âm — đẩy transcript từng
+    /// phần (partial results của Speech framework) vào `inputText` giống
+    /// gõ tay, tự chạy qua debounce dịch (300ms) đã có sẵn.
+    private func observeDictation() {
+        dictation.$isListening
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.isDictating = $0 }
+            .store(in: &dictationCancellables)
+        dictation.$audioLevel
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.dictationLevel = $0 }
+            .store(in: &dictationCancellables)
+        dictation.$transcript
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] text in
+                guard let self, self.dictation.isListening else { return }
+                self.inputText = text
+            }
+            .store(in: &dictationCancellables)
+    }
 
     // MARK: Gõ chữ
     func onInputChanged(_ text: String) {
@@ -90,7 +123,14 @@ final class TranslateViewModel: ObservableObject {
                 translateCache[key] = result
                 translatedText = result
             } catch {
-                toast = "Mất kết nối — thử lại nhé"
+                // Gõ tiếp → yêu cầu cũ bị huỷ (URLSession ném lỗi huỷ) — không phải
+                // mất mạng; trước đây hiện "Mất kết nối" sai mỗi khi gõ nhanh.
+                guard !Task.isCancelled else { return }
+                if case APIError.serverError(let m) = error, m.contains("429") {
+                    toast = "Bạn dịch hơi nhanh, chờ vài giây rồi thử lại nhé"
+                } else {
+                    toast = "Mất kết nối — thử lại nhé"
+                }
                 return
             }
         }
@@ -222,6 +262,52 @@ final class TranslateViewModel: ObservableObject {
         }
     }
 
+    // MARK: Chụp ảnh dịch — gửi thẳng ảnh gốc (giống web, không resize/crop
+    // client-side), server (Gemini vision) OCR + dịch cùng lúc.
+    func handleImagePicked(_ image: UIImage) {
+        guard let jpeg = image.jpegData(compressionQuality: 0.85) else {
+            imageError = "Không đọc được ảnh, thử lại nhé"
+            return
+        }
+        guard jpeg.count <= TranslateLogic.maxImageBytes else {
+            imageError = "Ảnh quá lớn (tối đa \(TranslateLogic.maxImageBytes / 1024 / 1024)MB), thử lại nhé"
+            return
+        }
+        imageError = nil
+        isReadingImage = true
+        direction = .enToVi  // web luôn cố định chiều ảnh EN→VI
+        Task {
+            defer { isReadingImage = false }
+            do {
+                let r = try await api.translateImage(dataURL: TranslateLogic.imageDataURL(jpegData: jpeg))
+                guard let source = r.sourceText, let translated = r.translatedText, !source.isEmpty else {
+                    imageError = r.error ?? "Không tìm thấy chữ trong ảnh"
+                    return
+                }
+                skipNextChange = false
+                inputText = source
+                translatedText = translated
+                translateCache["\(direction.rawValue)::\(source)"] = translated
+                saved = false
+                scheduleAutoLog()
+            } catch {
+                imageError = "Mất kết nối — thử lại nhé"
+            }
+        }
+    }
+
+    // MARK: Ghi âm dịch — lấy text bằng Speech framework on-device rồi dịch
+    // qua pipeline sẵn có (DeepL), giống web nhưng không cần fallback Whisper.
+    func toggleDictation() async {
+        if dictation.isListening {
+            dictation.stop()
+            return
+        }
+        guard await dictation.requestPermissions() else { return }
+        clear()
+        dictation.start(localeId: direction == .enToVi ? "en-US" : "vi-VN")
+    }
+
     /// Nhận một mục từ lịch sử để xem lại.
     func load(entry: TranslateHistoryEntry) {
         direction = entry.direction == Direction.viToEn.rawValue ? .viToEn : .enToVi
@@ -233,11 +319,9 @@ final class TranslateViewModel: ObservableObject {
         saved = entry.isSaved == true
         suggestions = []
         _ = autoLog.shouldLog(direction: direction.rawValue, text: entry.sourceText)
-        if direction == .enToVi, TranslateLogic.isSingleWord(entry.sourceText) {
-            Task { await lookUp(entry.sourceText) }
-        } else {
-            dictionary = .hidden
-        }
+        // Không tự tra từ điển AI (tính phí theo lượt, và chậm) — từ đơn tiếng
+        // Anh thì hiện nút "Tra nghĩa" để người dùng tự bấm (xem canLookUp).
+        dictionary = .hidden
         Task {
             try? await Task.sleep(for: .seconds(1))
             suppressSuggestions = false

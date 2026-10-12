@@ -7,24 +7,31 @@ struct TranslateView: View {
     @StateObject private var tts = TTSManager.shared
     @EnvironmentObject private var router: AppRouter
     @FocusState private var inputFocused: Bool
+    @State private var showCamera = false
+    @State private var showImageSourceDialog = false
+    @State private var imageSourceType: UIImagePickerController.SourceType = .camera
+    @State private var micPulse = false
 
     var body: some View {
         NavigationStack {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 14) {
-                    languageBar
+                    languageBar.id("translateTop")
                     inputCard
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
                     dictionarySection
-                    HistoryView(isEmbedded: true) { entry in
+                    HistoryView(isEmbedded: true, reloadToken: vm.historyVersion) { entry in
                         vm.load(entry: entry)
                         inputFocused = false
+                        // Mục lịch sử nằm dưới cùng — cuộn lên để thấy ngay bản dịch vừa mở
+                        withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo("translateTop", anchor: .top) }
                     }
-                    .id(vm.historyVersion)
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
+            }
             }
             .scrollDismissesKeyboard(.interactively)
             .screenBackground()
@@ -38,7 +45,25 @@ struct TranslateView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toast($vm.toast)
+            .toast($vm.imageError, systemImage: "exclamationmark.triangle.fill", color: WordlyColors.error, duration: 5)
+            .toast(Binding(get: { vm.dictation.error }, set: { vm.dictation.error = $0 }),
+                   systemImage: "exclamationmark.triangle.fill", color: WordlyColors.error, duration: 5)
             .onChange(of: vm.inputText) { _, text in vm.onInputChanged(text) }
+            .sheet(isPresented: $showCamera) {
+                CameraPicker(
+                    sourceType: imageSourceType,
+                    onPick: { image in
+                        showCamera = false
+                        vm.handleImagePicked(image)
+                    },
+                    onCancel: { showCamera = false }
+                )
+                .ignoresSafeArea()
+            }
+            .confirmationDialog("Dịch bằng ảnh", isPresented: $showImageSourceDialog, titleVisibility: .visible) {
+                Button("Chụp ảnh") { imageSourceType = .camera; showCamera = true }
+                Button("Chọn từ thư viện") { imageSourceType = .photoLibrary; showCamera = true }
+            }
         }
     }
 
@@ -91,36 +116,65 @@ struct TranslateView: View {
                     .frame(minHeight: 130, maxHeight: 220)
                     .focused($inputFocused)
             }
-            HStack(spacing: 8) {
-                if !vm.inputText.isEmpty {
-                    if vm.direction == .enToVi {
-                        speakChip("US", lang: "en-US", text: vm.inputText)
-                        speakChip("UK", lang: "en-GB", text: vm.inputText)
+            if vm.isDictating {
+                recordingPill
+            } else {
+                HStack(spacing: 8) {
+                    if !vm.inputText.isEmpty {
+                        if vm.direction == .enToVi {
+                            speakChip("US", lang: "en-US", text: vm.inputText)
+                            speakChip("UK", lang: "en-GB", text: vm.inputText)
+                        } else {
+                            speakChip("VI", lang: "vi-VN", text: vm.inputText)
+                        }
                     } else {
-                        speakChip("VI", lang: "vi-VN", text: vm.inputText)
+                        if UIPasteboard.general.hasStrings {
+                            Button {
+                                vm.inputText = UIPasteboard.general.string ?? ""
+                            } label: {
+                                Label("Dán", systemImage: "doc.on.clipboard")
+                                    .font(WordlyFonts.body(13, weight: .bold))
+                                    .padding(.horizontal, 12).padding(.vertical, 8)
+                                    .background(WordlyColors.hoverBG)
+                                    .foregroundStyle(WordlyColors.inkSoft)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        Button {
+                            showImageSourceDialog = true
+                        } label: {
+                            if vm.isReadingImage {
+                                ProgressView().frame(width: 34, height: 34)
+                            } else {
+                                Image(systemName: "camera.fill").frame(width: 34, height: 34)
+                            }
+                        }
+                        .background(WordlyColors.hoverBG)
+                        .foregroundStyle(WordlyColors.inkSoft)
+                        .clipShape(Circle())
+                        .disabled(vm.isReadingImage)
+                        .accessibilityLabel("Chụp hoặc chọn ảnh để dịch")
+                        Button {
+                            Task { await vm.toggleDictation() }
+                        } label: {
+                            Image(systemName: "mic").frame(width: 34, height: 34)
+                        }
+                        .background(WordlyColors.hoverBG)
+                        .foregroundStyle(WordlyColors.inkSoft)
+                        .clipShape(Circle())
+                        .accessibilityLabel("Ghi âm để dịch")
                     }
-                } else if UIPasteboard.general.hasStrings {
-                    Button {
-                        vm.inputText = UIPasteboard.general.string ?? ""
-                    } label: {
-                        Label("Dán", systemImage: "doc.on.clipboard")
-                            .font(WordlyFonts.body(13, weight: .bold))
-                            .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(WordlyColors.hoverBG)
-                            .foregroundStyle(WordlyColors.inkSoft)
-                            .clipShape(Capsule())
+                    Spacer()
+                    Text("\(vm.inputText.count)/\(vm.charLimit)")
+                        .font(WordlyFonts.body(11))
+                        .foregroundStyle(vm.isOverLimit ? WordlyColors.error : WordlyColors.inkGhost)
+                        .monospacedDigit()
+                    if !vm.inputText.isEmpty {
+                        Button { vm.clear() } label: {
+                            Image(systemName: "xmark.circle.fill").font(.system(size: 20)).foregroundStyle(WordlyColors.inkGhost)
+                        }
+                        .accessibilityLabel("Xoá")
                     }
-                }
-                Spacer()
-                Text("\(vm.inputText.count)/\(vm.charLimit)")
-                    .font(WordlyFonts.body(11))
-                    .foregroundStyle(vm.isOverLimit ? WordlyColors.error : WordlyColors.inkGhost)
-                    .monospacedDigit()
-                if !vm.inputText.isEmpty {
-                    Button { vm.clear() } label: {
-                        Image(systemName: "xmark.circle.fill").font(.system(size: 20)).foregroundStyle(WordlyColors.inkGhost)
-                    }
-                    .accessibilityLabel("Xoá")
                 }
             }
         }
@@ -189,6 +243,54 @@ struct TranslateView: View {
         .background(WordlyColors.electricSubtle)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(WordlyColors.electricBorder, lineWidth: 1))
+    }
+
+    // MARK: Ghi âm đang chạy — sóng âm động theo dictationLevel, thay cho
+    // icon mic tĩnh đổi màu, dịch ngay khi đang nói (xem TranslateViewModel.observeDictation).
+    private var recordingPill: some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(WordlyColors.error)
+                .frame(width: 9, height: 9)
+                .scaleEffect(micPulse ? 1.25 : 0.8)
+                .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: micPulse)
+            HStack(spacing: 3) {
+                ForEach(0..<5, id: \.self) { i in
+                    Capsule()
+                        .fill(WordlyColors.error)
+                        .frame(width: 3, height: barHeight(i))
+                }
+            }
+            .frame(height: 22)
+            .animation(.easeOut(duration: 0.1), value: vm.dictationLevel)
+            Text("Đang nghe…")
+                .font(WordlyFonts.body(13, weight: .semibold))
+                .foregroundStyle(WordlyColors.error)
+            Spacer()
+            Button {
+                Task { await vm.toggleDictation() }
+            } label: {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 30, height: 30)
+                    .background(WordlyColors.error)
+                    .clipShape(Circle())
+            }
+            .accessibilityLabel("Dừng ghi âm")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(WordlyColors.error.opacity(0.08))
+        .clipShape(Capsule())
+        .onAppear { micPulse = true }
+        .onDisappear { micPulse = false }
+    }
+
+    private func barHeight(_ index: Int) -> CGFloat {
+        let base: [CGFloat] = [7, 13, 20, 13, 7]
+        let level = CGFloat(vm.dictationLevel)
+        return max(4, base[index] * (0.35 + level * 1.1))
     }
 
     private func speakChip(_ label: String, lang: String, text: String) -> some View {
@@ -269,6 +371,7 @@ struct DictionaryCard: View {
                     .font(WordlyFonts.display(26))
                     .foregroundStyle(WordlyColors.ink)
                 Spacer()
+                if AppRouter.alexPracticeEnabled {
                 Button(action: onAskAlex) {
                     Label("Hỏi Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
                         .font(WordlyFonts.body(12, weight: .bold))
@@ -277,6 +380,7 @@ struct DictionaryCard: View {
                         .background(WordlyColors.duoBlue.opacity(0.14))
                         .foregroundStyle(WordlyColors.duoBlue)
                         .clipShape(Capsule())
+                }
                 }
             }
             HStack(spacing: 10) {

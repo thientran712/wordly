@@ -34,7 +34,20 @@ final class AppGroupStorage {
         }
     }
 
+    /// Đã đăng xuất → widget nhắc đăng nhập thay vì xoay từ. Widget đọc khoá này
+    /// trực tiếp (WordlyWidget.swift, `signedOutKey`).
+    static let signedOutKey = "wordly.widget.signedOut"
+    var signedOut: Bool {
+        get { defaults?.bool(forKey: Self.signedOutKey) ?? false }
+        set { defaults?.set(newValue, forKey: Self.signedOutKey) }
+    }
+
     func saveWords(_ words: [WidgetWordItem]) {
+        if signedOut {
+            // Đăng nhập lại: đồng bộ được từ là đã có phiên
+            signedOut = false
+            WidgetCenter.shared.reloadAllTimelines()
+        }
         guard words != self.words else { return }
         defaults?.set(try? JSONEncoder().encode(words), forKey: Self.wordsKey)
         WidgetCenter.shared.reloadAllTimelines()
@@ -55,11 +68,26 @@ final class AppGroupStorage {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Đăng xuất: xoá từ vựng (riêng tư) của tài khoản khỏi màn hình khoá.
+    /// Đăng xuất: xoá từ vựng của tài khoản và cả lô từ kho (nếu không, widget
+    /// vẫn xoay từ kho như chưa đăng xuất), widget chuyển sang nhắc đăng nhập.
+    /// Giữ cài đặt widget (màu, căn lề…) cho lần đăng nhập sau.
     func clearWords() {
         defaults?.removeObject(forKey: Self.wordsKey)
+        defaults?.removeObject(forKey: Self.bankKey)
         defaults?.removeObject(forKey: Self.bankFetchedAtKey)
+        defaults?.removeObject(forKey: Self.bankLevelKey)
+        signedOut = true
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Dọn file ảnh nền widget còn sót từ build 9–10 (tính năng ảnh nền đã bỏ
+    /// vì gây crash).
+    func deleteHomeBackgroundImage() {
+        guard let url = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: WordlyConfig.appGroup)?
+            .appendingPathComponent("widget_home_bg.jpg"),
+              FileManager.default.fileExists(atPath: url.path) else { return }
+        try? FileManager.default.removeItem(at: url)
     }
 
     /// Lịch sử dịch → từ cho widget: chỉ Anh→Việt, bỏ trùng, giữ thứ tự mới nhất trước.
@@ -85,6 +113,22 @@ final class AppGroupStorage {
 
 /// Tải lịch sử (tối đa 200 dòng) rồi đẩy sang widget. Gọi khi mở app, sau khi lưu từ.
 enum WidgetSync {
+    @MainActor private static var lastRefresh: Date?
+
+    static func isStale(lastRefresh: Date?, now: Date, interval: TimeInterval = 300) -> Bool {
+        guard let lastRefresh else { return true }
+        return now.timeIntervalSince(lastRefresh) > interval
+    }
+
+    /// Mở app / quay lại app: chỉ đồng bộ khi lần trước đã quá 5 phút — trước
+    /// đây mỗi lần app active đều lật 4 trang lịch sử + hồ sơ + kho từ, tranh
+    /// mạng với màn đang tải.
+    @MainActor static func refreshIfStale() async {
+        guard isStale(lastRefresh: lastRefresh, now: Date()) else { return }
+        lastRefresh = Date()
+        await refresh()
+    }
+
     static func refresh() async {
         var all: [TranslateHistoryEntry] = []
         var offset = 0

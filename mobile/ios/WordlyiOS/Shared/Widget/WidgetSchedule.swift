@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // Dùng chung cho app + widget (cùng được biên dịch vào 2 target, xem project.yml).
 // App lưu danh sách từ + cài đặt vào App Group; widget đọc ra và dựng lịch hiển thị.
@@ -45,7 +46,85 @@ struct WidgetSettings: Codable, Equatable {
     /// Trộn thêm từ mới trong kho từ vựng (không áp dụng cho "Tự chọn")
     var includeBank: Bool = true
 
+    /// Kiểu hiển thị widget MÀN HÌNH KHOÁ — Apple không cho tùy biến màu/nền ở
+    /// đây (OS tự tô đơn sắc theo tint người dùng chọn), chỉ cỡ chữ/đậm/bố cục.
+    enum LockStyle: String, Codable, CaseIterable {
+        case full       // nhãn + từ + nghĩa (hiện tại)
+        case compact    // chỉ từ, cỡ lớn + đậm
+    }
+    var lockStyle: LockStyle = .full
+
+    /// Theme màu nền widget MÀN HÌNH CHÍNH — bản cũ (3 preset cố định), giữ
+    /// lại chỉ để decode dữ liệu cũ không lỗi; không còn dùng để vẽ (xem `homeStyle`).
+    enum HomeTheme: String, Codable, CaseIterable {
+        case defaultTheme, sunset, midnight
+    }
+    var homeTheme: HomeTheme = .defaultTheme
+
+    /// Tuỳ biến widget MÀN HÌNH CHÍNH — màu nền/gradient, màu chữ, đậm/
+    /// nghiêng/nhạt cho từ và nghĩa riêng nhau. (Ảnh nền từ thư viện đã bỏ
+    /// 11/10/2026 vì gây crash; dữ liệu cũ còn khoá imageOverlay vẫn đọc được.)
+    enum TextWeight: String, Codable, CaseIterable {
+        case light, regular, bold
+    }
+    struct HomeStyle: Codable, Equatable {
+        var bgHex1: String = "#1CB0F6"
+        var bgHex2: String = "#58CC02"
+        var wordColorHex: String = "#FFFFFF"
+        var meaningColorHex: String = "#FFFFFF"
+        var wordWeight: TextWeight = .bold
+        var meaningWeight: TextWeight = .regular
+        var wordItalic: Bool = false
+        var meaningItalic: Bool = false
+    }
+    var homeStyle: HomeStyle = HomeStyle()
+
+    /// Căn lề chữ trên widget (màn hình khoá chữ nhật + màn hình chính).
+    enum TextAlign: String, Codable, CaseIterable {
+        case leading, center, trailing
+    }
+    var textAlign: TextAlign = .leading
+
     static let intervals = [15, 30, 60, 120]
+}
+
+extension WidgetSettings.HomeStyle {
+    // Bộ giải mã tự sinh báo lỗi khi thiếu khoá (không lấy giá trị mặc định)
+    // → kéo hỏng cả WidgetSettings, người dùng mất hết cài đặt widget.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = Self()
+        bgHex1 = try c.decodeIfPresent(String.self, forKey: .bgHex1) ?? d.bgHex1
+        bgHex2 = try c.decodeIfPresent(String.self, forKey: .bgHex2) ?? d.bgHex2
+        wordColorHex = try c.decodeIfPresent(String.self, forKey: .wordColorHex) ?? d.wordColorHex
+        meaningColorHex = try c.decodeIfPresent(String.self, forKey: .meaningColorHex) ?? d.meaningColorHex
+        wordWeight = try c.decodeIfPresent(WidgetSettings.TextWeight.self, forKey: .wordWeight) ?? d.wordWeight
+        meaningWeight = try c.decodeIfPresent(WidgetSettings.TextWeight.self, forKey: .meaningWeight) ?? d.meaningWeight
+        wordItalic = try c.decodeIfPresent(Bool.self, forKey: .wordItalic) ?? d.wordItalic
+        meaningItalic = try c.decodeIfPresent(Bool.self, forKey: .meaningItalic) ?? d.meaningItalic
+    }
+}
+
+extension WidgetSettings.TextAlign {
+    var horizontal: HorizontalAlignment {
+        switch self { case .leading: .leading; case .center: .center; case .trailing: .trailing }
+    }
+    var frame: Alignment {
+        switch self { case .leading: .leading; case .center: .center; case .trailing: .trailing }
+    }
+    var multiline: TextAlignment {
+        switch self { case .leading: .leading; case .center: .center; case .trailing: .trailing }
+    }
+}
+
+extension WidgetSettings.TextWeight {
+    var swiftUIWeight: Font.Weight {
+        switch self {
+        case .light: return .light
+        case .regular: return .regular
+        case .bold: return .bold
+        }
+    }
 }
 
 extension WidgetSettings {
@@ -60,6 +139,10 @@ extension WidgetSettings {
         activeEndMinutes = try c.decodeIfPresent(Int.self, forKey: .activeEndMinutes) ?? d.activeEndMinutes
         showMeaning = try c.decodeIfPresent(Bool.self, forKey: .showMeaning) ?? d.showMeaning
         includeBank = try c.decodeIfPresent(Bool.self, forKey: .includeBank) ?? d.includeBank
+        lockStyle = try c.decodeIfPresent(LockStyle.self, forKey: .lockStyle) ?? d.lockStyle
+        homeTheme = try c.decodeIfPresent(HomeTheme.self, forKey: .homeTheme) ?? d.homeTheme
+        homeStyle = try c.decodeIfPresent(HomeStyle.self, forKey: .homeStyle) ?? d.homeStyle
+        textAlign = try c.decodeIfPresent(TextAlign.self, forKey: .textAlign) ?? d.textAlign
     }
 }
 
@@ -234,5 +317,55 @@ enum WidgetSchedule {
             t = nextChange(after: t, settings: settings, calendar: cal)
         }
         return result
+    }
+}
+
+/// Link khi bấm widget: `wordly://word?id=…&w=…&m=…&bank=1`. Widget tạo, app
+/// đọc để mở đúng từ (Từ vựng > Đã lưu hoặc Từ mới + popup nghĩa). Kèm sẵn
+/// từ + nghĩa để app hiện được ngay, không phải chờ tải danh sách.
+struct WidgetDeepLink: Equatable {
+    static let scheme = "wordly"
+    static let host = "word"
+    private static let bankPrefix = "bank-"
+
+    let id: String
+    let word: String
+    let meaning: String
+    let fromBank: Bool
+
+    /// Id trong bảng `words` (màn Từ mới) — từ kho có id dạng "bank-<id>".
+    var bankWordId: String? {
+        fromBank && id.hasPrefix(Self.bankPrefix) ? String(id.dropFirst(Self.bankPrefix.count)) : nil
+    }
+
+    init(item: WidgetWordItem) {
+        id = item.id
+        word = item.word
+        meaning = item.meaning
+        fromBank = item.fromBank
+    }
+
+    init?(url: URL) {
+        guard url.scheme == Self.scheme, url.host == Self.host,
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return nil }
+        func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+        guard let id = value("id"), !id.isEmpty, let word = value("w"), !word.isEmpty else { return nil }
+        self.id = id
+        self.word = word
+        meaning = value("m") ?? ""
+        fromBank = value("bank") == "1"
+    }
+
+    var url: URL? {
+        var c = URLComponents()
+        c.scheme = Self.scheme
+        c.host = Self.host
+        c.queryItems = [
+            URLQueryItem(name: "id", value: id),
+            URLQueryItem(name: "w", value: word),
+            URLQueryItem(name: "m", value: meaning),
+            URLQueryItem(name: "bank", value: fromBank ? "1" : "0"),
+        ]
+        return c.url
     }
 }

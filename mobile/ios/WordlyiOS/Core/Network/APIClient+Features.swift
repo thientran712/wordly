@@ -35,6 +35,11 @@ extension APIClient {
         try await request(path: "/api/quiz", method: "POST", body: body, responseType: QuizSubmitResponse.self)
     }
 
+    /// Chấm ngay 1 câu sau khi chọn — không có tác dụng phụ (không lưu lượt chơi).
+    func checkQuizAnswer(_ body: QuizCheckRequest) async throws -> QuizCheckResponse {
+        try await request(path: "/api/quiz/check", method: "POST", body: body, responseType: QuizCheckResponse.self)
+    }
+
     // MARK: Vòng quay luyện nói
     func fetchSpinnerTopics() async throws -> [SpinnerItem] {
         try await request(path: "/api/spinner/topics?language=en", responseType: SpinnerTopicsResponse.self).topics
@@ -110,6 +115,12 @@ extension APIClient {
     func updateTimezone(_ tz: String) async throws {
         struct Body: Encodable { let timezone: String }
         _ = try await request(path: "/api/profile", method: "PUT", body: Body(timezone: tz), responseType: Ok.self)
+    }
+
+    // MARK: Tài khoản
+    /// Xoá vĩnh viễn tài khoản + toàn bộ dữ liệu (Apple Guideline 5.1.1(v)).
+    func deleteAccount() async throws {
+        _ = try await request(path: "/api/account", method: "DELETE", responseType: Ok.self)
     }
 
     // MARK: Luyện nói với Alex — tự đặt tiêu đề phiên

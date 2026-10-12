@@ -17,11 +17,19 @@ final class WidgetSettingsViewModel: ObservableObject {
         settings = AppGroupStorage.shared.settings
         words = AppGroupStorage.shared.words
         bank = AppGroupStorage.shared.bank
+        AppGroupStorage.shared.deleteHomeBackgroundImage()
     }
 
     var preview: WidgetWordItem? {
-        WidgetSchedule.entries(words: words, bank: bank, settings: settings).first { $0.word != nil }?.word
-            ?? WidgetSchedule.pool(from: words, settings: settings).first
+        upcomingPreview.first
+    }
+
+    /// Vài từ sắp hiện tiếp theo trên widget — xem trước nhiều thẻ, không chỉ 1 từ.
+    var upcomingPreview: [WidgetWordItem] {
+        let scheduled = WidgetSchedule.entries(words: words, bank: bank, settings: settings).compactMap(\.word)
+        if !scheduled.isEmpty { return Array(scheduled.prefix(5)) }
+        if let fallback = WidgetSchedule.pool(from: words, settings: settings).first { return [fallback] }
+        return []
     }
 
     /// Từ kho thực sự được trộn (đã bỏ từ trùng với từ của bạn)
@@ -40,7 +48,10 @@ final class WidgetSettingsViewModel: ObservableObject {
 
     func toggle(_ id: String) {
         if let i = settings.selectedIds.firstIndex(of: id) { settings.selectedIds.remove(at: i) }
-        else { settings.selectedIds.append(id) }
+        else {
+            settings.selectedIds.append(id)
+            settings.source = .custom  // chọn 1 từ ở đây là chuyển sang chế độ tự chọn
+        }
     }
 
     func setAllDay(_ on: Bool) {
@@ -64,7 +75,6 @@ final class WidgetSettingsViewModel: ObservableObject {
 
 struct WidgetSettingsView: View {
     @StateObject private var vm = WidgetSettingsViewModel()
-    @State private var search = ""
 
     var body: some View {
         Form {
@@ -73,28 +83,55 @@ struct WidgetSettingsView: View {
                 .listRowInsets(EdgeInsets())
 
             Section {
-                Picker("Hiện từ", selection: $vm.settings.source) {
-                    Text("Đã lưu").tag(WidgetSettings.Source.saved)
-                    Text("Gần đây").tag(WidgetSettings.Source.recent)
-                    Text("Tự chọn").tag(WidgetSettings.Source.custom)
-                }
-                .pickerStyle(.segmented)
-                Toggle(isOn: $vm.settings.includeBank) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Trộn từ mới từ kho")
-                        Text("Xen kẽ 2 từ của bạn : 1 từ mới theo trình độ")
-                            .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                if vm.settings.source == .custom {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Đang dùng danh sách tự chọn")
+                                .font(WordlyFonts.body(14, weight: .semibold))
+                            Text("\(vm.settings.selectedIds.count) từ")
+                                .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                        }
+                        Spacer()
+                        Button("Đổi lại") { vm.settings.source = .saved }
+                            .font(WordlyFonts.body(13, weight: .semibold))
                     }
+                } else {
+                    // Chỉ 2 lựa chọn phổ biến ở màn chính — "Tự chọn" chuyển
+                    // xuống mục "Tùy chỉnh thêm" bên dưới để không làm rối
+                    // (trước đây 3 lựa chọn + 1 toggle phụ thuộc gây khó hiểu).
+                    Picker("Hiện từ", selection: $vm.settings.source) {
+                        Text("Đã lưu").tag(WidgetSettings.Source.saved)
+                        Text("Gần đây").tag(WidgetSettings.Source.recent)
+                    }
+                    .pickerStyle(.segmented)
+                    Toggle(isOn: $vm.settings.includeBank) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Trộn từ mới từ kho")
+                            Text("Xen kẽ 2 từ của bạn : 1 từ mới theo trình độ")
+                                .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                        }
+                    }
+                    .tint(WordlyColors.electric)
                 }
-                .tint(WordlyColors.electric)
-                .disabled(vm.settings.source == .custom)
             } header: {
                 Text("Nguồn từ")
             } footer: {
                 Text(sourceFooter)
             }
 
-            if vm.settings.source == .custom { customPicker }
+            Section {
+                NavigationLink {
+                    CustomWordPickerView(vm: vm)
+                } label: {
+                    HStack {
+                        Text("Tự chọn từng từ")
+                        Spacer()
+                        Text("\(vm.settings.selectedIds.count) từ").foregroundStyle(WordlyColors.inkSoft)
+                    }
+                }
+            } footer: {
+                Text("Chỉ dành riêng những từ bạn chọn, không trộn từ kho.")
+            }
 
             Section("Đổi từ") {
                 Picker("Đổi từ mỗi", selection: $vm.settings.intervalMinutes) {
@@ -104,6 +141,28 @@ struct WidgetSettingsView: View {
                 }
                 Toggle("Hiện nghĩa tiếng Việt", isOn: $vm.settings.showMeaning)
                     .tint(WordlyColors.electric)
+            }
+
+            Section {
+                Picker("Căn chữ", selection: $vm.settings.textAlign) {
+                    Image(systemName: "text.alignleft").tag(WidgetSettings.TextAlign.leading)
+                    Image(systemName: "text.aligncenter").tag(WidgetSettings.TextAlign.center)
+                    Image(systemName: "text.alignright").tag(WidgetSettings.TextAlign.trailing)
+                }
+                .pickerStyle(.segmented)
+                Picker("Màn hình khoá", selection: $vm.settings.lockStyle) {
+                    Text("Đầy đủ").tag(WidgetSettings.LockStyle.full)
+                    Text("Gọn, chữ to").tag(WidgetSettings.LockStyle.compact)
+                }
+                NavigationLink {
+                    HomeStyleView(vm: vm)
+                } label: {
+                    Text("Màu & chữ màn hình chính")
+                }
+            } header: {
+                Text("Kiểu hiển thị")
+            } footer: {
+                Text("Căn chữ áp dụng cho cả màn hình khoá và màn hình chính. Màn hình khoá iOS tự tô màu đơn sắc; màn hình chính đổi được màu nền, màu chữ, đậm/nghiêng.")
             }
 
             Section {
@@ -163,59 +222,43 @@ struct WidgetSettingsView: View {
 
     private var preview: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("XEM TRƯỚC").font(WordlyFonts.body(11, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
+            Text("XEM TRƯỚC — CÁC THẺ SẮP TỚI").font(WordlyFonts.body(11, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
                 .padding(.leading, 12)
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Image(systemName: vm.preview?.fromBank == true ? "sparkles" : "bookmark.fill").font(.system(size: 10))
-                        Text(vm.preview?.fromBank == true ? "Từ mới" : "Đã lưu").font(.system(size: 11, weight: .semibold))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    if vm.upcomingPreview.isEmpty {
+                        previewCard(word: nil, isNow: true)
+                    } else {
+                        ForEach(Array(vm.upcomingPreview.enumerated()), id: \.offset) { i, w in
+                            previewCard(word: w, isNow: i == 0)
+                        }
                     }
-                    .opacity(0.7)
-                    Text(vm.preview?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold))
-                    Text(vm.preview.map { vm.settings.showMeaning ? $0.meaning : "Nghĩa là gì nhỉ? 🤔" } ?? "Lưu từ khi dịch để hiện ở đây")
-                        .font(.system(size: 13)).opacity(0.85).lineLimit(2)
                 }
-                .foregroundStyle(.white)
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.white.opacity(0.18))
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .padding(.horizontal, 4)
             }
-            .padding(18)
-            .background(LinearGradient(colors: [Color(hex: "#1CB0F6"), Color(hex: "#58CC02")], startPoint: .topLeading, endPoint: .bottomTrailing))
-            .clipShape(RoundedRectangle(cornerRadius: 22))
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 4)
     }
 
-    private var customPicker: some View {
-        Section {
-            TextField("Tìm từ…", text: $search)
-            let shown = vm.words.filter { search.isEmpty || $0.word.localizedCaseInsensitiveContains(search) }
-            if shown.isEmpty {
-                Text("Chưa có từ nào — dịch và lưu từ trước nhé.").foregroundStyle(WordlyColors.inkSoft)
-            }
-            ForEach(shown) { w in
-                Button { vm.toggle(w.id) } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text(w.word).font(WordlyFonts.body(15, weight: .semibold)).foregroundStyle(WordlyColors.ink)
-                                if w.isSaved { Image(systemName: "bookmark.fill").font(.system(size: 10)).foregroundStyle(WordlyColors.duoOrange) }
-                            }
-                            Text(w.meaning).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft).lineLimit(1)
-                        }
-                        Spacer()
-                        Image(systemName: vm.settings.selectedIds.contains(w.id) ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(vm.settings.selectedIds.contains(w.id) ? WordlyColors.electric : WordlyColors.inkGhost)
-                    }
-                }
-            }
-        } header: {
-            Text("Chọn từ (\(vm.settings.selectedIds.count))")
+    private func previewCard(word: WidgetWordItem?, isNow: Bool) -> some View {
+        let align = vm.settings.textAlign
+        return VStack(alignment: align.horizontal, spacing: 2) {
+            Text(isNow ? "Bây giờ" : "Tiếp theo").font(.system(size: 11, weight: .semibold)).opacity(0.7)
+            Text(word?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold))
+                .lineLimit(1).minimumScaleFactor(0.5)
+            Text(word.map { vm.settings.showMeaning ? $0.meaning : "Nghĩa là gì nhỉ? 🤔" } ?? "Lưu từ khi dịch để hiện ở đây")
+                .font(.system(size: 13)).opacity(0.85)
+                .lineLimit(2).minimumScaleFactor(0.6)
         }
+        .multilineTextAlignment(align.multiline)
+        .foregroundStyle(.white)
+        .padding(14)
+        .frame(width: 180, alignment: align.frame)
+        .background(.white.opacity(isNow ? 0.18 : 0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .padding(isNow ? 4 : 10)
+        .background(LinearGradient(colors: [Color(hex: "#1CB0F6"), Color(hex: "#58CC02")], startPoint: .topLeading, endPoint: .bottomTrailing))
+        .clipShape(RoundedRectangle(cornerRadius: 22))
     }
 
     private func step(_ n: Int, _ text: String) -> some View {

@@ -27,13 +27,17 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(hex(WordlyColors.error, .dark), "#FF4B4B")
     }
 
-    func testPaletteMatchesWebInLightMode() {
+    // Chữ/viền chế độ sáng đậm hơn web một chút (12/10/2026): bản cũ #777777
+    // chỉ ~4,5:1 trên nền trắng, chữ mờ #AFAFAF ~2,1:1 — trông nhạt, nhất là tab Dịch.
+    func testPaletteInLightMode() {
         XCTAssertEqual(hex(WordlyColors.electric, .light), "#58CC02")
         XCTAssertEqual(hex(WordlyColors.background, .light), "#FFFFFF")
         XCTAssertEqual(hex(WordlyColors.surface, .light), "#F7F7F7")
-        XCTAssertEqual(hex(WordlyColors.ink, .light), "#3C3C3C")
-        XCTAssertEqual(hex(WordlyColors.inkSoft, .light), "#777777")
-        XCTAssertEqual(hex(WordlyColors.divider, .light), "#E5E5E5")
+        XCTAssertEqual(hex(WordlyColors.ink, .light), "#2B2B2B")
+        XCTAssertEqual(hex(WordlyColors.inkSoft, .light), "#5E5E5E")
+        XCTAssertEqual(hex(WordlyColors.inkGhost, .light), "#8C8C8C")
+        XCTAssertEqual(hex(WordlyColors.divider, .light), "#D9D9D9")
+        XCTAssertEqual(hex(WordlyColors.cardBorder, .light), "#D9D9D9")
     }
 
     func testTextOnPrimaryButtonIsWhiteLikeWeb() {

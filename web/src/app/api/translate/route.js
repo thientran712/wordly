@@ -2,6 +2,7 @@ import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createLruCache, translationCacheKey } from "@/lib/translate/translation-cache";
 
 // Route CÔNG KHAI (khách dùng được) nên phải có rate limit, nếu không ai
 // cũng đốt được quota DeepL.
@@ -16,6 +17,9 @@ const WINDOW_MS = 60_000;
 
 // Giới hạn độ dài: DeepL tính phí theo ký tự, và UI đã chặn 10k ở client.
 const MAX_CHARS = 10_000;
+
+// Bản dịch phổ biến dùng lại 1 ngày, tối đa 5.000 mục (vài MB RAM).
+const cache = createLruCache({ max: 5000, ttlMs: 24 * 60 * 60 * 1000 });
 
 export async function POST(request) {
   const user = await getUserFast();
@@ -40,6 +44,12 @@ export async function POST(request) {
     );
   }
 
+  const sourceLang = source === "VI" ? "VI" : "EN";
+  const targetLang = target === "VI" ? "VI" : "EN";
+  const cacheKey = translationCacheKey(text, sourceLang, targetLang);
+  const cached = cache.get(cacheKey);
+  if (cached) return Response.json(cached);
+
   const apiKey = process.env.DEEPL_API_KEY;
   const isFree = apiKey?.endsWith(":fx");
   const endpoint = isFree
@@ -54,8 +64,8 @@ export async function POST(request) {
     },
     body: JSON.stringify({
       text: [text],
-      source_lang: source === "VI" ? "VI" : "EN",
-      target_lang: target === "VI" ? "VI" : "EN",
+      source_lang: sourceLang,
+      target_lang: targetLang,
     }),
   });
 
@@ -68,5 +78,7 @@ export async function POST(request) {
   const translated = data.translations?.[0]?.text ?? "";
   const detectedLang = data.translations?.[0]?.detected_source_language ?? source;
 
-  return Response.json({ translated, detectedLang });
+  const body = { translated, detectedLang };
+  if (translated) cache.set(cacheKey, body);
+  return Response.json(body);
 }

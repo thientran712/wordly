@@ -74,7 +74,7 @@ struct MainTabView: View {
         .tint(WordlyColors.electric)
         // Mỗi lần mở app → cập nhật từ cho widget màn hình khoá
         .task(id: scenePhase) {
-            if scenePhase == .active { await WidgetSync.refresh() }
+            if scenePhase == .active { await WidgetSync.refreshIfStale() }
         }
     }
 }

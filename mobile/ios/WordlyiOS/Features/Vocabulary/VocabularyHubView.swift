@@ -3,20 +3,24 @@ import SwiftUI
 // Tab Từ vựng: từ bạn đã lưu (kèm lượt từ widget sắp hiện — từ của bạn xen kẽ
 // từ mới trong kho) và kho từ theo chủ đề.
 struct VocabularyHubView: View {
-    enum Mode: Hashable, CaseIterable { case saved, topics }
-    @State private var mode: Mode = .saved
+    @EnvironmentObject private var router: AppRouter
+    // Giữ ở đây (không phải trong SavedWordsView) để KHÔNG bị huỷ và tải lại
+    // mỗi lần đổi qua "Kho theo chủ đề" rồi đổi lại — trước đây đổi tab là
+    // SavedWordsView bị tạo mới hoàn toàn (switch trong Group), load() chạy
+    // lại từ đầu mỗi lần, cảm giác giật/lag dù dữ liệu không đổi.
+    @StateObject private var savedVM = SavedWordsViewModel()
 
     var body: some View {
         NavigationStack {
             Group {
-                switch mode {
-                case .saved: SavedWordsView()
+                switch router.vocabMode {
+                case .saved: SavedWordsView(vm: savedVM)
                 case .topics: TopicVocabularyView()
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                HubPicker(options: Mode.allCases, selection: $mode,
-                          title: { $0 == .saved ? "Đã lưu" : "Kho theo chủ đề" },
+                HubPicker(options: AppRouter.VocabMode.allCases, selection: $router.vocabMode,
+                          title: { $0 == .saved ? "Đã lưu" : "Từ mới" },
                           icon: { $0 == .saved ? "bookmark.fill" : "square.grid.2x2.fill" })
                     .background(WordlyColors.background)
             }
@@ -29,20 +33,29 @@ final class SavedWordsViewModel: ObservableObject {
     @Published var saved: [TranslateHistoryEntry] = []
     @Published var upcoming: [WidgetWordItem] = []
     @Published var isLoading = true
+    /// `.task` chạy lại mỗi lần SavedWordsView được dựng lại (đổi qua "Kho
+    /// theo chủ đề" rồi đổi lại) — chỉ tải thật khi chưa có dữ liệu, tránh
+    /// gọi lại 4 trang API + refresh bank mỗi lần chuyển tab (cảm giác lag).
+    private var hasLoadedOnce = false
+
+    func loadIfNeeded() async {
+        guard !hasLoadedOnce else { return }
+        await load()
+    }
 
     func load() async {
+        hasLoadedOnce = true
         isLoading = saved.isEmpty
-        var all: [TranslateHistoryEntry] = []
-        var offset = 0
-        while offset < 200 {
-            guard let page = try? await APIClient.shared.fetchHistory(limit: 50, offset: offset) else { break }
-            all += page.history
-            if !page.hasMore { break }
-            offset += 50
+        // Hiện ngay bằng dữ liệu đã đồng bộ cho widget từ trước (tức thì,
+        // không chờ network) — tránh khoảng trống rồi bật ra đột ngột (giật).
+        refreshUpcoming()
+        // 1 lần gọi chỉ lấy từ đã lưu (trước đây lật tuần tự tới 4 trang lịch sử
+        // rồi tự lọc → tab Đã lưu chờ cả giây mới hiện).
+        if let all = try? await APIClient.shared.fetchSavedHistory() {
+            // Một từ lưu nhiều lần chỉ hiện một dòng
+            var seen = Set<String>()
+            saved = all.filter { $0.isSaved == true && seen.insert(WordMix.normalize($0.sourceText)).inserted }
         }
-        // Một từ lưu nhiều lần chỉ hiện một dòng
-        var seen = Set<String>()
-        saved = all.filter { $0.isSaved == true && seen.insert(WordMix.normalize($0.sourceText)).inserted }
         isLoading = false
         await WidgetSync.refreshBank()
         refreshUpcoming()
@@ -62,9 +75,10 @@ final class SavedWordsViewModel: ObservableObject {
 }
 
 struct SavedWordsView: View {
-    @StateObject private var vm = SavedWordsViewModel()
+    @ObservedObject var vm: SavedWordsViewModel
     @StateObject private var tts = TTSManager.shared
     @EnvironmentObject private var router: AppRouter
+    @State private var selected: TranslateHistoryEntry?
 
     var body: some View {
         ScrollView {
@@ -102,8 +116,19 @@ struct SavedWordsView: View {
         .screenBackground()
         .navigationTitle("Từ vựng")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await vm.load() }
+        .task { await vm.loadIfNeeded() }
         .refreshable { await vm.load() }
+        .sheet(item: $selected) { entry in
+            SavedWordDetailSheet(entry: entry)
+        }
+        // Bấm widget (từ của bạn) → mở popup từ đó
+        .onChange(of: router.widgetWord, initial: true) { _, link in
+            guard let link, !link.fromBank else { return }
+            router.widgetWord = nil
+            selected = vm.saved.first { $0.id == link.id }
+                ?? TranslateHistoryEntry(id: link.id, sourceText: link.word, translatedText: link.meaning,
+                                         direction: "EN→VI", savedAt: "", isSaved: true)
+        }
     }
 
     private var widgetCard: some View {
@@ -154,11 +179,17 @@ struct SavedWordsView: View {
 
     private func row(_ entry: TranslateHistoryEntry) -> some View {
         HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.sourceText).font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
-                Text(entry.translatedText).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft).lineLimit(2)
+            Button {
+                selected = entry
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.sourceText).font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                    Text(entry.translatedText).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft).lineLimit(2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            Spacer()
+            .buttonStyle(.plain)
             Button {
                 Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") }
             } label: {
@@ -171,8 +202,10 @@ struct SavedWordsView: View {
             }
             .accessibilityLabel("Phát âm")
             Menu {
-                Button { router.practice(word: entry.sourceText) } label: {
-                    Label("Hỏi Alex về từ này", systemImage: "bubble.left.and.text.bubble.right")
+                if AppRouter.alexPracticeEnabled {
+                    Button { router.practice(word: entry.sourceText) } label: {
+                        Label("Hỏi Alex về từ này", systemImage: "bubble.left.and.text.bubble.right")
+                    }
                 }
                 Button { UIPasteboard.general.string = entry.sourceText } label: {
                     Label("Sao chép", systemImage: "doc.on.doc")
@@ -184,5 +217,82 @@ struct SavedWordsView: View {
             }
         }
         .padding(.vertical, 10)
+    }
+}
+
+/// Chi tiết 1 từ đã lưu — cùng kiểu popup với TopicWordDetailSheet (3/4 màn
+/// hình). Từ đơn tiếng Anh thì tra từ điển AI (như ở tab Dịch) để có đầy đủ
+/// nghĩa/ví dụ; câu/cụm từ hoặc chiều VI→EN thì chỉ hiện bản dịch đã lưu.
+struct SavedWordDetailSheet: View {
+    let entry: TranslateHistoryEntry
+    @StateObject private var tts = TTSManager.shared
+    @EnvironmentObject private var router: AppRouter
+    @Environment(\.dismiss) private var dismiss
+    @State private var dictionary: TranslateViewModel.DictionaryState = .hidden
+
+    private var canLookUp: Bool {
+        entry.direction == "EN→VI" && TranslateLogic.isSingleWord(entry.sourceText)
+    }
+
+    var body: some View {
+        FitContentSheet {
+            switch dictionary {
+            case .loaded(let detail):
+                DictionaryCard(detail: detail, tts: tts) {
+                    dismiss()
+                    router.practice(word: entry.sourceText)
+                }
+                .padding(20)
+            default:
+                fallback
+            }
+        }
+        .screenBackground()
+        .task {
+            guard canLookUp else { return }
+            dictionary = .loading
+            if let detail = try? await APIClient.shared.lookupWord(entry.sourceText) {
+                dictionary = .loaded(detail)
+            } else {
+                dictionary = .notFound
+            }
+        }
+    }
+
+    private var fallback: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Câu dài dùng cỡ chữ đọc được, không dùng chữ tiêu đề lớn như từ đơn
+            Text(entry.sourceText)
+                .font(TranslateLogic.isSingleWord(entry.sourceText) ? WordlyFonts.display(28) : WordlyFonts.body(20, weight: .bold))
+                .foregroundStyle(WordlyColors.ink)
+            HStack(spacing: 10) {
+                Button { Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") } } label: {
+                    Label("Phát âm", systemImage: "speaker.wave.2.fill")
+                        .font(WordlyFonts.body(13, weight: .bold))
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(WordlyColors.electricSubtle)
+                        .foregroundStyle(WordlyColors.electric)
+                        .clipShape(Capsule())
+                }
+            }
+            if dictionary == .loading {
+                ProgressView().tint(WordlyColors.electric).frame(maxWidth: .infinity).padding(.top, 8)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Nghĩa").font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
+                    Text(entry.translatedText).font(WordlyFonts.body(17)).foregroundStyle(WordlyColors.ink)
+                }
+            }
+            if AppRouter.alexPracticeEnabled {
+                Button {
+                    dismiss()
+                    router.practice(word: entry.sourceText)
+                } label: {
+                    Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+                }
+                .buttonStyle(ElectricButtonStyle(isFullWidth: true))
+            }
+        }
+        .padding(20)
     }
 }

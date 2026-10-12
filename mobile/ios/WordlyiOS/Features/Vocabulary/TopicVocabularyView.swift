@@ -53,6 +53,7 @@ final class TopicVocabularyViewModel: ObservableObject {
 
 struct TopicVocabularyView: View {
     @StateObject private var vm = TopicVocabularyViewModel()
+    @EnvironmentObject private var router: AppRouter
     @State private var selected: TopicWord?
 
     var body: some View {
@@ -88,7 +89,21 @@ struct TopicVocabularyView: View {
         .task { if case .idle = vm.state { await vm.reload() } }
         .sheet(item: $selected) { word in
             TopicWordDetailSheet(word: word)
-                .presentationDetents([.medium, .large])
+        }
+        // Bấm widget (từ mới trong kho) → mở popup ngay bằng từ + nghĩa trong
+        // link, rồi tải đủ chi tiết (ví dụ, cụm từ…) thay vào cùng popup.
+        .onChange(of: router.widgetWord, initial: true) { _, link in
+            guard let link, link.fromBank else { return }
+            router.widgetWord = nil
+            let id = link.bankWordId ?? link.id
+            selected = TopicWord(id: id, word: link.word, pos: nil, level: nil, defEn: link.meaning, exEn: nil,
+                                 phonetic: nil, topic: nil, topicLabel: nil, collocations: nil, usageNotes: nil)
+            Task {
+                let found = try? await APIClient.shared.fetchWordsByTopic(exam: nil, topic: nil, level: nil,
+                                                                          query: link.word, offset: 0, withCounts: false)
+                    .words.first { $0.id == id }
+                if let found, selected?.id == id { selected = found }
+            }
         }
     }
 
@@ -163,7 +178,7 @@ struct TopicWordDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView {
+        FitContentSheet {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(word.word).font(WordlyFonts.display(30)).foregroundStyle(WordlyColors.ink)
@@ -190,13 +205,15 @@ struct TopicWordDetailSheet: View {
                 if let notes = word.usageNotes, !notes.isEmpty {
                     labeled("Lưu ý khi dùng", notes)
                 }
-                Button {
-                    dismiss()
-                    router.practice(word: word.word, wordId: word.id)
-                } label: {
-                    Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+                if AppRouter.alexPracticeEnabled {
+                    Button {
+                        dismiss()
+                        router.practice(word: word.word, wordId: word.id)
+                    } label: {
+                        Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+                    }
+                    .buttonStyle(ElectricButtonStyle(isFullWidth: true))
                 }
-                .buttonStyle(ElectricButtonStyle(isFullWidth: true))
             }
             .padding(20)
         }

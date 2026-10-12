@@ -258,11 +258,15 @@ struct ToastView: View {
 }
 
 extension View {
-    /// Toast tự ẩn sau `duration` giây khi `message` khác nil.
-    func toast(_ message: Binding<String?>, duration: Double = 2.5) -> some View {
+    /// Toast tự ẩn sau `duration` giây khi `message` khác nil. Mặc định kiểu
+    /// thành công (dấu tick, màu electric) — truyền `systemImage`/`color`
+    /// khác để làm toast lỗi (vd. ảnh quá lớn, lỗi mic) thay cho hiện chữ đỏ
+    /// cố định dưới màn hình.
+    func toast(_ message: Binding<String?>, systemImage: String = "checkmark.circle.fill",
+               color: Color = WordlyColors.electric, duration: Double = 2.5) -> some View {
         overlay(alignment: .bottom) {
             if let text = message.wrappedValue {
-                ToastView(message: text)
+                ToastView(message: text, systemImage: systemImage, color: color)
                     .padding(.bottom, 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .task(id: text) {

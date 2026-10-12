@@ -3,6 +3,229 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/10/2026 — Lộ service_role key Supabase Cloud → đã PAUSE project Cloud
+
+**Sự cố:** GitHub secret scanning (repo **public**) báo 2 cảnh báo:
+- **#1 — lộ thật:** JWT `service_role` (legacy) của Supabase Cloud
+  `blattojsgqyhoxkglind` hardcode trong `scripts/fetch-audio-urls.mjs`, commit
+  `80382b6` (tháng 5/2026). File hiện tại đã đọc từ env, nhưng key vẫn nằm
+  trong lịch sử git công khai → coi như đã lộ, rewrite history vô ích.
+- **#2 — báo nhầm:** `whsec_…` trong `infra/vps/supabase/docker-compose.yml:246`
+  là placeholder mẫu của Supabase (base64 "This is an example of a shorter
+  Base64 string"), dòng bị comment.
+
+**Đã làm (cách A — cắt hẳn Cloud, iOS đã chạy self-host từ build 7):**
+- Backup lần cuối Cloud bằng `supabase db dump --linked` (schema + data + roles)
+  → `~/wordly-cloud-backup-2026-10-12/` (ngoài repo, `chmod 600`, có PII +
+  password hash — **không đưa vào git**). Có đủ `auth.users`/`identities` + mọi
+  bảng public. Gói Free không có backup nào khác.
+- Chủ dự án pause project Cloud. Kiểm: `supabase projects list` → `INACTIVE`;
+  `curl blattojsgqyhoxkglind.supabase.co/rest/v1/` → không kết nối (000);
+  `app.wordly.skillproof.work` vẫn 200, `api.…/auth/v1/health` vẫn 401 (như trước).
+  → Key bị lộ hết tác dụng. Ai còn giữ build iOS 1–6 sẽ không dùng được nữa.
+
+- Đóng 2 cảnh báo GitHub qua `gh api`: #1 → `revoked`, #2 → `false_positive`.
+- Chủ dự án chọn xoá hạ tầng cũ **ngay** (không đợi 2–4 tuần):
+  - Gỡ project Vercel `davids-projects-f609008f/wordly` (`vercel project rm`) —
+    trước đó kiểm DNS `app`/`api.wordly.skillproof.work` đều trỏ VPS
+    167.99.74.215, Vercel không gắn domain riêng nào của Wordly.
+  - **Xoá hẳn** project Supabase Cloud `blattojsgqyhoxkglind` ("Deleted project",
+    không còn trong `supabase projects list`). Dữ liệu Cloud giờ **chỉ còn** bản
+    dump ở `~/wordly-cloud-backup-2026-10-12/`.
+  - Lệnh `supabase db query --linked --project-ref blattojsgqyhoxkglind` trong
+    tài liệu cũ không còn dùng được — migration giờ chạy trên self-host.
+- `web/.env.local`: `NEXT_PUBLIC_SUPABASE_URL` đã đổi sang
+  `https://api.wordly.skillproof.work`; 2 key (anon + service role, lấy từ
+  `/opt/wordly/prod/supabase/.env` trên VPS) nhập qua `atlas-secret-handoff`.
+  Lưu ý: dev local giờ chạm **dữ liệu production** self-host.
+
+### 12/10/2026 — BUILD 11 ĐÃ UPLOAD + PR #10 (chờ merge)
+
+**Trạng thái:** build 11 "Upload succeeded" (archive: CFBundleVersion 11 cho app +
+widget, 0 chuỗi `WordlyUIPreview`). Nhánh `chore/ios-build-11` đã push, **PR #10
+vào `main` chưa merge**. Web trên VPS = đúng code của PR (deploy lần cuối từ
+`6126c2c`, sau đó chỉ đổi iOS). 119/119 unit test iOS, 228/228 test web; UI test
+mới: `HistoryPickUITests`, `SavedWordSheetUITests`, `WidgetDeepLinkUITests`,
+`ProfileScreenUITests`, `PendingSignupUITests` đều pass.
+
+**Đã làm trong build 11 (so với build 10):**
+- Widget: bỏ ảnh nền (crash), chỉ hiện từ + nghĩa (bỏ nhãn/logo, chữ tự thu nhỏ
+  trước khi cắt "…"), căn trái/giữa/phải, bấm widget mở đúng từ (Đã lưu / Từ mới
+  + popup), đăng xuất thì nhắc đăng nhập (xoá cả lô từ kho).
+- `HomeStyle` giải mã chịu thiếu khoá (trước đây thiếu khoá → mất hết cài đặt widget).
+- Màn Cá nhân làm lại: tên 1 chỗ → màn "Hồ sơ học tập" (Lưu trên bản nháp), link
+  Chính sách quyền riêng tư + Hỗ trợ, version gọn.
+- Popup nghĩa (Đã lưu / Từ mới) căn trái, cao vừa nội dung (`FitContentSheet`).
+- Lịch sử dịch: chọn mục → cuộn lên đầu, không tự tra từ điển; nhấn giữ xoá
+  (**commit 4ebd9e7 trước đây báo xong nhưng quên gắn contextMenu** — giờ mới chạy
+  thật); bấm vào khoảng trống giữa dòng giờ ăn.
+- Ẩn nút "Gửi email thử". Chữ/viền chế độ sáng đậm hơn (ink #2B2B2B, phụ #5E5E5E,
+  mờ #8C8C8C, viền #D9D9D9).
+- Hiệu năng: lịch sử dịch không còn dựng lại view mỗi 10s (làm mới ngầm), gõ nhanh
+  không báo "Mất kết nối" sai, tab Đã lưu 1 lần gọi `?saved=1` (0,2s), cache bản
+  dịch phía server (dịch lại 0,98s → 0,26s, đo production), mở app chỉ đồng bộ
+  widget khi đã quá 5 phút.
+
+**Production (đã làm, đã kiểm):**
+- **Trigger `on_auth_user_created` bị mất từ lúc chuyển sang self-host** (baseline
+  chỉ dump schema public) → tài khoản mới không có hồ sơ, `/api/profile` 500. Đã
+  chạy migration `20261012000100_restore_new_user_trigger` (46/46 user có hồ sơ,
+  test user mới tự có hồ sơ). `/api/profile` GET dùng `maybeSingle`.
+- `support@wordly.skillproof.work` chuyển tiếp về Gmail qua ImprovMX (MX + SPF ở GoDaddy).
+
+**Chưa làm / còn treo:**
+1. **Merge PR #10** vào `main`.
+2. **Nộp App Store**: chọn build 11, điền mật khẩu tài khoản demo
+   `huythien7122+wordlytest@gmail.com`. Ảnh `docs/app-store/screenshots-6.9/` chụp
+   trước khi đổi màn widget/Cá nhân — nên chạy lại `AppStoreScreenshotTests`.
+   Hồ sơ nộp (artifact "Wordly App Store Kit") còn ghi build 9/10.
+3. Kiểm trên máy thật (simulator không làm được): bấm widget thật mở đúng từ; hiển
+   thị widget màn hình khoá/chính với căn lề + chữ dài; nhập mã OTP từ email thật.
+4. Cài đặt email "tải lâu": server đo ~0,2s, chưa tái hiện được — nhờ thử lại trên
+   build 11 (có thể do tài khoản thiếu hồ sơ, đã sửa bằng migration).
+5. Xoá tài khoản chưa thu hồi token Sign in with Apple (Apple khuyến nghị).
+6. Nợ có từ trước: `/api/translate-history` dùng service role (`createAdminClient`)
+   cho request người dùng — trái quy tắc 5, có lọc `user_id` nhưng nên chuyển sang
+   client RLS.
+7. Luyện nói với Alex đang ẩn bằng `AppRouter.alexPracticeEnabled = false`.
+
+### 11/10/2026 (khuya) — BUILD 10: đăng ký + quên mật khẩu bằng mã OTP
+
+**Build 10 — "Upload succeeded"** (0 chuỗi WordlyUIPreview, CFBundleVersion 10).
+111/111 unit test, 220/220 test web, UI test `PendingSignupUITests` pass.
+
+- Quên mật khẩu: gửi mã 6 số → nhập mã + mật khẩu mới trong app. Đăng ký: nhập
+  mã 6 số trong app rồi vào học luôn. Email đang chờ xác nhận được nhớ qua các
+  lần mở app; đăng nhập bằng email chưa xác nhận tự gửi mã mới.
+- Link email cũ rơi về trang chủ vì: redirect chưa cho web, app không kèm
+  redirect, middleware đẩy người đã đăng nhập khỏi /reset-password, và mã PKCE
+  nằm trong app. Đã sửa cả 4 (web dùng `/auth/confirm` + token_hash).
+- GoTrue: mẫu email tiếng Việt `web/public/email-templates/` (mã + link web),
+  `GOTRUE_MAILER_OTP_EXP=3600`, redirect cho phép `https://app.wordly.skillproof.work/**`.
+- Đã kiểm hành vi GoTrue thật cho 6 kịch bản (xem commit 90637b1).
+- **Bản nộp App Store nên chọn build 10.**
+
+### 11/10/2026 (tối) — BUILD 9 ĐÃ UPLOAD + chuẩn bị nộp App Store
+
+**Build 9 — "Upload succeeded"**: gồm mọi thay đổi từ sau build 8 (nhấn giữ xoá
+lịch sử, popup nghĩa từ đã lưu, ghi âm dịch trực tiếp + chọn ảnh thư viện,
+tuỳ biến widget màn hình chính, ẩn Alex, nút sửa tên, **xoá tài khoản**). Kiểm
+archive: CFBundleVersion 9, 0 chuỗi `WordlyUIPreview`, mô tả quyền mic mới.
+102/102 unit test, 215/215 test web.
+
+**Đã deploy production (web + VPS):**
+- `DELETE /api/account` — test thật bằng user tạm: user có `email_slots` (FK duy
+  nhất không ON DELETE CASCADE) xoá sạch, user 404, 0 dòng sót.
+- Trang công khai `/privacy`, `/support` (200 qua HTTPS, không sidebar).
+- nginx webapp `client_max_body_size` 1m → 15m (backup `/root/wordly.prod.webapp.conf.bak-*`,
+  `nginx -t` + reload). Body 14.6MB đi qua được.
+
+**Hồ sơ App Store**: artifact "Wordly App Store Kit" (tên, mô tả, từ khoá đã đếm
+ký tự, App Privacy, độ tuổi, ghi chú reviewer); ảnh 6.9" ở
+`docs/app-store/screenshots-6.9/` (chụp lại: UI test `AppStoreScreenshotTests`).
+
+**Chờ chủ dự án:**
+- ✅ (đã sửa) **SMTP GoTrue hỏng từ lúc migrate** (`SMTP_HOST=supabase-mail`, không
+  tồn tại) → giờ qua Resend cổng 2587 (DO chặn 465/587), xem `infra/vps/README.md`.
+  Test `/auth/v1/recover` → 200. Còn cần chủ dự án xác nhận thư tới hộp thư thật.
+- ✅ (đã xong) Hộp thư `support@wordly.skillproof.work` — ImprovMX chuyển tiếp về
+  `huythien7122@gmail.com` (MX `wordly` → mx1/mx2.improvmx.com + SPF, DNS ở GoDaddy).
+  Thư thử đã tới Gmail.
+- Mật khẩu tài khoản demo cho Apple reviewer.
+- Chưa có: thu hồi token Sign in with Apple khi xoá tài khoản (Apple khuyến nghị).
+
+### 11/10/2026 — iOS 1.0.0 BUILD 8 ĐÃ UPLOAD TestFlight
+
+Đăng nhập lại Xcode bằng Apple ID `huythien712@icloud.com` (program "TRAN PHAN
+HUY THIEN") → export lại từ archive có sẵn (không build lại) →
+**"Upload succeeded"**, App Store Connect đang xử lý. Chưa test tay các tính
+năng mới (chụp ảnh dịch, ghi âm dịch, quiz chấm ngay từng câu, widget settings
+mới) trên TestFlight/máy thật — chỉ kiểm qua build sạch + 102/102 unit test.
+
+**Đã làm xong, đã commit, 102/102 unit test pass (full suite), build Debug/Release sạch:**
+1. Luyện nói: gỡ nút "Xong" thừa góc trên vòng quay chủ đề (`1c6c8e6`-nhánh SpeakSpinnerView, đã có từ trước, thấy kèm batch này).
+2. Widget Settings: đơn giản hoá "Nguồn từ" (2 lựa chọn + DisclosureGroup "Tự chọn từng từ" thu gọn), thêm `LockStyle` (đầy đủ/gọn chữ to) + `HomeTheme` (3 màu nền) cho widget màn hình khoá/chính (`4b018cc` + commit trước đó thêm 2 tests).
+3. Quiz: chấm điểm ngay từng câu qua `POST /api/quiz/check` (web đã deploy trước đó) — không phải làm hết bài mới biết đúng/sai (`abc73c2`).
+4. Widget Settings: preview giờ cuộn ngang 5 thẻ sắp tới (trước chỉ 1 từ) — dùng thẳng `WidgetSchedule.entries` (`4b018cc`).
+5. **Mang tính năng chụp ảnh dịch + ghi âm dịch từ web sang iOS native** (`10419ca`):
+   - Chụp ảnh: `CameraPicker` (UIImagePickerController, camera → fallback photo library trên simulator) → JPEG → base64 data URL → `POST /api/translate/image` (Gemini vision OCR+dịch 1 lần, khớp đúng web, giữ nguyên giới hạn 5MB).
+   - Ghi âm: `DictationManager` mới (Speech framework on-device, ghi 1 lần bấm start/stop, KHÔNG dùng VAD liên tục như `SpeechManager` của luyện nói Alex — tách riêng để không đụng code đó) → text → dịch qua pipeline DeepL có sẵn (`/api/translate`). **Quyết định kiến trúc:** bỏ qua hoàn toàn việc port `/api/translate/voice` (Whisper fallback) vì iOS luôn có STT on-device miễn phí, web chỉ dùng Whisper khi trình duyệt không có Web Speech API.
+   - Thêm `NSCameraUsageDescription` vào `project.yml`, cập nhật mô tả mic/speech cho rõ dùng cả 2 tính năng.
+
+**Build 8 (`CURRENT_PROJECT_VERSION=8`, bump `6df52f2`):**
+`xcodegen generate` → Debug build OK → 102/102 test pass → Archive Release
+(`-allowProvisioningUpdates`, team `929P8F77XX`) → export `app-store-connect`
+→ **"Upload succeeded"** (sau khi đăng nhập lại Apple ID ở Xcode — máy này bị
+đăng xuất, chặn export lần đầu, xem log cũ nếu cần debug lại tình huống này).
+
+**Chờ quyết định / chờ hành động của chủ dự án:**
+- Test tay các tính năng mới trên TestFlight khi Apple xử lý xong (chụp ảnh dịch, ghi âm dịch, quiz chấm ngay từng câu, widget settings mới).
+
+---
+
+### 10/10/2026 (tối) — iOS 1.0.0 BUILD 7 ĐÃ UPLOAD TestFlight + thay Inngest bằng cron VPS
+
+**iOS build 7 — "Upload succeeded" (App Store Connect đang xử lý):**
+Archive Release từ `main` (`4d03585`), `-allowProvisioningUpdates`, export
+`method: app-store-connect` → upload thành công, kèm widget (cùng archive).
+Verify trước khi export: 0 chuỗi `WordlyUIPreview` trong binary Release,
+Info.plist đúng `CFBundleVersion=7`, domain mới
+(`api.wordly.skillproof.work`/`app.wordly.skillproof.work`).
+**3 UI test fail lúc chạy chung session trước → chạy lại riêng từng cái
+trên simulator mới boot sạch → PASS cả 2 (`HistoryClearUITests`,
+`KeyboardDismissUITests`)** — xác nhận đúng là flaky do simulator bị cài/gỡ
+liên tục lúc debug, không phải lỗi thật.
+
+**⚠️ CHƯA test login Google/Apple thật trên iOS trước khi upload** — chỉ
+verify được qua ảnh chụp simulator (launch không crash, màn hình đúng),
+simulator không tap tự động được nên không tự kiểm tra tay OAuth được.
+Chủ dự án quyết định upload luôn, chấp nhận rủi ro này — **cần tự test
+đăng nhập Google/Apple trên máy thật/TestFlight ngay khi bản build 7 xử lý
+xong**, trước khi mời người dùng khác cập nhật.
+
+**iOS (chi tiết thay đổi trong build 7):**
+- Endpoint đổi sang domain tự host: `Secrets.xcconfig` (gitignore) trỏ
+  `app.wordly.skillproof.work` / `api.wordly.skillproof.work`, `ANON_KEY`
+  mới từ self-host. Build simulator thành công, launch không crash, verify
+  bằng ảnh chụp (Info.plist bake đúng domain mới, không còn
+  `placeholder.supabase.co`). **Chưa test login Google/Apple thật trên iOS**
+  (simulator không tap tự động được — cần làm tay trước khi upload build 7).
+- Thêm `GOTRUE.../ADDITIONAL_REDIRECT_URLS` trên VPS cho
+  `com.thientran.wordly://login-callback` (trước đó trống — thiếu thì
+  login app sẽ bị từ chối redirect).
+- UI: logo Google đổi từ chữ "G" gradient tự vẽ sang logo G chính thức 4
+  màu (`GoogleLogoIcon.swift`, vector path thật theo brand guideline).
+  Popup đăng xuất đổi từ `confirmationDialog` (action sheet từ dưới) sang
+  `.alert` (giữa màn hình). Sửa placeholder email tô nhầm màu xanh link hệ
+  thống (lỗi `Text(_:)` dùng init `LocalizedStringKey` tự parse Markdown và
+  auto-link chuỗi giống email — đổi `Text(verbatim:)`).
+- 3/4 UI test fail lúc chạy chung (`HistoryClearUITests`,
+  `KeyboardDismissUITests`) — **đã xác nhận flaky**: chạy riêng từng test
+  trên simulator mới boot sạch → cả 2 PASS. Đúng như nghi ngờ, do cài/gỡ
+  app liên tục lúc debug làm simulator không kịp ổn định, không phải lỗi
+  thật liên quan tới thay đổi hôm nay.
+
+**Web — thay Inngest bằng cron VPS cho email nhắc học (quyết định của chủ
+dự án, giảm phụ thuộc khi đã tự host):**
+- `scheduleAllSlots`/`sendSlotEmail`/`watchdogReschedule` (Inngest
+  `sleepUntil` tới đúng giờ mỗi user) → cron VPS `*/5 * * * *` gọi
+  `POST /api/cron/send-emails`, tự hỏi DB "ai tới giờ gửi" (polling thay
+  event-driven). Logic chọn nội dung/gửi/ghi log giữ nguyên y hệt bản cũ.
+  `isSlotDueNow()` tách riêng, test TDD 10 ca (RED→GREEN xác nhận).
+- Gỡ mọi `inngest.send()` ở `email-slots`/`email-preferences` (không cần
+  báo lịch — cron tự quét), xóa route `admin/trigger-inngest-all` đã vô
+  dụng. Inngest Cloud giờ chỉ còn `cleanupRateLimitCounters`.
+- **Verify thật trên production:** gọi tay endpoint qua CRON_SECRET → trả
+  đúng dữ liệu thật (`checked: 8` slot). Đợi 1 chu kỳ crontab tự chạy (6
+  phút) → xác nhận log mới xuất hiện tự động, không phải do gọi tay.
+  **Chưa chứng kiến 1 lượt gửi email THẬT** (không có slot nào rơi đúng
+  cửa sổ 5 phút lúc kiểm — gần nhất là slot `00:00` Asia/Saigon, ~1h44
+  sau) — nên theo dõi `send-emails-cron.log` trên VPS ngày mai để xác nhận
+  gửi thật thành công.
+- `npm test` 211/211 (211 = 201 trước + 10 test mới), `eslint` sạch,
+  `next build` sạch. Deploy lên VPS: archive + rebuild image + recreate
+  container, verify 200 cả nội bộ lẫn domain public.
+
 ### 10/10/2026 — Xóa hẳn code B2B (trung tâm tiếng Anh), chuẩn bị hạ tầng VPS
 
 Chủ dự án quyết định bỏ hẳn tính năng B2B (trung tâm/lớp/giáo viên/học

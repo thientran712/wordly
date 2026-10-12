@@ -71,7 +71,7 @@ export default function AppSidebar() {
   }, []);
 
   // Skip auth pages entirely — no sidebar on login/signup/forgot/reset
-  const isAuthPage = ["/login", "/signup", "/forgot-password", "/reset-password"].includes(pathname);
+  const isAuthPage = ["/login", "/signup", "/forgot-password", "/reset-password", "/privacy", "/support"].includes(pathname);
   // On /practice, collapse to a slim rail so it doesn't fight the page's own session sidebar
   const isPractice = pathname.startsWith("/practice");
 

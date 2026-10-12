@@ -1,6 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { inngest } from "@/inngest/client";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 
 export async function GET() {
@@ -35,13 +33,6 @@ export async function PUT(request) {
   const newFrequency = body.frequency;
   const newCustomDays = body.custom_days || [];
 
-  // Read current prefs to detect actual changes
-  const { data: existing } = await supabase
-    .from("email_preferences")
-    .select("enabled, frequency, custom_days")
-    .eq("user_id", user.id)
-    .single();
-
   const { data, error } = await supabase
     .from("email_preferences")
     .upsert({
@@ -58,32 +49,7 @@ export async function PUT(request) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  const wasEnabled = existing?.enabled ?? false;
-  const frequencyChanged = existing?.frequency !== newFrequency;
-  const customDaysChanged = JSON.stringify(existing?.custom_days ?? []) !== JSON.stringify(newCustomDays);
-  const toggledOff = wasEnabled && !newEnabled;
-  const toggledOn = !wasEnabled && newEnabled;
-  const scheduleChanged = frequencyChanged || customDaysChanged;
-
-  if (toggledOff) {
-    // User turned off email — cancel all slot runs immediately
-    const admin = createAdminClient();
-    const { data: slots } = await admin
-      .from("email_slots")
-      .select("id")
-      .eq("user_id", user.id);
-
-    if (slots?.length) {
-      await inngest.send(slots.map(slot => ({
-        name: "email/slot.cancelled",
-        data: { user_id: user.id, slot_id: slot.id, triggeredAt: Date.now() },
-      })));
-    }
-  } else if (toggledOn || scheduleChanged) {
-    // Email turned on, or frequency/days changed — reschedule all slots
-    await inngest.send({ name: "email/schedule.updated", data: { user_id: user.id } });
-  }
-  // If nothing changed: no Inngest event fired
-
+  // Không cần báo lịch nữa — cron /api/cron/send-emails tự quét
+  // email_preferences mỗi 5 phút, thay đổi tự được nhận trong lần quét kế tiếp.
   return Response.json({ preferences: data[0] });
 }

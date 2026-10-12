@@ -4,7 +4,7 @@
 
 import { parseJsonResponse } from "../ai/ai-models.js";
 
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB — ảnh chụp chữ không cần lớn hơn
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB — ảnh chụp bằng camera thật đôi khi nặng hơn 5MB
 export const ALLOWED_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
 export const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10MB — ghi âm 1 câu ngắn, dự phòng khi không có Web Speech API

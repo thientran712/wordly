@@ -20,6 +20,8 @@ struct WordlyApp: App {
                     themeManager.apply(savedTheme)
                     KeyboardDismiss.install()
                 }
+                // Bấm widget (wordly://word?...) → mở đúng từ trong tab Từ vựng
+                .onOpenURL { router.open($0) }
         }
     }
 }

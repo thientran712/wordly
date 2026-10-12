@@ -13,7 +13,7 @@ settings:
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Automatic
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "6"
+    CURRENT_PROJECT_VERSION: "11"
 packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
@@ -52,8 +52,9 @@ targets:
           - PlusJakartaSans-ExtraBold.ttf
         # App chỉ dùng HTTPS chuẩn của hệ điều hành → không phải khai báo xuất khẩu mã hoá
         ITSAppUsesNonExemptEncryption: false
-        NSMicrophoneUsageDescription: "Wordly cần mic để luyện nói với Alex — giáo viên AI của bạn."
-        NSSpeechRecognitionUsageDescription: "Wordly dùng nhận dạng giọng nói để chuyển lời nói của bạn thành văn bản khi luyện nói với Alex."
+        NSMicrophoneUsageDescription: "Wordly dùng mic để bạn nói rồi dịch ngay câu vừa nói."
+        NSSpeechRecognitionUsageDescription: "Wordly nhận dạng giọng nói ngay trên máy để chuyển lời bạn nói thành chữ rồi dịch."
+        NSCameraUsageDescription: "Wordly cần camera để chụp ảnh và dịch chữ trong ảnh."
         # com.thientran.wordly://login-callback — Google OAuth (Supabase) quay về app
         CFBundleURLTypes:
           - CFBundleURLSchemes: [wordly, $(WORDLY_BUNDLE_ID)]

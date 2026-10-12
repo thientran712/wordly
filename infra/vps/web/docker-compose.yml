@@ -1,0 +1,8 @@
+services:
+  web:
+    image: wordly-web:${IMAGE_TAG:-manual}
+    pull_policy: never
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:13500:3000"

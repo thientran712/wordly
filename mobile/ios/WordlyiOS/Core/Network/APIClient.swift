@@ -92,7 +92,13 @@ final class APIClient: ObservableObject {
         useWebBase: Bool
     ) async throws -> T {
         #if DEBUG
-        if PreviewMode.isOn, let data = PreviewMode.fixture(path: path, method: method) {
+        if PreviewMode.isOn {
+            // Không có dữ liệu mẫu thì báo lỗi, KHÔNG gọi mạng: gọi thật sẽ
+            // nhận 401 (không có phiên) → AuthRecovery đăng xuất → văng về
+            // màn đăng nhập giữa lúc đang chụp màn hình/chạy UI test.
+            guard let data = PreviewMode.fixture(path: path, method: method) else {
+                throw APIError.serverError("preview: chưa có dữ liệu mẫu cho \(method) \(path)")
+            }
             return try decoder.decode(T.self, from: data)
         }
         #endif
@@ -195,12 +201,32 @@ final class APIClient: ObservableObject {
         )
     }
 
+    /// Dịch bằng ảnh chụp — gửi base64, server (Gemini vision) OCR + dịch
+    /// trong 1 lần gọi. Giới hạn 5MB/jpeg-png-webp-heic được chặn ở server;
+    /// client chỉ cần gửi đúng data URL.
+    func translateImage(dataURL: String) async throws -> TranslateImageResponse {
+        try await request(
+            path: "/api/translate/image",
+            method: "POST",
+            body: TranslateImageRequest(image: dataURL),
+            responseType: TranslateImageResponse.self
+        )
+    }
+
     // MARK: - Translate History
     func fetchHistory(limit: Int = 20, offset: Int = 0) async throws -> TranslateHistoryResponse {
         try await request(
             path: "/api/translate-history?limit=\(limit)&offset=\(offset)",
             responseType: TranslateHistoryResponse.self
         )
+    }
+
+    /// Chỉ từ đã lưu (tối đa 200) trong 1 lần gọi — `?saved=1` của web.
+    func fetchSavedHistory() async throws -> [TranslateHistoryEntry] {
+        try await request(
+            path: "/api/translate-history?saved=1&limit=200",
+            responseType: TranslateHistoryResponse.self
+        ).history
     }
 
     // MARK: - Widget suggestion log

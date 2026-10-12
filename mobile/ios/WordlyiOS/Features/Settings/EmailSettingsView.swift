@@ -9,7 +9,6 @@ final class EmailSettingsViewModel: ObservableObject {
     @Published var slots: [EmailSlot] = []
     @Published var state: Loadable<Void> = .idle
     @Published var saving = false
-    @Published var sendingTest = false
     @Published var toast: String?
     @Published var error: String?
 
@@ -78,19 +77,6 @@ final class EmailSettingsViewModel: ObservableObject {
         slots.removeAll { $0.id == slot.id }
         do { try await APIClient.shared.deleteEmailSlot(id: slot.id) }
         catch { await load() }
-    }
-
-    func sendTest() async {
-        sendingTest = true
-        defer { sendingTest = false }
-        do {
-            try await APIClient.shared.sendTestEmail()
-            toast = "Đã gửi email thử — kiểm tra hộp thư nhé 📬"
-        } catch APIError.serverError(let m) where m.contains("Nothing to send") {
-            error = "Chưa có gì để gửi — hãy lưu vài từ khi dịch trước nhé."
-        } catch {
-            self.error = "Không gửi được email thử."
-        }
     }
 }
 
@@ -211,17 +197,6 @@ struct EmailSettingsView: View {
             .listRowBackground(WordlyColors.electric)
             .foregroundStyle(WordlyColors.onElectric)
             .disabled(vm.saving)
-
-            Button { Task { await vm.sendTest() } } label: {
-                HStack {
-                    if vm.sendingTest { ProgressView() }
-                    Label("Gửi email thử ngay", systemImage: "paperplane.fill").frame(maxWidth: .infinity)
-                }
-            }
-            .foregroundStyle(WordlyColors.electric)
-            .disabled(vm.sendingTest)
-        } footer: {
-            Text("Email thử gửi tới địa chỉ đăng nhập của bạn, gồm các từ đã lưu gần đây.")
         }
     }
 }

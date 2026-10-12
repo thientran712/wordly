@@ -247,7 +247,6 @@ struct SpeakTimerSheet: View {
     @State private var timer: CountdownTimer
     @State private var openFramework: String?
     @StateObject private var tts = TTSManager.shared
-    @Environment(\.dismiss) private var dismiss
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(mode: SpinnerMode, item: SpinnerItem?, vocab: [SuggestedWord], vocabLoading: Bool) {
@@ -259,33 +258,33 @@ struct SpeakTimerSheet: View {
         _openFramework = State(initialValue: SpinnerLogic.recommendedFramework(mode: mode, item: item)?.id)
     }
 
+    // Không tự tạo NavigationStack/nút "Xong" — luôn được nhúng trong stack
+    // sẵn có của màn cha (tab Luyện nói, hoặc push qua NavigationLink đã có
+    // back button tự động), tự thêm stack/nút ở đây chỉ gây lồng thừa.
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    if let item {
-                        Text(item.text)
-                            .font(WordlyFonts.body(17, weight: .bold))
-                            .foregroundStyle(WordlyColors.ink)
-                            .multilineTextAlignment(.center)
-                    }
-                    clock
-                    controls
-                    if vocabLoading || !vocab.isEmpty { vocabSection }
-                    if !mode.frameworks.isEmpty { frameworksSection }
+        ScrollView {
+            VStack(spacing: 20) {
+                if let item {
+                    Text(item.text)
+                        .font(WordlyFonts.body(17, weight: .bold))
+                        .foregroundStyle(WordlyColors.ink)
+                        .multilineTextAlignment(.center)
                 }
-                .padding(20)
+                clock
+                controls
+                if vocabLoading || !vocab.isEmpty { vocabSection }
+                if !mode.frameworks.isEmpty { frameworksSection }
             }
-            .screenBackground()
-            .navigationTitle("Luyện nói")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Xong") { dismiss() } } }
-            .onReceive(ticker) { _ in
-                let wasRunning = timer.running
-                timer.tick()
-                if wasRunning && timer.finished {
-                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                }
+            .padding(20)
+        }
+        .screenBackground()
+        .navigationTitle("Luyện nói")
+        .navigationBarTitleDisplayMode(.inline)
+        .onReceive(ticker) { _ in
+            let wasRunning = timer.running
+            timer.tick()
+            if wasRunning && timer.finished {
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
             }
         }
     }

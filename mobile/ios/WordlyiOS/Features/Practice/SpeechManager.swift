@@ -65,11 +65,21 @@ final class SpeechManager: NSObject, ObservableObject {
             let inputNode = audioEngine.inputNode
             let recordingFormat = inputNode.outputFormat(forBus: 0)
 
+            // Tap chạy trên thread real-time riêng của CoreAudio, KHÔNG phải
+            // main thread — gọi thẳng method @MainActor (self.detectVoiceActivity
+            // cũ) từ đây vi phạm actor isolation, gây crash thật trên máy
+            // (khác hành vi simulator). Tính dB ở hàm thuần (nonisolated,
+            // chạy ngay trên thread audio), chỉ hop sang MainActor để cập
+            // nhật state. Đọc self.recognitionRequest qua self (không bind
+            // vào hằng cục bộ) để không bị "khoá cứng" vào request cũ sau khi
+            // cancelCurrentSpeech() tạo request mới.
             inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
-                guard let self else { return }
-                recognitionRequest.append(buffer)
-                // Simple VAD via audio power
-                self.detectVoiceActivity(buffer: buffer)
+                let dB = SpeechManager.decibels(of: buffer)
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.recognitionRequest?.append(buffer)
+                    self.handleVoiceActivity(dB: dB)
+                }
             }
 
             audioEngine.prepare()
@@ -114,37 +124,42 @@ final class SpeechManager: NSObject, ObservableObject {
     private var speechStarted = false
     private var silenceStart: Date?
 
-    private func detectVoiceActivity(buffer: AVAudioPCMBuffer) {
-        guard let channelData = buffer.floatChannelData?[0] else { return }
+    // nonisolated + static: an toàn gọi trực tiếp từ thread audio real-time
+    // (không chạm self — self là @MainActor, gọi thẳng từ thread khác sẽ
+    // vi phạm actor isolation và crash trên máy thật, xem ghi chú ở
+    // installTap phía trên).
+    private nonisolated static func decibels(of buffer: AVAudioPCMBuffer) -> Float {
+        guard let channelData = buffer.floatChannelData?[0] else { return -.infinity }
         let frameLength = Int(buffer.frameLength)
+        guard frameLength > 0 else { return -.infinity }
         var sum: Float = 0
         for i in 0..<frameLength { sum += abs(channelData[i]) }
         let rms = sum / Float(frameLength)
-        let dB = 20 * log10(rms)
+        return 20 * log10(rms)
+    }
 
-        Task { @MainActor in
-            // If Alex is speaking or thinking, ignore input
-            if isSpeakingOrThinking() {
-                if speechStarted { cancelCurrentSpeech() }
-                return
+    private func handleVoiceActivity(dB: Float) {
+        // If Alex is speaking or thinking, ignore input
+        if isSpeakingOrThinking() {
+            if speechStarted { cancelCurrentSpeech() }
+            return
+        }
+
+        let threshold: Float = -30  // dB threshold for voice
+        if dB > threshold {
+            silenceStart = nil
+            if !speechStarted {
+                speechStarted = true
+                isUserTalking = true
             }
-
-            let threshold: Float = -30  // dB threshold for voice
-            if dB > threshold {
+        } else if speechStarted {
+            if silenceStart == nil { silenceStart = Date() }
+            else if Date().timeIntervalSince(silenceStart!) > 1.2 {
+                // 1.2s of silence = end of speech
+                speechStarted = false
+                isUserTalking = false
                 silenceStart = nil
-                if !speechStarted {
-                    speechStarted = true
-                    isUserTalking = true
-                }
-            } else if speechStarted {
-                if silenceStart == nil { silenceStart = Date() }
-                else if Date().timeIntervalSince(silenceStart!) > 1.2 {
-                    // 1.2s of silence = end of speech
-                    speechStarted = false
-                    isUserTalking = false
-                    silenceStart = nil
-                    handleSpeechEnd()
-                }
+                handleSpeechEnd()
             }
         }
     }

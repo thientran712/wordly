@@ -63,4 +63,25 @@ final class QuizSessionTests: XCTestCase {
         XCTAssertNil(s.current)
         XCTAssertTrue(s.isFinished)
     }
+
+    // Ôn tập biết đúng/sai ngay từng câu — quyết định 10/10/2026.
+    func testRecordCheckStoresResultForCurrentQuestion() {
+        var s = QuizSession(questions: questions)
+        s.pick("kiên cường")
+        XCTAssertNil(s.checkedResult(for: "a"))
+        s.recordCheck(questionId: "a", correct: true, correctAnswer: "kiên cường")
+        let r = s.checkedResult(for: "a")
+        XCTAssertEqual(r?.correct, true)
+        XCTAssertEqual(r?.correctAnswer, "kiên cường")
+    }
+
+    func testCheckedResultClearedAfterAdvanceToNextQuestion() {
+        var s = QuizSession(questions: questions)
+        s.pick("kiên cường")
+        s.recordCheck(questionId: "a", correct: true, correctAnswer: "kiên cường")
+        _ = s.advance()
+        // Câu "a" vẫn còn kết quả đã lưu (xem lại được) — chỉ câu hiện tại ("b") là chưa có.
+        XCTAssertNotNil(s.checkedResult(for: "a"))
+        XCTAssertNil(s.checkedResult(for: "b"))
+    }
 }
