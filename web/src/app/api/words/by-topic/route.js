@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { EXAM_GOALS, examGoalsForLevel } from "@/lib/learning/exam-goals";
 import { TOPICS } from "@/lib/ai/topic-classifier";
@@ -25,7 +26,7 @@ export async function GET(request) {
   const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
   const withCounts = searchParams.get("counts") === "1";
 
-  const admin = createAdminClient();
+  const shared = createSharedClient();
 
   const levelsForQuery = levelFilter
     ? [levelFilter]
@@ -36,7 +37,7 @@ export async function GET(request) {
   // ── Page of words matching the current filters — DB does the filtering,
   // sorting, and pagination, so we only ever pull PAGE_SIZE rows over the
   // wire instead of the full 7.5k-word table. ────────────────────────────
-  let wordsQuery = admin
+  let wordsQuery = shared
     .from("word_layers")
     .select(
       "word_id, semantic_family, topic, register, collocations, usage_notes, frequency, words!inner(id, word, pos, level, def_en, ex_en, phonetic)",
@@ -55,7 +56,7 @@ export async function GET(request) {
 
   const wordIds = (page || []).map((l) => l.word_id);
   const { data: progress } = wordIds.length
-    ? await admin.from("user_progress").select("word_id, state, due_at").eq("user_id", user.id).in("word_id", wordIds)
+    ? await (await createClient()).from("user_progress").select("word_id, state, due_at").eq("user_id", user.id).in("word_id", wordIds)
     : { data: [] };
   const progressByWordId = new Map((progress || []).map((p) => [p.word_id, p]));
 
@@ -89,7 +90,7 @@ export async function GET(request) {
     const [examCountEntries, topicCountEntries] = await Promise.all([
       Promise.all(
         EXAM_GOALS.map(async (g) => {
-          const { count } = await admin
+          const { count } = await shared
             .from("word_layers")
             .select("word_id, words!inner(level)", { count: "exact", head: true })
             .not("topic", "is", null)
@@ -99,7 +100,7 @@ export async function GET(request) {
       ),
       Promise.all(
         TOPICS.map(async (t) => {
-          const { count } = await admin
+          const { count } = await shared
             .from("word_layers")
             .select("word_id", { count: "exact", head: true })
             .eq("topic", t.key);

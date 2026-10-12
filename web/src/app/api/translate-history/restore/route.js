@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { parseRestoreIds } from "@/lib/learning/history-delete";
 
@@ -10,7 +10,8 @@ export async function POST(request) {
   const parsed = parseRestoreIds(await request.json().catch(() => null));
   if (parsed.error) return Response.json({ error: parsed.error }, { status: 400 });
 
-  const { data, error } = await createAdminClient()
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from("translate_history")
     .update({ deleted_at: null })
     .eq("user_id", user.id)

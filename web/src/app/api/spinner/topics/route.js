@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 
 // Public — matches /api/words* and /api/translate*, guests can browse and
 // spin without an account. Only spin-history/preferences require login.
@@ -6,7 +6,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const language = searchParams.get("language") || "en";
 
-  const admin = createAdminClient();
+  const admin = createSharedClient();
 
   // PostgREST caps a single request at 1000 rows — spinner_topics has ~2100,
   // so page through it (same pattern as /api/words/by-topic).

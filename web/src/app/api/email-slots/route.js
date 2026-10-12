@@ -1,12 +1,12 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 
 export async function GET() {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const admin = createAdminClient();
-  const { data: slots } = await admin
+  const supabase = await createClient();
+  const { data: slots } = await supabase
     .from("email_slots")
     .select("*")
     .eq("user_id", user.id)
@@ -19,10 +19,10 @@ export async function POST(request) {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const admin = createAdminClient();
+  const supabase = await createClient();
 
   // Check slot count
-  const { count } = await admin
+  const { count } = await supabase
     .from("email_slots")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
@@ -35,7 +35,7 @@ export async function POST(request) {
   const [hh, mm] = send_time.split(":").map(Number);
   if (hh > 23 || mm > 59) return Response.json({ error: "Invalid time value" }, { status: 400 });
 
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from("email_slots")
     .insert({ user_id: user.id, send_time, enabled: true })
     .select()
@@ -53,12 +53,12 @@ export async function PUT(request) {
   const { id, send_time, enabled } = await request.json();
   if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
 
-  const admin = createAdminClient();
+  const supabase = await createClient();
   const update = {};
   if (send_time !== undefined) update.send_time = send_time;
   if (enabled !== undefined) update.enabled = enabled;
 
-  const { error } = await admin
+  const { error } = await supabase
     .from("email_slots")
     .update(update)
     .eq("id", id)
@@ -79,16 +79,16 @@ export async function DELETE(request) {
   const id = searchParams.get("id");
   if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
 
-  const admin = createAdminClient();
+  const supabase = await createClient();
 
   // Don't allow deleting the last slot
-  const { count } = await admin
+  const { count } = await supabase
     .from("email_slots")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
   if (count <= 1) return Response.json({ error: "Phải có ít nhất 1 slot" }, { status: 400 });
 
-  await admin.from("email_slots").delete().eq("id", id).eq("user_id", user.id);
+  await supabase.from("email_slots").delete().eq("id", id).eq("user_id", user.id);
 
   return Response.json({ success: true });
 }

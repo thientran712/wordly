@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { callGroq, parseJsonResponse } from "@/lib/ai/ai-models";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
@@ -62,7 +62,7 @@ export async function POST(request) {
   // Vercel khác nhau nên bộ đếm trong RAM không chặn được gì (đã kiểm chứng
   // trên production 4/9/2026 — xem rate-limit-db.js).
   const rl = await checkRateLimitDb({
-    supabase: createAdminClient(),
+    supabase: createSharedClient(),
     scope: "dictionary",
     clientKey: clientKeyFromRequest(request, user?.id),
     limit: user ? USER_LIMIT : GUEST_LIMIT,
@@ -76,7 +76,7 @@ export async function POST(request) {
   }
 
   const key = word.trim().toLowerCase();
-  const supabase = createAdminClient();
+  const supabase = createSharedClient();
 
   const { data: cached } = await supabase
     .from("word_dictionary_cache")

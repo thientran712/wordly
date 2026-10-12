@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { createSharedClient } from "@/lib/supabase/shared";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 
 const CONTENT_TABLE = {
@@ -21,8 +22,8 @@ export async function GET(request) {
   const config = CONTENT_TABLE[itemType];
   if (!config) return Response.json({ error: "Invalid item_type" }, { status: 400 });
 
-  const admin = createAdminClient();
-  const { data: historyRows, error } = await admin
+  const supabase = await createClient();
+  const { data: historyRows, error } = await supabase
     .from("spinner_history")
     .select("item_id, spun_at")
     .eq("user_id", user.id)
@@ -33,7 +34,7 @@ export async function GET(request) {
   if (!historyRows?.length) return Response.json({ items: [] });
 
   const ids = historyRows.map((r) => r.item_id);
-  const { data: contentRows } = await admin
+  const { data: contentRows } = await createSharedClient()
     .from(config.table)
     .select(`id, ${config.label}`)
     .in("id", ids);
@@ -55,8 +56,8 @@ export async function POST(request) {
 
   if (!user) return Response.json({ ok: true, skipped: true });
 
-  const admin = createAdminClient();
-  const { error } = await admin.from("spinner_history").insert({ user_id: user.id, item_id, item_type });
+  const supabase = await createClient();
+  const { error } = await supabase.from("spinner_history").insert({ user_id: user.id, item_id, item_type });
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({ ok: true });
@@ -70,8 +71,8 @@ export async function DELETE(request) {
   const { item_id, item_type } = await request.json();
   if (!item_id || !item_type) return Response.json({ error: "Missing item_id or item_type" }, { status: 400 });
 
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("spinner_history")
     .delete()
     .eq("user_id", user.id)

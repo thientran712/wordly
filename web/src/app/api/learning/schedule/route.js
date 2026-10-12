@@ -1,5 +1,5 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { computeScheduleUpdate, validateScheduleRequest } from "@/lib/learning/schedule-adjustment";
 
 const TABLE_BY_ENTRY_TYPE = {
@@ -17,9 +17,9 @@ export async function PATCH(request) {
 
   const { entry_type, entry_id, rating } = body;
   const table = TABLE_BY_ENTRY_TYPE[entry_type];
-  const admin = createAdminClient();
+  const supabase = await createClient();
 
-  const { data: current, error: fetchError } = await admin
+  const { data: current, error: fetchError } = await supabase
     .from(table)
     .select("review_count")
     .eq("id", entry_id)
@@ -31,7 +31,7 @@ export async function PATCH(request) {
 
   const update = computeScheduleUpdate(current, rating);
 
-  const { error: updateError } = await admin
+  const { error: updateError } = await supabase
     .from(table)
     .update({ ...update, last_reviewed_at: new Date().toISOString() })
     .eq("id", entry_id)
