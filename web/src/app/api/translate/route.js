@@ -1,8 +1,16 @@
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createLruCache, translationCacheKey } from "@/lib/translate/translation-cache";
+import { createLruCache } from "@/lib/translate/translation-cache";
+import { createTieredCache, hybridTranslate } from "@/lib/translate/hybrid-translate";
+import { persistentCacheKey } from "@/lib/translate/translate-routing";
+import {
+  createPostgresTranslationStore,
+  translateWithDeepL,
+  translateWithGemini,
+} from "@/lib/translate/engines";
 
 // Route CÔNG KHAI (khách dùng được) nên phải có rate limit, nếu không ai
 // cũng đốt được quota DeepL.
@@ -15,16 +23,20 @@ const GUEST_LIMIT = 20;
 const USER_LIMIT = 60;
 const WINDOW_MS = 60_000;
 
-// Giới hạn độ dài: DeepL tính phí theo ký tự, và UI đã chặn 10k ở client.
+// Giới hạn độ dài: DeepL/Gemini tính phí theo ký tự/token, và UI đã chặn 10k ở client.
 const MAX_CHARS = 10_000;
 
-// Bản dịch phổ biến dùng lại 1 ngày, tối đa 5.000 mục (vài MB RAM).
-const cache = createLruCache({ max: 5000, ttlMs: 24 * 60 * 60 * 1000 });
+// Tầng cache thứ nhất trong RAM (theo CÂU): 1 ngày, tối đa 5.000 mục (vài
+// MB RAM). Mất khi deploy — tầng Postgres (translation_cache) phía sau giữ lại.
+const lru = createLruCache({ max: 5000, ttlMs: 24 * 60 * 60 * 1000 });
 
 export async function POST(request) {
   const user = await getUserFast();
+  // Client admin như /api/dictionary: bộ đếm rate limit và bảng cache dịch
+  // là dữ liệu dùng chung, không phải dữ liệu riêng của người dùng.
+  const supabase = createAdminClient();
   const rl = await checkRateLimitDb({
-    supabase: createAdminClient(),
+    supabase,
     scope: "translate",
     clientKey: clientKeyFromRequest(request, user?.id),
     limit: user ? USER_LIMIT : GUEST_LIMIT,
@@ -46,39 +58,33 @@ export async function POST(request) {
 
   const sourceLang = source === "VI" ? "VI" : "EN";
   const targetLang = target === "VI" ? "VI" : "EN";
-  const cacheKey = translationCacheKey(text, sourceLang, targetLang);
-  const cached = cache.get(cacheKey);
-  if (cached) return Response.json(cached);
 
-  const apiKey = process.env.DEEPL_API_KEY;
-  const isFree = apiKey?.endsWith(":fx");
-  const endpoint = isFree
-    ? "https://api-free.deepl.com/v2/translate"
-    : "https://api.deepl.com/v2/translate";
-
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `DeepL-Auth-Key ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      text: [text],
-      source_lang: sourceLang,
-      target_lang: targetLang,
-    }),
+  // Dịch lai (xem lib/translate/hybrid-translate.js):
+  //   • ≤3 từ, không dấu câu → DeepL (Gemini hay bịa từ đơn tiếng Việt)
+  //   • câu/đoạn → Gemini, lỗi/timeout/sai định dạng → DeepL
+  //   • cache THEO CÂU: RAM trước, Postgres sau (bền qua deploy)
+  const cache = createTieredCache({
+    lru,
+    store: createPostgresTranslationStore(supabase, after),
+    keyOf: (t) => persistentCacheKey(t, sourceLang, targetLang),
+    source: sourceLang,
+    target: targetLang,
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    return Response.json({ error: `DeepL error: ${err}` }, { status: res.status });
+  try {
+    const body = await hybridTranslate({
+      text,
+      source: sourceLang,
+      target: targetLang,
+      cache,
+      engines: {
+        gemini: (texts) => translateWithGemini(texts, { source: sourceLang, target: targetLang }),
+        deepl: (texts) => translateWithDeepL(texts, { source: sourceLang, target: targetLang }),
+      },
+    });
+    // Hợp đồng { translated, detectedLang } — app iOS dựa vào, KHÔNG đổi
+    return Response.json(body);
+  } catch (e) {
+    return Response.json({ error: e.message }, { status: e.status || 502 });
   }
-
-  const data = await res.json();
-  const translated = data.translations?.[0]?.text ?? "";
-  const detectedLang = data.translations?.[0]?.detected_source_language ?? source;
-
-  const body = { translated, detectedLang };
-  if (translated) cache.set(cacheKey, body);
-  return Response.json(body);
 }
