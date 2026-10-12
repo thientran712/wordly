@@ -3,14 +3,21 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 12/10/2026 — BUILD 13 ĐÃ UPLOAD: phiên âm US trên widget + căn lề (branch `feat/widget-lock-layout-nguon-tu`)
+### 12/10/2026 — PR #10 + PR #11 ĐÃ MERGE vào `main`; CI xanh lại
+
+- PR #10 (build 11) merge `57656cb`, PR #11 (build 12 + 13, widget) merge `1db450d`. `main` giờ khớp code của build 13 trên TestFlight.
+- CI đỏ từ khi xoá B2B: bước lint liệt kê đường dẫn đã xoá (`src/app/(org)/org`…) → eslint "No files matching", bước `next build` phía sau chưa từng chạy. Sửa ở `0ec1704` (giữ `src/lib`, quiz, middleware — eslint local sạch); từ đó CI xanh cả test, lint, build.
+- Chủ dự án đã cho phép `gh pr merge` / `gh pr create` / `gh run watch` trong `.claude/settings.local.json`. Lưu ý: chạy `gh pr merge` thành **lệnh đơn** (không pipe/`;`), lệnh ghép không khớp quy tắc và bị chế độ auto chặn.
+- Merge vào `main` không tự deploy (CI chỉ test; VPS deploy tay). Web trên VPS vẫn là code từ `6126c2c` — các PR này chỉ đổi iOS + CI + tài liệu.
+
+### 12/10/2026 — BUILD 13 ĐÃ UPLOAD: phiên âm US trên widget + căn lề (đã merge, PR #11)
 
 - **Phiên âm US** nằm giữa từ và nghĩa (màn hình khoá + màn hình chính + thẻ xem trước trong cài đặt). `WidgetSync.refreshPhonetics()` tra `/api/dictionary` (cache DB, Groq chỉ khi miss) cho ≤12 từ sắp hiện mỗi lần đồng bộ, tuần tự (giới hạn 40/phút/người dùng chung với tra từ). Lưu `wordly.widget.phonetics` (từ chuẩn hoá → IPA, rỗng = đã tra không có) trong App Group, giới hạn 2000 mục. Câu (có `.?!,;:` hoặc >4 chữ) không tra, không hiện (`WidgetPhonetic`, 5 test).
 - **"Widget luôn nằm giữa"**: không tìm thấy lỗi trong code — render ở 157×72/172×76 cho thấy căn trái/phải/giữa bám đúng mép khung. Vị trí cả khung do iOS quyết định: hàng widget màn hình khoá luôn canh giữa khi chưa đủ 4 ô. Đã thêm hướng dẫn trong cài đặt (đặt Wordly đầu hàng + 2 widget tròn bên phải). Khung bố cục giờ trải hết chiều cao cho chắc. **Chưa kiểm trên máy thật** — nếu chủ dự án vẫn thấy lệch giữa khi hàng đã đủ 4 ô thì là lỗi khác, cần ảnh chụp.
 - Bằng chứng: 129/129 unit test pass; archive 1.0.0 (13) cho app + widget, 0 chuỗi `WordlyUIPreview`, domain đúng → **"Upload succeeded"**.
 - Phiên âm chỉ có sau khi mở app (để đồng bộ) ít nhất một lần trên build 13.
 
-### 12/10/2026 — BUILD 12 ĐÃ UPLOAD: widget màn hình khoá dùng hết khung + nguồn từ dạng ô tick (branch `feat/widget-lock-layout-nguon-tu`, đã push, CHƯA PR)
+### 12/10/2026 — BUILD 12 ĐÃ UPLOAD: widget màn hình khoá dùng hết khung + nguồn từ dạng ô tick (đã merge, PR #11)
 
 **Build 12:** commit tính năng + bump `CURRENT_PROJECT_VERSION=12`, archive Release
 (team `929P8F77XX`), kiểm archive: app + widget đều 1.0.0 (12), 0 chuỗi
@@ -60,7 +67,7 @@
   `/opt/wordly/prod/supabase/.env` trên VPS) nhập qua `atlas-secret-handoff`.
   Lưu ý: dev local giờ chạm **dữ liệu production** self-host.
 
-### 12/10/2026 — BUILD 11 ĐÃ UPLOAD + PR #10 (chờ merge)
+### 12/10/2026 — BUILD 11 ĐÃ UPLOAD + PR #10 (đã merge)
 
 **Trạng thái:** build 11 "Upload succeeded" (archive: CFBundleVersion 11 cho app +
 widget, 0 chuỗi `WordlyUIPreview`). Nhánh `chore/ios-build-11` đã push, **PR #10
