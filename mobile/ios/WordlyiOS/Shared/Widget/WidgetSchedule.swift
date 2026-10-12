@@ -77,6 +77,12 @@ struct WidgetSettings: Codable, Equatable {
         var meaningWeight: TextWeight = .regular
         var wordItalic: Bool = false
         var meaningItalic: Bool = false
+        /// Ảnh nền (file trong App Group, xem WidgetBackgroundStore). 0 = không có ảnh.
+        var backgroundVersion: Int = 0
+        /// Lớp làm tối phủ lên ảnh để chữ đọc được, 0…maxDim.
+        var backgroundDim: Double = 0.3
+        var hasBackgroundImage: Bool { backgroundVersion > 0 }
+        static let maxDim = 0.6
     }
     var homeStyle: HomeStyle = HomeStyle()
 
@@ -117,6 +123,8 @@ extension WidgetSettings.HomeStyle {
         meaningWeight = try c.decodeIfPresent(WidgetSettings.TextWeight.self, forKey: .meaningWeight) ?? d.meaningWeight
         wordItalic = try c.decodeIfPresent(Bool.self, forKey: .wordItalic) ?? d.wordItalic
         meaningItalic = try c.decodeIfPresent(Bool.self, forKey: .meaningItalic) ?? d.meaningItalic
+        backgroundVersion = try c.decodeIfPresent(Int.self, forKey: .backgroundVersion) ?? d.backgroundVersion
+        backgroundDim = min(max(try c.decodeIfPresent(Double.self, forKey: .backgroundDim) ?? d.backgroundDim, 0), Self.maxDim)
     }
 }
 
