@@ -122,6 +122,7 @@ enum PreviewScreens {
         case "journal": JournalView()
         case "email": EmailSettingsView()
         case "widget": WidgetSettingsView()
+        case "homestyle": NavigationStack { HomeStyleView(vm: WidgetSettingsViewModel()) }
         case "widgetbg": WidgetBackgroundEditorView(source: sampleBackground, vm: WidgetSettingsViewModel(), onDone: {})
         default: Text("Không có màn \(name)")
         }

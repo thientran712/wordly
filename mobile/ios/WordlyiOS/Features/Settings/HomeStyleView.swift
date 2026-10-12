@@ -2,20 +2,31 @@ import SwiftUI
 import PhotosUI
 
 /// Tuỳ biến widget MÀN HÌNH CHÍNH (home screen hỗ trợ nền tuỳ ý, khác màn
-/// hình khoá bị OS giới hạn chỉ đơn sắc) — ảnh nền hoặc màu nền/gradient,
-/// màu chữ, đậm/nghiêng/nhạt riêng cho từ và nghĩa.
+/// hình khoá bị OS giới hạn chỉ đơn sắc) — theme phối sẵn, ảnh nền hoặc màu
+/// nền (một màu / gradient), màu chữ, đậm/nghiêng/nhạt riêng cho từ và nghĩa.
+/// Chọn màu bằng bảng ô vuông (WidgetTheme.swatches), không dùng ColorPicker.
 struct HomeStyleView: View {
     @ObservedObject var vm: WidgetSettingsViewModel
     @State private var photoItem: PhotosPickerItem?
     /// Ảnh vừa chọn, đã thu nhỏ ≤ 2048 px → mở màn chỉnh khung
     @State private var editorSource: CGImage?
     @State private var loadError: String?
+    /// Ảnh nền đã lưu cho phần xem trước — đọc lại chỉ khi đổi phiên bản
+    @State private var savedBackground: CGImage?
 
     var body: some View {
         Form {
             Section { preview }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
+
+            Section {
+                themeGrid
+            } header: {
+                Text("Theme")
+            } footer: {
+                Text("Phối sẵn màu nền và chữ, đều đủ tương phản để dễ đọc. Chọn xong vẫn chỉnh tiếp được bên dưới.")
+            }
 
             Section {
                 PhotosPicker(selection: $photoItem, matching: .images) {
@@ -43,18 +54,21 @@ struct HomeStyleView: View {
             }
 
             Section("Màu nền") {
-                ColorPicker("Màu 1", selection: colorBinding(\.bgHex1))
-                ColorPicker("Màu 2 (gradient)", selection: colorBinding(\.bgHex2))
+                Toggle("Chuyển màu (gradient)", isOn: boolBinding(\.useGradient)).tint(WordlyColors.electric)
+                swatchRow(vm.settings.homeStyle.useGradient ? "Màu 1" : "Màu nền", \.bgHex1)
+                if vm.settings.homeStyle.useGradient {
+                    swatchRow("Màu 2", \.bgHex2)
+                }
             }
 
             Section("Chữ — Từ vựng") {
-                ColorPicker("Màu chữ", selection: colorBinding(\.wordColorHex))
+                swatchRow("Màu chữ", \.wordColorHex)
                 weightPicker(\.wordWeight)
                 Toggle("Chữ nghiêng", isOn: boolBinding(\.wordItalic)).tint(WordlyColors.electric)
             }
 
             Section("Chữ — Ý nghĩa") {
-                ColorPicker("Màu chữ", selection: colorBinding(\.meaningColorHex))
+                swatchRow("Màu chữ", \.meaningColorHex)
                 weightPicker(\.meaningWeight)
                 Toggle("Chữ nghiêng", isOn: boolBinding(\.meaningItalic)).tint(WordlyColors.electric)
             }
@@ -77,6 +91,10 @@ struct HomeStyleView: View {
                 loadError = nil
                 editorSource = img
             }
+        }
+        .task(id: vm.settings.homeStyle.backgroundVersion) {
+            let v = vm.settings.homeStyle.backgroundVersion
+            savedBackground = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup).load(.medium, version: v)
         }
         .fullScreenCover(isPresented: Binding(get: { editorSource != nil },
                                               set: { if !$0 { editorSource = nil } })) {
@@ -107,13 +125,11 @@ struct HomeStyleView: View {
             .padding(16)
             .frame(height: 140)
             .background {
-                if style.hasBackgroundImage,
-                   let img = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup)
-                    .load(.medium, version: style.backgroundVersion) {
+                if style.hasBackgroundImage, let img = savedBackground {
                     Image(decorative: img, scale: 1).resizable().scaledToFill()
                         .overlay(Color.black.opacity(style.backgroundDim))
                 } else {
-                    LinearGradient(colors: [Color(hex: style.bgHex1), Color(hex: style.bgHex2)],
+                    LinearGradient(colors: style.backgroundHexes.map { Color(hex: $0) },
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                 }
             }
@@ -123,11 +139,60 @@ struct HomeStyleView: View {
         .padding(.horizontal, 4)
     }
 
-    private func colorBinding(_ keyPath: WritableKeyPath<WidgetSettings.HomeStyle, String>) -> Binding<Color> {
-        Binding(
-            get: { Color(hex: vm.settings.homeStyle[keyPath: keyPath]) },
-            set: { vm.settings.homeStyle[keyPath: keyPath] = $0.toHex() }
-        )
+    /// Lưới theme: mỗi ô là widget thu nhỏ với đúng màu nền + chữ của theme.
+    private var themeGrid: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 10)], spacing: 10) {
+            ForEach(WidgetTheme.all) { theme in
+                let selected = vm.settings.homeStyle.matches(theme)
+                Button {
+                    vm.settings.homeStyle.apply(theme)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Aa").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: theme.word))
+                        Text(theme.name).font(.system(size: 11, weight: .medium)).lineLimit(1)
+                            .foregroundStyle(Color(hex: theme.meaning))
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .background(LinearGradient(colors: [Color(hex: theme.bg1), Color(hex: theme.bg2 ?? theme.bg1)],
+                                               startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12)
+                        .stroke(selected ? WordlyColors.electric : Color.primary.opacity(0.12), lineWidth: selected ? 3 : 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(theme.name)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    /// Bảng ô vuông màu — chạm để chọn, ô đang dùng có viền.
+    private func swatchRow(_ title: String, _ keyPath: WritableKeyPath<WidgetSettings.HomeStyle, String>) -> some View {
+        let current = vm.settings.homeStyle[keyPath: keyPath].uppercased()
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 32), spacing: 8)], spacing: 8) {
+                ForEach(WidgetTheme.swatches, id: \.self) { hex in
+                    let selected = current == hex
+                    Button {
+                        vm.settings.homeStyle[keyPath: keyPath] = hex
+                    } label: {
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(Color(hex: hex))
+                            .frame(height: 32)
+                            .overlay(RoundedRectangle(cornerRadius: 7)
+                                .stroke(selected ? WordlyColors.electric : Color.primary.opacity(0.15),
+                                        lineWidth: selected ? 3 : 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(hex)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
     private func boolBinding(_ keyPath: WritableKeyPath<WidgetSettings.HomeStyle, Bool>) -> Binding<Bool> {
         Binding(

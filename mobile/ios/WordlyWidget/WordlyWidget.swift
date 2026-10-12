@@ -151,7 +151,7 @@ private struct WidgetBackground: View {
             Image(uiImage: image).resizable().scaledToFill()
                 .overlay(Color.black.opacity(style.backgroundDim))
         } else {
-            LinearGradient(colors: [Color(hex: style.bgHex1), Color(hex: style.bgHex2)],
+            LinearGradient(colors: style.backgroundHexes.map { Color(hex: $0) },
                            startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
