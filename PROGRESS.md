@@ -18,14 +18,19 @@
 - Email Resend (CHƯA commit, worktree `agent-ab12283faf5a4a262`) — bật khi có cả `RESEND_API_KEY` và `EMAIL_FROM`, lô 100, 5 req/s. 262/262 test.
 
 **Chờ quyết định:**
-- Commit 2 branch; chạy migration `translation_cache` lên production; deploy dịch lai.
-- Resend: xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn).
+- **Migration `translation_cache` ĐÃ CHẠY trên production** (12/10, chủ dự án duyệt; một transaction, RLS bật, chỉ `service_role`/`postgres` có quyền). Code cũ không dùng bảng → vô hại.
+- **Deploy dịch lai + giới hạn Alex (commit gộp `8f7ada9`, branch local `deploy/2026-10-12-cost`) — DỞ:** code đã lên VPS (`/opt/wordly/prod/web/build-8f7ada9`), image cũ đã tag `wordly-web:rollback-pre-8f7ada9`; build image lỗi vì thiếu `--build-arg NEXT_PUBLIC_SUPABASE_*` và auto mode chặn tiếp các lệnh deploy. Production vẫn chạy image cũ. Cần chủ dự án cho quyền ssh deploy hoặc tự chạy lệnh build.
+- Branch `fix/ai-cost-limits` (Alex 20/phút + 300/ngày, chỉ gửi 20 tin gần nhất, ≤1.500 ký tự/tin, bỏ role `system` từ client; gợi ý từ 20/phút + 200/ngày) — đã commit local, 250/250 test. Chưa push (auto mode chặn `git push`).
+- Resend: xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn ~$30).
 - **Lỗi có sẵn:** cron email đọc `email_slots`/`profiles`/`email_preferences` không phân trang, `max_rows = 1000` → người dùng thứ 1.001+ không nhận email.
-- DeepL production: kiểm gói Free (500k ký tự/tháng) hay Pro.
-- Ý tưởng tiếp: kho từ song ngữ (EN↔VI) dựng sẵn bằng Claude, có đối chiếu + phiên âm từ nguồn mở (CMUdict/Wiktionary, KHÔNG dùng `oxford-5000.json` vì bản quyền), đóng gói vào iOS; từ ngoài kho → Gemini. Cần spec trước.
+- **DeepL production là gói FREE** (500k ký tự/tháng) — đủ khi chỉ còn dịch từ ≤3 từ; khi có kho từ thì tắt hẳn.
+- Kho từ song ngữ: đang làm bản thử 100 mục (thư mục nháp phiên, chưa vào repo) — Claude sinh + agent rà soát độc lập + đối chiếu DeepL/CMUdict/Wiktionary. Spec chính thức viết sau khi chủ dự án chấm bản thử.
+- Chiến lược giá đề xuất: Miễn phí / Pro 29k/tháng / Pro năm 249k, hạn mức theo gói (Alex 20 lượt/ngày ở Pro — hạn mức 300/ngày hiện tại chỉ là chống lạm dụng, người chat hết mức tốn ~94k đ/tháng). Chưa duyệt, cần spec (StoreKit + bảng quyền lợi + hạn mức theo gói).
 
 **Quyết định của chủ dự án (12/10/2026):**
 - **Phát âm giữ nguyên Google TTS Neural2** cho cả từ lẫn câu (EN-US, EN-GB, VI) — chất lượng hiện tại đạt yêu cầu. KHÔNG chuyển sang giọng trên máy (iOS/trình duyệt đọc tệ), không đổi sang Chirp 3 HD.
+- **Tập trung MOBILE (iOS).** Giao diện web người học **không đụng tới nữa** — sẽ chuyển thành **trang admin để support**. Lưu ý: `web/src/app/api/*` vẫn là backend của app iOS (đổi đường dẫn = vỡ app) nên sửa API phục vụ mobile vẫn trong phạm vi; chỉ UI web là đóng băng. Hệ quả: thanh toán chỉ qua Apple (StoreKit, phí 15%), kho từ giao qua app (SQLite đóng gói + API), không làm cổng thanh toán web.
+
 ### 12/10/2026 — PR #10 + PR #11 ĐÃ MERGE vào `main`; CI xanh lại
 
 - PR #10 (build 11) merge `57656cb`, PR #11 (build 12 + 13, widget) merge `1db450d`. `main` giờ khớp code của build 13 trên TestFlight.
