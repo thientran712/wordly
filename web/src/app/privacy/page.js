@@ -4,7 +4,7 @@ export const metadata = { title: "Chính sách quyền riêng tư · Wordly" };
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Chính sách quyền riêng tư" updated="11/10/2026">
+    <LegalPage title="Chính sách quyền riêng tư" updated="12/10/2026">
       <p>Wordly (web và ứng dụng iOS) chỉ thu thập thông tin cần để app hoạt động.</p>
 
       <LegalSection heading="Dữ liệu chúng tôi lưu">
@@ -24,9 +24,9 @@ export default function PrivacyPage() {
       <LegalSection heading="Bên xử lý thứ ba">
         <p>Chỉ dùng để trả kết quả cho yêu cầu của bạn, không cho mục đích nào khác:</p>
         <ul className="list-disc pl-5 flex flex-col gap-1">
-          <li>Google Gemini — nhận diện chữ trong ảnh, giải nghĩa từ trong từ điển AI.</li>
-          <li>Groq — dự phòng cho từ điển AI.</li>
-          <li>DeepL — dịch văn bản.</li>
+          <li>Google Gemini — dịch câu, nhận diện chữ trong ảnh, giải nghĩa từ trong từ điển AI.</li>
+          <li>Groq — dự phòng cho từ điển AI khi Gemini quá tải.</li>
+          <li>DeepL — dịch từ và cụm từ ngắn.</li>
           <li>Google Cloud Text-to-Speech — phát âm.</li>
         </ul>
       </LegalSection>
