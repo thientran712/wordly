@@ -211,11 +211,13 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     return () => clearTimeout(suggestRef.current);
   }, [input, isEN, fetchSuggestions]);
 
-  // Translation debounce — skip if over limit
+  // Translation debounce — skip if over limit.
+  // 500ms (trước là 280ms): mỗi lượt gửi CẢ đoạn lên server, chờ người dùng
+  // ngừng gõ lâu hơn chút thì bớt hẳn lượt dịch trả phí cho câu đang gõ dở.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!isOverLimit) {
-      debounceRef.current = setTimeout(() => translate(input, direction), 280);
+      debounceRef.current = setTimeout(() => translate(input, direction), 500);
     }
     return () => clearTimeout(debounceRef.current);
   }, [input, direction, translate, isOverLimit]);

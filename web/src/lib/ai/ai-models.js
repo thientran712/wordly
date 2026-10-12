@@ -80,6 +80,13 @@ export const MODELS = {
   // "fast"/"quality" (qwen, gpt-oss) không nhận input ảnh, nên không có
   // bậc dự phòng nhà cung cấp khác cho vai trò này (khác với fast/quality).
   vision: [g("gemini-2.5-flash"), g("gemini-flash-lite-latest")],
+
+  // Dịch CÂU/ĐOẠN thay DeepL (~$25/1 triệu ký tự). Đánh giá mù 75 mục 10/2026:
+  // với câu, model này ngang DeepL. Id cố định, KHÔNG dùng "-latest" — chất
+  // lượng đã đánh giá gắn với đúng model này. gemini-2.5-flash-lite không
+  // còn mở cho user mới. Không có bậc Groq: lỗi thì /api/translate tự tụt
+  // về DeepL (xem lib/translate/hybrid-translate.js).
+  translate: [g("gemini-3.5-flash-lite")],
 };
 
 /** Chuẩn hoá phần tử ladder — chịu được cả dạng chuỗi cũ. */

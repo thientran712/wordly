@@ -3,6 +3,34 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/10/2026 — Tối ưu chi phí bên thứ 3: Gemini production chuyển sang key trả phí; dịch lai đã commit (branch `feat/translate-hybrid-cost`), email Resend đã code
+
+**Gemini — ĐÃ ĐỔI trên production:**
+- Trước đó cả máy dev lẫn production dùng key `…zTKk` của "Gemini Project" (`gen-lang-client-0536362233`, tài khoản huythien712) — **gói miễn phí, dùng chung hạn mức 15 lượt/phút với SkillProof Prod + Staging**. Đo: 25 lượt song song → 17 OK, 8 lỗi 429.
+- Project **Wordly** (`gen-lang-client-0661352497`) đã bật billing: Paid 1, trả trước 150.000đ, tự nạp bật. Dev giờ dùng `…wSCQ`, production dùng `…_iN0` (đưa vào `/opt/wordly/prod/web/.env` qua `atlas-secret-handoff`, không lộ giá trị), container `web` đã `--force-recreate`.
+- Bằng chứng: dev 25/25 lượt song song không 429; trong container env khớp `…_iN0`; `/api/dictionary` trên production với từ chưa cache → HTTP 200 (2,7s), log 2 phút không có 429/lỗi. Chưa xác nhận được lượt đó chạy Gemini hay rơi về Groq (phản hồi không ghi nhà cung cấp).
+- `.env.local` cũ ở gốc repo (bản sao trước monorepo) đã xoá — app chỉ đọc `web/.env.local`.
+- Lưu ý: `gemini-flash-lite-latest` giờ trỏ sang **3.5-flash-lite** (đắt hơn 2.5); `gemini-2.5-flash-lite` đã đóng với tài khoản mới.
+- Tài khoản gcloud `madison.huy@gamuda.com.my` đã thu hồi khỏi máy — **không bao giờ dùng cho Wordly**.
+
+**Code:**
+- `feat/translate-hybrid-cost` (ĐÃ commit, chưa merge/deploy) — ≤3 từ → DeepL, câu → Gemini 3.5 Flash-Lite (lỗi → DeepL), cache theo câu RAM + bảng `translation_cache` (migration `20261012000200`, **chưa chạy ở đâu**). 261/261 test. Lý do: đánh giá mù 75 mục — câu Gemini ngang DeepL, từ đơn Gemini bịa từ 5/40.
+- Email Resend (CHƯA commit, worktree `agent-ab12283faf5a4a262`) — bật khi có cả `RESEND_API_KEY` và `EMAIL_FROM`, lô 100, 5 req/s. 262/262 test.
+
+**Chờ quyết định:**
+- **Migration `translation_cache` ĐÃ CHẠY trên production** (12/10, chủ dự án duyệt; một transaction, RLS bật, chỉ `service_role`/`postgres` có quyền). Code cũ không dùng bảng → vô hại.
+- **Deploy dịch lai + giới hạn Alex (commit gộp `8f7ada9`, branch local `deploy/2026-10-12-cost`) — DỞ:** code đã lên VPS (`/opt/wordly/prod/web/build-8f7ada9`), image cũ đã tag `wordly-web:rollback-pre-8f7ada9`; build image lỗi vì thiếu `--build-arg NEXT_PUBLIC_SUPABASE_*` và auto mode chặn tiếp các lệnh deploy. Production vẫn chạy image cũ. Cần chủ dự án cho quyền ssh deploy hoặc tự chạy lệnh build.
+- Branch `fix/ai-cost-limits` (Alex 20/phút + 300/ngày, chỉ gửi 20 tin gần nhất, ≤1.500 ký tự/tin, bỏ role `system` từ client; gợi ý từ 20/phút + 200/ngày) — đã commit local, 250/250 test. Chưa push (auto mode chặn `git push`).
+- Resend: xác minh domain `wordly.skillproof.work` + chọn gói (~300k email/tháng ở 10k user ≈ $240–350; SES rẻ hơn ~$30).
+- **Lỗi có sẵn:** cron email đọc `email_slots`/`profiles`/`email_preferences` không phân trang, `max_rows = 1000` → người dùng thứ 1.001+ không nhận email.
+- **DeepL production là gói FREE** (500k ký tự/tháng) — đủ khi chỉ còn dịch từ ≤3 từ; khi có kho từ thì tắt hẳn.
+- Kho từ song ngữ: đang làm bản thử 100 mục (thư mục nháp phiên, chưa vào repo) — Claude sinh + agent rà soát độc lập + đối chiếu DeepL/CMUdict/Wiktionary. Spec chính thức viết sau khi chủ dự án chấm bản thử.
+- Chiến lược giá đề xuất: Miễn phí / Pro 29k/tháng / Pro năm 249k, hạn mức theo gói (Alex 20 lượt/ngày ở Pro — hạn mức 300/ngày hiện tại chỉ là chống lạm dụng, người chat hết mức tốn ~94k đ/tháng). Chưa duyệt, cần spec (StoreKit + bảng quyền lợi + hạn mức theo gói).
+
+**Quyết định của chủ dự án (12/10/2026):**
+- **Phát âm giữ nguyên Google TTS Neural2** cho cả từ lẫn câu (EN-US, EN-GB, VI) — chất lượng hiện tại đạt yêu cầu. KHÔNG chuyển sang giọng trên máy (iOS/trình duyệt đọc tệ), không đổi sang Chirp 3 HD.
+- **Tập trung MOBILE (iOS).** Giao diện web người học **không đụng tới nữa** — sẽ chuyển thành **trang admin để support**. Lưu ý: `web/src/app/api/*` vẫn là backend của app iOS (đổi đường dẫn = vỡ app) nên sửa API phục vụ mobile vẫn trong phạm vi; chỉ UI web là đóng băng. Hệ quả: thanh toán chỉ qua Apple (StoreKit, phí 15%), kho từ giao qua app (SQLite đóng gói + API), không làm cổng thanh toán web.
+
 ### 12/10/2026 — PR #10 + PR #11 ĐÃ MERGE vào `main`; CI xanh lại
 
 - PR #10 (build 11) merge `57656cb`, PR #11 (build 12 + 13, widget) merge `1db450d`. `main` giờ khớp code của build 13 trên TestFlight.

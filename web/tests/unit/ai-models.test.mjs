@@ -63,6 +63,13 @@ describe("cấu hình model", () => {
     }
   });
 
+  test("vai trò translate: CHỈ gemini-3.5-flash-lite, id cố định (không -latest)", () => {
+    // Đánh giá mù 10/2026 làm trên đúng model này. Không thêm Groq vào ladder:
+    // dịch lỗi thì route tự tụt về DeepL (chất lượng đã biết), không về model
+    // chưa được đánh giá. gemini-2.5-flash-lite không còn mở cho user mới.
+    assert.deepEqual(MODELS.translate, [{ provider: "gemini", model: "gemini-3.5-flash-lite" }]);
+  });
+
   test("Whisper vẫn ở Groq — Gemini không có endpoint transcription tương thích", () => {
     assert.ok(MODELS.transcribe.every((m) => m.provider === "groq" || typeof m === "string"));
   });
