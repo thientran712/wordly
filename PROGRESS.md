@@ -14,7 +14,9 @@ Kiểm build 14 trên máy thật (chủ dự án): sheet Apple khi xoá tài kh
 | #22 | 25 route dùng service role cho request người dùng → dữ liệu riêng qua `createClient()` (RLS), bảng dùng chung qua `createSharedClient()` (chặn bảng người dùng); chỉ 4 route còn admin (`ADMIN_ALLOWED` trong `tests/unit/admin-client-usage.test.mjs`); migration policy cho `spinner_preferences`/`spinner_history` | 317/317 gồm RLS trên Supabase local; smoke HTTP Bearer 25/25 (B không đọc/sửa/xoá được của A) |
 | #23 | Lỗi đăng nhập/đăng ký/quên mật khẩu/nhập mã hiện mãi + lỗi đăng nhập lọt sang sheet Đăng ký → `AuthErrorBanner`: sửa ô ẩn (sau ≥1,5s), tự ẩn 8s, lỗi gửi mã quá nhanh giữ tới khi gửi lại được | iOS unit 165/165; **chưa xem trên simulator/máy thật** |
 
-**Thứ tự deploy PR #22 (bắt buộc):** chạy migration `20261013000100_spinner_user_rls.sql` lên production **trước**, rồi mới deploy web — ngược lại thì spinner trả rỗng/lỗi. Chưa chạy.
+**PR #22 ĐÃ DEPLOY production (12/10 tối):** migration `20261013000100_spinner_user_rls` chạy trước (một transaction) → merge `4ecccff` → image `wordly-web:4ecccff` build trên VPS → tag `manual` → `--force-recreate`. Quay về: `wordly-web:rollback-pre-4ecccff`. Kiểm production bằng 2 user tạm (đã xoá) qua API thật: **27/27** — gồm B không đọc/sửa/xoá được dữ liệu của A.
+- **Phát hiện lỗi có từ 10/10:** bảng `suggestion_log` **chưa từng được tạo trên self-host** (migration `20261010000100` bị sót lúc chuyển từ Cloud) → màn "Đã gợi ý" lỗi 500, widget/cron ghi gợi ý thất bại im lặng. Đã chạy migration đó trên production + `notify pgrst, 'reload schema'` → `/api/suggestion-log` 200. Dữ liệu gợi ý từ 10/10 tới giờ không có (không khôi phục được).
+- Self-host không có bảng lịch sử migration → khi thêm migration mới phải tự nhớ chạy; nên đối chiếu `supabase/migrations/` với DB production một lượt.
 
 **Khác:**
 - Đã xoá 6 worktree đã merge. Nhánh `feat/email-provider-resend` giữ code Resend (commit `aeb12f6`, WIP) — phải rebase sau PR #21 (cùng sửa `cron-send-emails.js`).
