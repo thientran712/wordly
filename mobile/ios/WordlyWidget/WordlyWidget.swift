@@ -31,6 +31,8 @@ struct WordlyEntry: TimelineEntry {
     /// Nghĩa hiện trên widget: từ kho dùng nghĩa Việt app đã tra (WidgetMeaning),
     /// chưa có thì định nghĩa tiếng Anh. `word.meaning` giữ nguyên cho link mở app.
     var meaning: String = ""
+    /// Ảnh nền màn hình chính — một instance dùng chung cho mọi entry của timeline
+    var background: UIImage? = nil
 }
 
 struct WordlyProvider: TimelineProvider {
@@ -47,7 +49,8 @@ struct WordlyProvider: TimelineProvider {
         let first = WidgetSchedule.entries(words: loadWords(), bank: loadWords(bankKey), settings: settings)
             .first { $0.word != nil }?.word
         completion(entry(date: Date(), word: first ?? Self.sample, resting: false, settings: settings,
-                         phonetics: loadPhonetics(), meaningsVi: loadMeaningsVi()))
+                         phonetics: loadPhonetics(), meaningsVi: loadMeaningsVi(),
+                         background: loadBackground(settings, family: context.family)))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WordlyEntry>) -> Void) {
@@ -66,18 +69,37 @@ struct WordlyProvider: TimelineProvider {
         let schedule = WidgetSchedule.entries(words: words, bank: bank, settings: settings)
         let phonetics = loadPhonetics()
         let meaningsVi = loadMeaningsVi()
+        let background = loadBackground(settings, family: context.family)
         let entries = schedule.map { entry(date: $0.date, word: $0.word, resting: hasWords && $0.word == nil,
-                                           settings: settings, phonetics: phonetics, meaningsVi: meaningsVi) }
+                                           settings: settings, phonetics: phonetics, meaningsVi: meaningsVi,
+                                           background: background) }
         // Hết lịch thì xin lịch mới (app cũng gọi reload khi dữ liệu đổi)
         completion(Timeline(entries: entries, policy: .after(WidgetSchedule.reloadDate(entries: schedule))))
     }
 
     private func entry(date: Date, word: WidgetWordItem?, resting: Bool, settings: WidgetSettings,
-                       phonetics: [String: String] = [:], meaningsVi: [String: String] = [:]) -> WordlyEntry {
+                       phonetics: [String: String] = [:], meaningsVi: [String: String] = [:],
+                       background: UIImage? = nil) -> WordlyEntry {
         WordlyEntry(date: date, word: word, showMeaning: settings.showMeaning, resting: resting,
                     lockStyle: settings.lockStyle, homeStyle: settings.homeStyle, textAlign: settings.textAlign,
                     phonetic: word.flatMap { WidgetPhonetic.phonetic(for: $0.word, cache: phonetics) },
-                    meaning: word.map { WidgetMeaning.meaning(for: $0, cache: meaningsVi) } ?? "")
+                    meaning: word.map { WidgetMeaning.meaning(for: $0, cache: meaningsVi) } ?? "",
+                    background: background)
+    }
+
+    /// Đọc MỘT lần cho cả timeline — mọi entry dùng chung một UIImage (bản cũ
+    /// đọc trong body: tới 200 entry × một bitmap → vượt ~30 MB, widget bị kill).
+    /// Lỗi gì cũng trả nil → nền màu.
+    private func loadBackground(_ settings: WidgetSettings, family: WidgetFamily) -> UIImage? {
+        let style = settings.homeStyle
+        guard style.hasBackgroundImage else { return nil }
+        let kind: WidgetBackgroundKind
+        switch family {
+        case .systemSmall: kind = .small
+        case .systemMedium: kind = .medium
+        default: return nil
+        }
+        return WidgetBackgroundStore.appGroup(appGroup).load(kind, version: style.backgroundVersion).map { UIImage(cgImage: $0) }
     }
 
     private func loadPhonetics() -> [String: String] {
@@ -107,7 +129,7 @@ struct WordlyWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: WordlyProvider()) { entry in
             WordlyWidgetEntryView(entry: entry)
-                .containerBackground(for: .widget) { WidgetBackground(style: entry.homeStyle) }
+                .containerBackground(for: .widget) { WidgetBackground(entry: entry) }
         }
         .configurationDisplayName("Wordly — Từ vựng")
         .description("Từ bạn đã lưu xen kẽ từ mới trong kho, trên màn hình khoá và màn hình chính. Chỉnh trong app: Cá nhân → Widget.")
@@ -117,13 +139,17 @@ struct WordlyWidget: Widget {
 
 private struct WidgetBackground: View {
     @Environment(\.widgetFamily) private var family
-    let style: WidgetSettings.HomeStyle
+    let entry: WordlyEntry
 
     var body: some View {
+        let style = entry.homeStyle
         if family.isAccessory {
             // Màn hình khoá không đổi được màu (OS tự tô) — style chỉ áp dụng
             // cho widget màn hình chính, nơi containerBackground cho phép nền tùy ý.
             Color.clear
+        } else if let image = entry.background {
+            Image(uiImage: image).resizable().scaledToFill()
+                .overlay(Color.black.opacity(style.backgroundDim))
         } else {
             LinearGradient(colors: [Color(hex: style.bgHex1), Color(hex: style.bgHex2)],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
