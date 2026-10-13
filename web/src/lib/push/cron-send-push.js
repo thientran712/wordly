@@ -101,7 +101,7 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
     let lastError = null;
     for (const d of devices) {
       if (fatal) break;
-      const r = await deliver(buildPushMessage({ token: d.token, word, now }));
+      const r = await deliver(buildPushMessage({ token: d.token, word, now, seed: slot_id }));
       if (r.ok) { delivered++; continue; }
       lastError = r.code;
       if (isDeadToken(r)) {

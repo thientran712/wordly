@@ -3,15 +3,14 @@
 // Dùng encodeURIComponent, KHÔNG dùng URLSearchParams: nó mã hoá dấu cách
 // thành "+", còn URLComponents của Swift đọc "+" là dấu cộng thật.
 
-const MAX_BODY = 150;
-const MAX_TITLE = 100;
+import { pushCopy } from "./copy.js";
+
 // APNs giới hạn payload 4 KB; tiếng Việt mã hoá %XX phình ~9 byte/ký tự. Câu đã
 // lưu có thể dài cả đoạn — cắt để không bao giờ vượt (vượt = FCM từ chối mãi
 // mãi, vì thuật toán ôn luôn chọn lại đúng câu đó). App mở từ theo id.
 const MAX_LINK_WORD = 60;
 const MAX_LINK_MEANING = 120;
 const EXPIRY_SECONDS = 3600; // máy tắt quá 1 giờ thì bỏ — nhắc trễ vô nghĩa
-const EMPTY_BODY = "Chạm để ôn lại từ này";
 
 export function pushLink({ id, word, meaning, fromBank }) {
   const linkId = fromBank ? `bank-${id}` : String(id);
@@ -19,14 +18,11 @@ export function pushLink({ id, word, meaning, fromBank }) {
   return `wordly://word?id=${encodeURIComponent(linkId)}&w=${enc(word, MAX_LINK_WORD)}&m=${enc(meaning, MAX_LINK_MEANING)}&bank=${fromBank ? 1 : 0}`;
 }
 
-export function truncate(text, max = MAX_BODY) {
-  const chars = Array.from(text);
-  if (chars.length <= max) return text;
-  return chars.slice(0, max - 1).join("").trimEnd() + "…";
-}
 
-export function buildPushMessage({ token, word, now = new Date() }) {
+/** `seed` = id khung giờ — chọn mẫu câu lầy xoay vòng theo ngày (copy.js). */
+export function buildPushMessage({ token, word, now = new Date(), seed = "" }) {
   const meaning = (word.meaning || "").trim();
+  const { title, body } = pushCopy({ word: word.word, meaning, fromBank: word.fromBank, seed, now });
   return {
     token,
     data: { link: pushLink({ ...word, meaning }) },
@@ -38,7 +34,7 @@ export function buildPushMessage({ token, word, now = new Date() }) {
       },
       payload: {
         aps: {
-          alert: { title: truncate(word.word, MAX_TITLE), body: truncate(meaning || EMPTY_BODY) },
+          alert: { title, body },
           sound: "default",
           "thread-id": "wordly-review",
         },
