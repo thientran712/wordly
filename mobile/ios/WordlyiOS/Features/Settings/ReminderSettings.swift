@@ -95,26 +95,67 @@ final class ReminderSettingsViewModel: ObservableObject {
     }
 }
 
-/// Chọn giờ theo mốc :00/:30 — menu gọn trong một dòng Form (thay DatePicker từng phút).
+/// Chọn giờ theo mốc :00/:30 — một dòng Form; bấm vào mở tấm nhỏ có bánh xe
+/// (menu 48 mốc trước đây cao kín màn hình). "Xong" mới áp giờ đã chọn.
 struct HalfHourPicker: View {
     let selection: String
     let options: [String]
     let onPick: (String) -> Void
+    @State private var showing = false
+    @State private var draft = ""
+
+    private var current: String { String(selection.prefix(5)) }
 
     var body: some View {
-        Menu {
-            ForEach(options, id: \.self) { t in
-                Button(t) { onPick(t) }
-            }
+        Button {
+            draft = current
+            showing = true
         } label: {
             HStack {
                 Text("Gửi lúc").foregroundStyle(WordlyColors.ink)
                 Spacer()
-                Text(String(selection.prefix(5)))
+                Text(current)
                     .font(WordlyFonts.body(15, weight: .semibold))
+                    .monospacedDigit()
                     .foregroundStyle(WordlyColors.electric)
-                Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundStyle(WordlyColors.inkSoft)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(WordlyColors.electricSubtle, in: Capsule())
             }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Gửi lúc \(current)")
+        .sheet(isPresented: $showing) {
+            VStack(spacing: 0) {
+                HStack {
+                    Button("Huỷ") { showing = false }
+                        .foregroundStyle(WordlyColors.inkSoft)
+                    Spacer()
+                    Text("Chọn giờ gửi").font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                    Spacer()
+                    Button("Xong") {
+                        showing = false
+                        if draft != current { onPick(draft) }
+                    }
+                    .font(WordlyFonts.body(16, weight: .bold))
+                    .foregroundStyle(WordlyColors.electric)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+
+                Picker("Giờ gửi", selection: $draft) {
+                    ForEach(options, id: \.self) { t in
+                        Text(t).font(WordlyFonts.body(20, weight: .semibold)).monospacedDigit().tag(t)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .labelsHidden()
+                .frame(maxWidth: 220)
+            }
+            .presentationDetents([.height(290)])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(WordlyColors.surfaceElevated)
         }
     }
 }
