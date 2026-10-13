@@ -96,7 +96,7 @@ struct ProfileView: View {
                 streak = try? await APIClient.shared.fetchStreak()
                 await vm.fetchProfile()
                 if let p = try? await APIClient.shared.fetchEmailPreferences() {
-                    emailSummary = EmailSettingsLogic.summary(p)
+                    emailSummary = ReminderScheduleLogic.summary(p)
                 } else {
                     emailSummary = "Đang tắt"
                 }

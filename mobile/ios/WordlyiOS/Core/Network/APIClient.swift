@@ -44,6 +44,17 @@ enum APIError: LocalizedError {
     }
 }
 
+extension APIError {
+    /// Câu báo lỗi server gửi trong JSON `{ "error": "…" }` (để hiện cho người dùng).
+    var serverMessage: String? {
+        guard case .serverError(let raw) = self,
+              let start = raw.firstIndex(of: "{"),
+              let data = String(raw[start...]).data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return obj["error"] as? String
+    }
+}
+
 // MARK: - API Client
 @MainActor
 final class APIClient: ObservableObject {
