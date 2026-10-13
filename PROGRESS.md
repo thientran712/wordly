@@ -5,33 +5,34 @@
 
 ### 13/10/2026 — BẮT ĐẦU PHIÊN SAU TỪ ĐÂY
 
-**Trạng thái:** iOS 1.0.0 (14) đang chờ Apple duyệt (miễn phí, phát hành thủ công). Build 15 trên TestFlight — **chủ dự án đã thử trên máy thật: OK** (ảnh nền, theme, tắt gradient, thông báo lỗi đăng nhập). Web production = `4ecccff` (PR #22). Lần upload sau: **build 16**.
+**Trạng thái:** iOS 1.0.0 (14) chờ Apple duyệt. Build 15 trên TestFlight — chủ dự án thử máy thật OK. `main` có thêm code iOS chưa lên TestFlight (PR #27) → **lần upload sau: build 16**. Web production = `167aff3` (PR #21 cron email phân trang, deploy tay 13/10, quay về: `wordly-web:rollback-pre-167aff3`). Không còn PR nào mở.
 
-**PR đang mở (chưa merge):**
-| PR | Nội dung | Ghi chú |
-|---|---|---|
-| #26 | Build 15: ảnh nền + 26 theme widget + gộp #20, #23 | Merge #26 xong thì **đóng #20 và #23** (đã nằm trong #26) |
-| #25 | Spec + plan ảnh nền widget | Chỉ tài liệu |
-| #24 | PROGRESS (file này) | Chỉ tài liệu |
-| #21 | Cron email lấy slot theo trang (người dùng 1.001+) | Web — merge xong phải **deploy production** mới có tác dụng |
+**Đã xong 13/10:**
+- Merge #21, #24, #25, #26 (#20, #23 nằm trong #26). Deploy #21: cron chạy code mới (`checked: 8`), log không lỗi.
+- **PR #27 (iOS, chưa lên TestFlight):** 51 theme widget chia 4 nhóm chọn bằng dropdown — thêm 25 theme lấy cảm hứng hoạt hình/siêu anh hùng (tên gợi tả, **không** dùng tên nhân vật/thương hiệu — App Store 5.2), tất cả đạt WCAG AA; mặc định người dùng mới = theme Wordly (màu cũ chỉ ~2.1–2.4, ai đã lưu cài đặt giữ nguyên); nút **Chỉnh lại khung** ảnh nền (lưu bản gốc ≤ 2048 px + khung từng cỡ; ảnh đặt từ build 15 phải chọn lại một lần). Unit iOS 194/194.
+- **PR #28: deploy production bằng nút bấm** (workflow `Deploy — production`, blue/green, `/api/health` báo commit). Chạy trên máy GitHub vì repo public (không dùng runner tự host). Web 310/310, build sạch.
 
-**Việc có thể làm, theo thứ tự đề xuất:**
-1. **Merge 4 PR trên** + đóng #20/#23, rồi **deploy #21** lên VPS (cùng cách PR #22: build `wordly-web:<sha>` trên VPS, tag `rollback-pre-<sha>`, kiểm bằng `smoke-prod`).
-2. **Đối chiếu migration với DB production.** Self-host không có bảng lịch sử migration và đã sót `suggestion_log` từ 10/10 → kiểm từng file trong `supabase/migrations/` (bảng/cột/policy) có trên production chưa. Nên thêm bảng `schema_migrations` hoặc script kiểm để không sót lần nữa.
-3. **Khi Apple duyệt 1.0 (build 14):** phát hành thủ công; sau đó nộp bản 1.0.1 bằng build 15 (hoặc 16).
-4. **Màu mặc định widget khó đọc** (chữ trắng trên `#1CB0F6`/`#58CC02`, tương phản ~2.1–2.4): cân nhắc đổi mặc định cho **người dùng mới** sang theme "Wordly" (đạt AA), giữ nguyên người dùng cũ.
-5. **Ảnh nền widget — phần đã lược:** lưu vị trí/độ phóng để chỉnh lại khung mà không phải chọn lại ảnh (giữ bản thu nhỏ ≤ 2048 px trong App Group).
-6. **Email Resend** (nhánh `feat/email-provider-resend`, WIP `aeb12f6`): rebase sau #21, xác minh domain trên Resend, chọn gói (hoặc SES rẻ hơn).
-7. **Kho từ song ngữ** (spec `2026-10-12-wordbank-design.md`, đang tạm dừng): lô thử 200 từ hiếm.
-8. **Gói Pro cho 1.1** (StoreKit, đề xuất 29k/tháng – 249k/năm): cần spec — bảng quyền lợi + hạn mức theo gói.
-9. **Luyện nói với Alex** đang ẩn (`AppRouter.alexPracticeEnabled = false`) — quyết định bật lại, có thể gắn với gói Pro.
-10. **Deploy production qua CI** (quy ước ATLAS): hiện CI chỉ chạy test, production deploy tay — thêm job deploy trên runner tự host khi có thời gian.
+**⚠️ Việc 1 của phiên sau — chủ dự án chạy MỘT lệnh (Claude bị chặn vì cấp quyền trên server):**
+```
+bash infra/vps/web/setup-ci-deploy.sh
+```
+Script: cài lệnh chuyển upstream + sudo hẹp cho `deploy-wordly`, chuyển nginx sang `upstream wordly_web` (vẫn trỏ 13500 — người dùng không thấy gì), bản sao repo + `deploy-sha.sh`/`swap.sh` trên VPS, tạo khoá CI + GitHub secrets, tự kiểm khoá CI chỉ chạy được deploy-sha.sh. Sau đó bấm **Actions → Deploy — production** (hoặc `gh workflow run deploy-production.yml`) để deploy lần đầu → kiểm `https://app.wordly.skillproof.work/api/health` báo đúng commit, cron email vẫn chạy (`send-emails-cron.sh` đọc `ACTIVE_PORT`). **Từ đây production chỉ deploy qua nút này, không deploy tay nữa.**
+
+**Việc có thể làm tiếp, theo thứ tự đề xuất:**
+1. Chạy script trên + deploy lần đầu qua CI (xem trên).
+2. **Lên plan tính năng Push notification** (chủ dự án yêu cầu 13/10): nhắc ôn từ / từ mỗi ngày qua APNs thay hoặc bổ sung email. Cần brainstorm → spec → plan: lưu device token (bảng mới + RLS), gửi từ cron VPS (APNs key `.p8`, HTTP/2), quyền thông báo trong app, khung giờ theo `email_slots` hay riêng, hạn mức/tắt, deep link mở đúng từ (đã có cho widget).
+3. **Đối chiếu migration với DB production** (self-host không có bảng lịch sử migration; đã sót `suggestion_log` từ 10/10) — thêm `schema_migrations` hoặc script kiểm.
+4. Khi Apple duyệt 1.0 (build 14): phát hành; sau đó nộp 1.0.1 bằng build 16 (gồm PR #27).
+5. Email Resend (nhánh `feat/email-provider-resend`, WIP `aeb12f6`): rebase lên main (xung đột `cron-send-emails.js` với #21), xác minh domain, chọn gói.
+6. Kho từ song ngữ (spec `2026-10-12-wordbank-design.md`, tạm dừng): lô thử 200 từ hiếm.
+7. Gói Pro cho 1.1 (StoreKit, đề xuất 29k/tháng – 249k/năm): cần spec.
+8. Luyện nói với Alex đang ẩn (`AppRouter.alexPracticeEnabled = false`) — quyết định bật lại.
 
 **Lưu ý môi trường (máy dev):**
 - Supabase local: cổng mặc định bị dự án BedWar chiếm → khi chạy test RLS, đổi tạm cổng sang `553xx` trong `supabase/config.toml` (**không commit**), tạo `web/.env.test.local` từ `npx supabase status -o env`.
-- Simulator duy nhất: `BedWar-iPhone16` (`7F03B63D-…`), chạy test iOS một simulator, `-parallel-testing-enabled NO`.
-- Script kiểm production (2 user tạm, tự xoá): bản trong thư mục nháp phiên đã mất — viết lại theo `web/tests/rls/user-routes-rls.test.mjs`, gọi API thật bằng Bearer JWT.
-- Chế độ auto của Claude Code có lúc chặn SSH/psql lên production; chủ dự án muốn Claude tự làm, ít hỏi.
+- Simulator duy nhất: `BedWar-iPhone16` (`7F03B63D-…`), test iOS một simulator, `-parallel-testing-enabled NO`. Màn Debug xem nhanh: `-WordlyUIPreview profile -WordlyUIPreviewScreen homestyle|widgetbg`.
+- Script kiểm production (2 user tạm, tự xoá) chưa có trong repo — viết lại theo `web/tests/rls/user-routes-rls.test.mjs`, gọi API thật bằng Bearer JWT.
+- Chế độ auto của Claude Code chặn cấp quyền trên server và đôi khi chặn SSH/psql production; chủ dự án muốn Claude tự làm, ít hỏi, báo ngắn gọn.
 
 ### 12/10/2026 (khuya) — BUILD 15 ĐÃ UPLOAD TestFlight: ảnh nền + 26 theme widget (PR #26)
 
