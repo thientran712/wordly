@@ -196,3 +196,28 @@ test("hết thời gian giữa các lô → budget_exhausted = true (log thấy 
   const ok = await runDuePushSends(fakeDb({ due: [slot(1)], devices: [{ id: "d", user_id: "u1", token: "T" }] }), now, { config, tokenProvider: tokenProvider(), send: okSend(), selectContent: ownWord });
   assert.equal(ok.budget_exhausted, false);
 });
+
+test("không lấy được access token Google → dừng lượt, không giành slot nào (review #2)", async () => {
+  const due = [slot(1), slot(2), slot(3)];
+  const devices = due.map((s, i) => ({ id: `d${i}`, user_id: s.user_id, token: `T${i}` }));
+  const sb = fakeDb({ due, devices });
+  const send = okSend();
+  const broken = { get: async () => { throw new Error("google token: 400 invalid_grant"); }, invalidate() {} };
+  const r = await runDuePushSends(sb, now, { config, tokenProvider: broken, send, selectContent: ownWord });
+  assert.equal(r.fatal, "TOKEN");
+  assert.match(r.errors[0], /invalid_grant/);
+  assert.equal(sb.db.push_log.length, 0, "chưa giành slot nào → lượt sau gửi bù được");
+  assert.equal(send.sent.length, 0);
+});
+
+test("access token hỏng giữa lượt (sau khi đã giành slot) → fatal, dừng nhận slot mới", async () => {
+  const due = [slot(1), slot(2), slot(3)];
+  const devices = due.map((s, i) => ({ id: `d${i}`, user_id: s.user_id, token: `T${i}` }));
+  const sb = fakeDb({ due, devices });
+  let calls = 0;
+  const flaky = { get: async () => { calls++; if (calls > 1) throw new Error("network"); return "AT"; }, invalidate() {} };
+  const r = await runDuePushSends(sb, now, { config, tokenProvider: flaky, send: okSend(), selectContent: ownWord, concurrency: 1 });
+  assert.equal(r.fatal, "TOKEN");
+  assert.equal(sb.db.push_log.length, 1, "chỉ slot đang gửi bị mất, hai slot sau để lượt sau");
+  assert.equal(sb.db.push_log[0].status, "failed");
+});

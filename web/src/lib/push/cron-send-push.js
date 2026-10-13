@@ -52,8 +52,27 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
   let fatal = null;
   let claimed = 0; // slot lượt này đã giành được — đo tiến độ mỗi lô
 
+  const pool = { failed: 0, deferred: 0, errors: [] };
+
+  // Không lấy được access token (service account bị thu hồi, lệch giờ, mạng)
+  // = lỗi cấu hình: dừng cả lượt. Lấy TRƯỚC khi giành slot nào để lượt sau
+  // còn gửi bù được; giữa lượt mà hỏng thì đánh dấu fatal.
+  async function accessToken() {
+    try {
+      return await provider.get();
+    } catch (e) {
+      fatal ??= "TOKEN";
+      if (pool.errors.length < 5) pool.errors.push(e?.message || String(e));
+      return null;
+    }
+  }
+
   async function deliver(message) {
-    const call = async () => send({ projectId: config.projectId, accessToken: await provider.get(), message });
+    const call = async () => {
+      const token = await accessToken();
+      if (!token) return { ok: false, status: 0, code: "TOKEN", message: "" };
+      return send({ projectId: config.projectId, accessToken: token, message });
+    };
     let r = await call();
     if (r.status === 401 && r.code !== "THIRD_PARTY_AUTH_ERROR") {
       provider.invalidate();
@@ -108,8 +127,8 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
   // hết thời gian, lỗi cấu hình, hoặc một lô không giành được slot nào (tránh
   // lặp vô hạn khi lỗi claim/tranh chấp).
   const budgetMs = deps.budgetMs ?? 240_000;
-  const pool = { failed: 0, deferred: 0, errors: [] };
   let budgetExhausted = false;
+  await accessToken();
   for (;;) {
     if (fatal !== null) break;
     if (Date.now() - started >= budgetMs) { budgetExhausted = true; break; }
