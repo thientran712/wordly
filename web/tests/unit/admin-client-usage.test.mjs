@@ -13,7 +13,7 @@ const API = join(WEB, "src/app/api");
 const ADMIN_ALLOWED = {
   "account/route.js": "xoá user khỏi auth.users",
   "admin/email-status/route.js": "trang admin xem mọi người dùng",
-  "cron/send-emails/route.js": "cron hệ thống, không có người dùng đăng nhập",
+  "cron/send-emails/route.js": "cron hệ thống (email + push), không có người dùng đăng nhập",
   "widget/log-shown/route.js": "suggestion_log chỉ service role được ghi (spec 2026-10-10)",
 };
 
