@@ -3,6 +3,18 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 13/10/2026 (tối) — PUSH CHẠY THẬT trên production; bỏ email; tắt website; build 16 sẵn sàng (PR #34)
+
+**Production (đã deploy, `82efd7c`):**
+- Push qua FCM chạy thật: migration push đã chạy production (4 bảng RLS + 3 hàm), biến `FCM_*` trên VPS (`.env.bak-pre-push` là bản trước). iPhone chủ dự án nhận thông báo lúc 14:00 (`push_log` sent, bấm mở đúng từ).
+- Câu thông báo giọng bạn thân lầy (mày–tao): tiêu đề ngắn ≤ 16 ký tự (màn hình khoá chỉ cho 1 dòng), nội dung dòng 1 «từ» = “nghĩa”, dòng 2 câu chọc — `web/src/lib/push/copy.js`.
+- **Bỏ email nhắc học** (chủ dự án chốt): cron `/api/cron/send-emails` chỉ còn chạy push; bảng `email_*` + API `/api/email-*` giữ nguyên (app 1.0 còn gọi). Nhánh `feat/email-provider-resend` coi như bỏ.
+- **Website tắt** (chỉ tắt, code giữ nguyên): `WEB_UI_ENABLED` mặc định tắt → mọi trang người học về `/mobile-only`; còn chạy `/api/*`, `/privacy`, `/support`, `/auth/*`, `/reset-password`, `/email-templates/*`. Bật lại: `WEB_UI_ENABLED=1` trong `/opt/wordly/prod/web/.env` + deploy lại.
+
+**iOS build 16 (PR #34, chưa merge, chưa TestFlight):** FirebaseMessaging + push, widget câu lầy, tab Từ vựng thêm "Đã nhắc" đầu tiên (7 ngày, `/api/suggestion-log`), chọn giờ bằng bánh xe nhỏ, bỏ UI email, app đang mở thì banner không kêu. Unit 224/224, UI 19/19 (simulator). Bản Debug đã thử trên iPhone thật (nhận + bấm push OK).
+- Khi nộp App Store: khai thêm **Device ID** (App Functionality, linked, không tracking).
+- Chưa xem trên máy thật: widget câu lầy, tab Đã nhắc, banner không kêu khi đang mở app.
+
 ### 13/10/2026 (chiều) — PUSH NOTIFICATION: code + test xong trên nhánh `feat/push-notification` (CHƯA merge/deploy)
 
 Spec (đã duyệt) `docs/superpowers/specs/2026-10-13-push-notification-design.md`, plan `docs/superpowers/plans/2026-10-13-push-notification.md`. Quyết định chủ dự án: push **bổ sung** email, **lịch riêng**, gửi qua **FCM**, giờ nhắc (cả email) **chỉ mốc :00/:30**.
