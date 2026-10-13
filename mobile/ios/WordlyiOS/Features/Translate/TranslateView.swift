@@ -49,6 +49,7 @@ struct TranslateView: View {
             .toast(Binding(get: { vm.dictation.error }, set: { vm.dictation.error = $0 }),
                    systemImage: "exclamationmark.triangle.fill", color: WordlyColors.error, duration: 5)
             .onChange(of: vm.inputText) { _, text in vm.onInputChanged(text) }
+            .sheet(isPresented: $vm.offerPushReminder) { PushReminderOfferSheet(isPresented: $vm.offerPushReminder) }
             .sheet(isPresented: $showCamera) {
                 CameraPicker(
                     sourceType: imageSourceType,
@@ -475,5 +476,30 @@ struct PosBadge: View {
             .background(style.bg)
             .clipShape(Capsule())
             .overlay(Capsule().stroke(style.border, lineWidth: 1))
+    }
+}
+
+/// Hỏi một lần sau khi lưu từ đầu tiên: bật nhắc ôn 20:00 mỗi ngày qua thông báo.
+private struct PushReminderOfferSheet: View {
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "bell.badge.fill").font(.system(size: 40)).foregroundStyle(WordlyColors.electric)
+            Text("Nhắc bạn ôn từ này?").font(WordlyFonts.body(18, weight: .bold))
+            Text("Wordly gửi một thông báo lúc 20:00 mỗi ngày với một từ cần ôn. Đổi giờ hoặc tắt trong Cá nhân → Thông báo nhắc ôn.")
+                .font(WordlyFonts.body(14)).foregroundStyle(WordlyColors.inkSoft).multilineTextAlignment(.center)
+            Button {
+                Task { _ = await PushManager.shared.enableDailyDefault(); isPresented = false }
+            } label: {
+                Text("Bật").font(WordlyFonts.body(15, weight: .bold)).frame(maxWidth: .infinity).padding(.vertical, 12)
+            }
+            .background(WordlyColors.electric)
+            .foregroundStyle(WordlyColors.onElectric)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            Button("Để sau") { isPresented = false }.foregroundStyle(WordlyColors.inkSoft)
+        }
+        .padding(24)
+        .presentationDetents([.medium])
     }
 }

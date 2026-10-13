@@ -30,6 +30,8 @@ final class TranslateViewModel: ObservableObject {
     @Published var dictionary: DictionaryState = .hidden
     @Published var saved = false
     @Published var toast: String?
+    /// Sheet hỏi bật nhắc ôn qua thông báo — chỉ một lần, sau lần lưu từ đầu tiên.
+    @Published var offerPushReminder = false
     /// Tăng mỗi khi lịch sử đổi (tự ghi / lưu) để danh sách lịch sử tải lại.
     @Published var historyVersion = 0
 
@@ -256,10 +258,20 @@ final class TranslateViewModel: ObservableObject {
             historyVersion += 1
             toast = "Đã lưu “\(source)” — sẽ có trong quiz và widget"
             Task { await WidgetSync.refresh() }
+            Task { await maybeOfferPushReminder() }
         } catch {
             saved = false
             toast = "Không lưu được, thử lại nhé"
         }
+    }
+
+    /// Lần đầu lưu từ (và chưa từng trả lời quyền thông báo) → hỏi bật nhắc 20:00.
+    private func maybeOfferPushReminder() async {
+        let shown = UserDefaults.standard.bool(forKey: PushLogic.promptShownKey)
+        let status = await PushManager.shared.authorizationStatus()
+        guard PushLogic.shouldOfferPrompt(alreadyShown: shown, status: status, pushAvailable: PushManager.shared.isAvailable) else { return }
+        UserDefaults.standard.set(true, forKey: PushLogic.promptShownKey)
+        offerPushReminder = true
     }
 
     // MARK: Chụp ảnh dịch — gửi thẳng ảnh gốc (giống web, không resize/crop
