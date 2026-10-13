@@ -11,7 +11,7 @@
 - **Bỏ email nhắc học** (chủ dự án chốt): cron `/api/cron/send-emails` chỉ còn chạy push; bảng `email_*` + API `/api/email-*` giữ nguyên (app 1.0 còn gọi). Nhánh `feat/email-provider-resend` coi như bỏ.
 - **Website tắt** (chỉ tắt, code giữ nguyên): `WEB_UI_ENABLED` mặc định tắt → mọi trang người học về `/mobile-only`; còn chạy `/api/*`, `/privacy`, `/support`, `/auth/*`, `/reset-password`, `/email-templates/*`. Bật lại: `WEB_UI_ENABLED=1` trong `/opt/wordly/prod/web/.env` + deploy lại.
 
-**iOS build 16 (PR #34, chưa merge, chưa TestFlight):** FirebaseMessaging + push, widget câu lầy, tab Từ vựng thêm "Đã nhắc" đầu tiên (7 ngày, `/api/suggestion-log`), chọn giờ bằng bánh xe nhỏ, bỏ UI email, app đang mở thì banner không kêu. Unit 224/224, UI 19/19 (simulator). Bản Debug đã thử trên iPhone thật (nhận + bấm push OK).
+**iOS 1.0.0 (16) ĐÃ UPLOAD TestFlight 13/10 17:38** (PR #34 + #35 bump build, archive từ `main` `73c0b01`; kiểm: app + widget 1.0.0 (16), IPA `aps-environment = production`, có GoogleService-Info.plist, 0 chuỗi WordlyUIPreview, domain production, team 929P8F77XX). **Lần upload sau: build 17.** Nội dung build 16: FirebaseMessaging + push, widget câu lầy, tab Từ vựng thêm "Đã nhắc" đầu tiên (7 ngày, `/api/suggestion-log`), chọn giờ bằng bánh xe nhỏ, bỏ UI email, app đang mở thì banner không kêu. Unit 224/224, UI 19/19 (simulator). Bản Debug đã thử trên iPhone thật (nhận + bấm push OK).
 - Khi nộp App Store: khai thêm **Device ID** (App Functionality, linked, không tracking).
 - Chưa xem trên máy thật: widget câu lầy, tab Đã nhắc, banner không kêu khi đang mở app.
 
