@@ -13,6 +13,8 @@ struct HomeStyleView: View {
     @State private var loadError: String?
     /// Ảnh nền đã lưu cho phần xem trước — đọc lại chỉ khi đổi phiên bản
     @State private var savedBackground: CGImage?
+    /// Nhóm theme đang mở trong dropdown (nil = nhóm của theme đang dùng)
+    @State private var themeGroup: WidgetTheme.Group?
 
     var body: some View {
         Form {
@@ -21,6 +23,15 @@ struct HomeStyleView: View {
                 .listRowInsets(EdgeInsets())
 
             Section {
+                Picker("Nhóm", selection: Binding(
+                    get: { themeGroup ?? WidgetTheme.group(containing: vm.settings.homeStyle) },
+                    set: { themeGroup = $0 }
+                )) {
+                    ForEach(WidgetTheme.Group.allCases) { g in
+                        Text("\(g.title) (\(WidgetTheme.themes(in: g).count))").tag(g)
+                    }
+                }
+                .pickerStyle(.menu)
                 themeGrid
             } header: {
                 Text("Theme")
@@ -34,6 +45,18 @@ struct HomeStyleView: View {
                           systemImage: "photo")
                 }
                 if vm.settings.homeStyle.hasBackgroundImage {
+                    Button {
+                        let v = vm.settings.homeStyle.backgroundVersion
+                        if let src = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup).loadSource(version: v) {
+                            loadError = nil
+                            editorSource = src
+                        } else {
+                            // Ảnh đặt từ build 15 chưa lưu bản gốc → phải chọn lại
+                            loadError = "Ảnh này đặt từ bản cũ, chọn lại ảnh để chỉnh khung."
+                        }
+                    } label: {
+                        Label("Chỉnh lại khung", systemImage: "crop")
+                    }
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Làm tối")
                         Slider(value: $vm.settings.homeStyle.backgroundDim,
@@ -142,7 +165,7 @@ struct HomeStyleView: View {
     /// Lưới theme: mỗi ô là widget thu nhỏ với đúng màu nền + chữ của theme.
     private var themeGrid: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 10)], spacing: 10) {
-            ForEach(WidgetTheme.all) { theme in
+            ForEach(WidgetTheme.themes(in: themeGroup ?? WidgetTheme.group(containing: vm.settings.homeStyle))) { theme in
                 let selected = vm.settings.homeStyle.matches(theme)
                 Button {
                     vm.settings.homeStyle.apply(theme)

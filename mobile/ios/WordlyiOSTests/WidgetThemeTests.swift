@@ -7,7 +7,7 @@ import XCTest
 // màu từ lẫn màu nghĩa, trên cả 2 đầu gradient.
 final class WidgetThemeTests: XCTestCase {
     func testThemeCountAndUniqueIds() {
-        XCTAssertTrue((20...30).contains(WidgetTheme.all.count), "\(WidgetTheme.all.count)")
+        XCTAssertTrue((40...60).contains(WidgetTheme.all.count), "\(WidgetTheme.all.count)")
         XCTAssertEqual(Set(WidgetTheme.all.map(\.id)).count, WidgetTheme.all.count)
     }
 
@@ -66,5 +66,30 @@ final class WidgetThemeTests: XCTestCase {
         for h in WidgetTheme.swatches {
             XCTAssertNotNil(h.range(of: "^#[0-9A-F]{6}$", options: .regularExpression), h)
         }
+    }
+
+    func testEveryGroupHasThemesAndEveryThemeHasGroup() {
+        for g in WidgetTheme.Group.allCases {
+            XCTAssertGreaterThanOrEqual(WidgetTheme.themes(in: g).count, 5, "\(g)")
+        }
+        XCTAssertEqual(WidgetTheme.Group.allCases.map { WidgetTheme.themes(in: $0).count }.reduce(0, +), WidgetTheme.all.count)
+        XCTAssertGreaterThanOrEqual(WidgetTheme.themes(in: .cartoon).count, 20, "nhiều theme hoạt hình/siêu anh hùng")
+    }
+
+    // Màu mặc định cũ (chữ trắng trên #1CB0F6/#58CC02) chỉ ~2.1–2.4 — người
+    // dùng mới bắt đầu bằng theme Wordly (đạt AA).
+    func testDefaultStyleIsReadableWordlyTheme() {
+        let wordly = WidgetTheme.all.first { $0.id == "wordly" }!
+        XCTAssertTrue(WidgetSettings.HomeStyle().matches(wordly))
+        XCTAssertEqual(WidgetTheme.group(containing: WidgetSettings.HomeStyle()), .basic)
+    }
+
+    func testGroupContainingCustomColorsFallsBackToFirst() {
+        var s = WidgetSettings.HomeStyle()
+        s.bgHex1 = "#123456"
+        XCTAssertEqual(WidgetTheme.group(containing: s), WidgetTheme.Group.allCases.first)
+        let cartoon = WidgetTheme.themes(in: .cartoon)[0]
+        s.apply(cartoon)
+        XCTAssertEqual(WidgetTheme.group(containing: s), .cartoon)
     }
 }

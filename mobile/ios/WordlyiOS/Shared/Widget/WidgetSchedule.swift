@@ -69,10 +69,12 @@ struct WidgetSettings: Codable, Equatable {
         case light, regular, bold
     }
     struct HomeStyle: Codable, Equatable {
-        var bgHex1: String = "#1CB0F6"
-        var bgHex2: String = "#58CC02"
+        // Mặc định = theme "Wordly" (WidgetTheme) — đạt tương phản WCAG AA. Màu
+        // cũ #1CB0F6/#58CC02 chữ trắng chỉ ~2.1–2.4; ai đã lưu cài đặt thì giữ nguyên.
+        var bgHex1: String = "#0B6FA4"
+        var bgHex2: String = "#2E7D0B"
         var wordColorHex: String = "#FFFFFF"
-        var meaningColorHex: String = "#FFFFFF"
+        var meaningColorHex: String = "#E8F7FF"
         var wordWeight: TextWeight = .bold
         var meaningWeight: TextWeight = .regular
         var wordItalic: Bool = false
@@ -83,6 +85,9 @@ struct WidgetSettings: Codable, Equatable {
         var backgroundDim: Double = 0.3
         /// Tắt = nền một màu (bgHex1). Mặc định bật để cài đặt cũ trông như trước.
         var useGradient: Bool = true
+        /// Khung đã chọn cho từng cỡ — để mở lại màn chỉnh khung đúng chỗ cũ.
+        var cropSmall: CropFrame? = nil
+        var cropMedium: CropFrame? = nil
         var hasBackgroundImage: Bool { backgroundVersion > 0 }
         /// Hai đầu nền; tắt gradient thì cả hai là bgHex1.
         var backgroundHexes: [String] { [bgHex1, useGradient ? bgHex2 : bgHex1] }
@@ -129,7 +134,19 @@ extension WidgetSettings.HomeStyle {
         meaningItalic = try c.decodeIfPresent(Bool.self, forKey: .meaningItalic) ?? d.meaningItalic
         backgroundVersion = try c.decodeIfPresent(Int.self, forKey: .backgroundVersion) ?? d.backgroundVersion
         useGradient = try c.decodeIfPresent(Bool.self, forKey: .useGradient) ?? d.useGradient
+        cropSmall = try? c.decodeIfPresent(CropFrame.self, forKey: .cropSmall)
+        cropMedium = try? c.decodeIfPresent(CropFrame.self, forKey: .cropMedium)
         backgroundDim = min(max(try c.decodeIfPresent(Double.self, forKey: .backgroundDim) ?? d.backgroundDim, 0), Self.maxDim)
+    }
+}
+
+extension WidgetSettings.HomeStyle {
+    func crop(for kind: WidgetBackgroundKind) -> CropFrame? {
+        kind == .small ? cropSmall : cropMedium
+    }
+
+    mutating func setCrop(_ frame: CropFrame?, for kind: WidgetBackgroundKind) {
+        if kind == .small { cropSmall = frame } else { cropMedium = frame }
     }
 }
 

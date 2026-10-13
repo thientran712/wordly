@@ -5,41 +5,96 @@ import Foundation
 /// Rosé Pine — đều MIT). Mọi theme đạt WCAG AA (≥ 4.5:1) cho cả từ và nghĩa trên
 /// cả 2 đầu nền — có test (WidgetThemeTests).
 struct WidgetTheme: Identifiable, Equatable {
+    enum Group: String, CaseIterable, Identifiable {
+        case basic, nature, cartoon, code
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .basic: "Cơ bản"
+            case .nature: "Thiên nhiên"
+            case .cartoon: "Hoạt hình & siêu anh hùng"
+            case .code: "Lập trình"
+            }
+        }
+    }
+
     let id: String
     let name: String
+    let group: Group
     let bg1: String
     /// nil = nền một màu
     let bg2: String?
     let word: String
     let meaning: String
 
+    init(_ id: String, _ name: String, _ group: Group, _ bg1: String, _ bg2: String?, _ word: String, _ meaning: String) {
+        (self.id, self.name, self.group, self.bg1, self.bg2, self.word, self.meaning) = (id, name, group, bg1, bg2, word, meaning)
+    }
+
+    static func themes(in group: Group) -> [WidgetTheme] { all.filter { $0.group == group } }
+
+    /// Nhóm mở sẵn trong danh sách: nhóm của theme đang dùng, không khớp theme nào thì nhóm đầu.
+    static func group(containing style: WidgetSettings.HomeStyle) -> Group {
+        all.first { style.matches($0) }?.group ?? Group.allCases[0]
+    }
+
+    // Hoạt hình & siêu anh hùng: chỉ lấy cảm hứng bảng màu, đặt tên gợi tả —
+    // KHÔNG dùng tên nhân vật/thương hiệu (App Store guideline 5.2, sở hữu trí tuệ).
     static let all: [WidgetTheme] = [
-        WidgetTheme(id: "wordly", name: "Wordly", bg1: "#0B6FA4", bg2: "#2E7D0B", word: "#FFFFFF", meaning: "#E8F7FF"),
-        WidgetTheme(id: "ocean", name: "Đại dương", bg1: "#0E3A5C", bg2: "#0E7490", word: "#FFFFFF", meaning: "#CFFAFE"),
-        WidgetTheme(id: "midnight", name: "Nửa đêm", bg1: "#0F172A", bg2: nil, word: "#F8FAFC", meaning: "#94A3B8"),
-        WidgetTheme(id: "forest", name: "Rừng thông", bg1: "#14532D", bg2: "#166534", word: "#F0FDF4", meaning: "#BBF7D0"),
-        WidgetTheme(id: "sunset", name: "Hoàng hôn", bg1: "#9A3412", bg2: "#BE185D", word: "#FFFFFF", meaning: "#FFE4E6"),
-        WidgetTheme(id: "berry", name: "Quả mọng", bg1: "#581C87", bg2: "#9D174D", word: "#FFFFFF", meaning: "#F5D0FE"),
-        WidgetTheme(id: "espresso", name: "Cà phê", bg1: "#3E2723", bg2: "#5D4037", word: "#FFF8E1", meaning: "#FFCC80"),
-        WidgetTheme(id: "ink", name: "Mực đen", bg1: "#000000", bg2: nil, word: "#FFFFFF", meaning: "#D4D4D4"),
-        WidgetTheme(id: "graphite", name: "Than chì", bg1: "#27272A", bg2: "#3F3F46", word: "#FAFAFA", meaning: "#D4D4D8"),
-        WidgetTheme(id: "nord", name: "Nord", bg1: "#2E3440", bg2: "#3B4252", word: "#ECEFF4", meaning: "#88C0D0"),
-        WidgetTheme(id: "dracula", name: "Dracula", bg1: "#282A36", bg2: nil, word: "#F8F8F2", meaning: "#BD93F9"),
-        WidgetTheme(id: "catppuccin", name: "Catppuccin", bg1: "#1E1E2E", bg2: "#313244", word: "#CDD6F4", meaning: "#F5C2E7"),
-        WidgetTheme(id: "gruvbox", name: "Gruvbox", bg1: "#282828", bg2: nil, word: "#FBF1C7", meaning: "#FABD2F"),
-        WidgetTheme(id: "solarized", name: "Solarized", bg1: "#002B36", bg2: "#073642", word: "#FDF6E3", meaning: "#93A1A1"),
-        WidgetTheme(id: "tokyo", name: "Tokyo Night", bg1: "#1A1B26", bg2: "#24283B", word: "#C0CAF5", meaning: "#7DCFFF"),
-        WidgetTheme(id: "rosepine", name: "Rosé Pine", bg1: "#191724", bg2: "#26233A", word: "#E0DEF4", meaning: "#EBBCBA"),
-        WidgetTheme(id: "paper", name: "Giấy trắng", bg1: "#FFFFFF", bg2: nil, word: "#111827", meaning: "#4B5563"),
-        WidgetTheme(id: "sky", name: "Bầu trời", bg1: "#E0F2FE", bg2: "#DBEAFE", word: "#075985", meaning: "#1E3A8A"),
-        WidgetTheme(id: "mint", name: "Bạc hà", bg1: "#D1FAE5", bg2: nil, word: "#065F46", meaning: "#064E3B"),
-        WidgetTheme(id: "matcha", name: "Matcha", bg1: "#ECFCCB", bg2: nil, word: "#3F6212", meaning: "#365314"),
-        WidgetTheme(id: "lemon", name: "Chanh", bg1: "#FEF9C3", bg2: nil, word: "#854D0E", meaning: "#422006"),
-        WidgetTheme(id: "peach", name: "Đào", bg1: "#FFEDD5", bg2: "#FED7AA", word: "#9A3412", meaning: "#7C2D12"),
-        WidgetTheme(id: "coral", name: "San hô", bg1: "#FFE4E6", bg2: nil, word: "#9F1239", meaning: "#4C0519"),
-        WidgetTheme(id: "lavender", name: "Oải hương", bg1: "#EDE9FE", bg2: "#FCE7F3", word: "#5B21B6", meaning: "#4C1D95"),
-        WidgetTheme(id: "latte", name: "Latte", bg1: "#EFF1F5", bg2: nil, word: "#8839EF", meaning: "#4C4F69"),
-        WidgetTheme(id: "solarlight", name: "Solarized sáng", bg1: "#FDF6E3", bg2: nil, word: "#073642", meaning: "#586E75"),
+        WidgetTheme("wordly", "Wordly", .basic, "#0B6FA4", "#2E7D0B", "#FFFFFF", "#E8F7FF"),
+        WidgetTheme("midnight", "Nửa đêm", .basic, "#0F172A", nil, "#F8FAFC", "#94A3B8"),
+        WidgetTheme("ink", "Mực đen", .basic, "#000000", nil, "#FFFFFF", "#D4D4D4"),
+        WidgetTheme("graphite", "Than chì", .basic, "#27272A", "#3F3F46", "#FAFAFA", "#D4D4D8"),
+        WidgetTheme("paper", "Giấy trắng", .basic, "#FFFFFF", nil, "#111827", "#4B5563"),
+        WidgetTheme("espresso", "Cà phê", .basic, "#3E2723", "#5D4037", "#FFF8E1", "#FFCC80"),
+
+        WidgetTheme("ocean", "Đại dương", .nature, "#0E3A5C", "#0E7490", "#FFFFFF", "#CFFAFE"),
+        WidgetTheme("forest", "Rừng thông", .nature, "#14532D", "#166534", "#F0FDF4", "#BBF7D0"),
+        WidgetTheme("sunset", "Hoàng hôn", .nature, "#9A3412", "#BE185D", "#FFFFFF", "#FFE4E6"),
+        WidgetTheme("berry", "Quả mọng", .nature, "#581C87", "#9D174D", "#FFFFFF", "#F5D0FE"),
+        WidgetTheme("sky", "Bầu trời", .nature, "#E0F2FE", "#DBEAFE", "#075985", "#1E3A8A"),
+        WidgetTheme("mint", "Bạc hà", .nature, "#D1FAE5", nil, "#065F46", "#064E3B"),
+        WidgetTheme("matcha", "Matcha", .nature, "#ECFCCB", nil, "#3F6212", "#365314"),
+        WidgetTheme("lemon", "Chanh", .nature, "#FEF9C3", nil, "#854D0E", "#422006"),
+        WidgetTheme("peach", "Đào", .nature, "#FFEDD5", "#FED7AA", "#9A3412", "#7C2D12"),
+        WidgetTheme("coral", "San hô", .nature, "#FFE4E6", nil, "#9F1239", "#4C0519"),
+        WidgetTheme("lavender", "Oải hương", .nature, "#EDE9FE", "#FCE7F3", "#5B21B6", "#4C1D95"),
+
+        WidgetTheme("spider", "Nhện đỏ", .cartoon, "#B91C1C", "#1E3A8A", "#FFFFFF", "#FEE2E2"),
+        WidgetTheme("darkknight", "Hiệp sĩ bóng đêm", .cartoon, "#0B0B0F", "#1F2937", "#FACC15", "#E5E7EB"),
+        WidgetTheme("superhero", "Siêu nhân áo choàng", .cartoon, "#1D4ED8", "#991B1B", "#FDE047", "#FFFFFF"),
+        WidgetTheme("ironarmor", "Giáp sắt", .cartoon, "#7F1D1D", "#78350F", "#FDE68A", "#FFFFFF"),
+        WidgetTheme("greengiant", "Khổng lồ xanh", .cartoon, "#14532D", "#4C1D95", "#BBF7D0", "#F3E8FF"),
+        WidgetTheme("shieldcaptain", "Đội trưởng khiên sao", .cartoon, "#1E3A8A", "#991B1B", "#FFFFFF", "#E0E7FF"),
+        WidgetTheme("thunder", "Thần sấm", .cartoon, "#1E293B", "#334155", "#FDE047", "#CBD5E1"),
+        WidgetTheme("amazon", "Nữ chiến binh", .cartoon, "#7F1D1D", "#1E3A8A", "#FCD34D", "#FFFFFF"),
+        WidgetTheme("panther", "Báo đen", .cartoon, "#0F0F14", "#2E1065", "#E9D5FF", "#C4B5FD"),
+        WidgetTheme("electricmouse", "Chuột điện vàng", .cartoon, "#FDE047", nil, "#7C2D12", "#431407"),
+        WidgetTheme("robotcat", "Mèo máy xanh", .cartoon, "#075985", "#0369A1", "#FFFFFF", "#FEE2E2"),
+        WidgetTheme("spongeyellow", "Bọt biển vàng", .cartoon, "#FEF08A", "#FDE68A", "#78350F", "#422006"),
+        WidgetTheme("icequeen", "Nữ hoàng băng giá", .cartoon, "#E0F2FE", "#BAE6FD", "#075985", "#0C4A6E"),
+        WidgetTheme("ninjaturtle", "Rùa ninja", .cartoon, "#166534", "#14532D", "#FDE68A", "#DCFCE7"),
+        WidgetTheme("strawhat", "Mũ rơm", .cartoon, "#991B1B", "#7C2D12", "#FDE047", "#FEF3C7"),
+        WidgetTheme("leafninja", "Ninja lá", .cartoon, "#C2410C", "#1E3A8A", "#FFFFFF", "#FFEDD5"),
+        WidgetTheme("dragonball", "Ngọc rồng", .cartoon, "#9A3412", "#1E40AF", "#FDE047", "#FFFFFF"),
+        WidgetTheme("wizard", "Phù thủy nhỏ", .cartoon, "#7F1D1D", "#713F12", "#FCD34D", "#FEF3C7"),
+        WidgetTheme("lightsaber", "Kiếm ánh sáng", .cartoon, "#020617", "#1E293B", "#7DD3FC", "#BAE6FD"),
+        WidgetTheme("darkside", "Phe bóng tối", .cartoon, "#000000", "#450A0A", "#F87171", "#FECACA"),
+        WidgetTheme("candy", "Kẹo bông hồng", .cartoon, "#FCE7F3", nil, "#BE185D", "#831843"),
+        WidgetTheme("minion", "Lính vàng", .cartoon, "#FACC15", nil, "#1E3A8A", "#111827"),
+        WidgetTheme("cowboy", "Chàng cao bồi", .cartoon, "#1E40AF", "#92400E", "#FDE047", "#FFFFFF"),
+        WidgetTheme("mermaid", "Nàng tiên cá", .cartoon, "#0F766E", "#6D28D9", "#FFFFFF", "#CCFBF1"),
+        WidgetTheme("ghost", "Bóng ma xanh", .cartoon, "#022C22", "#14532D", "#86EFAC", "#DCFCE7"),
+
+        WidgetTheme("nord", "Nord", .code, "#2E3440", "#3B4252", "#ECEFF4", "#88C0D0"),
+        WidgetTheme("dracula", "Dracula", .code, "#282A36", nil, "#F8F8F2", "#BD93F9"),
+        WidgetTheme("catppuccin", "Catppuccin", .code, "#1E1E2E", "#313244", "#CDD6F4", "#F5C2E7"),
+        WidgetTheme("latte", "Latte", .code, "#EFF1F5", nil, "#8839EF", "#4C4F69"),
+        WidgetTheme("gruvbox", "Gruvbox", .code, "#282828", nil, "#FBF1C7", "#FABD2F"),
+        WidgetTheme("solarized", "Solarized", .code, "#002B36", "#073642", "#FDF6E3", "#93A1A1"),
+        WidgetTheme("solarlight", "Solarized sáng", .code, "#FDF6E3", nil, "#073642", "#586E75"),
+        WidgetTheme("tokyo", "Tokyo Night", .code, "#1A1B26", "#24283B", "#C0CAF5", "#7DCFFF"),
+        WidgetTheme("rosepine", "Rosé Pine", .code, "#191724", "#26233A", "#E0DEF4", "#EBBCBA"),
     ]
 
     /// Bảng ô màu (Tailwind CSS) — thay ColorPicker hệ thống: chỉ chạm chọn.
