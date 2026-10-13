@@ -38,7 +38,7 @@ test("message: tiêu đề/nội dung giọng lầy (có từ + nghĩa), header 
   const expected = pushCopy({ ...word, seed: "slot-1", now });
   assert.equal(m.apns.payload.aps.alert.title, expected.title);
   assert.equal(m.apns.payload.aps.alert.body, expected.body);
-  assert.ok(m.apns.payload.aps.alert.body.startsWith("«resilient» = “kiên cường”"));
+  assert.ok(m.apns.payload.aps.alert.body.includes("resilient"));
   assert.equal(m.apns.payload.aps.sound, "default");
   assert.equal(m.apns.payload.aps["thread-id"], "wordly-review");
   assert.equal(m.apns.headers["apns-push-type"], "alert");
@@ -48,9 +48,9 @@ test("message: tiêu đề/nội dung giọng lầy (có từ + nghĩa), header 
   assert.equal(m.android, undefined);
 });
 
-test("nghĩa rỗng → body mặc định, vẫn có link", () => {
+test("nghĩa rỗng → câu đố có từ, vẫn có link", () => {
   const m = buildPushMessage({ token: "T", word: { id: "1", word: "x", meaning: "  ", fromBank: false }, now: new Date() });
-  assert.equal(m.apns.payload.aps.alert.body, "«x» — chạm vô coi nghĩa liền 👀");
+  assert.match(m.apns.payload.aps.alert.body, /(^|\s)x(\s|[.?!:])/);
   assert.match(m.data.link, /^wordly:\/\/word\?id=1&w=x&m=&bank=0$/);
 });
 

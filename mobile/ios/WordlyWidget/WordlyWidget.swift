@@ -366,5 +366,25 @@ struct HomeWord: View {
         }
         .multilineTextAlignment(align.multiline)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: align.frame)
+        // Icon rải lộn xộn, mờ, nằm dưới chữ — cùng từ thì cùng bố cục
+        .background {
+            if let w = entry.word { ScatterLayer(icons: WidgetCopy.scatter(seed: w.id)) }
+        }
+    }
+}
+
+struct ScatterLayer: View {
+    let icons: [WidgetCopy.ScatterIcon]
+    var body: some View {
+        GeometryReader { geo in
+            ForEach(icons, id: \.emoji) { icon in
+                Text(icon.emoji)
+                    .font(.system(size: icon.size))
+                    .rotationEffect(.degrees(icon.rotation))
+                    .position(x: geo.size.width * icon.x, y: geo.size.height * icon.y)
+            }
+        }
+        .opacity(0.35)
+        .accessibilityHidden(true)
     }
 }
