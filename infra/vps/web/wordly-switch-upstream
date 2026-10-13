@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Root-owned (/usr/local/sbin). Lệnh DUY NHẤT deploy-wordly được sudo
+# (/etc/sudoers.d/wordly-deploy): trỏ nginx sang một màu, nginx -t trước khi reload.
+set -euo pipefail
+case "${1:-}" in 13501|13502|13500) ;; *) echo "usage: $0 13501|13502" >&2; exit 2 ;; esac
+f=/etc/nginx/conf.d/wordly-upstream.conf
+[ -f "$f" ] && cp "$f" "$f.bak"
+echo "upstream wordly_web { server 127.0.0.1:$1; }" > "$f"
+if nginx -t 2>/dev/null; then nginx -s reload; else [ -f "$f.bak" ] && cp "$f.bak" "$f"; echo "nginx -t failed, reverted" >&2; exit 1; fi

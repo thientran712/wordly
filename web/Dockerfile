@@ -29,6 +29,10 @@ RUN npx next build
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Commit đang chạy — /api/health trả về để deploy blue/green kiểm đúng bản
+# trước khi chuyển nginx. Đặt ở stage cuối để đổi commit không làm mất cache build.
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder --chown=node:node /app/public ./public
