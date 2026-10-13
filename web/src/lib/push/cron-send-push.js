@@ -48,13 +48,9 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
     selectBank: deps.selectBank || selectBankWords,
   };
 
-  const { data: due, error } = await supabase.rpc("due_push_slots", {
-    p_now: now.toISOString(), p_catchup_minutes: CATCHUP_MINUTES,
-  });
-  if (error) throw new Error(`due_push_slots: ${error.message}`);
-
-  const stats = { due: due.length, sent: 0, skipped: 0, failed: 0, claimed_elsewhere: 0, tokens_removed: 0 };
+  const stats = { due: 0, sent: 0, skipped: 0, failed: 0, claimed_elsewhere: 0, tokens_removed: 0 };
   let fatal = null;
+  let claimed = 0; // slot lượt này đã giành được — đo tiến độ mỗi lô
 
   async function deliver(message) {
     const call = async () => send({ projectId: config.projectId, accessToken: await provider.get(), message });
@@ -72,6 +68,7 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
       if (claim.error.code === "23505") { stats.claimed_elsewhere++; return; }
       throw new Error(`push_log claim: ${claim.error.message}`);
     }
+    claimed++;
     const finish = (fields) => supabase.from("push_log").update(fields).eq("slot_id", slot_id).eq("send_date", send_date);
 
     // Đọc thiết bị ĐÚNG LÚC gửi — token đã chuyển sang người khác thì không còn ở đây
@@ -106,17 +103,40 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
     if (logError) console.error(`[cron-send-push] suggestion_log (không fatal): ${logError.message}`);
   }
 
-  const pool = await runPool(due, handle, {
-    concurrency: deps.concurrency ?? 20,
-    budgetMs: deps.budgetMs ?? 240_000,
-    shouldStop: () => fatal !== null,
-  });
+  // PostgREST cắt mọi kết quả ở max_rows (1000) — kể cả RPC. Gọi lại theo lô:
+  // slot đã giành quyền có push_log nên lô sau tự loại ra. Dừng khi hết slot,
+  // hết thời gian, lỗi cấu hình, hoặc một lô không giành được slot nào (tránh
+  // lặp vô hạn khi lỗi claim/tranh chấp).
+  const budgetMs = deps.budgetMs ?? 240_000;
+  const pool = { failed: 0, deferred: 0, errors: [] };
+  let budgetExhausted = false;
+  for (;;) {
+    if (fatal !== null) break;
+    if (Date.now() - started >= budgetMs) { budgetExhausted = true; break; }
+    const { data: due, error } = await supabase.rpc("due_push_slots", {
+      p_now: now.toISOString(), p_catchup_minutes: CATCHUP_MINUTES,
+    });
+    if (error) throw new Error(`due_push_slots: ${error.message}`);
+    if (!due.length) break;
+    stats.due += due.length;
+    const before = claimed;
+    const r = await runPool(due, handle, {
+      concurrency: deps.concurrency ?? 20,
+      budgetMs: budgetMs - (Date.now() - started),
+      shouldStop: () => fatal !== null,
+    });
+    pool.failed += r.failed;
+    pool.deferred = r.deferred;
+    pool.errors.push(...r.errors.slice(0, 5 - pool.errors.length));
+    if (claimed === before) break;
+  }
   const { data: cleaned } = await supabase.rpc("cleanup_push_data", { p_log_days: 30, p_device_days: 270, p_limit: 5000 });
 
   return {
     ...stats,
     failed: stats.failed + pool.failed,
     deferred: pool.deferred,
+    budget_exhausted: budgetExhausted || (fatal === null && pool.deferred > 0),
     fatal,
     errors: pool.errors,
     cleaned: cleaned ?? null,

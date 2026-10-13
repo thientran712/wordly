@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { runDuePushSends } from "../../src/lib/push/cron-send-push.js";
 
 // Supabase giả đủ dùng cho cron: from(t).select/eq/gte/insert/update/delete + rpc.
-function fakeDb({ due = [], devices = [], pushLog = [] } = {}) {
+function fakeDb({ due = [], devices = [], pushLog = [], maxRows = Infinity, rpcSeesLog = true } = {}) {
   const db = { push_devices: [...devices], push_log: [...pushLog], suggestion_log: [] };
   const rpcCalls = [];
   const filtersMatch = (row, filters) => filters.every(([c, v]) => row[c] === v);
@@ -41,7 +41,11 @@ function fakeDb({ due = [], devices = [], pushLog = [] } = {}) {
     db, rpcCalls, from,
     rpc(name, args) {
       rpcCalls.push([name, args]);
-      if (name === "due_push_slots") return Promise.resolve({ data: due, error: null });
+      // Như hàm SQL: bỏ slot đã có push_log hôm đó; PostgREST cắt ở max_rows
+      if (name === "due_push_slots") {
+        const open = due.filter((d) => !rpcSeesLog || !db.push_log.some((l) => l.slot_id === d.slot_id && l.send_date === d.send_date));
+        return Promise.resolve({ data: open.slice(0, maxRows), error: null });
+      }
       if (name === "cleanup_push_data") return Promise.resolve({ data: { logs: 0, devices: 0 }, error: null });
       return Promise.resolve({ data: null, error: { message: "unknown rpc" } });
     },
@@ -94,7 +98,8 @@ test("hết cả từ riêng lẫn kho → skipped, không gửi", async () => {
 });
 
 test("slot đã có lượt khác giành (unique) → bỏ, không gửi trùng", async () => {
-  const sb = fakeDb({ due: [slot(1)], devices: [{ id: "d1", user_id: "u1", token: "T1" }], pushLog: [{ slot_id: "s1", send_date: "2026-10-13", status: "sending" }] });
+  // Lượt khác ghi log SAU khi due_push_slots của lượt này đã trả về (tranh chấp thật)
+  const sb = fakeDb({ due: [slot(1)], devices: [{ id: "d1", user_id: "u1", token: "T1" }], pushLog: [{ slot_id: "s1", send_date: "2026-10-13", status: "sending" }], rpcSeesLog: false });
   const send = okSend();
   const r = await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send, selectContent: ownWord });
   assert.equal(r.claimed_elsewhere, 1);
@@ -152,4 +157,42 @@ test("due_push_slots lỗi → throw (route ghi lỗi, email vẫn chạy)", asy
   const sb = fakeDb();
   sb.rpc = async () => ({ data: null, error: { message: "boom" } });
   await assert.rejects(() => runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send: okSend() }), /due_push_slots: boom/);
+});
+
+test("PostgREST cắt 1000 dòng/lần → gọi lại theo lô tới khi hết (10k người cùng 20:00)", async () => {
+  const due = Array.from({ length: 2500 }, (_, i) => slot(i));
+  const devices = due.map((s, i) => ({ id: `d${i}`, user_id: s.user_id, token: `T${i}` }));
+  const sb = fakeDb({ due, devices, maxRows: 1000 });
+  const send = okSend();
+  const r = await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send, selectContent: ownWord, concurrency: 50 });
+  assert.equal(r.sent, 2500);
+  assert.equal(r.due, 2500);
+  assert.equal(send.sent.length, 2500);
+  assert.equal(sb.rpcCalls.filter(([n]) => n === "due_push_slots").length, 4, "3 lô có dữ liệu + 1 lô rỗng");
+});
+
+test("lô không tiến được (claim lỗi liên tục) → dừng, không lặp vô hạn", async () => {
+  const sb = fakeDb({ due: [slot(1)], devices: [{ id: "d1", user_id: "u1", token: "T1" }] });
+  const from = sb.from;
+  sb.from = (t) => {
+    const q = from(t);
+    if (t !== "push_log") return q;
+    q.insert = () => ({ then: (res) => Promise.resolve({ data: null, error: { code: "57014", message: "timeout" } }).then(res) });
+    return q;
+  };
+  const r = await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send: okSend(), selectContent: ownWord });
+  assert.equal(r.failed, 1);
+  assert.equal(sb.rpcCalls.filter(([n]) => n === "due_push_slots").length, 1);
+});
+
+test("hết thời gian giữa các lô → budget_exhausted = true (log thấy được quá tải)", async () => {
+  const due = Array.from({ length: 30 }, (_, i) => slot(i));
+  const devices = due.map((s, i) => ({ id: `d${i}`, user_id: s.user_id, token: `T${i}` }));
+  const sb = fakeDb({ due, devices, maxRows: 10 });
+  const slowSend = async () => { await new Promise((r) => setTimeout(r, 30)); return { ok: true, status: 200 }; };
+  const r = await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send: slowSend, selectContent: ownWord, concurrency: 10, budgetMs: 20 });
+  assert.equal(r.budget_exhausted, true);
+  assert.ok(r.sent < 30);
+  const ok = await runDuePushSends(fakeDb({ due: [slot(1)], devices: [{ id: "d", user_id: "u1", token: "T" }] }), now, { config, tokenProvider: tokenProvider(), send: okSend(), selectContent: ownWord });
+  assert.equal(ok.budget_exhausted, false);
 });
