@@ -44,6 +44,17 @@ enum APIError: LocalizedError {
     }
 }
 
+extension APIError {
+    /// Câu báo lỗi server gửi trong JSON `{ "error": "…" }` (để hiện cho người dùng).
+    var serverMessage: String? {
+        guard case .serverError(let raw) = self,
+              let start = raw.firstIndex(of: "{"),
+              let data = String(raw[start...]).data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return obj["error"] as? String
+    }
+}
+
 // MARK: - API Client
 @MainActor
 final class APIClient: ObservableObject {
@@ -77,9 +88,15 @@ final class APIClient: ObservableObject {
         method: String = "GET",
         body: Encodable? = nil,
         responseType: T.Type,
-        useWebBase: Bool = true
+        useWebBase: Bool = true,
+        recoverAuth: Bool = true
     ) async throws -> T {
-        try await withAuthRecovery {
+        // recoverAuth = false: lỗi 401 trả thẳng, không làm mới phiên/đăng xuất —
+        // dùng cho lệnh gọi NẰM TRONG quá trình đăng xuất (huỷ token push).
+        guard recoverAuth else {
+            return try await send(path: path, method: method, body: body, responseType: responseType, useWebBase: useWebBase)
+        }
+        return try await withAuthRecovery {
             try await send(path: path, method: method, body: body, responseType: responseType, useWebBase: useWebBase)
         }
     }

@@ -1,7 +1,7 @@
 // Thay Inngest sleepUntil bằng polling: cron VPS gọi /api/cron/send-emails
 // mỗi vài phút, hàm này trả lời "slot này có tới giờ gửi ngay bây giờ không".
 
-function safeTimezone(tz) {
+export function safeTimezone(tz) {
   if (!tz || typeof tz !== "string") return "Asia/Ho_Chi_Minh";
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: tz });
@@ -13,7 +13,7 @@ function safeTimezone(tz) {
 
 const DOW_MAP = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
-function localParts(date, timezone) {
+export function localParts(date, timezone) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
     year: "numeric", month: "2-digit", day: "2-digit",
@@ -28,7 +28,7 @@ function localParts(date, timezone) {
   };
 }
 
-function isScheduledDay(frequency, customDays, dayOfWeek) {
+export function isScheduledDay(frequency, customDays, dayOfWeek) {
   if (frequency === "weekdays") return dayOfWeek >= 1 && dayOfWeek <= 5;
   if (frequency === "custom") return Array.isArray(customDays) && customDays.includes(dayOfWeek);
   return true; // "daily" hoặc không đặt — gửi mọi ngày

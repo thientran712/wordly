@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var showChangePassword = false
     @State private var confirmSignOut = false
     @State private var emailSummary = ""
+    @State private var pushSummary = ""
     @State private var streak: StreakResponse?
     @State private var confirmDelete = false
     @State private var isDeleting = false
@@ -30,6 +31,9 @@ struct ProfileView: View {
                 Section("Nhắc học") {
                     NavigationLink { EmailSettingsView() } label: {
                         settingRow("envelope.fill", WordlyColors.duoBlue, "Email nhắc học", emailSummary)
+                    }
+                    NavigationLink { PushSettingsView() } label: {
+                        settingRow("bell.badge.fill", WordlyColors.electric, "Thông báo nhắc ôn", pushSummary)
                     }
                     NavigationLink { WidgetSettingsView() } label: {
                         settingRow("lock.iphone", WordlyColors.electric, "Widget màn hình khoá", "Từ vựng trên màn hình khoá")
@@ -96,9 +100,14 @@ struct ProfileView: View {
                 streak = try? await APIClient.shared.fetchStreak()
                 await vm.fetchProfile()
                 if let p = try? await APIClient.shared.fetchEmailPreferences() {
-                    emailSummary = EmailSettingsLogic.summary(p)
+                    emailSummary = ReminderScheduleLogic.summary(p)
                 } else {
                     emailSummary = "Đang tắt"
+                }
+                if let p = try? await APIClient.shared.fetchReminderPreferences(.push) {
+                    pushSummary = ReminderScheduleLogic.summary(p)
+                } else {
+                    pushSummary = "Đang tắt"
                 }
             }
             .sheet(isPresented: $showChangePassword) { ChangePasswordView() }

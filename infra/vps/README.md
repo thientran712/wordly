@@ -16,7 +16,7 @@ Xem quy trình triển khai từng bước: `docs/superpowers/plans/2026-10-10-v
 | `supabase/.env.example` | — | Bản gốc upstream, CHƯA từng sửa — an toàn commit. `.env` thật (có secret) KHÔNG commit |
 | `supabase/backup.sh` | `/opt/wordly/prod/supabase/backup.sh` | Cron backup hàng ngày (`deploy-wordly`, 20:00 UTC) |
 | `web/docker-compose.yml` | `/opt/wordly/prod/web/docker-compose.yml` | Container Next.js |
-| `web/send-emails-cron.sh` | `/opt/wordly/prod/web/send-emails-cron.sh` | Cron `*/5 * * * *` (`deploy-wordly`) gọi `POST /api/cron/send-emails` — thay Inngest sleepUntil, xem `web/src/lib/email/cron-send-emails.js` |
+| `web/send-emails-cron.sh` | `/opt/wordly/prod/web/send-emails-cron.sh` | Cron `*/5 * * * *` (`deploy-wordly`) gọi `POST /api/cron/send-emails` — thay Inngest sleepUntil, xem `web/src/lib/email/cron-send-emails.js`; chạy cả email và push (`web/src/lib/push/cron-send-push.js`), phản hồi `{ email, push }` |
 | `nginx/wordly.prod.webapp.conf` | `/etc/nginx/sites-available/wordly.prod.webapp.conf` | vhost `app.wordly.skillproof.work`, SSL do certbot tự quản |
 | `nginx/wordly.prod.api.conf` | `/etc/nginx/sites-available/wordly.prod.api.conf` | vhost `api.wordly.skillproof.work` |
 

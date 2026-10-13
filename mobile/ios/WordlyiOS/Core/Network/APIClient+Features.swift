@@ -82,30 +82,43 @@ extension APIClient {
     }
 
     // MARK: Email nhắc học
-    func fetchEmailPreferences() async throws -> EmailPreferences? {
-        try await request(path: "/api/email-preferences", responseType: EmailPreferencesResponse.self).preferences
+    func fetchReminderPreferences(_ channel: ReminderChannel) async throws -> EmailPreferences? {
+        try await request(path: channel.preferencesPath, responseType: EmailPreferencesResponse.self).preferences
     }
 
-    func saveEmailPreferences(_ prefs: EmailPreferences) async throws {
-        _ = try await request(path: "/api/email-preferences", method: "PUT", body: prefs, responseType: EmailPreferencesResponse.self)
+    func saveReminderPreferences(_ prefs: EmailPreferences, _ channel: ReminderChannel) async throws {
+        _ = try await request(path: channel.preferencesPath, method: "PUT", body: prefs, responseType: EmailPreferencesResponse.self)
     }
 
-    func fetchEmailSlots() async throws -> [EmailSlot] {
-        try await request(path: "/api/email-slots", responseType: EmailSlotsResponse.self).slots
+    func fetchReminderSlots(_ channel: ReminderChannel) async throws -> [EmailSlot] {
+        try await request(path: channel.slotsPath, responseType: EmailSlotsResponse.self).slots
     }
 
-    func addEmailSlot(time: String) async throws -> EmailSlot {
+    func addReminderSlot(_ channel: ReminderChannel, time: String) async throws -> EmailSlot {
         struct Body: Encodable { let send_time: String }
-        return try await request(path: "/api/email-slots", method: "POST", body: Body(send_time: time), responseType: EmailSlotResponse.self).slot
+        return try await request(path: channel.slotsPath, method: "POST", body: Body(send_time: time), responseType: EmailSlotResponse.self).slot
     }
 
-    func updateEmailSlot(id: String, time: String) async throws {
+    func updateReminderSlot(_ channel: ReminderChannel, id: String, time: String) async throws {
         struct Body: Encodable { let id: String; let send_time: String }
-        _ = try await request(path: "/api/email-slots", method: "PUT", body: Body(id: id, send_time: time), responseType: Ok.self)
+        _ = try await request(path: channel.slotsPath, method: "PUT", body: Body(id: id, send_time: time), responseType: Ok.self)
     }
 
-    func deleteEmailSlot(id: String) async throws {
-        _ = try await request(path: "/api/email-slots?id=\(id)", method: "DELETE", responseType: Ok.self)
+    func deleteReminderSlot(_ channel: ReminderChannel, id: String) async throws {
+        _ = try await request(path: "\(channel.slotsPath)?id=\(id)", method: "DELETE", responseType: Ok.self)
+    }
+
+    func fetchEmailPreferences() async throws -> EmailPreferences? { try await fetchReminderPreferences(.email) }
+
+    func registerPushDevice(token: String, appVersion: String) async throws {
+        struct Body: Encodable { let token: String; let platform = "ios"; let app_version: String }
+        _ = try await request(path: "/api/push/devices", method: "POST", body: Body(token: token, app_version: appVersion), responseType: Ok.self)
+    }
+
+    func unregisterPushDevice(token: String) async throws {
+        struct Body: Encodable { let token: String }
+        // Gọi trong lúc đăng xuất → không qua AuthRecovery (tránh signOut lồng nhau)
+        _ = try await request(path: "/api/push/devices", method: "DELETE", body: Body(token: token), responseType: Ok.self, recoverAuth: false)
     }
 
     func sendTestEmail() async throws {
