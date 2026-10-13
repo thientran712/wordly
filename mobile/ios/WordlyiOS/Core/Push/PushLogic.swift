@@ -33,6 +33,10 @@ enum PushLogic {
 
     /// Sheet "Nhắc bạn ôn từ này lúc 20:00?" — chỉ một lần, chỉ khi chưa từng
     /// trả lời hộp thoại quyền của iOS.
+    /// App đang mở: vẫn hiện banner (không mất lần nhắc) nhưng không kêu —
+    /// người dùng đang nhìn màn hình rồi.
+    static let foregroundPresentation: UNNotificationPresentationOptions = [.banner, .list]
+
     static func shouldOfferPrompt(alreadyShown: Bool, status: UNAuthorizationStatus, pushAvailable: Bool) -> Bool {
         pushAvailable && !alreadyShown && status == .notDetermined
     }

@@ -171,8 +171,8 @@ struct WordlyWidgetEntryView: View {
             case .accessoryRectangular: LockRectangular(entry: entry)
             case .accessoryCircular: LockCircular(entry: entry)
             case .accessoryInline: LockInline(entry: entry)
-            case .systemMedium: HomeWord(entry: entry, wordSize: 30, meaningSize: 16, meaningLines: 3)
-            default: HomeWord(entry: entry, wordSize: 24, meaningSize: 14, meaningLines: 4)
+            case .systemMedium: HomeWord(entry: entry, wordSize: 30, meaningSize: 16, meaningLines: 3, medium: true)
+            default: HomeWord(entry: entry, wordSize: 24, meaningSize: 14, meaningLines: 4, medium: false)
             }
         }
         // Bấm widget → app mở đúng từ đang hiện (Từ vựng > Đã lưu / Từ mới + popup)
@@ -193,7 +193,8 @@ struct LockRectangular: View {
         let align = entry.textAlign
         if let w = entry.word {
             let compact = entry.lockStyle == .compact
-            let meaning: String? = entry.showMeaning ? entry.meaning : (compact ? nil : "Nghĩa là gì nhỉ? 🤔")
+            let meaning: String? = entry.showMeaning ? entry.meaning
+                : (compact ? nil : WidgetCopy.pick(WidgetCopy.hiddenMeaningPrompts, seed: w.id))
             ViewThatFits(in: .vertical) {
                 ForEach(Self.sizes(compact: compact), id: \.self) { size in
                     LockWordStack(word: w.word, phonetic: entry.phonetic, meaning: meaning, size: size,
@@ -288,7 +289,7 @@ struct LockInline: View {
         if let w = entry.word {
             Text(entry.showMeaning ? "\(w.word) — \(entry.meaning)" : w.word)
         } else {
-            Text(entry.signedOut ? "📖 Đăng nhập Wordly" : (entry.resting ? "🌙 Wordly nghỉ ngơi" : "📖 Mở Wordly để lưu từ"))
+            Text(entry.signedOut ? WidgetCopy.inlineSignedOut : (entry.resting ? WidgetCopy.inlineResting : WidgetCopy.inlineEmpty))
         }
     }
 }
@@ -299,9 +300,9 @@ struct LockMessage: View {
     var align: WidgetSettings.TextAlign = .leading
     var body: some View {
         VStack(alignment: align.horizontal, spacing: 2) {
-            Text(resting && !signedOut ? "🌙 Đang ngoài giờ học" : "📖 Wordly")
+            Text(signedOut ? WidgetCopy.signedOutTitle : (resting ? WidgetCopy.restingTitle : WidgetCopy.emptyTitle))
                 .font(.system(size: 14, weight: .bold))
-            Text(signedOut ? "Đăng nhập để hiện từ vựng" : (resting ? "Từ vựng sẽ quay lại theo giờ bạn đặt" : "Mở app và lưu từ để hiện ở đây"))
+            Text(signedOut ? WidgetCopy.signedOutSubtitle : (resting ? WidgetCopy.restingSubtitle : WidgetCopy.emptySubtitle))
                 .font(.system(size: 12))
                 .opacity(0.8)
                 .lineLimit(2)
@@ -318,6 +319,8 @@ struct HomeWord: View {
     let wordSize: CGFloat
     let meaningSize: CGFloat
     let meaningLines: Int
+    /// Widget vừa (ngang rộng) — còn chỗ cho dòng chọc dài hơn
+    let medium: Bool
 
     var body: some View {
         let style = entry.homeStyle
@@ -338,15 +341,24 @@ struct HomeWord: View {
                         .minimumScaleFactor(0.7)
                         .padding(.top, -4)
                 }
-                Text(entry.showMeaning ? entry.meaning : "Đoán nghĩa rồi mở app kiểm tra nhé 🤔")
+                let meaning = entry.showMeaning ? entry.meaning : WidgetCopy.pick(WidgetCopy.hiddenMeaningPrompts, seed: w.id)
+                Text(meaning)
                     .font(.system(size: meaningSize, weight: style.meaningWeight.swiftUIWeight))
                     .italic(style.meaningItalic)
                     .foregroundStyle(Color(hex: style.meaningColorHex).opacity(0.9))
                     .lineLimit(meaningLines)
                     .minimumScaleFactor(0.6)
+                // Dòng chọc nhỏ, nhạt — chỉ khi còn chỗ (nghĩa dài thì ẩn, không cắt nghĩa)
+                if entry.showMeaning, WidgetCopy.showsTagline(word: w.word, meaning: meaning, medium: medium) {
+                    Text(WidgetCopy.pick(WidgetCopy.taglines, seed: w.id))
+                        .font(.system(size: max(meaningSize - 3, 11), weight: .semibold))
+                        .foregroundStyle(Color(hex: style.meaningColorHex).opacity(0.6))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             } else {
                 Text(entry.resting ? "🌙" : "📖").font(.system(size: 30))
-                Text(entry.signedOut ? "Đăng nhập Wordly để hiện từ vựng" : (entry.resting ? "Ngoài giờ học" : "Lưu từ trong app để hiện ở đây"))
+                Text(entry.signedOut ? WidgetCopy.homeSignedOut : (entry.resting ? WidgetCopy.homeResting : WidgetCopy.homeEmpty))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color(hex: style.meaningColorHex).opacity(0.85))
                     .minimumScaleFactor(0.7)

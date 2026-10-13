@@ -287,7 +287,7 @@ struct WidgetSettingsView: View {
             if let p = word.flatMap({ WidgetPhonetic.phonetic(for: $0.word, cache: vm.phonetics) }) {
                 Text(p).font(.system(size: 12)).opacity(0.75).lineLimit(1)
             }
-            Text(word.map { vm.settings.showMeaning ? $0.meaning : "Nghĩa là gì nhỉ? 🤔" } ?? "Lưu từ khi dịch để hiện ở đây")
+            Text(word.map { vm.settings.showMeaning ? $0.meaning : WidgetCopy.pick(WidgetCopy.hiddenMeaningPrompts, seed: $0.id) } ?? WidgetCopy.emptySubtitle)
                 .font(.system(size: 13)).opacity(0.85)
                 .lineLimit(2).minimumScaleFactor(0.6)
         }

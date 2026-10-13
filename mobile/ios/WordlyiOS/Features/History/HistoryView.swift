@@ -80,7 +80,7 @@ struct HistoryView: View {
             Button("Xoá \(vm.unsavedCount) mục chưa lưu", role: .destructive) { vm.clearUnsaved() }
             Button("Huỷ", role: .cancel) {}
         } message: {
-            Text("Các từ bạn đã bấm Lưu sẽ được giữ lại (vẫn có trong quiz, email và widget). Bạn có thể hoàn tác ngay sau khi xoá.")
+            Text("Các từ bạn đã bấm Lưu sẽ được giữ lại (vẫn có trong quiz, widget và thông báo nhắc ôn). Bạn có thể hoàn tác ngay sau khi xoá.")
         }
     }
 
@@ -243,7 +243,7 @@ struct HistoryEntryRow: View {
                             .background(WordlyColors.electricSubtle)
                             .clipShape(Capsule())
                         if entry.isSaved == true {
-                            // Giống web: từ đã lưu sẽ được nhắc ôn tập (quiz, email, widget)
+                            // Từ đã lưu sẽ được nhắc ôn tập (quiz, widget, thông báo)
                             Label("Đã lưu", systemImage: "bookmark.fill")
                                 .font(WordlyFonts.body(9, weight: .bold))
                                 .foregroundStyle(WordlyColors.duoOrange)

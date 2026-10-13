@@ -41,11 +41,17 @@ final class FeatureModelsTests: XCTestCase {
         XCTAssertEqual(r.examCounts?["ielts"], 950)
     }
 
-    func testEmailSettings() throws {
-        let p = try decode(EmailPreferencesResponse.self, "/api/email-preferences")
-        XCTAssertEqual(p.preferences?.frequency, "weekdays")
-        let s = try decode(EmailSlotsResponse.self, "/api/email-slots")
-        XCTAssertEqual(s.slots.map(\.displayTime), ["08:00", "20:30"])
+    func testPushSettings() throws {
+        let p = try decode(EmailPreferencesResponse.self, "/api/push/preferences")
+        XCTAssertEqual(p.preferences?.frequency, "daily")
+        let s = try decode(EmailSlotsResponse.self, "/api/push/slots")
+        XCTAssertEqual(s.slots.map(\.displayTime), ["20:00"])
+    }
+
+    func testRemindedList() throws {
+        let r = try decode(RemindedPage.self, "/api/suggestion-log")
+        XCTAssertEqual(r.items.count, 5)
+        XCTAssertFalse(r.hasMore)
     }
 
     // ── Encode: body gửi lên server phải đúng định dạng web đang dùng ──

@@ -4,7 +4,7 @@ import UserNotifications
 /// Thông báo đẩy nhắc ôn từ — cùng form lịch với Email; bật công tắc thì xin
 /// quyền iOS, bị từ chối thì công tắc về tắt + nút mở Cài đặt.
 struct PushSettingsView: View {
-    @StateObject private var vm = ReminderSettingsViewModel(channel: .push)
+    @StateObject private var vm = ReminderSettingsViewModel()
     @State private var status: UNAuthorizationStatus = .notDetermined
     @Environment(\.openURL) private var openURL
 

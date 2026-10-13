@@ -1,18 +1,10 @@
 import SwiftUI
 
-/// Hai kênh nhắc học dùng chung form lịch: Email và Thông báo đẩy.
-enum ReminderChannel {
-    case email, push
-    var preferencesPath: String { self == .email ? "/api/email-preferences" : "/api/push/preferences" }
-    var slotsPath: String { self == .email ? "/api/email-slots" : "/api/push/slots" }
-    var defaultTime: String { self == .email ? "08:00" : "20:00" }
-}
-
 // Cài đặt lịch nhắc — bật/tắt, tần suất (mỗi ngày / thứ 2–6 / tuỳ chỉnh ngày),
 // 1–10 khung giờ theo mốc :00/:30, múi giờ theo máy.
 @MainActor
 final class ReminderSettingsViewModel: ObservableObject {
-    let channel: ReminderChannel
+    static let defaultTime = "20:00"
     @Published var prefs = EmailPreferences(enabled: false, frequency: "daily", customDays: [1, 2, 3, 4, 5])
     @Published var slots: [EmailSlot] = []
     @Published var state: Loadable<Void> = .idle
@@ -21,13 +13,11 @@ final class ReminderSettingsViewModel: ObservableObject {
     @Published var error: String?
     let timezone = TimeZone.current.identifier
 
-    init(channel: ReminderChannel) { self.channel = channel }
-
     func load() async {
         state = .loading
         do {
-            async let p = APIClient.shared.fetchReminderPreferences(channel)
-            async let s = APIClient.shared.fetchReminderSlots(channel)
+            async let p = APIClient.shared.fetchPushPreferences()
+            async let s = APIClient.shared.fetchPushSlots()
             if let loaded = try await p {
                 prefs = loaded
                 if prefs.customDays.isEmpty { prefs.customDays = [1, 2, 3, 4, 5] }
@@ -46,11 +36,10 @@ final class ReminderSettingsViewModel: ObservableObject {
         error = nil
         defer { saving = false }
         do {
-            try await APIClient.shared.saveReminderPreferences(prefs, channel)
+            try await APIClient.shared.savePushPreferences(prefs)
             if prefs.enabled && slots.isEmpty {
-                // Push: server tự tạo 20:00; email: app tạo 08:00 như trước
-                if channel == .push { slots = try await APIClient.shared.fetchReminderSlots(.push) }
-                else { slots = [try await APIClient.shared.addReminderSlot(.email, time: channel.defaultTime)] }
+                // Bật lần đầu: server tự tạo khung 20:00
+                slots = try await APIClient.shared.fetchPushSlots()
             }
             toast = prefs.enabled ? "Đã lưu — sẽ nhắc theo lịch bạn chọn" : "Đã tắt nhắc học"
         } catch {
@@ -60,10 +49,10 @@ final class ReminderSettingsViewModel: ObservableObject {
 
     func addSlot() async {
         guard ReminderScheduleLogic.canAddSlot(count: slots.count),
-              let time = ReminderScheduleLogic.suggestedNewTime(existing: slots.map(\.sendTime), fallback: channel.defaultTime)
+              let time = ReminderScheduleLogic.suggestedNewTime(existing: slots.map(\.sendTime), fallback: Self.defaultTime)
         else { return }
         do {
-            slots.append(try await APIClient.shared.addReminderSlot(channel, time: time))
+            slots.append(try await APIClient.shared.addPushSlot(time: time))
             error = nil
         } catch {
             self.error = (error as? APIError)?.serverMessage ?? "Không thêm được khung giờ."
@@ -80,7 +69,7 @@ final class ReminderSettingsViewModel: ObservableObject {
         slots[i] = EmailSlot(id: slot.id, sendTime: time)
         error = nil
         do {
-            try await APIClient.shared.updateReminderSlot(channel, id: slot.id, time: time)
+            try await APIClient.shared.updatePushSlot(id: slot.id, time: time)
         } catch {
             if let j = slots.firstIndex(where: { $0.id == slot.id }) { slots[j] = old }
             self.error = (error as? APIError)?.serverMessage ?? "Không đổi được giờ, thử lại nhé."
@@ -90,31 +79,72 @@ final class ReminderSettingsViewModel: ObservableObject {
     func delete(_ slot: EmailSlot) async {
         guard ReminderScheduleLogic.canDeleteSlot(count: slots.count) else { return }
         slots.removeAll { $0.id == slot.id }
-        do { try await APIClient.shared.deleteReminderSlot(channel, id: slot.id) }
+        do { try await APIClient.shared.deletePushSlot(id: slot.id) }
         catch { await load() }
     }
 }
 
-/// Chọn giờ theo mốc :00/:30 — menu gọn trong một dòng Form (thay DatePicker từng phút).
+/// Chọn giờ theo mốc :00/:30 — một dòng Form; bấm vào mở tấm nhỏ có bánh xe
+/// (menu 48 mốc trước đây cao kín màn hình). "Xong" mới áp giờ đã chọn.
 struct HalfHourPicker: View {
     let selection: String
     let options: [String]
     let onPick: (String) -> Void
+    @State private var showing = false
+    @State private var draft = ""
+
+    private var current: String { String(selection.prefix(5)) }
 
     var body: some View {
-        Menu {
-            ForEach(options, id: \.self) { t in
-                Button(t) { onPick(t) }
-            }
+        Button {
+            draft = current
+            showing = true
         } label: {
             HStack {
                 Text("Gửi lúc").foregroundStyle(WordlyColors.ink)
                 Spacer()
-                Text(String(selection.prefix(5)))
+                Text(current)
                     .font(WordlyFonts.body(15, weight: .semibold))
+                    .monospacedDigit()
                     .foregroundStyle(WordlyColors.electric)
-                Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundStyle(WordlyColors.inkSoft)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(WordlyColors.electricSubtle, in: Capsule())
             }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Gửi lúc \(current)")
+        .sheet(isPresented: $showing) {
+            VStack(spacing: 0) {
+                HStack {
+                    Button("Huỷ") { showing = false }
+                        .foregroundStyle(WordlyColors.inkSoft)
+                    Spacer()
+                    Text("Chọn giờ gửi").font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                    Spacer()
+                    Button("Xong") {
+                        showing = false
+                        if draft != current { onPick(draft) }
+                    }
+                    .font(WordlyFonts.body(16, weight: .bold))
+                    .foregroundStyle(WordlyColors.electric)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+
+                Picker("Giờ gửi", selection: $draft) {
+                    ForEach(options, id: \.self) { t in
+                        Text(t).font(WordlyFonts.body(20, weight: .semibold)).monospacedDigit().tag(t)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .labelsHidden()
+                .frame(maxWidth: 220)
+            }
+            .presentationDetents([.height(290)])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(WordlyColors.surfaceElevated)
         }
     }
 }
