@@ -117,7 +117,8 @@ extension APIClient {
 
     func unregisterPushDevice(token: String) async throws {
         struct Body: Encodable { let token: String }
-        _ = try await request(path: "/api/push/devices", method: "DELETE", body: Body(token: token), responseType: Ok.self)
+        // Gọi trong lúc đăng xuất → không qua AuthRecovery (tránh signOut lồng nhau)
+        _ = try await request(path: "/api/push/devices", method: "DELETE", body: Body(token: token), responseType: Ok.self, recoverAuth: false)
     }
 
     func sendTestEmail() async throws {

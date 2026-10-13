@@ -192,14 +192,18 @@ final class AuthManager: ObservableObject {
     }
 
     // MARK: - Sign Out
+    private let signOutGate = SignOutGate()
+
     func signOut() async {
-        // Huỷ token push TRƯỚC (cần Bearer còn sống) — thông báo của người này
-        // không được hiện tiếp trên máy sau khi đăng xuất
-        await PushManager.shared.unregister()
-        try? await supabase.auth.signOut()
-        AppGroupStorage.shared.clearWords()
-        currentUser = nil
-        isAuthenticated = false
+        await signOutGate.run {
+            // Huỷ token push TRƯỚC (cần Bearer còn sống) — thông báo của người này
+            // không được hiện tiếp trên máy sau khi đăng xuất
+            await PushManager.shared.unregister()
+            try? await supabase.auth.signOut()
+            AppGroupStorage.shared.clearWords()
+            currentUser = nil
+            isAuthenticated = false
+        }
     }
 
     /// Người dùng đăng nhập bằng Apple → xoá tài khoản phải xác nhận lại với Apple.
