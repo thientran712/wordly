@@ -3,6 +3,13 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 13/10/2026 (khuya, sau) — Câu push/widget v2 "bựa + trend" trên nhánh `feat/push-copy-v2` (CHƯA commit/deploy)
+
+Chủ dự án chê `«từ» = “nghĩa”` phèn → bỏ. Đã duyệt bộ câu mới (mày–tao, meme trend, **không dùng tên người thật**):
+- **Push** (`web/src/lib/push/copy.js`): một câu có lồng từ, xen kẽ theo ngày **Đố** (giấu nghĩa) / **Khoe** (`{w} là {m}`, chỉ nghĩa đầu, nghĩa > 40 ký tự thì chỉ đố); từ > 30 ký tự → mẫu đặt từ cuối; câu "mày lưu…" chỉ cho từ đã lưu. Thêm 7 tiêu đề trend. Câu trend đánh dấu `// trend` để thay khi hết hot. Bằng chứng: unit 400/400, eslint sạch, `next build` Compiled successfully. (`npm test` đầy đủ: RLS push bị huỷ vì Supabase local đang tắt — không liên quan.)
+- **Widget màn hình chính** (`WidgetCopy.swift`, `WordlyWidget.swift`): câu ẩn nghĩa + dòng chọc đổi sang bộ trend; thêm 4 icon rải lộn xộn mờ quanh mép (`WidgetCopy.scatter`, cố định theo id từ). Bằng chứng: iOS unit 226/226 trên simulator `Wordly-Test` (mới tạo), build app + widget thành công. **Chưa xem bằng mắt** trên widget thật (độ mờ 0.35 có đè chữ không).
+- Áp dụng: push cần deploy web production; widget cần build 17.
+
 ### 13/10/2026 (khuya) — BẮT ĐẦU PHIÊN SAU TỪ ĐÂY
 
 **Trạng thái:**
@@ -27,7 +34,7 @@
 - UI test quyền thông báo: reboot simulator + gỡ app trước (hộp thoại quyền chưa trả lời sống qua gỡ app).
 - Supabase local: cổng mặc định đang trống (BedWar không chạy); `web/.env.test.local` đã có. Đang **tắt** để đỡ RAM — `npx supabase start` khi cần test RLS.
 - Production DB: `ssh deploy-wordly@167.99.74.215 'docker exec -i supabase-db psql -U postgres -d postgres'` (pipe SQL qua stdin). Log cron: `/opt/wordly/prod/web/send-emails-cron.log`.
-- Simulator duy nhất `BedWar-iPhone16`; iPhone thật của chủ dự án: iPhone 11 (`D6872260-…`, iOS 18.7).
+- Simulator test của Wordly: `Wordly-Test` (iPhone 17, iOS 26.5, tạo 13/10); `BedWar-iPhone16` là của dự án khác, không đụng; iPhone thật của chủ dự án: iPhone 11 (`D6872260-…`, iOS 18.7).
 
 ### 13/10/2026 (tối) — PUSH CHẠY THẬT trên production; bỏ email; tắt website; build 16 sẵn sàng (PR #34)
 

@@ -18,8 +18,35 @@ final class WidgetCopyTests: XCTestCase {
     }
 
     func testEnoughVariety() {
-        XCTAssertGreaterThanOrEqual(WidgetCopy.hiddenMeaningPrompts.count, 5)
-        XCTAssertGreaterThanOrEqual(WidgetCopy.taglines.count, 8)
+        XCTAssertGreaterThanOrEqual(WidgetCopy.hiddenMeaningPrompts.count, 8)
+        XCTAssertGreaterThanOrEqual(WidgetCopy.taglines.count, 12)
+        XCTAssertGreaterThanOrEqual(WidgetCopy.scatterEmoji.count, 10)
+    }
+
+    /// Bản v2 (13/10/2026): cùng bộ câu trend với push — có meme mạng.
+    func testUsesTrendCopyLikePush() {
+        let all = (WidgetCopy.hiddenMeaningPrompts + WidgetCopy.taglines).joined(separator: " ")
+        for meme in ["Ét o ét", "cái nịt", "Đúng nhận sai cãi", "Ai sợ thì đi về"] {
+            XCTAssertTrue(all.contains(meme), "thiếu \(meme)")
+        }
+    }
+
+    /// Icon lộn xộn trên widget màn hình chính: cùng từ → cùng bố cục (widget vẽ
+    /// lại không nhảy), từ khác → bố cục khác; nằm trong khung, không trùng chỗ.
+    func testScatterStableInsideAndVaried() {
+        let a = WidgetCopy.scatter(seed: "word-1")
+        XCTAssertEqual(a, WidgetCopy.scatter(seed: "word-1"))
+        XCTAssertEqual(a.count, 4)
+        XCTAssertEqual(Set(a.map(\.emoji)).count, a.count, "không lặp emoji")
+        XCTAssertEqual(Set(a.map { "\($0.x),\($0.y)" }).count, a.count, "không chồng chỗ")
+        for icon in a {
+            XCTAssertTrue(WidgetCopy.scatterEmoji.contains(icon.emoji))
+            XCTAssertTrue((0...1).contains(icon.x) && (0...1).contains(icon.y))
+            XCTAssertTrue((-30...30).contains(icon.rotation))
+            XCTAssertTrue((14...24).contains(icon.size))
+        }
+        let layouts = Set((0..<20).map { WidgetCopy.scatter(seed: "w-\($0)").map(\.emoji).joined() })
+        XCTAssertGreaterThan(layouts.count, 5)
     }
 
     func testTaglinesShortEnoughForOneLine() {
