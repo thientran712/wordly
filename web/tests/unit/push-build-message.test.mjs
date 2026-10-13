@@ -38,8 +38,7 @@ test("message: tiêu đề/nội dung giọng lầy (có từ + nghĩa), header 
   const expected = pushCopy({ ...word, seed: "slot-1", now });
   assert.equal(m.apns.payload.aps.alert.title, expected.title);
   assert.equal(m.apns.payload.aps.alert.body, expected.body);
-  assert.ok(m.apns.payload.aps.alert.title.includes("resilient"));
-  assert.ok(m.apns.payload.aps.alert.body.includes("kiên cường"));
+  assert.ok(m.apns.payload.aps.alert.body.startsWith("«resilient» = “kiên cường”"));
   assert.equal(m.apns.payload.aps.sound, "default");
   assert.equal(m.apns.payload.aps["thread-id"], "wordly-review");
   assert.equal(m.apns.headers["apns-push-type"], "alert");
@@ -51,7 +50,7 @@ test("message: tiêu đề/nội dung giọng lầy (có từ + nghĩa), header 
 
 test("nghĩa rỗng → body mặc định, vẫn có link", () => {
   const m = buildPushMessage({ token: "T", word: { id: "1", word: "x", meaning: "  ", fromBank: false }, now: new Date() });
-  assert.equal(m.apns.payload.aps.alert.body, "Chạm vô coi nghĩa liền 👀");
+  assert.equal(m.apns.payload.aps.alert.body, "«x» — chạm vô coi nghĩa liền 👀");
   assert.match(m.data.link, /^wordly:\/\/word\?id=1&w=x&m=&bank=0$/);
 });
 
@@ -60,8 +59,8 @@ test("từ/nghĩa rất dài (câu đã lưu) → message vẫn < 4 KB của APN
   const m = buildPushMessage({ token: "T".repeat(160), word: { id: "abc", word: longVi, meaning: longVi, fromBank: false }, now: new Date() });
   const bytes = Buffer.byteLength(JSON.stringify(m), "utf8");
   assert.ok(bytes < 4000, `message ${bytes} bytes`);
-  assert.ok(Array.from(m.apns.payload.aps.alert.title).length <= 100);
-  assert.ok(m.apns.payload.aps.alert.title.endsWith("…"));
+  assert.ok(Array.from(m.apns.payload.aps.alert.title).length <= 16);
+  assert.ok(Array.from(m.apns.payload.aps.alert.body).length <= 150);
 });
 
 test("link cắt w/m theo ký tự rồi mới mã hoá — vẫn đọc lại được", () => {
