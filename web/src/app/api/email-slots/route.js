@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUserFast } from "@/lib/auth/get-user-fast";
+import { guardSlotTime } from "@/lib/reminders/slot-guard";
 
 export async function GET() {
   const user = await getUserFast();
@@ -31,13 +32,12 @@ export async function POST(request) {
 
   const { send_time } = await request.json();
   if (!send_time) return Response.json({ error: "Missing send_time" }, { status: 400 });
-  if (!/^\d{1,2}:\d{2}$/.test(send_time)) return Response.json({ error: "Invalid time format, use HH:MM" }, { status: 400 });
-  const [hh, mm] = send_time.split(":").map(Number);
-  if (hh > 23 || mm > 59) return Response.json({ error: "Invalid time value" }, { status: 400 });
+  const guard = await guardSlotTime(supabase, { table: "email_slots", userId: user.id, value: send_time });
+  if (!guard.ok) return Response.json({ error: guard.error }, { status: guard.status });
 
   const { data, error } = await supabase
     .from("email_slots")
-    .insert({ user_id: user.id, send_time, enabled: true })
+    .insert({ user_id: user.id, send_time: guard.time, enabled: true })
     .select()
     .single();
 
@@ -55,7 +55,11 @@ export async function PUT(request) {
 
   const supabase = await createClient();
   const update = {};
-  if (send_time !== undefined) update.send_time = send_time;
+  if (send_time !== undefined) {
+    const guard = await guardSlotTime(supabase, { table: "email_slots", userId: user.id, value: send_time, excludeId: id });
+    if (!guard.ok) return Response.json({ error: guard.error }, { status: guard.status });
+    update.send_time = guard.time;
+  }
   if (enabled !== undefined) update.enabled = enabled;
 
   const { error } = await supabase
