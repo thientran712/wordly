@@ -100,3 +100,10 @@ The Widget reads these and creates a timeline showing 1 different word per hour.
 | Email nhắc học | Tần suất, khung giờ, gửi thử |
 | Widget màn hình khoá + màn hình chính | Nguồn từ, chu kỳ, khung giờ, ẩn nghĩa (Hồ sơ → Widget) |
 | Lớp của tôi (trung tâm) | Đã có code, **tạm ẩn** |
+
+## Push notification (Firebase Cloud Messaging)
+
+- Tải `GoogleService-Info.plist` (Firebase console → Project settings → app iOS `com.thientran.wordly`) vào `WordlyiOS/App/`, rồi chạy `xcodegen generate`.
+- File này **gitignore** (repo public). Thiếu file thì app vẫn build + chạy, chỉ không có thông báo đẩy (`PushLogic.hasFirebaseConfig`).
+- Entitlement `aps-environment`: Debug = `development`, Release/TestFlight = `production` (biến `WORDLY_APS_ENVIRONMENT` trong `project.yml`).
+- Server gửi qua FCM HTTP v1 — xem `web/src/lib/push/` và spec `docs/superpowers/specs/2026-10-13-push-notification-design.md`.
