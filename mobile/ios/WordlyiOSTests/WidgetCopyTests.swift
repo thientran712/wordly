@@ -14,7 +14,7 @@ final class WidgetCopyTests: XCTestCase {
         WidgetCopy.hiddenMeaningPrompts + WidgetCopy.taglines
             + [WidgetCopy.restingTitle, WidgetCopy.restingSubtitle, WidgetCopy.emptyTitle, WidgetCopy.emptySubtitle,
                WidgetCopy.signedOutTitle, WidgetCopy.signedOutSubtitle, WidgetCopy.inlineEmpty, WidgetCopy.inlineResting,
-               WidgetCopy.inlineSignedOut]
+               WidgetCopy.inlineSignedOut, WidgetCopy.homeSignedOut, WidgetCopy.homeResting, WidgetCopy.homeEmpty]
     }
 
     func testEnoughVariety() {
@@ -52,5 +52,14 @@ final class WidgetCopyTests: XCTestCase {
         XCTAssertFalse(WidgetCopy.showsTagline(word: "resilient", meaning: String(repeating: "a", count: 36), medium: false))
         XCTAssertFalse(WidgetCopy.showsTagline(word: "take something for granted", meaning: "coi là đương nhiên", medium: false))
         XCTAssertTrue(WidgetCopy.showsTagline(word: "take something for granted", meaning: "coi là đương nhiên", medium: true))
+    }
+
+    /// Widget màn hình chính đã có emoji to phía trên → câu dưới không lặp emoji,
+    /// và trạng thái chưa đăng nhập vẫn phải nói rõ "đăng nhập".
+    func testHomeEmptyStatesHaveNoEmojiAndSayWhatToDo() {
+        for line in [WidgetCopy.homeSignedOut, WidgetCopy.homeResting, WidgetCopy.homeEmpty] {
+            XCTAssertEqual(emojiCount(line), 0, line)
+        }
+        XCTAssertTrue(WidgetCopy.homeSignedOut.lowercased().contains("đăng nhập"))
     }
 }

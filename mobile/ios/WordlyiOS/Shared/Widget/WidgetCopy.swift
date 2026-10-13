@@ -38,6 +38,10 @@ enum WidgetCopy {
     static let inlineEmpty = "📖 Lưu từ đi rồi tao nhắc"
     static let inlineResting = "🌙 Giờ nghỉ, mai học tiếp"
     static let inlineSignedOut = "👋 Đăng nhập Wordly đi"
+    /// Widget màn hình chính trống: đã có emoji to phía trên nên câu không kèm emoji
+    static let homeSignedOut = "Đăng nhập đi, tao chờ mày nãy giờ"
+    static let homeResting = "Giờ nghỉ, tới giờ học tao quay lại"
+    static let homeEmpty = "Lưu vài từ trong app rồi tao nhắc cho"
 
     /// Chọn câu theo id từ: cùng từ → cùng câu (không nhảy câu mỗi lần widget
     /// vẽ lại), từ khác → câu khác.
