@@ -53,9 +53,6 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
   const [isFocused, setIsFocused] = useState(false);
   const [saveToast, setSaveToast] = useState(null); // { word, isFirstTime } | null
   const saveToastTimerRef = useRef(null);
-  const [showEmailInvite, setShowEmailInvite] = useState(false);
-  const [emailInviteBusy, setEmailInviteBusy] = useState(false);
-  const [emailEnabledToast, setEmailEnabledToast] = useState(false);
 
   const [isReadingImage, setIsReadingImage] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -305,48 +302,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
     setSaveToast({ word, isFirstTime });
     saveToastTimerRef.current = setTimeout(() => {
       setSaveToast(null);
-      // Right after the first-ever save toast finishes, invite the user to
-      // turn on email reminders — shown at most once ever, regardless of
-      // whether they accept, decline, or ignore it.
-      if (isFirstTime) {
-        try {
-          if (!localStorage.getItem("wordly-seen-email-invite")) {
-            localStorage.setItem("wordly-seen-email-invite", "1");
-            setShowEmailInvite(true);
-          }
-        } catch { /* localStorage unavailable — skip the invite */ }
-      }
     }, isFirstTime ? 6000 : 2500);
-  };
-
-  const handleEnableEmailReminders = async () => {
-    setEmailInviteBusy(true);
-    try {
-      const prefRes = await fetch("/api/email-preferences", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: true, frequency: "daily", custom_days: [] }),
-      });
-      if (!prefRes.ok) throw new Error("Failed to enable email preferences");
-      await fetch("/api/email-slots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ send_time: "08:00" }),
-      });
-      trackEvent("email_invite_accepted");
-      setShowEmailInvite(false);
-      setEmailEnabledToast(true);
-      setTimeout(() => setEmailEnabledToast(false), 3000);
-    } catch {
-      setEmailInviteBusy(false); // leave the banner open so the user can retry
-      return;
-    }
-    setEmailInviteBusy(false);
-  };
-
-  const dismissEmailInvite = () => {
-    trackEvent("email_invite_dismissed");
-    setShowEmailInvite(false);
   };
 
   const handleAskAI = () => {
@@ -662,7 +618,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
                   color: saved ? "var(--electric)" : "var(--ink-soft)",
                   border: saved ? "1px solid var(--green-subtle-border)" : "1px solid transparent",
                 }}
-                title={saved ? "Đã lưu — sẽ được nhắc ôn tập qua email" : "Lưu để được nhắc ôn tập qua email"}
+                title={saved ? "Đã lưu — sẽ có trong ôn tập" : "Lưu để ôn tập sau"}
               >
                 {saved ? "Đã lưu" : "Lưu"}
               </button>
@@ -833,7 +789,7 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
 
       </div>
 
-      {/* ── Save toast — confirms the word was saved and explains the email tie-in ── */}
+      {/* ── Save toast — confirms the word was saved ── */}
       {saveToast && (
         <div
           className="fixed left-1/2 z-[300] -translate-x-1/2 flex items-start gap-2.5 px-4 py-3 rounded-2xl animate-fade-in"
@@ -851,8 +807,8 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
             </p>
             <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
               {saveToast.isFirstTime
-                ? "Từ đã lưu sẽ được gửi nhắc ôn tập qua email theo lịch trình học của bạn."
-                : "Sẽ được nhắc ôn tập qua email."}
+                ? "Từ đã lưu sẽ có trong quiz, widget và thông báo nhắc ôn trên app."
+                : "Đã thêm vào danh sách ôn tập."}
             </p>
           </div>
           <button
@@ -865,76 +821,6 @@ export default function InlineTranslate({ onTranslated, initialPick, isLoggedIn 
         </div>
       )}
 
-      {/* ── Email invite banner — shown at most once ever, right after the first "Lưu" ── */}
-      {showEmailInvite && (
-        <div
-          className="fixed left-1/2 z-[300] -translate-x-1/2 flex flex-col gap-2.5 px-4 py-3.5 rounded-2xl animate-fade-in"
-          style={{
-            bottom: "max(1.5rem, env(safe-area-inset-bottom))",
-            maxWidth: "min(90vw, 380px)",
-            background: "var(--card-bg)",
-            border: "1px solid var(--green-subtle-border)",
-            boxShadow: "0 12px 32px rgba(0,0,0,0.3)",
-          }}
-        >
-          <div className="flex items-start gap-2.5">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>
-                📬 Nhận nhắc ôn tập mỗi ngày qua email?
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
-                Mặc định 8:00 sáng — có thể đổi giờ sau trong Cài đặt Email.
-              </p>
-            </div>
-            <button
-              onClick={dismissEmailInvite}
-              className="no-min-h p-1 rounded-lg flex-shrink-0"
-              style={{ color: "var(--ink-ghost)" }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={dismissEmailInvite}
-              disabled={emailInviteBusy}
-              className="flex-1 py-2 rounded-xl text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
-              style={{ background: "var(--hover-bg)", color: "var(--ink-soft)" }}
-            >
-              Không, cảm ơn
-            </button>
-            <button
-              onClick={handleEnableEmailReminders}
-              disabled={emailInviteBusy}
-              className="flex-1 py-2 rounded-xl text-xs font-bold active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
-              style={{ background: "var(--electric)", color: "var(--on-electric)" }}
-            >
-              {emailInviteBusy ? <Loader2 size={13} className="animate-spin" /> : "Bật ngay →"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Confirmation toast after enabling email reminders from the invite ── */}
-      {emailEnabledToast && (
-        <div
-          className="fixed left-1/2 z-[300] -translate-x-1/2 px-4 py-3 rounded-2xl animate-fade-in"
-          style={{
-            bottom: "max(1.5rem, env(safe-area-inset-bottom))",
-            maxWidth: "min(90vw, 380px)",
-            background: "var(--card-bg)",
-            border: "1px solid var(--green-subtle-border)",
-            boxShadow: "0 12px 32px rgba(0,0,0,0.3)",
-          }}
-        >
-          <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>
-            ✓ Đã bật nhắc email lúc 8:00
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
-            Đổi giờ trong Cài đặt Email bất cứ lúc nào.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
