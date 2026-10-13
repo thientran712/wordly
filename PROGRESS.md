@@ -12,21 +12,19 @@
 - **PR #27 (iOS, chưa lên TestFlight):** 51 theme widget chia 4 nhóm chọn bằng dropdown — thêm 25 theme lấy cảm hứng hoạt hình/siêu anh hùng (tên gợi tả, **không** dùng tên nhân vật/thương hiệu — App Store 5.2), tất cả đạt WCAG AA; mặc định người dùng mới = theme Wordly (màu cũ chỉ ~2.1–2.4, ai đã lưu cài đặt giữ nguyên); nút **Chỉnh lại khung** ảnh nền (lưu bản gốc ≤ 2048 px + khung từng cỡ; ảnh đặt từ build 15 phải chọn lại một lần). Unit iOS 194/194.
 - **PR #28: deploy production bằng nút bấm** (workflow `Deploy — production`, blue/green, `/api/health` báo commit). Chạy trên máy GitHub vì repo public (không dùng runner tự host). Web 310/310, build sạch.
 
-**⚠️ Việc 1 của phiên sau — chủ dự án chạy MỘT lệnh (Claude bị chặn vì cấp quyền trên server):**
-```
-bash infra/vps/web/setup-ci-deploy.sh
-```
-Script: cài lệnh chuyển upstream + sudo hẹp cho `deploy-wordly`, chuyển nginx sang `upstream wordly_web` (vẫn trỏ 13500 — người dùng không thấy gì), bản sao repo + `deploy-sha.sh`/`swap.sh` trên VPS, tạo khoá CI + GitHub secrets, tự kiểm khoá CI chỉ chạy được deploy-sha.sh. Sau đó bấm **Actions → Deploy — production** (hoặc `gh workflow run deploy-production.yml`) để deploy lần đầu → kiểm `https://app.wordly.skillproof.work/api/health` báo đúng commit, cron email vẫn chạy (`send-emails-cron.sh` đọc `ACTIVE_PORT`). **Từ đây production chỉ deploy qua nút này, không deploy tay nữa.**
+**✅ Deploy production qua CI ĐÃ CHẠY (13/10):** chủ dự án chạy `infra/vps/web/setup-ci-deploy.sh`; lần deploy đầu `7b79bb1` qua workflow → màu **blue** (cổng 13501), `/api/health` báo đúng commit, cron email chạy (`checked: 8`), log không lỗi; gọi thử production mỗi giây trong lúc swap: 56/56 lượt 200 (không gián đoạn). Container deploy tay cũ (`web-web-1`, cổng 13500) đã gỡ.
+- **Từ giờ production chỉ deploy bằng:** Actions → **Deploy — production** → Run workflow (hoặc `gh workflow run deploy-production.yml`). Quay về: chạy lại với `sha` = commit cũ hơn của main (giữ 5 image gần nhất trên VPS).
+- Migration SQL vẫn chạy tay **trước** khi deploy (swap.sh không tự migrate).
+- Lưu ý: trong khung chat extension VS Code, lệnh bắt đầu bằng `!` **không chạy** — phải dán vào Terminal (Ctrl + `).
 
 **Việc có thể làm tiếp, theo thứ tự đề xuất:**
-1. Chạy script trên + deploy lần đầu qua CI (xem trên).
-2. **Lên plan tính năng Push notification** (chủ dự án yêu cầu 13/10): nhắc ôn từ / từ mỗi ngày qua APNs thay hoặc bổ sung email. Cần brainstorm → spec → plan: lưu device token (bảng mới + RLS), gửi từ cron VPS (APNs key `.p8`, HTTP/2), quyền thông báo trong app, khung giờ theo `email_slots` hay riêng, hạn mức/tắt, deep link mở đúng từ (đã có cho widget).
-3. **Đối chiếu migration với DB production** (self-host không có bảng lịch sử migration; đã sót `suggestion_log` từ 10/10) — thêm `schema_migrations` hoặc script kiểm.
-4. Khi Apple duyệt 1.0 (build 14): phát hành; sau đó nộp 1.0.1 bằng build 16 (gồm PR #27).
-5. Email Resend (nhánh `feat/email-provider-resend`, WIP `aeb12f6`): rebase lên main (xung đột `cron-send-emails.js` với #21), xác minh domain, chọn gói.
-6. Kho từ song ngữ (spec `2026-10-12-wordbank-design.md`, tạm dừng): lô thử 200 từ hiếm.
-7. Gói Pro cho 1.1 (StoreKit, đề xuất 29k/tháng – 249k/năm): cần spec.
-8. Luyện nói với Alex đang ẩn (`AppRouter.alexPracticeEnabled = false`) — quyết định bật lại.
+1. **Lên plan tính năng Push notification** (chủ dự án yêu cầu 13/10): nhắc ôn từ / từ mỗi ngày qua APNs thay hoặc bổ sung email. Cần brainstorm → spec → plan: lưu device token (bảng mới + RLS), gửi từ cron VPS (APNs key `.p8`, HTTP/2), quyền thông báo trong app, khung giờ theo `email_slots` hay riêng, hạn mức/tắt, deep link mở đúng từ (đã có cho widget).
+2. **Đối chiếu migration với DB production** (self-host không có bảng lịch sử migration; đã sót `suggestion_log` từ 10/10) — thêm `schema_migrations` hoặc script kiểm.
+3. Khi Apple duyệt 1.0 (build 14): phát hành; sau đó nộp 1.0.1 bằng build 16 (gồm PR #27).
+4. Email Resend (nhánh `feat/email-provider-resend`, WIP `aeb12f6`): rebase lên main (xung đột `cron-send-emails.js` với #21), xác minh domain, chọn gói.
+5. Kho từ song ngữ (spec `2026-10-12-wordbank-design.md`, tạm dừng): lô thử 200 từ hiếm.
+6. Gói Pro cho 1.1 (StoreKit, đề xuất 29k/tháng – 249k/năm): cần spec.
+7. Luyện nói với Alex đang ẩn (`AppRouter.alexPracticeEnabled = false`) — quyết định bật lại.
 
 **Lưu ý môi trường (máy dev):**
 - Supabase local: cổng mặc định bị dự án BedWar chiếm → khi chạy test RLS, đổi tạm cổng sang `553xx` trong `supabase/config.toml` (**không commit**), tạo `web/.env.test.local` từ `npx supabase status -o env`.
