@@ -9,19 +9,25 @@ struct VocabularyHubView: View {
     // SavedWordsView bị tạo mới hoàn toàn (switch trong Group), load() chạy
     // lại từ đầu mỗi lần, cảm giác giật/lag dù dữ liệu không đổi.
     @StateObject private var savedVM = SavedWordsViewModel()
+    @StateObject private var remindedVM = RemindedViewModel()
 
     var body: some View {
         NavigationStack {
             Group {
                 switch router.vocabMode {
+                case .reminded: RemindedWordsView(vm: remindedVM)
                 case .saved: SavedWordsView(vm: savedVM)
                 case .topics: TopicVocabularyView()
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 HubPicker(options: AppRouter.VocabMode.allCases, selection: $router.vocabMode,
-                          title: { $0 == .saved ? "Đã lưu" : "Từ mới" },
-                          icon: { $0 == .saved ? "bookmark.fill" : "square.grid.2x2.fill" })
+                          title: { mode in
+                              switch mode { case .reminded: "Đã nhắc"; case .saved: "Đã lưu"; case .topics: "Từ mới" }
+                          },
+                          icon: { mode in
+                              switch mode { case .reminded: "bell.fill"; case .saved: "bookmark.fill"; case .topics: "square.grid.2x2.fill" }
+                          })
                     .background(WordlyColors.background)
             }
         }
@@ -101,7 +107,7 @@ struct SavedWordsView: View {
                     ProgressView().tint(WordlyColors.electric).frame(maxWidth: .infinity).padding(30)
                 } else if vm.saved.isEmpty {
                     EmptyStateView(systemImage: "bookmark", title: "Chưa lưu từ nào",
-                                   message: "Dịch một từ rồi bấm Lưu — từ sẽ vào quiz, email nhắc học và widget.",
+                                   message: "Dịch một từ rồi bấm Lưu — từ sẽ vào quiz, widget và thông báo nhắc ôn.",
                                    actionTitle: "Đi dịch ngay") { router.selectedTab = .translate }
                         .wordlyCard(padding: 0)
                 } else {

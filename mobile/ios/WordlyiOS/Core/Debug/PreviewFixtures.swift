@@ -1,3 +1,4 @@
+import Foundation
 #if DEBUG
 // Dữ liệu mẫu cho PreviewMode — SINH TỪ PHẢN HỒI THẬT của production (6/10/2026),
 // cắt bớt cho gọn + vài ca tổng hợp (câu ghép đôi, bài đã chấm). Model đổi mà
@@ -30,15 +31,23 @@ enum PreviewFixtures {
     static let wordsByTopic = #"""
 {"words": [{"id": "63b81423-062b-457c-bda8-01f84221aabf", "word": "optimise", "pos": "verb", "level": "C1", "def_en": "to make something as effective or efficient as possible", "ex_en": "The team will optimise the website for better search engine rankings.", "phonetic": null, "topic": "business", "topicLabel": "Business & Strategy", "register": "neutral", "collocations": ["optimise performance", "optimise resources", "optimise workflow"], "usage_notes": null, "frequency": 5, "user_state": null, "due_at": null}, {"id": "0c529bca-cf5b-457b-b978-aca996fba7e5", "word": "prioritize", "pos": "verb", "level": "C1", "def_en": "to decide which things are most important and should be done first", "ex_en": "The team needs to prioritize tasks to meet the deadline.", "phonetic": null, "topic": "business", "topicLabel": "Business & Strategy", "register": "neutral", "collocations": ["prioritize tasks", "prioritize needs", "prioritize goals"], "usage_notes": "avoid using 'prioritize' with 'procrastinate' as they have opposite meanings", "frequency": 5, "user_state": null, "due_at": null}, {"id": "4189b7eb-5804-4d3f-9622-c4d42fc92506", "word": "integrate", "pos": "verb", "level": "C1", "def_en": "to combine two or more systems or components so they work together as one", "ex_en": "We integrated the payment gateway directly into the checkout flow.", "phonetic": null, "topic": "technology", "topicLabel": "Technology & AI", "register": "neutral", "collocations": ["integrate a system", "integrate with", "seamlessly integrate"], "usage_notes": null, "frequency": 5, "user_state": null, "due_at": null}, {"id": "d332f57d-a202-4e08-81eb-23b44ff2a4e0", "word": "analyze", "pos": "verb", "level": "B2", "def_en": "to break something down into smaller parts in order to understand it better", "ex_en": "The team will analyze the market data to identify trends and patterns.", "phonetic": null, "topic": "business", "topicLabel": "Business & Strategy", "register": "neutral", "collocations": ["analyze results", "analyze data", "analyze performance"], "usage_notes": null, "frequency": 5, "user_state": null, "due_at": null}, {"id": "6f12b581-5943-4c6e-bf8f-a74f952732c0", "word": "enhanced", "pos": "adjective", "level": "C1", "def_en": "improved or increased in quality, amount, or degree", "ex_en": "The enhanced training program led to better outcomes.", "phonetic": null, "topic": "psychology", "topicLabel": "Psychology & Behavior", "register": "neutral", "collocations": ["enhanced features", "enhanced experience", "enhanced performance"], "usage_notes": null, "frequency": 5, "user_state": null, "due_at": null}, {"id": "525ce2fa-f7b5-4736-877c-3f5efa6e4f44", "word": "automate", "pos": "verb", "level": "C1", "def_en": "to make a process or system operate using machines or computers instead of people", "ex_en": "The factory automated its packaging line to cut labor costs.", "phonetic": null, "topic": "technology", "topicLabel": "Technology & AI", "register": "neutral", "collocations": ["automate a process", "automate a task", "automate workflows"], "usage_notes": null, "frequency": 5, "user_state": null, "due_at": null}], "total": 7504, "examCounts": {"general": 1200, "toeic": 800, "ielts": 950, "toefl": 600}, "topicCounts": {"business": 120, "technology": 90, "daily": 300}}
 """#
-    static let emailPrefs = #"""
-{"preferences": {"enabled": true, "send_time": "08:00", "frequency": "weekdays", "custom_days": [1, 2, 3, 4, 5]}}
-"""#
-    static let emailSlots = #"""
-{"slots": [{"id": "slot-1", "send_time": "08:00:00", "enabled": true}, {"id": "slot-2", "send_time": "20:30:00", "enabled": true}]}
-"""#
     static let pushPrefs = #"""
 {"preferences": {"enabled": true, "frequency": "daily", "custom_days": [1, 2, 3, 4, 5]}}
 """#
+    /// "Đã nhắc": giờ tính lùi từ lúc chạy để luôn rơi vào hôm nay/hôm qua
+    static var reminded: String {
+        let f = ISO8601DateFormatter()
+        func ago(_ h: Double) -> String { f.string(from: Date().addingTimeInterval(-h * 3600)) }
+        return """
+        {"items": [
+          {"id": "r1", "source": "push", "entry_type": "translate_history", "entry_id": "h1", "shown_at": "\(ago(0.5))", "word": "resilient", "meaning": "kiên cường, mau phục hồi"},
+          {"id": "r2", "source": "widget", "entry_type": "translate_history", "entry_id": "h1", "shown_at": "\(ago(1))", "word": "resilient", "meaning": "kiên cường, mau phục hồi"},
+          {"id": "r3", "source": "widget", "entry_type": "bank", "bank_word_id": "w9", "shown_at": "\(ago(2))", "word": "serendipity", "meaning": "sự tình cờ may mắn"},
+          {"id": "r4", "source": "push", "entry_type": "translate_history", "entry_id": "h2", "shown_at": "\(ago(26))", "word": "take for granted", "meaning": "coi là đương nhiên"},
+          {"id": "r5", "source": "email", "entry_type": "translate_history", "entry_id": "h3", "shown_at": "\(ago(27))", "word": "eager", "meaning": "háo hức"}
+        ], "hasMore": false}
+        """
+    }
     static let pushSlots = #"""
 {"slots": [{"id": "push-1", "send_time": "20:00:00", "enabled": true}]}
 """#

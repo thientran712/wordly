@@ -24,7 +24,8 @@ final class AppRouter: ObservableObject {
     @Published var selectedTab: Tab = AppRouter.startTab
 
     /// Hai chế độ trong tab Từ vựng (đặt ở router để link từ widget chọn được)
-    enum VocabMode: Hashable, CaseIterable { case saved, topics }
+    /// "Đã nhắc" đứng đầu (chủ dự án 13/10/2026); mặc định vẫn mở "Đã lưu".
+    enum VocabMode: Hashable, CaseIterable { case reminded, saved, topics }
     @Published var vocabMode: VocabMode = .saved
     /// Từ vừa bấm trên widget — màn Đã lưu / Từ mới mở popup rồi xoá.
     @Published var widgetWord: WidgetDeepLink?
