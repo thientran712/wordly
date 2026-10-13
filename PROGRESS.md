@@ -3,17 +3,19 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 13/10/2026 (khuya, sau) — Câu push/widget v2 "bựa + trend" trên nhánh `feat/push-copy-v2` (CHƯA commit/deploy)
+### 13/10/2026 (khuya, sau) — Câu push/widget v2 "bựa + trend": ĐÃ deploy production + build 17 đã upload TestFlight
+
+**Phát hành:** PR #38 merge `795c7ad` → deploy production thành công (container `wordly-web:795c7ad`, trong bundle có câu mới, câu cũ không còn; cron push chạy bình thường). **iOS 1.0.0 (17) upload TestFlight 13/10 21:16** (archive từ `main` `795c7ad`; IPA build 17, widget 17, `aps-environment = production`). **Lần upload sau: build 18.** Chưa xem trên máy thật: câu push mới, widget icon lộn xộn.
+
 
 Chủ dự án chê `«từ» = “nghĩa”` phèn → bỏ. Đã duyệt bộ câu mới (mày–tao, meme trend, **không dùng tên người thật**):
 - **Push** (`web/src/lib/push/copy.js`): một câu có lồng từ, xen kẽ theo ngày **Đố** (giấu nghĩa) / **Khoe** (`{w} là {m}`, chỉ nghĩa đầu, nghĩa > 40 ký tự thì chỉ đố); từ > 30 ký tự → mẫu đặt từ cuối; câu "mày lưu…" chỉ cho từ đã lưu. Thêm 7 tiêu đề trend. Câu trend đánh dấu `// trend` để thay khi hết hot. Bằng chứng: unit 400/400, eslint sạch, `next build` Compiled successfully. (`npm test` đầy đủ: RLS push bị huỷ vì Supabase local đang tắt — không liên quan.)
 - **Widget màn hình chính** (`WidgetCopy.swift`, `WordlyWidget.swift`): câu ẩn nghĩa + dòng chọc đổi sang bộ trend; thêm 4 icon rải lộn xộn mờ quanh mép (`WidgetCopy.scatter`, cố định theo id từ). Bằng chứng: iOS unit 226/226 trên simulator `Wordly-Test` (mới tạo), build app + widget thành công. **Chưa xem bằng mắt** trên widget thật (độ mờ 0.35 có đè chữ không).
-- Áp dụng: push cần deploy web production; widget cần build 17.
 
 ### 13/10/2026 (khuya) — BẮT ĐẦU PHIÊN SAU TỪ ĐÂY
 
 **Trạng thái:**
-- **iOS:** 1.0.0 (14) chờ Apple duyệt. **1.0.0 (16) trên TestFlight** (upload 13/10 17:38) — push FCM, widget câu lầy, tab "Đã nhắc", chọn giờ bánh xe, bỏ email. **Lần upload sau: build 17.**
+- **iOS:** 1.0.0 (14) chờ Apple duyệt. **1.0.0 (16) trên TestFlight** (upload 13/10 17:38) — push FCM, widget câu lầy, tab "Đã nhắc", chọn giờ bánh xe, bỏ email. ~~Lần upload sau: build 17~~ → đã có build 17, lần sau **build 18**.
 - **Web production = `82efd7c`** (deploy qua nút *Deploy — production*): push chạy thật (cron 5' chỉ còn push), email nhắc học đã bỏ, **website người học TẮT** (`WEB_UI_ENABLED`, bật lại = đặt `1` trong `/opt/wordly/prod/web/.env` + deploy lại). `main` = `e76c2ae` (sau đó chỉ thêm docs/iOS, chưa cần deploy lại).
 - Migration `20261014000100_push_notifications` **đã chạy production**. Firebase project = Google Cloud project Wordly (`gen-lang-client-0661352497`); key APNs `.p8` đã tải lên Firebase (dev + prod); service account `wordly-fcm-sender` (JSON ở `~/Documents/keys/`, base64 trong `.env` VPS).
 - Không còn PR mở.
