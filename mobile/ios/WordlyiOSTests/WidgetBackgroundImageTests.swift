@@ -202,4 +202,32 @@ final class WidgetBackgroundImageTests: XCTestCase {
         try Data(count: WidgetBackgroundStore.maxFileBytes + 1).write(to: dir.appendingPathComponent("widget-bg-medium-1.jpg"))
         XCTAssertNil(store.load(.medium, version: 1))
     }
+
+    // MARK: - Chỉnh lại khung không cần chọn lại ảnh
+
+    func testSourceIsSavedAndKeptWithItsVersion() throws {
+        let (store, _) = tempStore()
+        let src = WidgetImageIO.downsample(data: makeImageData(width: 3000, height: 2000), maxPixel: 2048)!
+        let v1 = try store.save(renderedFiles(), source: src, previous: 0)
+        XCTAssertEqual(store.loadSource(version: v1)?.width, 2048)
+        let v2 = try store.save(renderedFiles(), source: src, previous: v1)
+        store.removeAll(except: v2)
+        XCTAssertNil(store.loadSource(version: v1))
+        XCTAssertNotNil(store.loadSource(version: v2), "bản gốc thu nhỏ của phiên bản đang dùng phải còn")
+        XCTAssertNotNil(store.load(.small, version: v2))
+        store.removeAll(except: 0)
+        XCTAssertNil(store.loadSource(version: v2))
+    }
+
+    func testCropFramesPersistInHomeStyle() throws {
+        var s = WidgetSettings.HomeStyle()
+        XCTAssertNil(s.crop(for: .small))
+        s.setCrop(CropFrame(zoom: 2, center: CGPoint(x: 0.3, y: 0.7)), for: .small)
+        s.setCrop(CropFrame(zoom: 1.5, center: CGPoint(x: 0.6, y: 0.4)), for: .medium)
+        let back = try JSONDecoder().decode(WidgetSettings.HomeStyle.self, from: JSONEncoder().encode(s))
+        XCTAssertEqual(back.crop(for: .small), CropFrame(zoom: 2, center: CGPoint(x: 0.3, y: 0.7)))
+        XCTAssertEqual(back.crop(for: .medium)?.zoom, 1.5)
+        let old = try JSONDecoder().decode(WidgetSettings.HomeStyle.self, from: Data("{}".utf8))
+        XCTAssertNil(old.crop(for: .medium))
+    }
 }

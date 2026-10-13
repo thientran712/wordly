@@ -56,7 +56,16 @@ struct WidgetBackgroundEditorView: View {
                 }
             }
             .onAppear {
-                if vm.settings.homeStyle.hasBackgroundImage { dim = vm.settings.homeStyle.backgroundDim }
+                let style = vm.settings.homeStyle
+                guard style.hasBackgroundImage else { return }
+                dim = style.backgroundDim
+                // Mở lại ảnh đang dùng → khung cũ; ảnh mới chọn thì khung giữa.
+                if let saved = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup).loadSource(version: style.backgroundVersion),
+                   saved.width == source.width, saved.height == source.height {
+                    for k in WidgetBackgroundKind.allCases {
+                        if let f = style.crop(for: k) { frames[k] = f.clamped(imageSize: imageSize, aspect: k.aspect) }
+                    }
+                }
             }
         }
     }
@@ -142,11 +151,12 @@ struct WidgetBackgroundEditorView: View {
             files[k] = data
         }
         do {
-            let v = try store.save(files, previous: vm.settings.homeStyle.backgroundVersion)
+            let v = try store.save(files, source: source, previous: vm.settings.homeStyle.backgroundVersion)
             // Đổi cài đặt (didSet lưu App Group + reload widget) rồi mới dọn bản cũ
             var style = vm.settings.homeStyle
             style.backgroundVersion = v
             style.backgroundDim = dim
+            for k in WidgetBackgroundKind.allCases { style.setCrop(frames[k], for: k) }
             vm.settings.homeStyle = style
             store.removeAll(except: v)
             onDone()

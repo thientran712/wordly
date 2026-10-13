@@ -26,7 +26,7 @@ enum WidgetBackgroundKind: String, CaseIterable {
 }
 
 /// Vị trí + độ phóng người dùng chọn trên màn chỉnh khung.
-struct CropFrame: Equatable {
+struct CropFrame: Equatable, Codable {
     static let maxZoom: CGFloat = 8
     var zoom: CGFloat = 1
     /// Tâm khung theo ảnh, chuẩn hoá 0…1
@@ -103,6 +103,9 @@ enum WidgetImageIO {
 /// đổi cài đặt sang nó, nên widget không bao giờ đọc phải file đang ghi dở.
 struct WidgetBackgroundStore {
     static let maxFileBytes = 1_000_000
+    /// Bản gốc đã thu nhỏ ≤ 2048 px (chỉ app đọc, để chỉnh lại khung)
+    static let maxSourceBytes = 5_000_000
+    static let sourceMaxPixel = 2048
     let directory: URL?
 
     init(directory: URL?) { self.directory = directory }
@@ -115,21 +118,39 @@ struct WidgetBackgroundStore {
         directory?.appendingPathComponent("widget-bg-\(kind.rawValue)-\(version).jpg")
     }
 
-    /// Ghi phiên bản `previous + 1`. Không xoá bản cũ — gọi `removeAll(except:)`
-    /// sau khi cài đặt đã trỏ sang bản mới.
-    func save(_ files: [WidgetBackgroundKind: Data], previous: Int) throws -> Int {
+    private func sourceURL(_ version: Int) -> URL? {
+        directory?.appendingPathComponent("widget-bg-source-\(version).jpg")
+    }
+
+    /// Ghi phiên bản `previous + 1` (kèm bản gốc thu nhỏ nếu có, để chỉnh lại
+    /// khung sau này). Không xoá bản cũ — gọi `removeAll(except:)` sau khi cài
+    /// đặt đã trỏ sang bản mới.
+    func save(_ files: [WidgetBackgroundKind: Data], source: CGImage? = nil, previous: Int) throws -> Int {
         let version = previous + 1
         for (kind, data) in files {
             guard let url = url(kind, version) else { throw CocoaError(.fileNoSuchFile) }
             try data.write(to: url, options: .atomic)
         }
+        if let source, let url = sourceURL(version),
+           let data = UIImage(cgImage: source).jpegData(compressionQuality: 0.85) {
+            try data.write(to: url, options: .atomic)
+        }
         return version
+    }
+
+    /// Bản gốc thu nhỏ của phiên bản `version` — nil nếu không có / lỗi.
+    func loadSource(version: Int) -> CGImage? {
+        guard version > 0, let url = sourceURL(version),
+              let size = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int,
+              size <= Self.maxSourceBytes else { return nil }
+        return WidgetImageIO.downsample(url: url, maxPixel: Self.sourceMaxPixel)
     }
 
     /// `version = 0` xoá hết.
     func removeAll(except version: Int) {
         guard let directory, let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else { return }
-        let keep = Set(WidgetBackgroundKind.allCases.compactMap { url($0, version)?.lastPathComponent })
+        let keep = Set(WidgetBackgroundKind.allCases.compactMap { url($0, version)?.lastPathComponent }
+                       + [sourceURL(version)?.lastPathComponent].compactMap { $0 })
         for name in names where name.hasPrefix("widget-bg-") && !(version > 0 && keep.contains(name)) {
             try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
         }
