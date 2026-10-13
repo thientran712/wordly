@@ -40,8 +40,10 @@ enum ReminderScheduleLogic {
         return m % 30 == 0 && (time.count <= 5 || time.hasSuffix(":00"))
     }
 
-    /// Lỗi khi đặt giờ này (nil = được) — cùng câu chữ với server.
-    static func conflict(for time: String, others: [String]) -> String? {
+    /// Lỗi khi đặt giờ này (nil = được) — cùng câu chữ với server. Chọn lại
+    /// đúng giờ hiện tại của chính khung (`current`, kể cả giờ lẻ cũ) → được.
+    static func conflict(for time: String, others: [String], current: String? = nil) -> String? {
+        if let current, short(current) == short(time) { return nil }
         guard isHalfHour(time) else { return halfHourError }
         let t = short(time)
         return others.map(short).contains(t) ? "Đã có khung giờ \(t)" : nil

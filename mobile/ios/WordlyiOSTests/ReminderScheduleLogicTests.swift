@@ -68,4 +68,11 @@ final class ReminderScheduleLogicTests: XCTestCase {
         XCTAssertEqual(ReminderScheduleLogic.suggestedNewTime(existing: ["23:30:00", "00:00:00"], fallback: "20:00"), "00:30")
         XCTAssertEqual(ReminderScheduleLogic.suggestedNewTime(existing: ["08:15:00"], fallback: "20:00"), "08:30")
     }
+
+    /// Review #4: chọn lại đúng giờ lẻ cũ của chính khung (menu hiện "08:15" đầu tiên) → không lỗi.
+    func testPickingOwnLegacyTimeIsNoConflict() {
+        XCTAssertNil(ReminderScheduleLogic.conflict(for: "08:15", others: ["20:00:00"], current: "08:15:00"))
+        XCTAssertEqual(ReminderScheduleLogic.conflict(for: "08:45", others: [], current: "08:15:00"),
+                       ReminderScheduleLogic.halfHourError)
+    }
 }

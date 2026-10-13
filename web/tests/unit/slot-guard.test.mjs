@@ -58,3 +58,13 @@ test("DB lỗi → 500, không cho qua", async () => {
   const r = await guardSlotTime(fakeSupabase([], { error: { message: "boom" } }), { table: "email_slots", userId: "u1", value: "09:00" });
   assert.deepEqual(r, { ok: false, status: 500, error: "boom" });
 });
+
+test("PUT lại đúng giờ LẺ cũ của chính khung đó (08:15) → chấp nhận, giữ nguyên (Review Focus #4)", async () => {
+  const r = await guardSlotTime(fakeSupabase(rows), { table: "email_slots", userId: "u1", value: "08:15", excludeId: "s1" });
+  assert.deepEqual(r, { ok: true, time: "08:15" });
+});
+
+test("giờ lẻ của khung KHÁC không được mượn: s2 đổi sang 08:15 → vẫn lỗi mốc", async () => {
+  const r = await guardSlotTime(fakeSupabase(rows), { table: "email_slots", userId: "u1", value: "08:15", excludeId: "s2" });
+  assert.equal(r.status, 400);
+});

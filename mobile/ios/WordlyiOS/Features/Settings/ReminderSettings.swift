@@ -72,8 +72,9 @@ final class ReminderSettingsViewModel: ObservableObject {
 
     /// Đổi giờ: kiểm ở máy trước (cùng luật server); server từ chối → trả giờ cũ + báo lỗi.
     func update(_ slot: EmailSlot, to time: String) async {
+        guard String(slot.sendTime.prefix(5)) != String(time.prefix(5)) else { return } // chọn lại giờ cũ: không đổi gì
         let others = slots.filter { $0.id != slot.id }.map(\.sendTime)
-        if let msg = ReminderScheduleLogic.conflict(for: time, others: others) { error = msg; return }
+        if let msg = ReminderScheduleLogic.conflict(for: time, others: others, current: slot.sendTime) { error = msg; return }
         guard let i = slots.firstIndex(where: { $0.id == slot.id }) else { return }
         let old = slots[i]
         slots[i] = EmailSlot(id: slot.id, sendTime: time)
