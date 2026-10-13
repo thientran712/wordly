@@ -5,7 +5,7 @@ import XCTest
 final class ReminderTimePickerUITests: XCTestCase {
     func testTimeRowOpensCompactWheelAndAppliesOnDone() {
         let app = XCUIApplication()
-        app.launchArguments = ["-WordlyUIPreview", "profile", "-WordlyUIPreviewScreen", "email"]
+        app.launchArguments = ["-WordlyUIPreview", "profile", "-WordlyUIPreviewScreen", "push"]
         app.launch()
 
         let row = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Gửi lúc'")).firstMatch
@@ -19,15 +19,15 @@ final class ReminderTimePickerUITests: XCTestCase {
         shot.lifetime = .keepAlways
         add(shot)
         XCTAssertTrue(opened, "bấm dòng giờ phải mở bánh xe chọn giờ")
-        XCTAssertEqual(wheel.value as? String, "08:00")
+        XCTAssertEqual(wheel.value as? String, "20:00")
         // Tấm chọn giờ gọn: không cao quá nửa màn hình
         XCTAssertLessThan(wheel.frame.minY, app.frame.height, "bánh xe phải nằm trong màn")
         XCTAssertGreaterThan(wheel.frame.minY, app.frame.height / 2, "tấm chọn giờ chỉ chiếm nửa dưới màn hình")
 
-        wheel.adjust(toPickerWheelValue: "09:00")
+        wheel.adjust(toPickerWheelValue: "21:00")
         app.buttons["Xong"].tap()
         XCTAssertFalse(wheel.waitForExistence(timeout: 1) && wheel.isHittable, "Xong phải đóng tấm chọn giờ")
-        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS '09:00'")).firstMatch
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS '21:00'")).firstMatch
             .waitForExistence(timeout: 3), "dòng giờ phải hiện giờ vừa chọn")
     }
 }

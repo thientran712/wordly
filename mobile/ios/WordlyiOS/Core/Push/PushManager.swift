@@ -91,7 +91,7 @@ final class PushManager: NSObject, ObservableObject {
         guard await requestPermission() else { return false }
         let prefs = EmailPreferences(enabled: true, frequency: "daily", customDays: [1, 2, 3, 4, 5])
         do {
-            try await APIClient.shared.saveReminderPreferences(prefs, .push)
+            try await APIClient.shared.savePushPreferences(prefs)
             await syncIfNeeded(force: true)
             return true
         } catch {
@@ -110,10 +110,10 @@ extension PushManager: MessagingDelegate {
 }
 
 extension PushManager: UNUserNotificationCenterDelegate {
-    /// App đang mở vẫn hiện banner.
+    /// App đang mở vẫn hiện banner, nhưng không kêu.
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        PushLogic.foregroundPresentation
     }
 
     /// Bấm thông báo → mở đúng từ (cùng đường với bấm widget).

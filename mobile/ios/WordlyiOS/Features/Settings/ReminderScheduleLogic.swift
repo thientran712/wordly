@@ -1,6 +1,6 @@
 import Foundation
 
-/// Logic thuần lịch nhắc dùng chung cho Email và Thông báo (mốc :00/:30 — spec 2026-10-13 mục 9).
+/// Logic thuần lịch thông báo nhắc ôn (mốc :00/:30 — spec 2026-10-13 mục 9).
 enum ReminderScheduleLogic {
     struct Day: Identifiable, Hashable {
         let value: Int      // web custom_days: 0 = CN … 6 = T7

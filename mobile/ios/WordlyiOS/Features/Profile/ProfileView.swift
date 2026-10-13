@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Tab Cá nhân: chuỗi ngày học + hồ sơ & cài đặt — gom các mục của web (/profile, /profile/email) + cài đặt
+// Tab Cá nhân: chuỗi ngày học + hồ sơ & cài đặt — gom các mục của web (/profile) + cài đặt
 // riêng của app (widget màn hình khoá, giao diện).
 struct ProfileView: View {
     @StateObject private var vm = ProfileViewModel()
@@ -9,7 +9,6 @@ struct ProfileView: View {
     @AppStorage("wordly-theme") private var savedTheme: String = "dark"
     @State private var showChangePassword = false
     @State private var confirmSignOut = false
-    @State private var emailSummary = ""
     @State private var pushSummary = ""
     @State private var streak: StreakResponse?
     @State private var confirmDelete = false
@@ -29,9 +28,6 @@ struct ProfileView: View {
                     .listRowInsets(EdgeInsets())
 
                 Section("Nhắc học") {
-                    NavigationLink { EmailSettingsView() } label: {
-                        settingRow("envelope.fill", WordlyColors.duoBlue, "Email nhắc học", emailSummary)
-                    }
                     NavigationLink { PushSettingsView() } label: {
                         settingRow("bell.badge.fill", WordlyColors.electric, "Thông báo nhắc ôn", pushSummary)
                     }
@@ -99,12 +95,7 @@ struct ProfileView: View {
             .task {
                 streak = try? await APIClient.shared.fetchStreak()
                 await vm.fetchProfile()
-                if let p = try? await APIClient.shared.fetchEmailPreferences() {
-                    emailSummary = ReminderScheduleLogic.summary(p)
-                } else {
-                    emailSummary = "Đang tắt"
-                }
-                if let p = try? await APIClient.shared.fetchReminderPreferences(.push) {
+                if let p = try? await APIClient.shared.fetchPushPreferences() {
                     pushSummary = ReminderScheduleLogic.summary(p)
                 } else {
                     pushSummary = "Đang tắt"

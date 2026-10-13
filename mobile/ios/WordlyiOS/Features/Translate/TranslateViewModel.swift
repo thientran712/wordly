@@ -4,7 +4,7 @@ import Combine
 
 /// Màn Dịch & tra từ — hành vi giống web (components/home/InlineTranslate.js):
 /// dịch tự động khi gõ, gợi ý từ (Datamuse), từ điển AI cho từ đơn, tự ghi lịch
-/// sử sau 10 giây, nút Lưu đánh dấu "Đã lưu" (vào quiz + widget + email ôn tập).
+/// sử sau 10 giây, nút Lưu đánh dấu "Đã lưu" (vào quiz + widget + thông báo nhắc ôn).
 @MainActor
 final class TranslateViewModel: ObservableObject {
     enum Direction: String, CaseIterable {

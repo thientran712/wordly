@@ -46,4 +46,12 @@ final class PushLogicTests: XCTestCase {
     func testMissingFirebasePlistIsDetected() {
         XCTAssertFalse(PushLogic.hasFirebaseConfig(Bundle(for: PushLogicTests.self)))
     }
+
+    /// App đang mở: vẫn hiện banner (không mất lần nhắc) nhưng không kêu — người
+    /// dùng đang nhìn màn hình rồi (chủ dự án 13/10/2026).
+    func testForegroundShowsBannerWithoutSound() {
+        XCTAssertTrue(PushLogic.foregroundPresentation.contains(.banner))
+        XCTAssertTrue(PushLogic.foregroundPresentation.contains(.list))
+        XCTAssertFalse(PushLogic.foregroundPresentation.contains(.sound))
+    }
 }
