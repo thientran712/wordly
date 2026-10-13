@@ -48,3 +48,19 @@ test("nghĩa rỗng → body mặc định, vẫn có link", () => {
   assert.equal(m.apns.payload.aps.alert.body, "Chạm để ôn lại từ này");
   assert.match(m.data.link, /^wordly:\/\/word\?id=1&w=x&m=&bank=0$/);
 });
+
+test("từ/nghĩa rất dài (câu đã lưu) → message vẫn < 4 KB của APNs (review #3)", () => {
+  const longVi = "Người học tiếng Anh cần ôn tập thường xuyên để ghi nhớ lâu dài. ".repeat(40); // ~2.500 ký tự có dấu
+  const m = buildPushMessage({ token: "T".repeat(160), word: { id: "abc", word: longVi, meaning: longVi, fromBank: false }, now: new Date() });
+  const bytes = Buffer.byteLength(JSON.stringify(m), "utf8");
+  assert.ok(bytes < 4000, `message ${bytes} bytes`);
+  assert.ok(Array.from(m.apns.payload.aps.alert.title).length <= 100);
+  assert.ok(m.apns.payload.aps.alert.title.endsWith("…"));
+});
+
+test("link cắt w/m theo ký tự rồi mới mã hoá — vẫn đọc lại được", () => {
+  const link = pushLink({ id: "1", word: "đ".repeat(200), meaning: "ờ".repeat(300), fromBank: false });
+  const u = new URL(link.replace("wordly://", "https://x/"));
+  assert.equal(Array.from(u.searchParams.get("w")).length, 60);
+  assert.equal(Array.from(u.searchParams.get("m")).length, 120);
+});
