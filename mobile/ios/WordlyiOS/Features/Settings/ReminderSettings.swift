@@ -123,10 +123,16 @@ struct ReminderSettingsForm: View {
     @ObservedObject var vm: ReminderSettingsViewModel
     let toggleTitle: String
     let toggleSubtitle: String
+    /// Chỉ gọi khi NGƯỜI DÙNG gạt công tắc — không gọi khi cài đặt tải về
+    /// (màn Thông báo xin quyền iOS ở đây, không phải lúc mở màn).
+    var onToggle: ((Bool) -> Void)? = nil
 
     var body: some View {
         Section {
-            Toggle(isOn: $vm.prefs.enabled) {
+            Toggle(isOn: Binding(
+                get: { vm.prefs.enabled },
+                set: { vm.prefs.enabled = $0; onToggle?($0) }
+            )) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(toggleTitle).font(WordlyFonts.body(15, weight: .semibold))
                     Text(toggleSubtitle).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)

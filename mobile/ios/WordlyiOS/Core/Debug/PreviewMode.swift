@@ -55,6 +55,8 @@ enum PreviewMode {
         case ("GET", "/api/email-slots"): json = PreviewFixtures.emailSlots
         case ("POST", "/api/email-slots"): json = #"{"slot": {"id": "slot-new", "send_time": "12:00:00"}}"#
         case ("POST", "/api/email/test"): json = #"{"success": true}"#
+        case ("GET", "/api/push/preferences"), ("PUT", "/api/push/preferences"): json = PreviewFixtures.pushPrefs
+        case ("GET", "/api/push/slots"): json = PreviewFixtures.pushSlots
         case ("POST", "/api/journal"):
             json = #"{"entry": {"id": "j-new", "content": "New entry", "created_at": "2026-10-06T09:00:00.000000+00:00"}}"#
         case ("PUT", "/api/profile"): json = #"{"success": true, "profile": {"id": "u1", "name": "Thiên"}}"#
@@ -121,6 +123,7 @@ enum PreviewScreens {
         case "spinner": SpeakSpinnerView()
         case "journal": JournalView()
         case "email": EmailSettingsView()
+        case "push": PushSettingsView()
         case "widget": WidgetSettingsView()
         case "homestyle": NavigationStack { HomeStyleView(vm: WidgetSettingsViewModel()) }
         case "widgetbg": WidgetBackgroundEditorView(source: sampleBackground, vm: WidgetSettingsViewModel(), onDone: {})

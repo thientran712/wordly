@@ -36,5 +36,11 @@ enum PreviewFixtures {
     static let emailSlots = #"""
 {"slots": [{"id": "slot-1", "send_time": "08:00:00", "enabled": true}, {"id": "slot-2", "send_time": "20:30:00", "enabled": true}]}
 """#
+    static let pushPrefs = #"""
+{"preferences": {"enabled": true, "frequency": "daily", "custom_days": [1, 2, 3, 4, 5]}}
+"""#
+    static let pushSlots = #"""
+{"slots": [{"id": "push-1", "send_time": "20:00:00", "enabled": true}]}
+"""#
 }
 #endif
