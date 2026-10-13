@@ -3,6 +3,32 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 13/10/2026 (khuya) — BẮT ĐẦU PHIÊN SAU TỪ ĐÂY
+
+**Trạng thái:**
+- **iOS:** 1.0.0 (14) chờ Apple duyệt. **1.0.0 (16) trên TestFlight** (upload 13/10 17:38) — push FCM, widget câu lầy, tab "Đã nhắc", chọn giờ bánh xe, bỏ email. **Lần upload sau: build 17.**
+- **Web production = `82efd7c`** (deploy qua nút *Deploy — production*): push chạy thật (cron 5' chỉ còn push), email nhắc học đã bỏ, **website người học TẮT** (`WEB_UI_ENABLED`, bật lại = đặt `1` trong `/opt/wordly/prod/web/.env` + deploy lại). `main` = `e76c2ae` (sau đó chỉ thêm docs/iOS, chưa cần deploy lại).
+- Migration `20261014000100_push_notifications` **đã chạy production**. Firebase project = Google Cloud project Wordly (`gen-lang-client-0661352497`); key APNs `.p8` đã tải lên Firebase (dev + prod); service account `wordly-fcm-sender` (JSON ở `~/Documents/keys/`, base64 trong `.env` VPS).
+- Không còn PR mở.
+
+**Việc tiếp, theo thứ tự đề xuất:**
+1. **Chủ dự án thử build 16 trên máy thật:** widget câu lầy (bật ẩn nghĩa + widget vừa), tab Từ vựng → Đã nhắc, banner không kêu khi đang mở app, tiêu đề push ngắn trên màn hình khoá.
+2. Khi Apple duyệt 1.0 (build 14): phát hành; nộp **1.0.1** bằng build mới (đổi `MARKETING_VERSION` — chủ dự án quyết) và **khai Device ID** trong App Privacy (App Functionality, linked, không tracking).
+3. Nợ nhỏ từ review push (chưa làm): đổi giờ một khung sau khi đã gửi hôm nay → giờ mới bị chặn hết ngày (`push_log` key slot+ngày); "Bật" ở sheet hỏi một lần chưa gọi `updateTimezone`; lỗi đọc `push_devices` ghi nhầm "no devices"; `404 NOT_FOUND` (sai project FCM) chưa coi là lỗi cấu hình; `search_path` hàm SECURITY DEFINER nên để `pg_catalog` trước; `PUT /api/push/slots` rỗng trả 500 thay 400.
+4. Song song push đang 20 (10k người cùng 20:00 → ~15% trễ ≤ 5'); 40 thì đủ trong ~3' (đo local) — quyết tăng khi có số người dùng thật.
+5. Firebase 12 deprecate API token → chuyển sang đăng ký Installation ID trước khi nâng Firebase 13+.
+6. Đối chiếu migration với DB production (self-host không có bảng lịch sử migration).
+7. Dọn: nhánh `feat/email-provider-resend` (email đã bỏ), worktree agent `.claude/worktrees/agent-a5663c155f6938597`, thư mục nháp `.superpowers/sdd/2026-10-13-push-notification/` (gitignore) — cần chủ dự án đồng ý xoá.
+8. Kho từ song ngữ (spec `2026-10-12-wordbank-design.md`, tạm dừng); gói Pro 1.1 (StoreKit, cần spec); Alex đang ẩn (`AppRouter.alexPracticeEnabled = false`).
+
+**Lưu ý môi trường (máy dev):**
+- xcodebuild: `env -u GIT_CONFIG_COUNT -u GIT_CONFIG_KEY_0 -u GIT_CONFIG_VALUE_0 xcodebuild …` + chạy ngoài sandbox (SPM lỗi `safe.bareRepository`). Nhiều thư mục DerivedData cũ — cài app thì lấy `ls -dt …/Wordly.app | head -1`.
+- Upload TestFlight: archive Release → export `method app-store-connect` `destination export` → kiểm IPA có `aps-environment = production` → export lại `destination upload`. (Archive ký Development nên trong archive thấy `development` là bình thường.)
+- UI test quyền thông báo: reboot simulator + gỡ app trước (hộp thoại quyền chưa trả lời sống qua gỡ app).
+- Supabase local: cổng mặc định đang trống (BedWar không chạy); `web/.env.test.local` đã có. Đang **tắt** để đỡ RAM — `npx supabase start` khi cần test RLS.
+- Production DB: `ssh deploy-wordly@167.99.74.215 'docker exec -i supabase-db psql -U postgres -d postgres'` (pipe SQL qua stdin). Log cron: `/opt/wordly/prod/web/send-emails-cron.log`.
+- Simulator duy nhất `BedWar-iPhone16`; iPhone thật của chủ dự án: iPhone 11 (`D6872260-…`, iOS 18.7).
+
 ### 13/10/2026 (tối) — PUSH CHẠY THẬT trên production; bỏ email; tắt website; build 16 sẵn sàng (PR #34)
 
 **Production (đã deploy, `82efd7c`):**
@@ -36,7 +62,7 @@ Spec (đã duyệt) `docs/superpowers/specs/2026-10-13-push-notification-design.
 
 **Môi trường:** Supabase local giờ chạy cổng mặc định (BedWar không chạy), `web/.env.test.local` đã tạo. xcodebuild phải chạy `env -u GIT_CONFIG_COUNT -u GIT_CONFIG_KEY_0 -u GIT_CONFIG_VALUE_0` + ngoài sandbox. UI test quyền thông báo: reboot simulator trước (hộp thoại chưa trả lời sống qua gỡ app).
 
-### 13/10/2026 — BẮT ĐẦU PHIÊN SAU TỪ ĐÂY
+### 13/10/2026 (sáng) — deploy CI, theme widget v2
 
 **Trạng thái:** iOS 1.0.0 (14) chờ Apple duyệt. Build 15 trên TestFlight — chủ dự án thử máy thật OK. `main` có thêm code iOS chưa lên TestFlight (PR #27) → **lần upload sau: build 16**. Web production = `167aff3` (PR #21 cron email phân trang, deploy tay 13/10, quay về: `wordly-web:rollback-pre-167aff3`). Không còn PR nào mở.
 
