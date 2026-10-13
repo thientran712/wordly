@@ -3,6 +3,27 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 13/10/2026 (chiều) — PUSH NOTIFICATION: code + test xong trên nhánh `feat/push-notification` (CHƯA merge/deploy)
+
+Spec (đã duyệt) `docs/superpowers/specs/2026-10-13-push-notification-design.md`, plan `docs/superpowers/plans/2026-10-13-push-notification.md`. Quyết định chủ dự án: push **bổ sung** email, **lịch riêng**, gửi qua **FCM**, giờ nhắc (cả email) **chỉ mốc :00/:30**.
+
+**Đã làm (bằng chứng):**
+- Server: bảng `push_devices/push_preferences/push_slots/push_log` + RLS + `register_push_device` (token thuộc người đăng ký gần nhất — chống rò thông báo chéo), `due_push_slots` (lọc trong Postgres, cửa sổ bù 30'), `cleanup_push_data`. Cron `/api/cron/send-emails` chạy email + push song song (không sửa crontab). FCM HTTP v1 bằng `jose` + `fetch` (không firebase-admin). API `/api/push/devices|preferences|slots` + rate limit. `/api/email-slots` chỉ nhận mốc :00/:30.
+- Web: `npm test` **396/396** (gồm RLS thật trên Supabase local), `next build` sạch, eslint sạch. Smoke HTTP local 18/18 (token chuyển chủ, 429, cron trả `{email, push:{disabled}}`).
+- **Đo tải bắt được lỗi**: RPC `due_push_slots` bị PostgREST cắt 1000 dòng → đã sửa (gọi theo lô). 10k người cùng 20:00 (Postgres local, FCM giả 150ms + chọn từ giả 300ms): song song 20 → 8.501 trong 4 phút, 1.499 gửi bù lượt sau (trễ ≤ 5'); song song 40 → 10.000 trong 2'56". **Đang để 20** (chờ chủ dự án quyết tăng 40 sau khi đo DB production).
+- iOS: menu giờ mốc 30 phút (form dùng chung Email + Thông báo), màn "Thông báo nhắc ôn" trong Cá nhân, PushManager (token khi đăng nhập/đổi, huỷ trước khi đăng xuất, bấm thông báo mở đúng từ qua deep link widget), hỏi bật nhắc **một lần** sau khi lưu từ, khai Device ID trong `PrivacyInfo`. Firebase iOS SDK 12.19.2 (chỉ FirebaseMessaging). Unit **206/206**, UI **17/17** (gồm test mới: mở màn không xin quyền — bắt được lỗi `.onChange` xin quyền ngay khi tải cài đặt).
+
+**Chưa kiểm chứng được (cần cấu hình thật):** gửi FCM thật, nhận thông báo trên iPhone thật, bấm thông báo thật, sheet "hỏi một lần" (chỉ hiện khi có `GoogleService-Info.plist`), migration trên Postgres production.
+
+**Chủ dự án cần làm (Claude hướng dẫn từng bước):**
+1. Apple Developer: tạo key **APNs** (.p8); App ID `com.thientran.wordly` bật **Push Notifications**.
+2. Firebase console (tài khoản huythien712, gắn Google Cloud project Wordly `gen-lang-client-0661352497`): thêm app iOS → tải `GoogleService-Info.plist` vào `mobile/ios/WordlyiOS/App/` (gitignore); tải .p8 lên Cloud Messaging; tạo service account quyền *Firebase Cloud Messaging API Admin*.
+3. **[Cửa]** migration `20261014000100_push_notifications.sql` lên production. 4. Đưa `FCM_PROJECT_ID`, `FCM_SERVICE_ACCOUNT_BASE64` lên VPS (`atlas-secret-handoff`). 5. **[Cửa]** deploy qua nút *Deploy — production*. 6. **[Cửa]** build 16 TestFlight + khai Device ID trên App Store Connect.
+
+**Nợ kỹ thuật mới:** cron email vẫn kéo cả bảng, gửi tuần tự, cửa sổ 5', có thể gửi đôi khi chạy chồng (spec mục 10) — áp khuôn push sau. Firebase 12 deprecate API token (`token()/deleteToken()`) để chuyển sang đăng ký theo Installation ID — phải chuyển trước khi nâng Firebase 13+. Khung email giờ lẻ cũ vẫn gửi; app 1.0 cũ đổi sang giờ lẻ sẽ bị server từ chối im lặng.
+
+**Môi trường:** Supabase local giờ chạy cổng mặc định (BedWar không chạy), `web/.env.test.local` đã tạo. xcodebuild phải chạy `env -u GIT_CONFIG_COUNT -u GIT_CONFIG_KEY_0 -u GIT_CONFIG_VALUE_0` + ngoài sandbox. UI test quyền thông báo: reboot simulator trước (hộp thoại chưa trả lời sống qua gỡ app).
+
 ### 13/10/2026 — BẮT ĐẦU PHIÊN SAU TỪ ĐÂY
 
 **Trạng thái:** iOS 1.0.0 (14) chờ Apple duyệt. Build 15 trên TestFlight — chủ dự án thử máy thật OK. `main` có thêm code iOS chưa lên TestFlight (PR #27) → **lần upload sau: build 16**. Web production = `167aff3` (PR #21 cron email phân trang, deploy tay 13/10, quay về: `wordly-web:rollback-pre-167aff3`). Không còn PR nào mở.
