@@ -1,8 +1,9 @@
+# Một màu (blue/green) của web app — swap.sh chạy với -p wordly-blue / wordly-green.
 services:
   web:
-    image: wordly-web:${IMAGE_TAG:-manual}
+    image: wordly-web:${IMAGE_TAG:?}
     pull_policy: never
     restart: unless-stopped
     env_file: .env
     ports:
-      - "127.0.0.1:13500:3000"
+      - "127.0.0.1:${HOST_PORT:?}:3000"

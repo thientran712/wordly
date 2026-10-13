@@ -1,0 +1,49 @@
+name: Deploy — production
+
+# Bấm nút (hoặc `gh workflow run deploy-production.yml`) để deploy đầu main;
+# điền sha = commit cũ hơn của main để quay về. Runner chỉ gửi SHA qua SSH —
+# VPS tự lấy code từ GitHub, kiểm commit có trên main, build, blue/green.
+# Chạy trên máy GitHub: repo public, KHÔNG dùng runner tự host (PR từ fork
+# chạy được code trên runner). Khoá CI chỉ chạy được deploy-sha.sh (restrict,
+# command=) và chỉ nhận commit đã có trên main — xem infra/vps/web/deploy-sha.sh.
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit để deploy (để trống = đầu main). Commit cũ hơn của main = quay về.
+        required: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions: {}
+    timeout-minutes: 30
+    steps:
+      - name: Yêu cầu VPS deploy
+        env:   # qua env, không ${{ }} trong run: — chống chèn lệnh
+          KEY: ${{ secrets.DEPLOY_KEY_PRODUCTION }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.DEPLOY_HOST_PRODUCTION }}
+          SHA: ${{ inputs.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          d=$(mktemp -d); trap 'rm -rf "$d"' EXIT
+          (umask 077; printf '%s\n' "$KEY" > "$d/key"; printf '%s\n' "$KNOWN_HOSTS" > "$d/known_hosts")
+          ssh -i "$d/key" -o IdentitiesOnly=yes -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$d/known_hosts" \
+              -o ServerAliveInterval=30 \
+              "deploy-wordly@$HOST" "$SHA"
+
+      - name: Kiểm production báo đúng commit
+        env:
+          SHA: ${{ inputs.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          got=$(curl -fsS https://app.wordly.skillproof.work/api/health)
+          echo "$got"
+          echo "$got" | grep -q "\"sha\":\"$SHA\""

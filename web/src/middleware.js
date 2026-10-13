@@ -93,6 +93,7 @@ export async function middleware(request) {
   // là rò dữ liệu chéo trung tâm. Danh sách tường minh loại bỏ rủi ro đó:
   // thêm route mới sẽ mặc định là PROTECTED, phải khai báo mới thành public.
   const PUBLIC_API_PATHS = new Set([
+    "/api/health",
     "/api/translate",
     "/api/dictionary",
     "/api/words/by-topic",
