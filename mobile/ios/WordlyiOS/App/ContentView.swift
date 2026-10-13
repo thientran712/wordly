@@ -72,9 +72,14 @@ struct MainTabView: View {
                 .tag(AppRouter.Tab.profile)
         }
         .tint(WordlyColors.electric)
-        // Mỗi lần mở app → cập nhật từ cho widget màn hình khoá
+        // Đăng nhập (kể cả người khác trên cùng máy) → token chuyển sang người này
+        .task { await PushManager.shared.syncIfNeeded(force: true) }
+        // Mỗi lần mở app → cập nhật từ cho widget màn hình khoá + làm mới token push (≤ 1 lần/ngày)
         .task(id: scenePhase) {
-            if scenePhase == .active { await WidgetSync.refreshIfStale() }
+            if scenePhase == .active {
+                await WidgetSync.refreshIfStale()
+                await PushManager.shared.syncIfNeeded()
+            }
         }
     }
 }

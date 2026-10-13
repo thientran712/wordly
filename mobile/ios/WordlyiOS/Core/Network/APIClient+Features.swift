@@ -110,6 +110,16 @@ extension APIClient {
 
     func fetchEmailPreferences() async throws -> EmailPreferences? { try await fetchReminderPreferences(.email) }
 
+    func registerPushDevice(token: String, appVersion: String) async throws {
+        struct Body: Encodable { let token: String; let platform = "ios"; let app_version: String }
+        _ = try await request(path: "/api/push/devices", method: "POST", body: Body(token: token, app_version: appVersion), responseType: Ok.self)
+    }
+
+    func unregisterPushDevice(token: String) async throws {
+        struct Body: Encodable { let token: String }
+        _ = try await request(path: "/api/push/devices", method: "DELETE", body: Body(token: token), responseType: Ok.self)
+    }
+
     func sendTestEmail() async throws {
         _ = try await request(path: "/api/email/test", method: "POST", responseType: Ok.self)
     }
