@@ -17,6 +17,7 @@ struct LoginView: View {
     /// Mở màn nhập mã xác nhận cho email chưa xác nhận
     @State private var verifyEmail: String?
     @State private var verifySentAt: Date?
+    @State private var errorBanner = AuthErrorBanner()
 
     enum Field { case email, password }
 
@@ -120,6 +121,7 @@ struct LoginView: View {
                             HStack {
                                 Spacer()
                                 Button("Quên mật khẩu?") {
+                                    errorBanner.clear()
                                     showForgotPassword = true
                                 }
                                 .font(WordlyFonts.body(13, weight: .semibold))
@@ -153,7 +155,7 @@ struct LoginView: View {
                         }
 
                         // Error
-                        if let error = authManager.authError {
+                        if let error = errorBanner.message {
                             HStack(spacing: 8) {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(WordlyFonts.body(13))
@@ -166,6 +168,7 @@ struct LoginView: View {
                             .background(WordlyColors.errorSoft)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                             .padding(.horizontal, 24)
+                            .transition(.opacity)
                         }
 
                         // Login button
@@ -252,6 +255,7 @@ struct LoginView: View {
 
                             // Signup button
                             Button {
+                                errorBanner.clear()
                                 showSignup = true
                             } label: {
                                 Text("Tạo tài khoản mới")
@@ -273,6 +277,13 @@ struct LoginView: View {
                 }
             }
         }
+        .autoHidingError($errorBanner)
+        // AuthManager giữ lỗi dùng chung — hiện qua banner, banner ẩn thì xoá
+        // luôn để sheet Đăng ký / lần mở sau không thấy lại lỗi cũ.
+        .onChange(of: authManager.authError) { _, new in errorBanner.show(new) }
+        .onChange(of: errorBanner.message) { _, new in if new == nil { authManager.authError = nil } }
+        .onChange(of: email) { errorBanner.userEdited() }
+        .onChange(of: password) { errorBanner.userEdited() }
         .sheet(isPresented: $showSignup) { SignupView() }
         .sheet(isPresented: $showForgotPassword) { ForgotPasswordView() }
         .sheet(isPresented: Binding(get: { verifyEmail != nil }, set: { if !$0 { verifyEmail = nil } })) {
@@ -318,7 +329,7 @@ struct SignupView: View {
     @State private var confirmPassword = ""
     @State private var isLoading = false
     @State private var showPassword = false
-    @State private var localError: String?
+    @State private var errorBanner = AuthErrorBanner()
     /// Đăng ký xong → chuyển sang nhập mã 6 số cho email này
     @State private var codeEmail: String?
     @State private var codeSentAt: Date?
@@ -353,7 +364,7 @@ struct SignupView: View {
                         }
                         .padding(.horizontal, 24)
 
-                        if let err = localError ?? authManager.authError {
+                        if let err = errorBanner.message {
                             Text(err)
                                 .font(WordlyFonts.body(13, weight: .medium))
                                 .foregroundStyle(WordlyColors.error)
@@ -361,6 +372,7 @@ struct SignupView: View {
                                 .background(WordlyColors.errorSoft)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .padding(.horizontal, 24)
+                                .transition(.opacity)
                         }
 
                         Button {
@@ -383,6 +395,12 @@ struct SignupView: View {
                         .padding(.bottom, 32)
                     }
                 }
+                .autoHidingError($errorBanner)
+                .onChange(of: name) { errorBanner.userEdited() }
+                .onChange(of: email) { errorBanner.userEdited() }
+                .onChange(of: password) { errorBanner.userEdited() }
+                .onChange(of: confirmPassword) { errorBanner.userEdited() }
+                .onChange(of: authManager.authError) { _, new in errorBanner.show(new) }
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -396,9 +414,9 @@ struct SignupView: View {
     }
 
     private func signup() async {
-        localError = nil
-        guard password.count >= 6 else { localError = "Mật khẩu phải có ít nhất 6 ký tự"; return }
-        guard password == confirmPassword else { localError = "Mật khẩu xác nhận không khớp"; return }
+        errorBanner.clear()
+        guard password.count >= 6 else { errorBanner.show("Mật khẩu phải có ít nhất 6 ký tự"); return }
+        guard password == confirmPassword else { errorBanner.show("Mật khẩu xác nhận không khớp"); return }
         isLoading = true
         defer { isLoading = false }
         guard let outcome = try? await authManager.signUp(email: email, password: password, name: name.isEmpty ? nil : name) else { return }
@@ -408,7 +426,7 @@ struct SignupView: View {
             codeSentAt = Date()
             codeEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         case .alreadyRegistered:
-            localError = AuthFlow.message(for: .userExists)
+            errorBanner.show(AuthFlow.message(for: .userExists))
         }
     }
 }
@@ -428,7 +446,7 @@ struct ForgotPasswordView: View {
     @State private var confirm = ""
     @State private var showPassword = false
     @State private var isLoading = false
-    @State private var errorMsg: String?
+    @State private var errorBanner = AuthErrorBanner()
     @State private var info: String?
     @State private var lastSent: Date?
 
@@ -462,9 +480,10 @@ struct ForgotPasswordView: View {
                                                keyboardType: .emailAddress, autocap: .never)
                             }
 
-                            if let err = errorMsg {
+                            if let err = errorBanner.message {
                                 Text(err).font(WordlyFonts.body(13, weight: .medium))
                                     .foregroundStyle(WordlyColors.error)
+                                    .transition(.opacity)
                             }
                             if let info {
                                 Text(info).font(WordlyFonts.body(13, weight: .medium))
@@ -497,6 +516,11 @@ struct ForgotPasswordView: View {
                     }
                 }
                 .scrollDismissesKeyboard(.interactively)
+                .autoHidingError($errorBanner)
+                .onChange(of: email) { errorBanner.userEdited() }
+                .onChange(of: code) { errorBanner.userEdited() }
+                .onChange(of: password) { errorBanner.userEdited() }
+                .onChange(of: confirm) { errorBanner.userEdited() }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -509,7 +533,7 @@ struct ForgotPasswordView: View {
 
     private func sendCode(resend: Bool = false) async {
         isLoading = true
-        errorMsg = nil
+        errorBanner.clear()
         info = nil
         defer { isLoading = false }
         do {
@@ -524,13 +548,15 @@ struct ForgotPasswordView: View {
                 codeSent = true
                 lastSent = Date()
             }
-            errorMsg = AuthFlow.message(for: kind)
+            errorBanner.show(AuthFlow.message(for: kind), hideAfter: AuthErrorBanner.hideAfter(
+                kind: kind, resendWait: AuthFlow.secondsUntilResend(lastSent: lastSent, now: Date())))
         }
     }
 
     private func updatePassword() async {
-        errorMsg = ResetPasswordLogic.error(code: code, password: password, confirm: confirm)
-        guard errorMsg == nil else { return }
+        let invalid = ResetPasswordLogic.error(code: code, password: password, confirm: confirm)
+        errorBanner.show(invalid)
+        guard invalid == nil else { return }
         isLoading = true
         defer { isLoading = false }
         do {
@@ -540,7 +566,7 @@ struct ForgotPasswordView: View {
             dismiss()   // verifyOTP đã đăng nhập luôn → app vào màn chính
         } catch {
             let kind = authManager.errorKind(error)
-            errorMsg = AuthFlow.message(for: [.network, .weakPassword].contains(kind) ? kind : .codeInvalid)
+            errorBanner.show(AuthFlow.message(for: [.network, .weakPassword].contains(kind) ? kind : .codeInvalid))
         }
     }
 }

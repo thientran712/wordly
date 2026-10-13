@@ -77,6 +77,16 @@ struct WidgetSettings: Codable, Equatable {
         var meaningWeight: TextWeight = .regular
         var wordItalic: Bool = false
         var meaningItalic: Bool = false
+        /// Ảnh nền (file trong App Group, xem WidgetBackgroundStore). 0 = không có ảnh.
+        var backgroundVersion: Int = 0
+        /// Lớp làm tối phủ lên ảnh để chữ đọc được, 0…maxDim.
+        var backgroundDim: Double = 0.3
+        /// Tắt = nền một màu (bgHex1). Mặc định bật để cài đặt cũ trông như trước.
+        var useGradient: Bool = true
+        var hasBackgroundImage: Bool { backgroundVersion > 0 }
+        /// Hai đầu nền; tắt gradient thì cả hai là bgHex1.
+        var backgroundHexes: [String] { [bgHex1, useGradient ? bgHex2 : bgHex1] }
+        static let maxDim = 0.6
     }
     var homeStyle: HomeStyle = HomeStyle()
 
@@ -117,6 +127,9 @@ extension WidgetSettings.HomeStyle {
         meaningWeight = try c.decodeIfPresent(WidgetSettings.TextWeight.self, forKey: .meaningWeight) ?? d.meaningWeight
         wordItalic = try c.decodeIfPresent(Bool.self, forKey: .wordItalic) ?? d.wordItalic
         meaningItalic = try c.decodeIfPresent(Bool.self, forKey: .meaningItalic) ?? d.meaningItalic
+        backgroundVersion = try c.decodeIfPresent(Int.self, forKey: .backgroundVersion) ?? d.backgroundVersion
+        useGradient = try c.decodeIfPresent(Bool.self, forKey: .useGradient) ?? d.useGradient
+        backgroundDim = min(max(try c.decodeIfPresent(Double.self, forKey: .backgroundDim) ?? d.backgroundDim, 0), Self.maxDim)
     }
 }
 

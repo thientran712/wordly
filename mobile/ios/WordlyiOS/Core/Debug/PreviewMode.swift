@@ -103,6 +103,16 @@ enum PreviewMode {
 
 /// Màn mở thẳng khi chụp ảnh kiểm giao diện (chỉ bản Debug).
 enum PreviewScreens {
+    /// Ảnh mẫu 3000×2000 dựng bằng code cho màn chỉnh khung ảnh nền widget.
+    static let sampleBackground: CGImage = {
+        let ctx = CGContext(data: nil, width: 3000, height: 2000, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        let colors = [UIColor.systemTeal.cgColor, UIColor.systemIndigo.cgColor, UIColor.systemOrange.cgColor] as CFArray
+        let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: nil)!
+        ctx.drawLinearGradient(g, start: .zero, end: CGPoint(x: 3000, y: 2000), options: [])
+        return ctx.makeImage()!
+    }()
+
     @MainActor @ViewBuilder
     static func view(for name: String) -> some View {
         switch name {
@@ -112,6 +122,8 @@ enum PreviewScreens {
         case "journal": JournalView()
         case "email": EmailSettingsView()
         case "widget": WidgetSettingsView()
+        case "homestyle": NavigationStack { HomeStyleView(vm: WidgetSettingsViewModel()) }
+        case "widgetbg": WidgetBackgroundEditorView(source: sampleBackground, vm: WidgetSettingsViewModel(), onDone: {})
         default: Text("Không có màn \(name)")
         }
     }
