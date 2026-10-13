@@ -4,8 +4,15 @@ import { createClient as createSupabaseJs } from "@supabase/supabase-js";
 import { getCachedJwks } from "@/lib/auth/jwks-cache";
 import { bearerToForward } from "@/lib/auth/bearer-auth";
 import { getClaimsSafely } from "@/lib/auth/safe-get-claims";
+import { isWebUiEnabled, webUiGate, MOBILE_ONLY_PATH } from "@/lib/web-ui-gate";
 
 export async function middleware(request) {
+  // Website đang tắt (WEB_UI_ENABLED) → trang web người học về trang "có trên
+  // iPhone"; API, /privacy, /support, link email vẫn chạy (web-ui-gate.js).
+  if (webUiGate(request.nextUrl.pathname, isWebUiEnabled()) === "mobile-only") {
+    return NextResponse.rewrite(new URL(MOBILE_ONLY_PATH, request.url));
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

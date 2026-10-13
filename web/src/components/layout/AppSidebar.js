@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Languages, Mic, MessageCircle, NotebookPen, UserCog, Sparkles,
-  Sun, Moon, LogOut, LogIn, Mail, Plus, Loader2, X, Menu, Zap,
+  Sun, Moon, LogOut, LogIn, Plus, Loader2, X, Menu, Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -215,19 +215,6 @@ export default function AppSidebar() {
                 <div className="px-3 py-1.5 text-[11px] truncate" style={{ color: "var(--ink-ghost)" }}>{userName}</div>
               )}
               <button
-                onClick={() => router.push("/profile/email")}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all"
-                style={{
-                  background: pathname === "/profile/email" ? "var(--green-subtle)" : "transparent",
-                  color: pathname === "/profile/email" ? "var(--electric)" : "var(--ink-soft)",
-                }}
-                onMouseEnter={(e) => { if (pathname !== "/profile/email") e.currentTarget.style.background = "var(--hover-bg)"; }}
-                onMouseLeave={(e) => { if (pathname !== "/profile/email") e.currentTarget.style.background = "transparent"; }}
-              >
-                <Mail size={20} className="flex-shrink-0" strokeWidth={pathname === "/profile/email" ? 2.5 : 2} />
-                {!isPractice && <span className="truncate">Cài đặt Email</span>}
-              </button>
-              <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all"
                 style={{ color: "var(--error)" }}
@@ -342,7 +329,7 @@ function JournalSheet({ isOpen, onClose }) {
 function NavButton({ item, pathname, isPractice, onNavigate }) {
   // Trang chủ "/" và "/profile" phải so KHỚP CHÍNH XÁC — nếu dùng
   // startsWith thì "/" khớp mọi trang, và "/profile" sẽ sáng cả khi đang
-  // ở "/profile/email".
+  // ở một trang con của "/profile".
   const active =
     item.href === "/" || item.href === "/profile"
       ? pathname === item.href
