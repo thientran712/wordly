@@ -3,13 +3,43 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 13/10/2026 — BẮT ĐẦU PHIÊN SAU TỪ ĐÂY
+
+**Trạng thái:** iOS 1.0.0 (14) đang chờ Apple duyệt (miễn phí, phát hành thủ công). Build 15 trên TestFlight — **chủ dự án đã thử trên máy thật: OK** (ảnh nền, theme, tắt gradient, thông báo lỗi đăng nhập). Web production = `4ecccff` (PR #22). Lần upload sau: **build 16**.
+
+**PR đang mở (chưa merge):**
+| PR | Nội dung | Ghi chú |
+|---|---|---|
+| #26 | Build 15: ảnh nền + 26 theme widget + gộp #20, #23 | Merge #26 xong thì **đóng #20 và #23** (đã nằm trong #26) |
+| #25 | Spec + plan ảnh nền widget | Chỉ tài liệu |
+| #24 | PROGRESS (file này) | Chỉ tài liệu |
+| #21 | Cron email lấy slot theo trang (người dùng 1.001+) | Web — merge xong phải **deploy production** mới có tác dụng |
+
+**Việc có thể làm, theo thứ tự đề xuất:**
+1. **Merge 4 PR trên** + đóng #20/#23, rồi **deploy #21** lên VPS (cùng cách PR #22: build `wordly-web:<sha>` trên VPS, tag `rollback-pre-<sha>`, kiểm bằng `smoke-prod`).
+2. **Đối chiếu migration với DB production.** Self-host không có bảng lịch sử migration và đã sót `suggestion_log` từ 10/10 → kiểm từng file trong `supabase/migrations/` (bảng/cột/policy) có trên production chưa. Nên thêm bảng `schema_migrations` hoặc script kiểm để không sót lần nữa.
+3. **Khi Apple duyệt 1.0 (build 14):** phát hành thủ công; sau đó nộp bản 1.0.1 bằng build 15 (hoặc 16).
+4. **Màu mặc định widget khó đọc** (chữ trắng trên `#1CB0F6`/`#58CC02`, tương phản ~2.1–2.4): cân nhắc đổi mặc định cho **người dùng mới** sang theme "Wordly" (đạt AA), giữ nguyên người dùng cũ.
+5. **Ảnh nền widget — phần đã lược:** lưu vị trí/độ phóng để chỉnh lại khung mà không phải chọn lại ảnh (giữ bản thu nhỏ ≤ 2048 px trong App Group).
+6. **Email Resend** (nhánh `feat/email-provider-resend`, WIP `aeb12f6`): rebase sau #21, xác minh domain trên Resend, chọn gói (hoặc SES rẻ hơn).
+7. **Kho từ song ngữ** (spec `2026-10-12-wordbank-design.md`, đang tạm dừng): lô thử 200 từ hiếm.
+8. **Gói Pro cho 1.1** (StoreKit, đề xuất 29k/tháng – 249k/năm): cần spec — bảng quyền lợi + hạn mức theo gói.
+9. **Luyện nói với Alex** đang ẩn (`AppRouter.alexPracticeEnabled = false`) — quyết định bật lại, có thể gắn với gói Pro.
+10. **Deploy production qua CI** (quy ước ATLAS): hiện CI chỉ chạy test, production deploy tay — thêm job deploy trên runner tự host khi có thời gian.
+
+**Lưu ý môi trường (máy dev):**
+- Supabase local: cổng mặc định bị dự án BedWar chiếm → khi chạy test RLS, đổi tạm cổng sang `553xx` trong `supabase/config.toml` (**không commit**), tạo `web/.env.test.local` từ `npx supabase status -o env`.
+- Simulator duy nhất: `BedWar-iPhone16` (`7F03B63D-…`), chạy test iOS một simulator, `-parallel-testing-enabled NO`.
+- Script kiểm production (2 user tạm, tự xoá): bản trong thư mục nháp phiên đã mất — viết lại theo `web/tests/rls/user-routes-rls.test.mjs`, gọi API thật bằng Bearer JWT.
+- Chế độ auto của Claude Code có lúc chặn SSH/psql lên production; chủ dự án muốn Claude tự làm, ít hỏi.
+
 ### 12/10/2026 (khuya) — BUILD 15 ĐÃ UPLOAD TestFlight: ảnh nền + 26 theme widget (PR #26)
 
 - **Ảnh nền widget màn hình chính** (spec + plan: PR #25). Spike: bản cũ crash vì đọc ảnh trong `body` × tới 200 entry, ảnh lưu 3x (1500 px), giải mã ảnh gốc 48 MP. Bản mới: ImageIO thu nhỏ ≤ 2048 px, lưu 510×510 / 1092×510 scale 1, file có phiên bản, widget đọc **một lần** trong Provider, lỗi → nền màu. Đơn giản hoá so với spec: vị trí/độ phóng không lưu — muốn chỉnh lại thì chọn lại ảnh.
 - **26 theme** (Tailwind, Nord, Dracula, Catppuccin, Gruvbox, Solarized, Tokyo Night, Rosé Pine — MIT) — test bắt buộc WCAG AA ≥ 4.5:1 (mặc định cũ chữ trắng trên xanh chỉ ~2.1–2.4, giữ nguyên cho người dùng cũ). Công tắc tắt gradient (cài đặt cũ vẫn gradient). 24 ô màu thay ColorPicker (bỏ bút lấy màu).
 - Gộp PR #23 (lỗi đăng nhập tự ẩn) + PR #20 (UI test).
 - Bằng chứng: unit iOS **189/189**, UI test bàn phím + widget deep link 5/5, ảnh chụp màn chỉnh khung + màn theme trên simulator. Archive 1.0.0 (15) app + widget, 0 chuỗi `WordlyUIPreview`, domain production, team `929P8F77XX` → **"Upload succeeded"**. Lần upload sau: build 16.
-- **Chưa thử trên iPhone thật (bắt buộc trước khi phát hành):** ảnh camera 48 MP, panorama, PNG trong suốt, ảnh chụp dọc; đổi ảnh 10 lần liên tục; widget chạy qua đêm không crash/trắng; xoá ảnh → nền màu; theme + tắt gradient hiện đúng trên widget thật.
+- ✅ **Chủ dự án đã thử trên iPhone thật 13/10: OK.** Danh sách đã thử theo spec: ảnh camera 48 MP, panorama, PNG trong suốt, ảnh chụp dọc; đổi ảnh 10 lần liên tục; widget chạy qua đêm không crash/trắng; xoá ảnh → nền màu; theme + tắt gradient hiện đúng trên widget thật.
 
 ### 12/10/2026 (tối) — Dọn nợ kỹ thuật trong lúc chờ Apple duyệt: 4 PR mở, CHƯA merge/deploy
 
