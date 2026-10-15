@@ -77,3 +77,24 @@ test("múi giờ khác: Kolkata (+5:30), New York (đổi giờ mùa hè), sai/n
   assert.equal(duePushSlotsModel({ ...tz("Mars/Olympus"), now: at("2026-10-13T13:00:00Z") }).length, 1);
   assert.equal(duePushSlotsModel({ ...tz(null), now: at("2026-10-13T13:00:00Z") }).length, 1);
 });
+
+// Wordly Pro (spec 2026-10-16 §3): BILLING_ENFORCE bật → người miễn phí chỉ
+// nhận khung ĐANG BẬT sớm nhất trong ngày; Pro (kể cả đang ân hạn) nhận đủ.
+test("freeOneSlot: miễn phí chỉ khung bật sớm nhất, Pro gửi đủ", () => {
+  const d = base({
+    slots: [
+      { id: "s0", user_id: "u1", send_time: "07:00:00", enabled: false },
+      { id: "s1", user_id: "u1", send_time: "08:00:00", enabled: true },
+      { id: "s2", user_id: "u1", send_time: "20:00:00", enabled: true },
+    ],
+  });
+  const now20 = at("2026-10-13T13:05:00Z");
+  const now08 = at("2026-10-13T01:05:00Z");
+  assert.equal(duePushSlotsModel({ ...d, now: now20 }).length, 1, "mặc định như cũ");
+  assert.equal(duePushSlotsModel({ ...d, now: now20, freeOneSlot: true, entitlements: [] }).length, 0);
+  assert.equal(duePushSlotsModel({ ...d, now: now08, freeOneSlot: true, entitlements: [] }).length, 1);
+  const pro = [{ user_id: "u1", source: "app_store", expires_at: "2026-11-01T00:00:00Z" }];
+  assert.equal(duePushSlotsModel({ ...d, now: now20, freeOneSlot: true, entitlements: pro }).length, 1);
+  const grace = [{ user_id: "u1", source: "app_store", expires_at: "2026-10-01T00:00:00Z", in_grace: true, grace_expires_at: "2026-10-20T00:00:00Z" }];
+  assert.equal(duePushSlotsModel({ ...d, now: now20, freeOneSlot: true, entitlements: grace }).length, 1);
+});
