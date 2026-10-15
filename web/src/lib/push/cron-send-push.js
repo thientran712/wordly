@@ -3,7 +3,7 @@
 // mỗi slot GIÀNH QUYỀN bằng INSERT push_log unique (slot_id, send_date) trước
 // khi gửi → hai lượt chạy chồng không gửi đôi. Chạy song song qua runPool.
 import { selectBankWords } from "../email/select-word-for-email.js";
-import { selectPushWord, lastShownMap, SHOWN_WINDOW_DAYS } from "./select-push-word.js";
+import { selectPushWord } from "./select-push-word.js";
 import { buildPushMessage } from "./build-message.js";
 import { sendFcmMessage, isDeadToken, isFatal } from "./fcm-client.js";
 import { createGoogleTokenProvider } from "./google-access-token.js";
@@ -19,22 +19,6 @@ function defaultProvider(config) {
   return sharedProvider;
 }
 
-/** Một từ cho người dùng: từ đã lưu chưa hiện / hiện lâu nhất (push + widget,
- * xem select-push-word.js); chưa lưu từ nào thì lấy từ kho chưa hiện gần đây.
- * Không có gì → null. */
-async function pickWord(supabase, userId, now, { selectWord, selectBank }) {
-  const since = new Date(now.getTime() - SHOWN_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const { data: shown } = await supabase
-    .from("suggestion_log").select("entry_id, bank_word_id, shown_at").eq("user_id", userId).gte("shown_at", since);
-
-  const own = await selectWord(supabase, userId, lastShownMap(shown, "entry_id"));
-  if (own) return { id: own.id, word: own.word, meaning: own.meaning_vi || "", fromBank: false };
-
-  const recentBankIds = [...lastShownMap(shown, "bank_word_id").keys()];
-  const [bank] = await selectBank(supabase, userId, { count: 1, recentIds: recentBankIds }).catch(() => []);
-  return bank ? { id: bank.id, word: bank.word, meaning: bank.meaning_vi || "", fromBank: true } : null;
-}
-
 export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
   const started = Date.now();
   const config = "config" in deps ? deps.config : loadFcmConfig();
@@ -42,10 +26,9 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
 
   const provider = deps.tokenProvider || defaultProvider(config);
   const send = deps.send || sendFcmMessage;
-  const selectors = {
-    selectWord: deps.selectWord || selectPushWord,
-    selectBank: deps.selectBank || selectBankWords,
-  };
+  // Chọn từ theo nguồn từ chung + lịch widget (select-push-word.js, spec 2026-10-15 §4)
+  const selectWord = deps.selectWord || selectPushWord;
+  const selectBank = deps.selectBank || selectBankWords;
 
   const stats = { due: 0, sent: 0, skipped: 0, failed: 0, claimed_elsewhere: 0, tokens_removed: 0 };
   let fatal = null;
@@ -93,7 +76,7 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
     const { data: devices } = await supabase.from("push_devices").select("id, token").eq("user_id", user_id);
     if (!devices?.length) { stats.skipped++; await finish({ status: "skipped", error: "no devices" }); return; }
 
-    const word = await pickWord(supabase, user_id, now, selectors);
+    const word = await selectWord(supabase, user_id, now, { selectBank });
     if (!word) { stats.skipped++; await finish({ status: "skipped", error: "Nothing to send — both queues empty" }); return; }
 
     let delivered = 0;
