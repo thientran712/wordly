@@ -3,6 +3,14 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 15/10/2026 (tối) — Đồng ý Điều khoản ĐÃ LÊN production (web); theme ảnh widget; chờ build 19
+
+**Đồng ý Điều khoản + Chính sách** (spec `2026-10-15-terms-consent-design.md`, PR #42): migration `20261015000100_terms_consent` **đã chạy production** (chủ dự án đồng ý; 2 cột trống trong `profiles`, 46 hồ sơ nguyên, đã `NOTIFY pgrst`), web deploy `5139cf5` (`/terms` 200, `/api/consent` 401 khi chưa đăng nhập). iOS: dòng "Bằng việc tiếp tục…" ở màn đăng nhập, ô tick khi đăng ký email, màn đồng ý một lần sau Google/Apple + người dùng cũ; không đồng ý → tự chọn đăng xuất/xoá tài khoản. Bằng chứng: web 411 + RLS 23/23 (Supabase local), iOS unit 238 + UI 25, migration chạy thử local đúng (ràng buộc chặn 0). **Chưa có trong app trên TestFlight** — vào build 19.
+
+**Theme ảnh widget** (nhánh `feat/widget-photo-themes`): phần Theme = 10 màu cơ bản + 30 ảnh Unsplash (Góc học tập, Thiên nhiên, Thành phố đêm, Hào hùng, Vũ trụ, Sang trọng); bỏ nút "mẫu có sẵn" (build 18 có, build 19 không). Ảnh người dùng đè ảnh theme; xoá ảnh người dùng → về ảnh theme. Ảnh 1400 px + ảnh nhỏ 360 px (4,7 MB); widget chỉ đọc file đã cắt sẵn (`widget-theme-*`). Giấy phép + nguồn từng ảnh: `docs/design/widget-photo-credits.md` (review 2 vòng, loại ảnh vô lăng tag "bmw"). Không dùng nhân vật Marvel (App Store 5.2.1). Bằng chứng: unit 239/239, UI 24/24 (test theme ảnh chạy lại riêng sau khi sửa giả định simulator sạch).
+
+**Lần upload sau: build 19** (gồm đồng ý điều khoản + theme ảnh) — chưa upload, chờ chủ dự án.
+
 ### 15/10/2026 — iOS 1.0.1 (18) ĐÃ UPLOAD TestFlight + sửa push lặp từ (production) + mẫu widget
 
 **Trạng thái:** 1.0.0 (14) **đã phát hành** trên App Store (Ready for Distribution). Build 17 mang 1.0.0 nên không nộp được → **1.0.1 (18) upload 15/10 17:22** (PR #41, archive từ `14c849b`; kiểm: app + widget 1.0.1 (18), `aps-environment = production`, có GoogleService-Info.plist + ảnh mẫu, 0 chuỗi WordlyUIPreview, domain production, team 929P8F77XX). **Lần upload sau: build 19.** Web production = `8ff9406` (PR #40, deploy qua nút, `/api/health` báo đúng SHA).

@@ -164,3 +164,48 @@ struct WidgetBackgroundStore {
         return WidgetImageIO.downsample(url: url, maxPixel: Int(max(kind.pixelSize.width, kind.pixelSize.height)))
     }
 }
+
+// MARK: - Ảnh theme
+// File riêng `widget-theme-<cỡ>-<id>.jpg` — không trùng tiền tố `widget-bg-` của
+// ảnh người dùng, nên xoá ảnh người dùng không đụng ảnh theme (và ngược lại).
+extension WidgetBackgroundStore {
+    private func themeURL(_ kind: WidgetBackgroundKind, _ id: String) -> URL? {
+        directory?.appendingPathComponent("widget-theme-\(kind.rawValue)-\(id).jpg")
+    }
+
+    func saveThemePhoto(_ files: [WidgetBackgroundKind: Data], id: String) throws {
+        for (kind, data) in files {
+            guard let url = themeURL(kind, id) else { throw CocoaError(.fileNoSuchFile) }
+            try data.write(to: url, options: .atomic)
+        }
+    }
+
+    func hasThemePhoto(id: String) -> Bool {
+        WidgetBackgroundKind.allCases.allSatisfy { kind in
+            themeURL(kind, id).map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+        }
+    }
+
+    func loadThemePhoto(_ kind: WidgetBackgroundKind, id: String) -> CGImage? {
+        guard let url = themeURL(kind, id),
+              let size = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int,
+              size <= Self.maxFileBytes else { return nil }
+        return WidgetImageIO.downsample(url: url, maxPixel: Int(max(kind.pixelSize.width, kind.pixelSize.height)))
+    }
+
+    /// Xoá file theme khác `id` (nil = xoá hết).
+    func removeThemePhotos(except id: String?) {
+        guard let directory, let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else { return }
+        let keep = Set(WidgetBackgroundKind.allCases.compactMap { kind in id.flatMap { themeURL(kind, $0)?.lastPathComponent } })
+        for name in names where name.hasPrefix("widget-theme-") && !keep.contains(name) {
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
+        }
+    }
+
+    /// Nền widget: ảnh người dùng → ảnh theme → nil (nền màu). Lỗi gì cũng rơi xuống bậc sau.
+    func resolvedBackground(_ kind: WidgetBackgroundKind, style: WidgetSettings.HomeStyle) -> CGImage? {
+        if style.hasBackgroundImage, let user = load(kind, version: style.backgroundVersion) { return user }
+        if let id = style.themePhotoId { return loadThemePhoto(kind, id: id) }
+        return nil
+    }
+}

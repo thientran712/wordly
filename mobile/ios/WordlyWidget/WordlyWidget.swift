@@ -92,14 +92,15 @@ struct WordlyProvider: TimelineProvider {
     /// Lỗi gì cũng trả nil → nền màu.
     private func loadBackground(_ settings: WidgetSettings, family: WidgetFamily) -> UIImage? {
         let style = settings.homeStyle
-        guard style.hasBackgroundImage else { return nil }
+        guard style.hasAnyBackground else { return nil }
         let kind: WidgetBackgroundKind
         switch family {
         case .systemSmall: kind = .small
         case .systemMedium: kind = .medium
         default: return nil
         }
-        return WidgetBackgroundStore.appGroup(appGroup).load(kind, version: style.backgroundVersion).map { UIImage(cgImage: $0) }
+        // Ảnh người dùng đè ảnh theme
+        return WidgetBackgroundStore.appGroup(appGroup).resolvedBackground(kind, style: style).map { UIImage(cgImage: $0) }
     }
 
     private func loadPhonetics() -> [String: String] {

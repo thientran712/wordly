@@ -15,25 +15,12 @@ struct HomeStyleView: View {
     @State private var savedBackground: CGImage?
     /// Nhóm theme đang mở trong dropdown (nil = nhóm của theme đang dùng)
     @State private var themeGroup: WidgetTheme.Group?
-    @State private var showPresets = false
 
     var body: some View {
         Form {
             Section { preview }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
-
-            Section {
-                Button {
-                    showPresets = true
-                } label: {
-                    Label("Chọn mẫu có sẵn", systemImage: "sparkles")
-                        .font(WordlyFonts.body(16, weight: .semibold))
-                }
-                .accessibilityIdentifier("widgetPresetOpen")
-            } footer: {
-                Text("Phối sẵn màu, kiểu chữ và ảnh nền — chạm một mẫu là xong, vẫn chỉnh tiếp được bên dưới.")
-            }
 
             Section {
                 Picker("Nhóm", selection: Binding(
@@ -49,12 +36,12 @@ struct HomeStyleView: View {
             } header: {
                 Text("Theme")
             } footer: {
-                Text("Phối sẵn màu nền và chữ, đều đủ tương phản để dễ đọc. Chọn xong vẫn chỉnh tiếp được bên dưới.")
+                Text("Theme màu hoặc theme ảnh có sẵn, chữ đều dễ đọc. Ảnh bạn tự chọn ở dưới sẽ đè lên ảnh của theme.")
             }
 
             Section {
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label(vm.settings.homeStyle.hasBackgroundImage ? "Đổi ảnh khác" : "Chọn ảnh từ thư viện",
+                    Label(vm.settings.homeStyle.hasBackgroundImage ? "Đổi ảnh khác" : "Chọn ảnh của bạn",
                           systemImage: "photo")
                 }
                 if vm.settings.homeStyle.hasBackgroundImage {
@@ -70,14 +57,23 @@ struct HomeStyleView: View {
                     } label: {
                         Label("Chỉnh lại khung", systemImage: "crop")
                     }
+                }
+                if vm.settings.homeStyle.hasAnyBackground {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Làm tối")
                         Slider(value: $vm.settings.homeStyle.backgroundDim,
                                in: 0...WidgetSettings.HomeStyle.maxDim).tint(WordlyColors.electric)
                     }
-                    Button("Xoá ảnh nền", role: .destructive) {
+                }
+                if vm.settings.homeStyle.hasBackgroundImage {
+                    Button("Xoá ảnh của bạn", role: .destructive) {
                         vm.settings.homeStyle.backgroundVersion = 0
                         WidgetBackgroundStore.appGroup(WordlyConfig.appGroup).removeAll(except: 0)
+                    }
+                    if vm.settings.homeStyle.themePhotoId != nil {
+                        Text("Ảnh của bạn đang đè lên ảnh theme. Xoá ảnh của bạn thì widget dùng lại ảnh theme.")
+                            .font(WordlyFonts.body(12))
+                            .foregroundStyle(WordlyColors.inkSoft)
                     }
                 }
                 if let loadError {
@@ -86,7 +82,7 @@ struct HomeStyleView: View {
             } header: {
                 Text("Ảnh nền")
             } footer: {
-                Text("Chỉ widget màn hình chính. Có ảnh thì màu nền bên dưới không dùng tới.")
+                Text("Chỉ widget màn hình chính. Có ảnh (của bạn hoặc của theme) thì màu nền bên dưới không dùng tới.")
             }
 
             Section("Màu nền") {
@@ -128,14 +124,10 @@ struct HomeStyleView: View {
                 editorSource = img
             }
         }
-        .task(id: vm.settings.homeStyle.backgroundVersion) {
-            let v = vm.settings.homeStyle.backgroundVersion
-            savedBackground = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup).load(.medium, version: v)
-        }
-        .sheet(isPresented: $showPresets) {
-            WidgetPresetGalleryView(current: vm.settings.homeStyle) { applyPreset($0) }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+        // Xem trước đúng như widget: ảnh người dùng → ảnh theme → nền màu
+        .task(id: "\(vm.settings.homeStyle.backgroundVersion)-\(vm.settings.homeStyle.themePhotoId ?? "")") {
+            savedBackground = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup)
+                .resolvedBackground(.medium, style: vm.settings.homeStyle)
         }
         .fullScreenCover(isPresented: Binding(get: { editorSource != nil },
                                               set: { if !$0 { editorSource = nil } })) {
@@ -145,17 +137,14 @@ struct HomeStyleView: View {
         }
     }
 
-    /// Đổi sang mẫu (didSet lưu App Group + reload widget) rồi mới dọn ảnh cũ.
-    private func applyPreset(_ preset: WidgetPreset) {
-        let store = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup)
+    /// Chọn theme (didSet lưu App Group + reload widget). Theme ảnh ghi file ảnh đã cắt sẵn.
+    private func applyTheme(_ theme: WidgetTheme) {
         do {
-            let style = try WidgetPresetBackground.apply(preset, to: vm.settings.homeStyle, store: store)
-            vm.settings.homeStyle = style
-            store.removeAll(except: style.backgroundVersion)
-            themeGroup = nil
+            vm.settings.homeStyle = try WidgetThemePhoto.apply(theme, to: vm.settings.homeStyle,
+                                                               store: WidgetBackgroundStore.appGroup(WordlyConfig.appGroup))
             loadError = nil
         } catch {
-            loadError = "Không đặt được mẫu này, thử lại."
+            loadError = "Không đặt được theme này, thử lại."
         }
     }
 
@@ -180,7 +169,7 @@ struct HomeStyleView: View {
             .padding(16)
             .frame(height: 140)
             .background {
-                if style.hasBackgroundImage, let img = savedBackground {
+                if style.hasAnyBackground, let img = savedBackground {
                     Image(decorative: img, scale: 1).resizable().scaledToFill()
                         .overlay(Color.black.opacity(style.backgroundDim))
                 } else {
@@ -194,13 +183,13 @@ struct HomeStyleView: View {
         .padding(.horizontal, 4)
     }
 
-    /// Lưới theme: mỗi ô là widget thu nhỏ với đúng màu nền + chữ của theme.
+    /// Lưới theme: mỗi ô là widget thu nhỏ — theme màu vẽ màu, theme ảnh hiện ảnh nhỏ (360 px, có cache).
     private var themeGrid: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 10)], spacing: 10) {
             ForEach(WidgetTheme.themes(in: themeGroup ?? WidgetTheme.group(containing: vm.settings.homeStyle))) { theme in
                 let selected = vm.settings.homeStyle.matches(theme)
                 Button {
-                    vm.settings.homeStyle.apply(theme)
+                    applyTheme(theme)
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Aa").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: theme.word))
@@ -209,14 +198,14 @@ struct HomeStyleView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
                     .padding(.horizontal, 10)
-                    .background(LinearGradient(colors: [Color(hex: theme.bg1), Color(hex: theme.bg2 ?? theme.bg1)],
-                                               startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .background { ThemeTileBackground(theme: theme) }
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12)
                         .stroke(selected ? WordlyColors.electric : Color.primary.opacity(0.12), lineWidth: selected ? 3 : 1))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(theme.name)
+                .accessibilityIdentifier("theme.\(theme.id)")
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
@@ -263,6 +252,28 @@ struct HomeStyleView: View {
             Text("Nhạt").tag(WidgetSettings.TextWeight.light)
             Text("Thường").tag(WidgetSettings.TextWeight.regular)
             Text("Đậm").tag(WidgetSettings.TextWeight.bold)
+        }
+    }
+}
+
+/// Nền một ô theme: màu (gradient) hoặc ảnh nhỏ đã làm tối như trên widget.
+private struct ThemeTileBackground: View {
+    let theme: WidgetTheme
+    @State private var image: CGImage?
+
+    var body: some View {
+        if theme.photo != nil {
+            ZStack {
+                Color(hex: theme.bg1)
+                if let image {
+                    Image(decorative: image, scale: 1).resizable().scaledToFill()
+                    Color.black.opacity(theme.dim)
+                }
+            }
+            .task(id: theme.id) { image = WidgetThemePhoto.thumbnail(theme) }
+        } else {
+            LinearGradient(colors: [Color(hex: theme.bg1), Color(hex: theme.bg2 ?? theme.bg1)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
 }
