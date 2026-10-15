@@ -12,7 +12,7 @@ struct WidgetTheme: Identifiable, Equatable {
             switch self {
             case .basic: "Cơ bản"
             case .nature: "Thiên nhiên"
-            case .cartoon: "Hoạt hình & siêu anh hùng"
+            case .cartoon: "Rực rỡ"
             case .code: "Lập trình"
             }
         }
@@ -38,8 +38,8 @@ struct WidgetTheme: Identifiable, Equatable {
         all.first { style.matches($0) }?.group ?? Group.allCases[0]
     }
 
-    // Hoạt hình & siêu anh hùng: chỉ lấy cảm hứng bảng màu, đặt tên gợi tả —
-    // KHÔNG dùng tên nhân vật/thương hiệu (App Store guideline 5.2, sở hữu trí tuệ).
+    // Nhóm "Rực rỡ": tên chỉ tả màu — KHÔNG gợi tên phim/nhân vật/thương hiệu
+    // (App Store guideline 5.2, có test). Id giữ nguyên để không đổi dữ liệu cũ.
     static let all: [WidgetTheme] = [
         WidgetTheme("wordly", "Wordly", .basic, "#0B6FA4", "#2E7D0B", "#FFFFFF", "#E8F7FF"),
         WidgetTheme("midnight", "Nửa đêm", .basic, "#0F172A", nil, "#F8FAFC", "#94A3B8"),
@@ -60,31 +60,31 @@ struct WidgetTheme: Identifiable, Equatable {
         WidgetTheme("coral", "San hô", .nature, "#FFE4E6", nil, "#9F1239", "#4C0519"),
         WidgetTheme("lavender", "Oải hương", .nature, "#EDE9FE", "#FCE7F3", "#5B21B6", "#4C1D95"),
 
-        WidgetTheme("spider", "Nhện đỏ", .cartoon, "#B91C1C", "#1E3A8A", "#FFFFFF", "#FEE2E2"),
-        WidgetTheme("darkknight", "Hiệp sĩ bóng đêm", .cartoon, "#0B0B0F", "#1F2937", "#FACC15", "#E5E7EB"),
-        WidgetTheme("superhero", "Siêu nhân áo choàng", .cartoon, "#1D4ED8", "#991B1B", "#FDE047", "#FFFFFF"),
-        WidgetTheme("ironarmor", "Giáp sắt", .cartoon, "#7F1D1D", "#78350F", "#FDE68A", "#FFFFFF"),
-        WidgetTheme("greengiant", "Khổng lồ xanh", .cartoon, "#14532D", "#4C1D95", "#BBF7D0", "#F3E8FF"),
-        WidgetTheme("shieldcaptain", "Đội trưởng khiên sao", .cartoon, "#1E3A8A", "#991B1B", "#FFFFFF", "#E0E7FF"),
-        WidgetTheme("thunder", "Thần sấm", .cartoon, "#1E293B", "#334155", "#FDE047", "#CBD5E1"),
-        WidgetTheme("amazon", "Nữ chiến binh", .cartoon, "#7F1D1D", "#1E3A8A", "#FCD34D", "#FFFFFF"),
-        WidgetTheme("panther", "Báo đen", .cartoon, "#0F0F14", "#2E1065", "#E9D5FF", "#C4B5FD"),
-        WidgetTheme("electricmouse", "Chuột điện vàng", .cartoon, "#FDE047", nil, "#7C2D12", "#431407"),
-        WidgetTheme("robotcat", "Mèo máy xanh", .cartoon, "#075985", "#0369A1", "#FFFFFF", "#FEE2E2"),
-        WidgetTheme("spongeyellow", "Bọt biển vàng", .cartoon, "#FEF08A", "#FDE68A", "#78350F", "#422006"),
-        WidgetTheme("icequeen", "Nữ hoàng băng giá", .cartoon, "#E0F2FE", "#BAE6FD", "#075985", "#0C4A6E"),
-        WidgetTheme("ninjaturtle", "Rùa ninja", .cartoon, "#166534", "#14532D", "#FDE68A", "#DCFCE7"),
-        WidgetTheme("strawhat", "Mũ rơm", .cartoon, "#991B1B", "#7C2D12", "#FDE047", "#FEF3C7"),
-        WidgetTheme("leafninja", "Ninja lá", .cartoon, "#C2410C", "#1E3A8A", "#FFFFFF", "#FFEDD5"),
-        WidgetTheme("dragonball", "Ngọc rồng", .cartoon, "#9A3412", "#1E40AF", "#FDE047", "#FFFFFF"),
-        WidgetTheme("wizard", "Phù thủy nhỏ", .cartoon, "#7F1D1D", "#713F12", "#FCD34D", "#FEF3C7"),
-        WidgetTheme("lightsaber", "Kiếm ánh sáng", .cartoon, "#020617", "#1E293B", "#7DD3FC", "#BAE6FD"),
-        WidgetTheme("darkside", "Phe bóng tối", .cartoon, "#000000", "#450A0A", "#F87171", "#FECACA"),
+        WidgetTheme("spider", "Đỏ lam", .cartoon, "#B91C1C", "#1E3A8A", "#FFFFFF", "#FEE2E2"),
+        WidgetTheme("darkknight", "Đêm vàng", .cartoon, "#0B0B0F", "#1F2937", "#FACC15", "#E5E7EB"),
+        WidgetTheme("superhero", "Cờ hiệu", .cartoon, "#1D4ED8", "#991B1B", "#FDE047", "#FFFFFF"),
+        WidgetTheme("ironarmor", "Đỏ đồng", .cartoon, "#7F1D1D", "#78350F", "#FDE68A", "#FFFFFF"),
+        WidgetTheme("greengiant", "Lục tím", .cartoon, "#14532D", "#4C1D95", "#BBF7D0", "#F3E8FF"),
+        WidgetTheme("shieldcaptain", "Hải quân", .cartoon, "#1E3A8A", "#991B1B", "#FFFFFF", "#E0E7FF"),
+        WidgetTheme("thunder", "Giông bão", .cartoon, "#1E293B", "#334155", "#FDE047", "#CBD5E1"),
+        WidgetTheme("amazon", "Hoàng gia", .cartoon, "#7F1D1D", "#1E3A8A", "#FCD34D", "#FFFFFF"),
+        WidgetTheme("panther", "Tím huyền bí", .cartoon, "#0F0F14", "#2E1065", "#E9D5FF", "#C4B5FD"),
+        WidgetTheme("electricmouse", "Vàng điện", .cartoon, "#FDE047", nil, "#7C2D12", "#431407"),
+        WidgetTheme("robotcat", "Lam mát", .cartoon, "#075985", "#0369A1", "#FFFFFF", "#FEE2E2"),
+        WidgetTheme("spongeyellow", "Vàng bơ", .cartoon, "#FEF08A", "#FDE68A", "#78350F", "#422006"),
+        WidgetTheme("icequeen", "Băng tuyết", .cartoon, "#E0F2FE", "#BAE6FD", "#075985", "#0C4A6E"),
+        WidgetTheme("ninjaturtle", "Lục bảo", .cartoon, "#166534", "#14532D", "#FDE68A", "#DCFCE7"),
+        WidgetTheme("strawhat", "Đỏ nắng", .cartoon, "#991B1B", "#7C2D12", "#FDE047", "#FEF3C7"),
+        WidgetTheme("leafninja", "Cam lam", .cartoon, "#C2410C", "#1E3A8A", "#FFFFFF", "#FFEDD5"),
+        WidgetTheme("dragonball", "Cam rực", .cartoon, "#9A3412", "#1E40AF", "#FDE047", "#FFFFFF"),
+        WidgetTheme("wizard", "Lâu đài cổ", .cartoon, "#7F1D1D", "#713F12", "#FCD34D", "#FEF3C7"),
+        WidgetTheme("lightsaber", "Vũ trụ", .cartoon, "#020617", "#1E293B", "#7DD3FC", "#BAE6FD"),
+        WidgetTheme("darkside", "Hắc hồng", .cartoon, "#000000", "#450A0A", "#F87171", "#FECACA"),
         WidgetTheme("candy", "Kẹo bông hồng", .cartoon, "#FCE7F3", nil, "#BE185D", "#831843"),
-        WidgetTheme("minion", "Lính vàng", .cartoon, "#FACC15", nil, "#1E3A8A", "#111827"),
-        WidgetTheme("cowboy", "Chàng cao bồi", .cartoon, "#1E40AF", "#92400E", "#FDE047", "#FFFFFF"),
-        WidgetTheme("mermaid", "Nàng tiên cá", .cartoon, "#0F766E", "#6D28D9", "#FFFFFF", "#CCFBF1"),
-        WidgetTheme("ghost", "Bóng ma xanh", .cartoon, "#022C22", "#14532D", "#86EFAC", "#DCFCE7"),
+        WidgetTheme("minion", "Vàng nắng", .cartoon, "#FACC15", nil, "#1E3A8A", "#111827"),
+        WidgetTheme("cowboy", "Thảo nguyên", .cartoon, "#1E40AF", "#92400E", "#FDE047", "#FFFFFF"),
+        WidgetTheme("mermaid", "Biển ngọc", .cartoon, "#0F766E", "#6D28D9", "#FFFFFF", "#CCFBF1"),
+        WidgetTheme("ghost", "Lục huỳnh quang", .cartoon, "#022C22", "#14532D", "#86EFAC", "#DCFCE7"),
 
         WidgetTheme("nord", "Nord", .code, "#2E3440", "#3B4252", "#ECEFF4", "#88C0D0"),
         WidgetTheme("dracula", "Dracula", .code, "#282A36", nil, "#F8F8F2", "#BD93F9"),

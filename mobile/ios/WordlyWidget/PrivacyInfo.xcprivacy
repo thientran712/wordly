@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Widget chỉ đọc từ vựng app chia sẻ qua App Group (UserDefaults, 1C8F.1). -->
+<!-- Widget đọc từ vựng app chia sẻ qua App Group (UserDefaults, 1C8F.1) và kích thước file ảnh nền (C617.1). -->
 <plist version="1.0">
 <dict>
     <key>NSPrivacyTracking</key>
@@ -17,6 +17,15 @@
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
                 <string>1C8F.1</string>
+            </array>
+        </dict>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- C617.1: đọc kích thước file ảnh nền widget trong App Group (WidgetBackgroundStore) -->
+                <string>C617.1</string>
             </array>
         </dict>
     </array>

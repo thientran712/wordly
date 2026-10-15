@@ -77,6 +77,15 @@
                 <string>1C8F.1</string>
             </array>
         </dict>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- C617.1: đọc kích thước file ảnh nền widget trong App Group (WidgetBackgroundStore) -->
+                <string>C617.1</string>
+            </array>
+        </dict>
     </array>
 </dict>
 </plist>
