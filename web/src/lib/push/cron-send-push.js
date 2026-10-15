@@ -19,13 +19,15 @@ function defaultProvider(config) {
   return sharedProvider;
 }
 
-/** Một từ cho người dùng: từ đã lưu chưa hiện / hiện lâu nhất (push + widget,
- * xem select-push-word.js); chưa lưu từ nào thì lấy từ kho chưa hiện gần đây.
- * Không có gì → null. */
+/** Một từ cho người dùng: từ đã lưu chưa push / push lâu nhất (select-push-word.js);
+ * chưa lưu từ nào thì lấy từ kho chưa push gần đây. Chỉ tính lịch sử PUSH — log
+ * widget ghi cả pool cùng lúc mỗi khi danh sách từ đổi, tính vào sẽ reset vòng xoay
+ * về từ cũ nhất (spec 2026-10-15-shared-word-source-design.md §1). Không có gì → null. */
 async function pickWord(supabase, userId, now, { selectWord, selectBank }) {
   const since = new Date(now.getTime() - SHOWN_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data: shown } = await supabase
-    .from("suggestion_log").select("entry_id, bank_word_id, shown_at").eq("user_id", userId).gte("shown_at", since);
+    .from("suggestion_log").select("entry_id, bank_word_id, shown_at").eq("user_id", userId).eq("source", "push")
+    .gte("shown_at", since);
 
   const own = await selectWord(supabase, userId, lastShownMap(shown, "entry_id"));
   if (own) return { id: own.id, word: own.word, meaning: own.meaning_vi || "", fromBank: false };

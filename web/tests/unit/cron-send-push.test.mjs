@@ -80,7 +80,9 @@ test("gửi tới mọi thiết bị, log sent + suggestion_log source=push", as
   assert.equal(sb.rpcCalls.at(-1)[0], "cleanup_push_data");
 });
 
-test("chọn từ theo lần hiện gần nhất trong suggestion_log (push + widget) của đúng người đó", async () => {
+// Log widget hiện ghi CẢ pool cùng lúc mỗi khi danh sách từ đổi → nếu tính vào
+// thứ tự thì push bị reset về từ cũ nhất mỗi lần lưu từ mới. Chỉ tính lịch sử push.
+test("chọn từ theo lần PUSH gần nhất của đúng người đó — bỏ qua log widget", async () => {
   const sb = fakeDb({ due: [slot(1)], devices: [{ id: "d1", user_id: "u1", token: "T1" }] });
   sb.db.suggestion_log.push(
     { user_id: "u1", source: "widget", entry_id: "a", shown_at: "2026-10-12T00:00:00Z" },
@@ -96,7 +98,7 @@ test("chọn từ theo lần hiện gần nhất trong suggestion_log (push + wi
     selectBank: async (_sb, _u, { recentIds }) => { bankRecent = recentIds; return []; },
   });
   assert.equal(seen.userId, "u1");
-  assert.deepEqual([...seen.shownAt.entries()], [["a", Date.parse("2026-10-12T00:00:00Z")]]);
+  assert.deepEqual([...seen.shownAt.entries()], [["a", Date.parse("2026-10-10T00:00:00Z")]]);
   assert.deepEqual(bankRecent, [7]);
 });
 
