@@ -3,6 +3,19 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 16/10/2026 — Nguồn từ chung + lịch widget: phần server (nhánh `feat/word-source-backend`, CHƯA lên production)
+
+Spec `2026-10-15-shared-word-source-design.md` §2.2 (JS), §2.3, §3, §4, §7. iOS làm song song ở nhánh khác.
+
+- **Migration `20261016000100_word_source`** — CHỈ chạy local, **chưa chạy production (cần chủ dự án đồng ý)**. Bảng `word_source_settings` (≤ 30 ghim, RLS chủ select/insert/update), `widget_schedule` (đúng một id, unique slot NULLS NOT DISTINCT, RLS chủ select/insert/delete), hàm `sync_widget_schedule` (chỉ service role). `bank_word_id` là **uuid** (spec ghi bigint — sai, `words.id` là uuid).
+- `lib/word-source/pool.js`: luật pool + validate, kiểm bằng `shared/fixtures/word-pool-cases.json`.
+- API: `GET/PUT /api/word-source`, `PUT /api/widget/schedule` (client người dùng + RLS; lọc id không phải của mình). `/api/widget/log-shown` giữ nguyên cho app cũ.
+- Push (`select-push-word.js`): pool chung + bước Loại/1–5 theo §4; xoay vòng chỉ theo lịch sử push (thay luôn sửa nhanh §1 ở nhánh `fix/push-rotation-push-only` — gộp hai nhánh sẽ đụng cùng file).
+- Cron `/api/cron/send-emails` thêm bước `widget`: chép lịch đã qua sang `suggestion_log` (source=widget, không trùng) + dọn > 3 ngày.
+- Bằng chứng: `npm test` 478/478 (có RLS, Supabase local), `test:rls` 30/30, eslint sạch file đã sửa, `next build --webpack` "Compiled successfully" (Turbopack không build được trong worktree vì `node_modules` là symlink ra ngoài — lỗi môi trường, không do code).
+
+**Chờ quyết định:** chạy migration `20261016000100_word_source` lên production + deploy web — phải trước khi phát hành app có tính năng này.
+
 ### 15/10/2026 (tối) — Đồng ý Điều khoản ĐÃ LÊN production (web); theme ảnh widget; chờ build 19
 
 **Đồng ý Điều khoản + Chính sách** (spec `2026-10-15-terms-consent-design.md`, PR #42): migration `20261015000100_terms_consent` **đã chạy production** (chủ dự án đồng ý; 2 cột trống trong `profiles`, 46 hồ sơ nguyên, đã `NOTIFY pgrst`), web deploy `5139cf5` (`/terms` 200, `/api/consent` 401 khi chưa đăng nhập). iOS: dòng "Bằng việc tiếp tục…" ở màn đăng nhập, ô tick khi đăng ký email, màn đồng ý một lần sau Google/Apple + người dùng cũ; không đồng ý → tự chọn đăng xuất/xoá tài khoản. Bằng chứng: web 411 + RLS 23/23 (Supabase local), iOS unit 238 + UI 25, migration chạy thử local đúng (ràng buộc chặn 0). **Chưa có trong app trên TestFlight** — vào build 19.
