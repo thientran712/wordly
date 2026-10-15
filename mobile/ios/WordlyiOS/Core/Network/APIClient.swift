@@ -110,6 +110,11 @@ final class APIClient: ObservableObject {
     ) async throws -> T {
         #if DEBUG
         if PreviewMode.isOn {
+            // `-WordlySlowSync`: tra từ điển chậm như mạng thật (12 lượt tuần tự khi đồng bộ
+            // widget) — để UI test bắt được việc phần giới thiệu phải chờ đồng bộ xong.
+            if path.hasPrefix("/api/dictionary"), CommandLine.arguments.contains("-WordlySlowSync") {
+                try? await Task.sleep(for: .seconds(3))
+            }
             // Không có dữ liệu mẫu thì báo lỗi, KHÔNG gọi mạng: gọi thật sẽ
             // nhận 401 (không có phiên) → AuthRecovery đăng xuất → văng về
             // màn đăng nhập giữa lúc đang chụp màn hình/chạy UI test.

@@ -16,8 +16,7 @@ struct WordlyApp: App {
         if PreviewMode.isOn {
             if CommandLine.arguments.contains("-WordlyOnboarding") {
                 // Như máy mới cài: xoá cờ "đã xem" của phần giới thiệu
-                for k in [Onboarding.Key.welcomeSeen, Onboarding.Key.whatsNewSeen, Onboarding.Key.cardDismissed,
-                          Onboarding.Key.cardCelebrated, Onboarding.Key.widgetNudgeShown, Onboarding.Key.pushInviteDay] {
+                for k in UserDefaults.standard.dictionaryRepresentation().keys where k.hasPrefix("onboarding.") {
                     UserDefaults.standard.removeObject(forKey: k)
                 }
             } else {

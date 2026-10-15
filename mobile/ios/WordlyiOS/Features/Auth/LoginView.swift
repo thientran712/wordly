@@ -2,6 +2,8 @@ import SwiftUI
 import AuthenticationServices
 
 struct LoginView: View {
+    /// Từ onboarding bấm "Tạo tài khoản" → mở luôn màn tạo tài khoản
+    var startWithSignup = false
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.colorScheme) var scheme
     @State private var email = ""
@@ -292,6 +294,7 @@ struct LoginView: View {
         .onChange(of: errorBanner.message) { _, new in if new == nil { authManager.authError = nil } }
         .onChange(of: email) { errorBanner.userEdited() }
         .onChange(of: password) { errorBanner.userEdited() }
+        .onAppear { if startWithSignup { showSignup = true } }
         .sheet(isPresented: $showSignup) { SignupView() }
         .sheet(isPresented: $showForgotPassword) { ForgotPasswordView() }
         .sheet(isPresented: Binding(get: { verifyEmail != nil }, set: { if !$0 { verifyEmail = nil } })) {

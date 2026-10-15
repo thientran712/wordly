@@ -6,13 +6,21 @@ enum Onboarding {
     /// Phiên bản có nội dung "Có gì mới" — đổi khi có đợt tính năng mới cần giới thiệu.
     static let whatsNewVersion = "1.0.1"
 
-    enum Intro: Equatable { case welcome, whatsNew, none }
+    enum Intro: Equatable { case whatsNew, none }
 
-    /// Tài khoản mới (chưa lưu từ, chưa thấy màn chào) → màn chào; còn lại → "Có gì mới"
-    /// một lần mỗi phiên bản có nội dung. Xem màn chào thì đánh dấu luôn "Có gì mới".
-    static func intro(savedCount: Int, welcomeSeen: Bool, whatsNewSeen: String?) -> Intro {
-        if !welcomeSeen && savedCount == 0 { return .welcome }
-        return whatsNewSeen == whatsNewVersion ? .none : .whatsNew
+    enum LaunchFlow: Equatable { case show, markSeen, none }
+
+    /// Onboarding 4 màn gắn với LẦN CÀI APP (chủ dự án chốt 15/10: bắt buộc, không bỏ qua).
+    /// Cài mới + chưa đăng nhập → hiện; đang đăng nhập sẵn (cập nhật từ bản cũ) → đánh dấu
+    /// đã xem, không bắt người dùng cũ xem lại.
+    static func launchFlow(flowSeen: Bool, authenticated: Bool) -> LaunchFlow {
+        if flowSeen { return .none }
+        return authenticated ? .markSeen : .show
+    }
+
+    /// "Có gì mới": tài khoản đã có từ, một lần mỗi phiên bản (theo tài khoản).
+    static func showWhatsNew(savedCount: Int, seenVersion: String?) -> Bool {
+        savedCount > 0 && seenVersion != whatsNewVersion
     }
 
     struct Checklist: Equatable {
@@ -46,9 +54,11 @@ enum Onboarding {
         return true
     }
 
-    // MARK: Cờ trên máy
+    // MARK: Cờ
     enum Key {
-        static let welcomeSeen = "onboarding.welcomeSeen"
+        /// Theo MÁY (lần cài): đã xem onboarding 4 màn
+        static let flowSeen = "onboarding.flowSeen"
+        // Theo TÀI KHOẢN — dùng qua OnboardingCenter.key(_:) (thêm ".<userId>")
         static let whatsNewSeen = "onboarding.whatsNewSeen"
         static let cardDismissed = "onboarding.cardDismissed"
         static let cardCelebrated = "onboarding.cardCelebrated"

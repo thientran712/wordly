@@ -23,7 +23,8 @@ final class AuthManager: ObservableObject {
         )
         #if DEBUG
         if PreviewMode.isOn {
-            isAuthenticated = true
+            // `-WordlyFreshInstall`: như vừa cài app, chưa đăng nhập (UI test onboarding)
+            isAuthenticated = !CommandLine.arguments.contains("-WordlyFreshInstall")
             isLoading = false
             return
         }
