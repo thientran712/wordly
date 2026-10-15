@@ -16,6 +16,20 @@ Spec `2026-10-15-shared-word-source-design.md` §2.2 (JS), §2.3, §3, §4, §7.
 
 **Chờ quyết định:** chạy migration `20261016000100_word_source` lên production + deploy web — phải trước khi phát hành app có tính năng này.
 
+### 15/10/2026 (khuya) — Nguồn từ chung, Từ ghim, trang Widget gộp, giới thiệu tính năng: XONG CODE, CHỜ DUYỆT
+
+Nhánh `feat/widget-two-entries` (spec `2026-10-15-shared-word-source-design.md`). **Chưa lên production, chưa build 19.**
+
+- **Nguồn từ chung** cho widget khoá + chính + push: đã lưu / trộn từ mới (bỏ "dịch gần đây"), **từ ghim** (×2, tối đa 30, chọn trong từ đã lưu, nút 📌 ghim nhanh), "chỉ dùng từ ghim". Lưu server (`word_source_settings`), bản sửa sau thắng; cài đặt "Tự chọn" cũ tự chuyển thành từ ghim.
+- **Lịch widget 48 giờ lên server** (`widget_schedule`) thay log cả pool; push chọn từ theo bảng §4 (tránh từ đang/vừa hiện, ưu tiên từ đã thấy 6–48 giờ, xoay theo lịch sử push).
+- **Trang Widget gộp** (2 tab, hướng dẫn, "Áp dụng cho cả 2 widget", cách thêm có hình minh hoạ tự vẽ), **Nhắc ôn tự lưu** + "Lần tới", Cá nhân 3 dòng tóm tắt; bỏ thẻ chuỗi ngày học.
+- **Giới thiệu tính năng:** màn chào (tài khoản mới), "Có gì mới" (tài khoản cũ), thẻ "Bắt đầu với Wordly", gợi ý thêm widget, TipKit.
+- **Đồng ý điều khoản:** đăng nhập = đồng ý (chủ dự án chốt lại), app tự ghi; màn đồng ý chỉ khi Điều khoản đổi phiên bản.
+- Review độc lập backend: sửa 2 lỗi thật (trùng "Đã nhắc", lịch sử push không thứ tự) + 3 điểm (lệch tập từ >200, index, lỗi đọc → bỏ lượt).
+- Bằng chứng: web 482/482 (gồm RLS 30/30, Supabase local), eslint sạch, `next build` OK; iOS unit 255/255, UI 36/36.
+
+**Chờ chủ dự án:** (1) migration `20261016000100_word_source` lên production (cần PostgreSQL ≥ 15 — kiểm phiên bản trước khi chạy); (2) deploy web; (3) build 19. PR #44 (sửa nhanh xoay vòng push) đã được nhánh này thay thế.
+
 ### 15/10/2026 (tối) — Đồng ý Điều khoản ĐÃ LÊN production (web); theme ảnh widget; chờ build 19
 
 **Đồng ý Điều khoản + Chính sách** (spec `2026-10-15-terms-consent-design.md`, PR #42): migration `20261015000100_terms_consent` **đã chạy production** (chủ dự án đồng ý; 2 cột trống trong `profiles`, 46 hồ sơ nguyên, đã `NOTIFY pgrst`), web deploy `5139cf5` (`/terms` 200, `/api/consent` 401 khi chưa đăng nhập). iOS: dòng "Bằng việc tiếp tục…" ở màn đăng nhập, ô tick khi đăng ký email, màn đồng ý một lần sau Google/Apple + người dùng cũ; không đồng ý → tự chọn đăng xuất/xoá tài khoản. Bằng chứng: web 411 + RLS 23/23 (Supabase local), iOS unit 238 + UI 25, migration chạy thử local đúng (ràng buộc chặn 0). **Chưa có trong app trên TestFlight** — vào build 19.
