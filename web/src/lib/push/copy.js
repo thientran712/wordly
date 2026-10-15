@@ -50,7 +50,7 @@ export const QUIZ = [
   "{w} nghĩa là gì? Đúng nhận sai cãi, vô coi đáp án 🔮",
   "Nhớ {w} không? Không nhớ là còn cái nịt đó nha.",
   "{w} nghĩa là gì? Ai sợ thì đi về 😤",
-  "Hey Siri, tua về lúc mày còn nhớ {w} đi 🙃",
+  "Ước gì tua lại được lúc mày còn nhớ {w} 🙃",
   "{w} là gì? Khum biết thì vô học, đừng giả bộ 🙄",
   "Ủa alo? {w} gọi mày 3 cuộc nhỡ rồi đó 📞",
   "Nín! Nghĩ xem {w} là gì rồi hẵng bấm 🤐",
@@ -75,7 +75,7 @@ export const SHOW = [
   "Plot twist: {w} nghĩa là {m}. Tuyệt đối điện ảnh 🎬",
   "{w} là {m}. Nhớ chưa? Chưa là còn cái nịt.",
   "Cơm nước gì chưa người đẹp? Ăn thêm món này: {w} là {m} 🍚",
-  "Dân Zalo mới không biết {w} là {m}. Giờ mày biết rồi đó.",
+  "Dân mạng mới không biết {w} là {m}. Giờ mày biết rồi đó.",
   "Tin nóng: {w} tức là {m}. Đỉnh nóc kịch trần 🔥",
 ];
 

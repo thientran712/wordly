@@ -2,7 +2,8 @@
 // 2026-10-13). Postgres chọn slot tới giờ (due_push_slots, cửa sổ bù 30 phút),
 // mỗi slot GIÀNH QUYỀN bằng INSERT push_log unique (slot_id, send_date) trước
 // khi gửi → hai lượt chạy chồng không gửi đôi. Chạy song song qua runPool.
-import { selectEmailContent, selectBankWords } from "../email/select-word-for-email.js";
+import { selectBankWords } from "../email/select-word-for-email.js";
+import { selectPushWord, lastShownMap, SHOWN_WINDOW_DAYS } from "./select-push-word.js";
 import { buildPushMessage } from "./build-message.js";
 import { sendFcmMessage, isDeadToken, isFatal } from "./fcm-client.js";
 import { createGoogleTokenProvider } from "./google-access-token.js";
@@ -10,7 +11,6 @@ import { loadFcmConfig } from "./fcm-config.js";
 import { runPool } from "./run-pool.js";
 
 export const CATCHUP_MINUTES = 30;
-const RECENT_DAYS = 3;
 
 // Access token sống 1 giờ — giữ giữa các lượt cron trong cùng container.
 let sharedProvider = null;
@@ -19,19 +19,18 @@ function defaultProvider(config) {
   return sharedProvider;
 }
 
-/** Một từ cho người dùng: từ đã lưu cần ôn (thuật toán email), tránh từ đã
- * gợi ý 3 ngày qua; không có thì lấy từ kho. Không có gì → null. */
-async function pickWord(supabase, userId, now, { selectContent, selectBank }) {
-  const since = new Date(now.getTime() - RECENT_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const { data: recent } = await supabase
-    .from("suggestion_log").select("entry_id, bank_word_id").eq("user_id", userId).gte("shown_at", since);
-  const recentEntryIds = (recent || []).map((r) => r.entry_id).filter(Boolean);
-  const recentBankIds = (recent || []).map((r) => r.bank_word_id).filter(Boolean);
+/** Một từ cho người dùng: từ đã lưu chưa hiện / hiện lâu nhất (push + widget,
+ * xem select-push-word.js); chưa lưu từ nào thì lấy từ kho chưa hiện gần đây.
+ * Không có gì → null. */
+async function pickWord(supabase, userId, now, { selectWord, selectBank }) {
+  const since = new Date(now.getTime() - SHOWN_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const { data: shown } = await supabase
+    .from("suggestion_log").select("entry_id, bank_word_id, shown_at").eq("user_id", userId).gte("shown_at", since);
 
-  const picked = await selectContent(supabase, userId, { lastEntryIds: recentEntryIds });
-  const own = picked?.words?.[0];
+  const own = await selectWord(supabase, userId, lastShownMap(shown, "entry_id"));
   if (own) return { id: own.id, word: own.word, meaning: own.meaning_vi || "", fromBank: false };
 
+  const recentBankIds = [...lastShownMap(shown, "bank_word_id").keys()];
   const [bank] = await selectBank(supabase, userId, { count: 1, recentIds: recentBankIds }).catch(() => []);
   return bank ? { id: bank.id, word: bank.word, meaning: bank.meaning_vi || "", fromBank: true } : null;
 }
@@ -44,7 +43,7 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
   const provider = deps.tokenProvider || defaultProvider(config);
   const send = deps.send || sendFcmMessage;
   const selectors = {
-    selectContent: deps.selectContent || selectEmailContent,
+    selectWord: deps.selectWord || selectPushWord,
     selectBank: deps.selectBank || selectBankWords,
   };
 
