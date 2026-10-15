@@ -4,15 +4,19 @@ Chủ dự án duyệt hướng 15/10/2026 (sau research: Logto "manual agreemen
 
 ## Hành vi
 
+**Chủ dự án chốt lại 15/10/2026 (tối):** đăng nhập là đồng ý — không có màn đồng ý cho lần đầu.
+
 | Tình huống | Người dùng thấy |
 |---|---|
 | Màn đăng nhập | Dòng chữ dưới các nút: "Bằng việc tiếp tục, bạn đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư" (2 link) |
-| Đăng ký email | Ô "Tôi đồng ý với…" để trống, chưa tick thì nút "Tạo tài khoản" khoá. Đăng ký xong → app tự ghi đồng ý lên server, không hỏi lại |
-| Google/Apple lần đầu, hoặc người dùng cũ (1.0.0) chưa đồng ý | Màn "Điều khoản sử dụng Wordly" toàn màn hình: dữ liệu lưu gì, 2 link, [Đồng ý và bắt đầu] / Không đồng ý |
-| "Không đồng ý" | Hộp chọn: Xoá tài khoản và dữ liệu / Chỉ đăng xuất / Huỷ — không tự xoá dữ liệu của người dùng cũ |
-| Đăng nhập lại khi đã đồng ý | Không có gì thêm |
-| Điều khoản đổi (tăng `CURRENT_TERMS_VERSION`) | Màn đồng ý hiện lại một lần |
-| Lỗi mạng khi kiểm tra | Cho vào app (không khoá người dùng vì mạng), lần mở sau kiểm lại |
+| Đăng ký email | Ô "Tôi đồng ý với…" để trống, chưa tick thì nút "Tạo tài khoản" khoá |
+| Google/Apple lần đầu | Không hiện gì thêm — app tự ghi đồng ý (phiên bản hiện tại) lên server sau khi đăng nhập |
+| Tài khoản tạo trước 1.0.1 | Mặc định đã đồng ý — lần mở đầu tiên trên bản mới app tự ghi, không hỏi |
+| Điều khoản lên phiên bản mới (tăng `CURRENT_TERMS_VERSION`) | Màn "Wordly cập nhật Điều khoản" một lần: [Đồng ý và tiếp tục] / Không đồng ý |
+| "Không đồng ý" (chỉ ở màn cập nhật) | Hộp chọn: Xoá tài khoản và dữ liệu / Chỉ đăng xuất / Huỷ |
+| Lỗi mạng khi kiểm tra hoặc khi tự ghi | Cho vào app, lần mở sau ghi lại |
+
+Lưu ý pháp lý (đã báo chủ dự án): Nghị định 13/2023 Điều 11 coi đồng ý ngầm định yếu hơn đánh dấu ô đồng ý.
 
 ## Dữ liệu
 

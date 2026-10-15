@@ -1,9 +1,10 @@
 import Foundation
 
-/// Đồng ý Điều khoản sử dụng + Chính sách quyền riêng tư sau khi đăng nhập
-/// (docs/superpowers/specs/2026-10-15-terms-consent-design.md). Server báo phiên
-/// bản cần đồng ý; hồ sơ cũ hơn → hỏi. Đăng ký email đã tick ô đồng ý → ghi
-/// lên server luôn, không hỏi lại.
+/// Đồng ý Điều khoản sử dụng + Chính sách quyền riêng tư (spec
+/// 2026-10-15-terms-consent-design.md, chủ dự án chốt lại 15/10): đăng nhập là
+/// đồng ý — Google/Apple có dòng "Bằng việc tiếp tục…", email có ô tick; tài
+/// khoản cũ mặc định đã đồng ý. Chưa ghi lần nào → app tự ghi lên server, không
+/// hiện màn. Chỉ hỏi lại (màn đồng ý) khi Điều khoản lên phiên bản mới.
 enum TermsConsent {
     enum Decision: Equatable {
         case ok
@@ -11,29 +12,9 @@ enum TermsConsent {
         case acceptSilently(version: Int)
     }
 
-    /// Email đã tick "Tôi đồng ý" lúc đăng ký — chờ đăng nhập xong để ghi lên server.
-    struct PendingStore {
-        private static let key = "wordly.terms.pendingAcceptEmail"
-        let defaults: UserDefaults
-
-        init(defaults: UserDefaults = .standard) { self.defaults = defaults }
-
-        static func normalize(_ email: String) -> String {
-            email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        }
-
-        func markAccepted(email: String) { defaults.set(Self.normalize(email), forKey: Self.key) }
-        func isAccepted(email: String?) -> Bool {
-            guard let email, let saved = defaults.string(forKey: Self.key) else { return false }
-            return saved == Self.normalize(email)
-        }
-        func clear() { defaults.removeObject(forKey: Self.key) }
-    }
-
-    static func decision(_ response: ProfileResponse, userEmail: String?,
-                         pending: PendingStore = PendingStore()) -> Decision {
+    static func decision(_ response: ProfileResponse) -> Decision {
         guard let current = response.termsCurrentVersion else { return .ok }
-        if (response.profile?.termsVersion ?? 0) >= current { return .ok }
-        return pending.isAccepted(email: userEmail) ? .acceptSilently(version: current) : .ask(version: current)
+        guard let accepted = response.profile?.termsVersion else { return .acceptSilently(version: current) }
+        return accepted >= current ? .ok : .ask(version: current)
     }
 }

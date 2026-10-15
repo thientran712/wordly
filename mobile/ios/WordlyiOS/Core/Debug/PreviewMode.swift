@@ -22,6 +22,8 @@ enum PreviewMode {
 
     /// `-WordlyNeedsConsent` → hồ sơ mẫu chưa đồng ý Điều khoản (thấy màn đồng ý)
     static var needsConsent: Bool { CommandLine.arguments.contains("-WordlyNeedsConsent") }
+    /// `-WordlyTermsOutdated` → đã đồng ý bản cũ, Điều khoản vừa lên bản mới (thấy màn đồng ý lại)
+    static var termsOutdated: Bool { CommandLine.arguments.contains("-WordlyTermsOutdated") }
 
     static func initialTab(from arguments: [String]) -> String? {
         guard let i = arguments.firstIndex(of: flag), i + 1 < arguments.count else { return nil }
@@ -37,7 +39,7 @@ enum PreviewMode {
         case ("GET", "/api/translate-history"): json = history
         case ("GET", "/api/journal"): json = journal
         case ("GET", "/api/practice/sessions"): json = sessions
-        case ("GET", "/api/profile"): json = needsConsent ? profileNoConsent : profile
+        case ("GET", "/api/profile"): json = termsOutdated ? profileOutdatedTerms : needsConsent ? profileNoConsent : profile
         case ("POST", "/api/consent"): json = #"{"success": true, "terms_version": 1}"#
         case ("POST", "/api/translate"): json = #"{"translated": "kiên cường, mau phục hồi", "detectedLang": "EN"}"#
         case ("POST", "/api/practice"):
@@ -100,6 +102,11 @@ enum PreviewMode {
     private static let profile = #"""
     {"profile": {"id": "u1", "name": "Thiên", "skill_level": "B1", "learning_goal": "ielts", "timezone": "Asia/Ho_Chi_Minh", "terms_version": 1},
      "email": "preview@wordly.app", "auth_provider": "email", "terms_current_version": 1}
+    """#
+
+    private static let profileOutdatedTerms = #"""
+    {"profile": {"id": "u1", "name": "Thiên", "skill_level": "B1", "learning_goal": "ielts", "timezone": "Asia/Ho_Chi_Minh", "terms_version": 1},
+     "email": "preview@wordly.app", "auth_provider": "email", "terms_current_version": 2}
     """#
 
     private static let profileNoConsent = #"""
