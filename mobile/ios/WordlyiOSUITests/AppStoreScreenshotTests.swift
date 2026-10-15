@@ -64,7 +64,8 @@ final class AppStoreScreenshotTests: XCTestCase {
 
     func test05WidgetSettings() {
         let app = launch(["profile", "-WordlyUIPreviewScreen", "widget"])
-        XCTAssertTrue(app.staticTexts["XEM TRƯỚC — CÁC THẺ SẮP TỚI"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Màn hình khoá"].waitForExistence(timeout: 10))
+        app.buttons["Màn hình khoá"].tap()
         sleep(2)
         snap(app, "05-widget")
     }

@@ -9,7 +9,7 @@ final class PushSettingsUITests: XCTestCase {
         app.launchArguments = ["-WordlyUIPreview", "profile", "-WordlyUIPreviewScreen", "push"]
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Nhận thông báo ôn từ"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Nhắc ôn từ"].waitForExistence(timeout: 10))
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let alert = springboard.alerts.firstMatch
         XCTAssertFalse(alert.waitForExistence(timeout: 4),

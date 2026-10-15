@@ -84,6 +84,7 @@ final class SettingsRedesignUITests: XCTestCase {
         let app = launch()
         app.buttons["entryWidget"].tap()
         XCTAssertTrue(app.buttons["Màn hình khoá"].waitForExistence(timeout: 5))
+        app.buttons["Màn hình khoá"].tap()   // tab được nhớ từ lần trước
         XCTAssertTrue(app.buttons["widgetGuideToggle"].exists, "đầu trang có hướng dẫn sử dụng")
         shot(app, "widget-lock-top")
         XCTAssertTrue(scrollTo(app.staticTexts["sharedSettingsHeader"], in: app), "có nhóm áp dụng cho cả 2 widget")
