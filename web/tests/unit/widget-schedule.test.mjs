@@ -20,13 +20,14 @@ test("entries rỗng = chưa có widget nào → hợp lệ, chỉ xoá lịch t
   assert.deepEqual(validateScheduleBody({ entries: [] }, now), { ok: true, value: [], dropped: 0 });
 });
 
-test("biên giờ: [now−1h, now+49h] nhận, ngoài khung bị bỏ (lệch đồng hồ máy không làm mất cả lịch)", () => {
+// Lùi 2 giờ 5 phút: app gửi giờ BẮT ĐẦU slot đang hiện (slot dài nhất 2 giờ).
+test("biên giờ: [now−2h05, now+49h] nhận, ngoài khung bị bỏ (lệch đồng hồ máy không làm mất cả lịch)", () => {
   const v = validateScheduleBody({ entries: [
-    { shown_at: at(-1), id: E }, { shown_at: at(49), id: E },
-    { shown_at: at(-1.01), id: E }, { shown_at: at(49.01), id: E },
+    { shown_at: at(-125 / 60), id: E }, { shown_at: at(49), id: E },
+    { shown_at: at(-2.1), id: E }, { shown_at: at(49.01), id: E },
   ] }, now);
   assert.equal(v.ok, true);
-  assert.deepEqual(v.value.map((r) => r.shown_at), [at(-1), at(49)]);
+  assert.deepEqual(v.value.map((r) => r.shown_at), [at(-125 / 60), at(49)]);
   assert.equal(v.dropped, 2);
 });
 
