@@ -373,7 +373,13 @@ final class HistoryViewModel: ObservableObject {
         undoTask?.cancel()
         groups = undo.snapshot
         self.undo = nil
-        Task { try? await APIClient.shared.restoreHistory(ids: undo.ids) }
+        Task {
+            do { try await APIClient.shared.restoreHistory(ids: undo.ids) }
+            catch {
+                // Đủ giới hạn từ đã lưu → server từ chối khôi phục: hiện đúng dữ liệu thật + paywall
+                if ProStore.shared.handle(error) { await fetchHistory() }
+            }
+        }
     }
 
     /// Server cũ (xoá cứng) không trả id → không có gì để hoàn tác → không hiện nút.

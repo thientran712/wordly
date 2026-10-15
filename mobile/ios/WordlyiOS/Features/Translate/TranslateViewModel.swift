@@ -51,6 +51,13 @@ final class TranslateViewModel: ObservableObject {
     private var suppressSuggestions = false
     /// Đổi inputText bằng code (chọn mục lịch sử) → onChange của ô nhập không xử lý lại.
     private var skipNextChange = false
+    /// Một lần nhập (gõ dần / nói dần gửi nhiều request) → server chỉ tính 1 lượt (spec Pro §3)
+    private var quotaKey = UUID().uuidString
+    /// Chữ đến từ ghi âm → báo server là dịch giọng nói
+    private var fromVoice = false
+    private var countedKey: String?
+    /// Hết lượt tra từ: vẫn có nghĩa ngắn, thẻ chi tiết khoá (spec Pro §3)
+    @Published var dictionaryLocked = false
 
     // MARK: Chụp ảnh / ghi âm dịch (giống web InlineTranslate.js)
     @Published var isReadingImage = false
@@ -88,7 +95,9 @@ final class TranslateViewModel: ObservableObject {
             return
         }
         saved = false
-        if !TranslateLogic.isSingleWord(text) { dictionary = .hidden }
+        fromVoice = dictation.isListening
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { quotaKey = UUID().uuidString }
+        if !TranslateLogic.isSingleWord(text) { dictionary = .hidden; dictionaryLocked = false }
         scheduleTranslation(text)
         if direction == .enToVi, !suppressSuggestions { scheduleSuggestions(text) } else { suggestions = [] }
     }
@@ -115,7 +124,8 @@ final class TranslateViewModel: ObservableObject {
             isTranslating = true
             defer { isTranslating = false }
             do {
-                let r = try await api.translate(text: text, source: direction.source, target: direction.target)
+                let r = try await api.translate(text: text, source: direction.source, target: direction.target,
+                                                input: fromVoice ? "voice" : nil, quotaKey: quotaKey)
                 guard !Task.isCancelled else { return }
                 guard let result = r.translated, !result.isEmpty else {
                     translatedText = ""
@@ -124,11 +134,19 @@ final class TranslateViewModel: ObservableObject {
                 }
                 translateCache[key] = result
                 translatedText = result
+                // Dịch nâng cao vừa tính lượt → cập nhật bộ đếm (một lần mỗi lần nhập)
+                let words = text.split(whereSeparator: \.isWhitespace).count
+                if ProStore.shared.showsLimits, fromVoice || words > 3, countedKey != quotaKey {
+                    countedKey = quotaKey
+                    Task { await ProStore.shared.refreshStatus() }
+                }
             } catch {
                 // Gõ tiếp → yêu cầu cũ bị huỷ (URLSession ném lỗi huỷ) — không phải
                 // mất mạng; trước đây hiện "Mất kết nối" sai mỗi khi gõ nhanh.
                 guard !Task.isCancelled else { return }
-                if case APIError.serverError(let m) = error, m.contains("429") {
+                if ProStore.shared.handle(error) {
+                    translatedText = ""
+                } else if case APIError.serverError(let m) = error, m.contains("429") {
                     toast = "Bạn dịch hơi nhanh, chờ vài giây rồi thử lại nhé"
                 } else {
                     toast = "Mất kết nối — thử lại nhé"
@@ -208,6 +226,10 @@ final class TranslateViewModel: ObservableObject {
             }
         } catch APIError.serverError(let m) where m.contains("429") {
             if stillCurrent() { dictionary = .failed("Bạn tra hơi nhanh, chờ một chút rồi thử lại nhé.") }
+        } catch APIError.limitReached {
+            // Hết lượt: nghĩa ngắn (bản dịch) vẫn hiện, thẻ chi tiết mờ + "Mở khoá với Pro"
+            if stillCurrent() { dictionary = .hidden; dictionaryLocked = true }
+            await ProStore.shared.refreshStatus()
         } catch {
             if stillCurrent() { dictionary = .failed("Không tra được nghĩa từ. Thử lại nhé.") }
         }
@@ -243,7 +265,9 @@ final class TranslateViewModel: ObservableObject {
         translatedText = ""
         suggestions = []
         dictionary = .hidden
+        dictionaryLocked = false
         saved = false
+        quotaKey = UUID().uuidString
     }
 
     /// "Lưu" — web dùng PATCH: đánh dấu dòng lịch sử là đã lưu (tạo mới nếu chưa có).
@@ -260,11 +284,12 @@ final class TranslateViewModel: ObservableObject {
             Task {
                 await WidgetSync.refresh()
                 await OnboardingCenter.shared.afterSave()
+                await ProStore.shared.noteSaved()
             }
             Task { await maybeOfferPushReminder() }
         } catch {
             saved = false
-            toast = "Không lưu được, thử lại nhé"
+            if !ProStore.shared.handle(error) { toast = "Không lưu được, thử lại nhé" }
         }
     }
 
@@ -303,11 +328,12 @@ final class TranslateViewModel: ObservableObject {
                 skipNextChange = false
                 inputText = source
                 translatedText = translated
+                Task { await ProStore.shared.refreshStatus() }
                 translateCache["\(direction.rawValue)::\(source)"] = translated
                 saved = false
                 scheduleAutoLog()
             } catch {
-                imageError = "Mất kết nối — thử lại nhé"
+                if !ProStore.shared.handle(error) { imageError = TranslateLogic.imageErrorMessage(error) }
             }
         }
     }
@@ -338,6 +364,8 @@ final class TranslateViewModel: ObservableObject {
         // Không tự tra từ điển AI (tính phí theo lượt, và chậm) — từ đơn tiếng
         // Anh thì hiện nút "Tra nghĩa" để người dùng tự bấm (xem canLookUp).
         dictionary = .hidden
+        dictionaryLocked = false
+        quotaKey = UUID().uuidString
         Task {
             try? await Task.sleep(for: .seconds(1))
             suppressSuggestions = false

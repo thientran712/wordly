@@ -88,11 +88,15 @@ struct SavedWordsView: View {
     @StateObject private var tts = TTSManager.shared
     @EnvironmentObject private var router: AppRouter
     @State private var selected: TranslateHistoryEntry?
+    @ObservedObject private var pro = ProStore.shared
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 widgetCard
+                if pro.showsLimits, let line = ProCopy.saved(pro.status.limits.savedWords) {
+                    ProCounterLine(text: line) { pro.present(.limit(.savedWords, pro.status.limits.savedWords.limit)) }
+                }
                 HStack {
                     SectionHeader(title: "Từ đã lưu (\(vm.saved.count))")
                     if !vm.saved.isEmpty {

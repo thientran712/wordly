@@ -74,6 +74,7 @@ final class ReminderSettingsViewModel: ObservableObject {
             slots.append(try await APIClient.shared.addPushSlot(time: time))
             error = nil
         } catch {
+            if ProStore.shared.handle(error) { return }
             self.error = (error as? APIError)?.serverMessage ?? "Không thêm được khung giờ."
         }
     }
@@ -176,6 +177,16 @@ struct ReminderSettingsForm: View {
     /// Chỉ gọi khi NGƯỜI DÙNG gạt công tắc — không gọi khi cài đặt tải về
     /// (màn Thông báo xin quyền iOS ở đây, không phải lúc mở màn).
     var onToggle: ((Bool) -> Void)? = nil
+    @ObservedObject private var pro = ProStore.shared
+
+    /// Miễn phí 1 khung, Pro tối đa 10 — chỉ khi server đang chặn (spec Pro §1, §3)
+    private var slotLimit: Int { pro.showsLimits ? pro.status.limits.pushSlots.limit : ReminderScheduleLogic.maxSlots }
+
+    /// Hết Pro còn nhiều khung: khung sớm nhất vẫn gửi, các khung sau 🔒 (giữ dữ liệu)
+    private func isLocked(_ slot: EmailSlot) -> Bool {
+        let order = vm.slots.map(\.sendTime).sorted()
+        return ReminderAccess.isLocked(index: order.firstIndex(of: slot.sendTime) ?? 0, limit: slotLimit)
+    }
 
     var body: some View {
         Section {
@@ -207,6 +218,12 @@ struct ReminderSettingsForm: View {
                                 current: slot.sendTime,
                                 others: vm.slots.filter { $0.id != slot.id }.map(\.sendTime)),
                             onPick: { t in Task { await vm.update(slot, to: t) } })
+                        if isLocked(slot) {
+                            Spacer()
+                            Button { pro.present(.limit(.pushSlots, slotLimit)) } label: { ProBadge(locked: true) }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Khung giờ này chỉ gửi khi có Wordly Pro")
+                        }
                     }
                     .swipeActions {
                         if ReminderScheduleLogic.canDeleteSlot(count: vm.slots.count) {
@@ -215,13 +232,27 @@ struct ReminderSettingsForm: View {
                     }
                 }
                 if ReminderScheduleLogic.canAddSlot(count: vm.slots.count) {
-                    Button { Task { await vm.addSlot() } } label: {
-                        Label("Thêm khung giờ", systemImage: "plus.circle.fill")
+                    if ReminderAccess.canAdd(count: vm.slots.count, limit: slotLimit) {
+                        Button { Task { await vm.addSlot() } } label: {
+                            Label("Thêm khung giờ", systemImage: "plus.circle.fill")
+                        }
+                        .foregroundStyle(WordlyColors.electric)
+                    } else {
+                        // Khoe: vẫn thấy nút, chạm → paywall
+                        Button { pro.present(.limit(.pushSlots, slotLimit)) } label: {
+                            HStack {
+                                Label("Thêm khung giờ", systemImage: "plus.circle.fill")
+                                Spacer()
+                                ProBadge(locked: true)
+                            }
+                        }
+                        .foregroundStyle(WordlyColors.electric)
+                        .accessibilityIdentifier("addSlot.locked")
                     }
-                    .foregroundStyle(WordlyColors.electric)
                 }
             } header: {
-                Text("Giờ gửi (\(vm.slots.count)/\(ReminderScheduleLogic.maxSlots))")
+                Text(pro.showsLimits ? "Giờ gửi (\(vm.slots.count) · miễn phí \(slotLimit) khung, Pro tối đa \(ReminderScheduleLogic.maxSlots))"
+                                     : "Giờ gửi (\(vm.slots.count)/\(ReminderScheduleLogic.maxSlots))")
             } footer: {
                 Text("Chỉ chọn giờ tròn hoặc rưỡi. Theo múi giờ \(vm.timezone). Vuốt sang trái để xoá một khung giờ.")
             }

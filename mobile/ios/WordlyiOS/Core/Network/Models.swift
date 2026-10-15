@@ -40,6 +40,18 @@ struct TranslateRequest: Codable {
     let text: String
     let source: String
     let target: String
+    /// "voice" khi chữ đến từ ghi âm → server tính lượt dịch nâng cao (spec Pro §3)
+    var input: String? = nil
+    /// Mã một lần nhập — server tính tối đa 1 lượt cho mỗi mã trong ngày (gõ / nói dần gửi nhiều request)
+    var quotaKey: String? = nil
+
+    enum CodingKeys: String, CodingKey { case text, source, target, input, quotaKey = "quota_key" }
+}
+
+/// POST /api/dictionary — `purpose: "widget"` = tra ngầm cho widget, server chỉ trả cache, không tính lượt.
+struct DictionaryRequest: Encodable {
+    let word: String
+    var purpose: String? = nil
 }
 
 struct TranslateResponse: Codable {

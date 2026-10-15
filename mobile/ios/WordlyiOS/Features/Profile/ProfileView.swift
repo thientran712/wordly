@@ -14,6 +14,16 @@ struct ProfileView: View {
     @State private var confirmDelete = false
     @State private var isDeleting = false
     @State private var deleteError: String?
+    @ObservedObject private var pro = ProStore.shared
+
+    /// Xoá tài khoản không huỷ gói Apple → cảnh báo trước (spec Pro §9.4)
+    private var warnSubscription: Bool { ProAccess.warnBeforeDelete(status: pro.status, localEntitled: pro.localEntitled) }
+
+    private var proSubtitle: String {
+        guard pro.isPro else { return "Nâng cấp" }
+        if let d = ProDates.display(pro.status.expiresAt) { return "Đang dùng Pro đến \(String(d.prefix(5)))" }
+        return "Đang dùng Pro"
+    }
 
     var body: some View {
         NavigationStack {
@@ -21,6 +31,21 @@ struct ProfileView: View {
                 // Tên chỉ hiện một chỗ; cả khối là lối vào màn sửa hồ sơ (có mũi tên ›)
                 Section {
                     NavigationLink { EditProfileView(vm: vm) } label: { accountHeader }
+                }
+
+                // Hiện khi App Store đã có gói để bán (người duyệt Apple phải tìm thấy được — 2.1),
+                // hoặc đang Pro / server đang chặn
+                if pro.isPro || pro.status.enforced || !pro.plans.isEmpty {
+                    Section {
+                        Button { pro.present(.general) } label: {
+                            HStack {
+                                settingRow("crown.fill", WordlyColors.duoOrange, "Wordly Pro", proSubtitle)
+                                ProBadge()
+                            }
+                        }
+                        .foregroundStyle(WordlyColors.ink)
+                        .accessibilityIdentifier("profile.pro")
+                    }
                 }
 
                 // Spec 2026-10-15 §5.1 — tóm tắt bằng chữ, không số
@@ -115,6 +140,9 @@ struct ProfileView: View {
             }
             .alert("Xoá vĩnh viễn tài khoản?", isPresented: $confirmDelete) {
                 Button("Huỷ", role: .cancel) {}
+                if warnSubscription {
+                    Button("Quản lý gói trước") { Task { await pro.manageSubscriptions() } }
+                }
                 Button("Xoá tài khoản", role: .destructive) {
                     Task {
                         isDeleting = true
@@ -130,7 +158,9 @@ struct ProfileView: View {
                     }
                 }
             } message: {
-                if authManager.isAppleUser {
+                if warnSubscription {
+                    Text("Bạn đang có gói Wordly Pro. Xoá tài khoản KHÔNG tự huỷ gói trên App Store — hãy huỷ gói trước để không bị trừ tiền kỳ sau. Toàn bộ dữ liệu sẽ bị xoá và không khôi phục được.")
+                } else if authManager.isAppleUser {
                     Text("Toàn bộ từ đã lưu, lịch sử dịch, sổ tay và cài đặt nhắc học sẽ bị xoá và không khôi phục được. Bạn sẽ xác nhận với Apple một lần nữa.")
                 } else {
                     Text("Toàn bộ từ đã lưu, lịch sử dịch, sổ tay và cài đặt nhắc học sẽ bị xoá và không khôi phục được.")

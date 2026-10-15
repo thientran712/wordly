@@ -31,6 +31,10 @@ enum APIError: LocalizedError {
     case serverError(String)
     case decodingError(Error)
     case networkError(Error)
+    /// 402 — chạm giới hạn bản miễn phí (Wordly Pro)
+    case limitReached(LimitCode, String, Int?)
+    /// 426 — bản app quá cũ, phải cập nhật
+    case updateRequired(String)
 
     var errorDescription: String? {
         switch self {
@@ -40,6 +44,8 @@ enum APIError: LocalizedError {
         case .serverError(let m):  return m
         case .decodingError(let e): return "Lỗi parse: \(e.localizedDescription)"
         case .networkError(let e): return "Lỗi mạng: \(e.localizedDescription)"
+        case .limitReached(_, let m, _): return m
+        case .updateRequired(let m): return m
         }
     }
 }
@@ -130,6 +136,8 @@ final class APIClient: ObservableObject {
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Server chặn bản cũ (426) và áp giới hạn Pro theo build (spec Pro §3)
+        req.setValue(String(ForceUpdate.currentBuild), forHTTPHeaderField: "X-Wordly-Build")
 
         // Attach Supabase session token
         if let token = await AuthManager.shared.currentToken() {
@@ -146,8 +154,9 @@ final class APIClient: ObservableObject {
 
             if http.statusCode == 401 { throw APIError.unauthorized }
             if http.statusCode >= 400 {
-                let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
-                throw APIError.serverError("HTTP \(http.statusCode): \(msg)")
+                let err = APIError.from(status: http.statusCode, body: data)
+                if case .updateRequired = err { await AppUpdateGate.shared.markRequired() }
+                throw err
             }
 
             return try decoder.decode(T.self, from: data)
@@ -174,6 +183,7 @@ final class APIClient: ObservableObject {
         guard let url = URL(string: WordlyConfig.webBaseURL + path) else { throw APIError.invalidURL }
 
         var req = URLRequest(url: url)
+        req.setValue(String(ForceUpdate.currentBuild), forHTTPHeaderField: "X-Wordly-Build")
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token = await AuthManager.shared.currentToken() {
@@ -211,6 +221,22 @@ final class APIClient: ObservableObject {
         )
         guard let profile = resp.profile else { throw APIError.noData }
         return profile
+    }
+
+    // MARK: - Wordly Pro (spec 2026-10-16 §8)
+    func billingStatus() async throws -> BillingStatus {
+        try await request(path: "/api/billing/status", responseType: BillingStatus.self)
+    }
+
+    func syncTransaction(_ jws: String) async throws -> BillingStatus {
+        struct Body: Encodable { let signed_transaction: String }
+        return try await request(path: "/api/billing/sync", method: "POST", body: Body(signed_transaction: jws),
+                                 responseType: BillingStatus.self)
+    }
+
+    func appMinBuild() async throws -> Int {
+        struct Resp: Decodable { let min_build: Int }
+        return try await request(path: "/api/app-config", responseType: Resp.self).min_build
     }
 
     // MARK: - Nguồn từ chung (spec 2026-10-15 §2.3)
@@ -251,11 +277,12 @@ final class APIClient: ObservableObject {
     }
 
     // MARK: - Translation
-    func translate(text: String, source: String, target: String) async throws -> TranslateResponse {
+    func translate(text: String, source: String, target: String, input: String? = nil,
+                   quotaKey: String? = nil) async throws -> TranslateResponse {
         try await request(
             path: "/api/translate",
             method: "POST",
-            body: TranslateRequest(text: text, source: source, target: target),
+            body: TranslateRequest(text: text, source: source, target: target, input: input, quotaKey: quotaKey),
             responseType: TranslateResponse.self
         )
     }

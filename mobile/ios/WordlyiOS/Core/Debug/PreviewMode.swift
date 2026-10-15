@@ -142,6 +142,8 @@ enum PreviewScreens {
         case "widget": WidgetSettingsView()
         case "login": LoginView()
         case "homestyle": NavigationStack { HomeStyleView(vm: WidgetSettingsViewModel()) }
+        case "paywall": PaywallView(reason: .limit(.savedWords, 30))
+        case "forceupdate": ForceUpdateView()
         case "widgetbg": WidgetBackgroundEditorView(source: sampleBackground, vm: WidgetSettingsViewModel(), onDone: {})
         default: Text("Không có màn \(name)")
         }

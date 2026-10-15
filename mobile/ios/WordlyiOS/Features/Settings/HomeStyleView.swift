@@ -32,6 +32,12 @@ struct HomeStyleSections: View {
     /// Nhóm theme đang mở trong dropdown (nil = nhóm của theme đang dùng)
     @State private var themeGroup: WidgetTheme.Group?
     @State private var moreOpen = false
+    @ObservedObject private var pro = ProStore.shared
+    /// Theme Pro đang xem thử (không lưu)
+    @State private var tryOn: WidgetTheme?
+
+    /// Ảnh của bạn + tuỳ chỉnh màu là Pro (spec §1); chỉ khoá khi server đang chặn.
+    private var customLocked: Bool { pro.showsLimits }
 
     var body: some View {
         Section {
@@ -45,6 +51,12 @@ struct HomeStyleSections: View {
             }
             .pickerStyle(.menu)
             themeGrid
+                .sheet(item: $tryOn) { theme in
+                    ThemeTryOnSheet(theme: theme) {
+                        tryOn = nil
+                        pro.present(.theme)
+                    }
+                }
         } header: {
             HubHeader("Theme", systemImage: "paintpalette")
         } footer: {
@@ -52,6 +64,16 @@ struct HomeStyleSections: View {
         }
 
         Section {
+            if customLocked && !vm.settings.homeStyle.hasBackgroundImage {
+                Button { pro.present(.customStyle) } label: {
+                    HStack {
+                        Label("Chọn ảnh của bạn", systemImage: "photo")
+                        Spacer()
+                        ProBadge(locked: true)
+                    }
+                }
+                .accessibilityIdentifier("customPhoto.locked")
+            } else {
             PhotosPicker(selection: $photoItem, matching: .images) {
                 Label(vm.settings.homeStyle.hasBackgroundImage ? "Đổi ảnh khác" : "Chọn ảnh của bạn",
                       systemImage: "photo")
@@ -76,6 +98,7 @@ struct HomeStyleSections: View {
                 if let editorSource {
                     WidgetBackgroundEditorView(source: editorSource, vm: vm) { self.editorSource = nil }
                 }
+            }
             }
             if vm.settings.homeStyle.hasBackgroundImage {
                 Button {
@@ -120,6 +143,16 @@ struct HomeStyleSections: View {
 
         Section {
             DisclosureGroup(isExpanded: $moreOpen) {
+                if customLocked {
+                    Button { pro.present(.customStyle) } label: {
+                        HStack {
+                            Text("Mở khoá tuỳ chỉnh màu và chữ")
+                            Spacer()
+                            ProBadge(locked: true)
+                        }
+                    }
+                }
+                Group {
                 Text("Màu nền").font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
                 Toggle("Chuyển màu (gradient)", isOn: boolBinding(\.useGradient)).tint(WordlyColors.electric)
                 swatchRow(vm.settings.homeStyle.useGradient ? "Màu 1" : "Màu nền", \.bgHex1)
@@ -134,8 +167,14 @@ struct HomeStyleSections: View {
                 swatchRow("Màu chữ", \.meaningColorHex)
                 weightPicker(\.meaningWeight)
                 Toggle("Chữ nghiêng", isOn: boolBinding(\.meaningItalic)).tint(WordlyColors.electric)
+                }
+                .disabled(customLocked)
+                .opacity(customLocked ? 0.5 : 1)
             } label: {
-                Label("Tuỳ chỉnh thêm", systemImage: "slider.horizontal.3")
+                HStack {
+                    Label("Tuỳ chỉnh thêm", systemImage: "slider.horizontal.3")
+                    if customLocked { Spacer(); ProBadge() }
+                }
             }
             .accessibilityIdentifier("homeMoreToggle")
         } footer: {
@@ -159,8 +198,13 @@ struct HomeStyleSections: View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 10)], spacing: 10) {
             ForEach(WidgetTheme.themes(in: themeGroup ?? WidgetTheme.group(containing: vm.settings.homeStyle))) { theme in
                 let selected = vm.settings.homeStyle.matches(theme)
+                let locked = pro.showsLimits && !ThemeAccess.isFree(theme)
                 Button {
-                    applyTheme(theme)
+                    if ThemeAccess.canApply(theme, isPro: !pro.showsLimits, current: vm.settings.homeStyle) {
+                        applyTheme(theme)
+                    } else {
+                        tryOn = theme   // khoe: xem thử ngay, không lưu
+                    }
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Aa").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: theme.word))
@@ -173,6 +217,9 @@ struct HomeStyleSections: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12)
                         .stroke(selected ? WordlyColors.electric : Color.primary.opacity(0.12), lineWidth: selected ? 3 : 1))
+                    .overlay(alignment: .topTrailing) {
+                        if locked { ProBadge(locked: true).padding(5) }
+                    }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(theme.name)
@@ -227,9 +274,50 @@ struct HomeStyleSections: View {
     }
 }
 
+/// Xem thử theme Pro ở cỡ widget thật — không đổi cài đặt (spec Pro §2).
+struct ThemeTryOnSheet: View {
+    let theme: WidgetTheme
+    let unlock: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 18) {
+            HStack {
+                Text("Xem thử “\(theme.name)”").font(WordlyFonts.display(20)).foregroundStyle(WordlyColors.ink)
+                Spacer()
+                ProBadge(locked: true)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("resilient").font(.system(size: 26, weight: .bold)).foregroundStyle(Color(hex: theme.word))
+                Text("kiên cường, mau phục hồi").font(.system(size: 15)).foregroundStyle(Color(hex: theme.meaning))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .frame(height: 150)
+            .background { ThemeTileBackground(theme: theme, large: true) }
+            .clipShape(RoundedRectangle(cornerRadius: 22))
+            Button(action: unlock) {
+                Text("Dùng theme này")
+                    .font(WordlyFonts.body(16, weight: .bold))
+                    .frame(maxWidth: .infinity).padding(.vertical, 16)
+                    .background(WordlyColors.electric).foregroundStyle(WordlyColors.onElectric)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .accessibilityIdentifier("theme.tryOn.use")
+            Button("Để sau") { dismiss() }
+                .font(WordlyFonts.body(15, weight: .semibold)).foregroundStyle(WordlyColors.inkSoft)
+        }
+        .padding(24)
+        .presentationDetents([.medium])
+        .screenBackground()
+    }
+}
+
 /// Nền một ô theme: màu (gradient) hoặc ảnh nhỏ đã làm tối như trên widget.
 private struct ThemeTileBackground: View {
     let theme: WidgetTheme
+    /// Ô xem thử lớn → ảnh rõ hơn ảnh nhỏ của lưới
+    var large = false
     @State private var image: CGImage?
 
     var body: some View {
@@ -241,7 +329,7 @@ private struct ThemeTileBackground: View {
                     Color.black.opacity(theme.dim)
                 }
             }
-            .task(id: theme.id) { image = WidgetThemePhoto.thumbnail(theme) }
+            .task(id: theme.id) { image = large ? WidgetThemePhoto.preview(theme) : WidgetThemePhoto.thumbnail(theme) }
         } else {
             LinearGradient(colors: [Color(hex: theme.bg1), Color(hex: theme.bg2 ?? theme.bg1)],
                            startPoint: .topLeading, endPoint: .bottomTrailing)

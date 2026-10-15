@@ -1,0 +1,37 @@
+{
+  "identifier" : "4C8E2D1A-7B3F-4A2E-9C1D-5E6F7A8B9C0D",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_applicationInternalID" : "6819743393",
+    "_developerTeamID" : "929P8F77XX",
+    "_failTransactionsEnabled" : false,
+    "_locale" : "vi_VN",
+    "_storefront" : "VNM",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21581234",
+      "localizations" : [],
+      "name" : "Wordly Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [], "codeOffers" : [], "displayPrice" : "249000", "familyShareable" : false,
+          "groupNumber" : 1, "internalID" : "6754000001", "introductoryOffer" : null,
+          "localizations" : [ { "description" : "Wordly Pro theo năm", "displayName" : "Wordly Pro năm", "locale" : "vi" } ],
+          "productID" : "wordly.pro.yearly", "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Wordly Pro Yearly", "subscriptionGroupID" : "21581234", "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [], "codeOffers" : [], "displayPrice" : "29000", "familyShareable" : false,
+          "groupNumber" : 2, "internalID" : "6754000002", "introductoryOffer" : null,
+          "localizations" : [ { "description" : "Wordly Pro theo tháng", "displayName" : "Wordly Pro tháng", "locale" : "vi" } ],
+          "productID" : "wordly.pro.monthly", "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Wordly Pro Monthly", "subscriptionGroupID" : "21581234", "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : { "major" : 3, "minor" : 0 }
+}

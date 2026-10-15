@@ -217,7 +217,7 @@ enum WidgetSync {
         for word in todo {
             // Lỗi mạng/giới hạn → bỏ qua, lần sau tra lại; tra được mà không có → lưu rỗng
             do {
-                let detail = try await APIClient.shared.lookupWord(word)
+                let detail = try await APIClient.shared.lookupWord(word, purpose: "widget")
                 found[word] = detail?.phoneticUs ?? ""
                 foundVi[word] = detail?.shortMeaningVi ?? ""
             } catch {
