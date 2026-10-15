@@ -9,6 +9,9 @@ enum AuthFlow {
 
     /// GoTrue chặn gửi email cùng địa chỉ dày hơn 60 giây (SMTP_MAX_FREQUENCY mặc định).
     static let resendCooldown: TimeInterval = 60
+    /// Khớp GOTRUE_MAILER_OTP_EXP=3600 trên VPS (và chữ "60 phút" trong mẫu email).
+    static let codeValidityNote = "Mã có hiệu lực 60 phút. Chỉ mã trong email mới nhất dùng được."
+    static let resentNote = "Đã gửi mã mới — mã cũ không còn dùng được."
 
     /// Phân loại theo `error_code` của GoTrue; server cũ không có mã thì đoán theo message.
     static func kind(errorCode: String?, message: String) -> ErrorKind {
@@ -35,7 +38,9 @@ enum AuthFlow {
         switch kind {
         case .emailNotConfirmed: return "Email chưa được xác nhận. Nhập mã 6 số trong email để hoàn tất."
         case .rateLimited: return "Bạn gửi mã hơi nhanh, chờ khoảng 1 phút rồi thử lại."
-        case .codeInvalid: return "Mã không đúng hoặc đã hết hạn. Bấm \"Gửi lại mã\" để nhận mã mới."
+        // GoTrue trả otp_expired cho cả mã sai lẫn mã cũ: gửi lại thì mã cũ hết hiệu lực.
+        // Không khuyên gửi lại trước — càng gửi lại càng dễ nhập trúng mã cũ.
+        case .codeInvalid: return "Mã không đúng. Dùng mã trong email mới nhất — gửi lại mã thì mã cũ không dùng được nữa."
         case .userExists: return "Email này đã có tài khoản. Đăng nhập hoặc dùng \"Quên mật khẩu\"."
         case .invalidCredentials: return "Email hoặc mật khẩu không đúng"
         case .weakPassword: return "Mật khẩu quá yếu, thử mật khẩu dài hơn."

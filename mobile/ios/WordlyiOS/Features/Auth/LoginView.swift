@@ -493,7 +493,7 @@ struct ForgotPasswordView: View {
                         Text(codeSent ? "Đặt mật khẩu mới" : "Quên mật khẩu")
                             .font(WordlyFonts.display(28))
                             .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                        Text(codeSent ? "Nhập mã 6 số vừa gửi tới \(email)" : "Nhập email, chúng tôi gửi mã xác nhận 6 số")
+                        Text(codeSent ? "Nhập mã 6 số vừa gửi tới \(email)\n\(AuthFlow.codeValidityNote)" : "Nhập email, chúng tôi gửi mã xác nhận 6 số")
                             .font(WordlyFonts.body(14, weight: .medium))
                             .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                             .multilineTextAlignment(.center)
@@ -573,7 +573,7 @@ struct ForgotPasswordView: View {
             try await authManager.resetPassword(email: email.trimmingCharacters(in: .whitespaces))
             codeSent = true
             lastSent = Date()
-            if resend { info = "Đã gửi mã mới, kiểm tra hộp thư (cả mục Spam)" }
+            if resend { info = AuthFlow.resentNote + " Kiểm tra cả mục Spam." }
         } catch {
             let kind = authManager.errorKind(error)
             if kind == .rateLimited {

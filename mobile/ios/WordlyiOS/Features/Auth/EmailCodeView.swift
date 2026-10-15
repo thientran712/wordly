@@ -57,6 +57,10 @@ struct SignupCodeView: View {
                     .font(WordlyFonts.body(14, weight: .medium))
                     .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                     .multilineTextAlignment(.center)
+                Text(AuthFlow.codeValidityNote)
+                    .font(WordlyFonts.body(12))
+                    .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                    .multilineTextAlignment(.center)
 
                 VStack(spacing: 14) {
                     WordlyTextField(label: "Mã xác nhận", placeholder: "123456", text: $code,
@@ -135,7 +139,7 @@ struct SignupCodeView: View {
         do {
             try await authManager.resendSignupCode(email: email)
             lastSent = Date()
-            info = "Đã gửi mã mới tới \(email)"
+            info = AuthFlow.resentNote
         } catch {
             let kind = authManager.errorKind(error)
             if kind == .rateLimited { lastSent = Date() }
