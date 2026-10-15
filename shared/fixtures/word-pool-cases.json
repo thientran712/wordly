@@ -1,0 +1,36 @@
+{
+  "_doc": "Luật dựng pool nguồn từ (spec 2026-10-15-shared-word-source-design.md §2.2). Swift (WordlyiOSTests) và JS (web/tests/unit) cùng đọc file này. expect: personal = id từ của bạn (không tính lặp), pinned = id từ ghim hợp lệ (xuất hiện 2 lần mỗi vòng), bank = id từ kho dùng được (đã bỏ trùng chữ với từ của bạn). Thứ tự trong mảng không quan trọng.",
+  "saved": [
+    {"id": "s1", "word": "resilient"},
+    {"id": "s2", "word": "FYI"},
+    {"id": "s3", "word": "meticulous"},
+    {"id": "s4", "word": "ephemeral"}
+  ],
+  "bank": [
+    {"id": "bank-1", "word": "diligent"},
+    {"id": "bank-2", "word": "Resilient"},
+    {"id": "bank-3", "word": "candid"}
+  ],
+  "cases": [
+    {"name": "mặc định: đã lưu + trộn kho", "settings": {"include_saved": true, "include_bank": true, "pinned_ids": [], "pinned_only": false},
+     "expect": {"personal": ["s1","s2","s3","s4"], "pinned": [], "bank": ["bank-1","bank-3"]}},
+    {"name": "chỉ đã lưu", "settings": {"include_saved": true, "include_bank": false, "pinned_ids": [], "pinned_only": false},
+     "expect": {"personal": ["s1","s2","s3","s4"], "pinned": [], "bank": []}},
+    {"name": "bỏ đã lưu → luôn dùng kho", "settings": {"include_saved": false, "include_bank": false, "pinned_ids": [], "pinned_only": false},
+     "expect": {"personal": [], "pinned": [], "bank": ["bank-1","bank-2","bank-3"]}},
+    {"name": "ghim + đã lưu + kho", "settings": {"include_saved": true, "include_bank": true, "pinned_ids": ["s2"], "pinned_only": false},
+     "expect": {"personal": ["s1","s2","s3","s4"], "pinned": ["s2"], "bank": ["bank-1","bank-3"]}},
+    {"name": "ghim khi tắt đã lưu: từ ghim vẫn là từ của bạn, kho bỏ trùng với từ ghim", "settings": {"include_saved": false, "include_bank": true, "pinned_ids": ["s1"], "pinned_only": false},
+     "expect": {"personal": ["s1"], "pinned": ["s1"], "bank": ["bank-1","bank-3"]}},
+    {"name": "chỉ từ ghim", "settings": {"include_saved": true, "include_bank": true, "pinned_ids": ["s3","s1"], "pinned_only": true},
+     "expect": {"personal": ["s1","s3"], "pinned": ["s1","s3"], "bank": []}},
+    {"name": "chỉ từ ghim nhưng ghim đã xoá hết → như tắt", "settings": {"include_saved": true, "include_bank": true, "pinned_ids": ["gone"], "pinned_only": true},
+     "expect": {"personal": ["s1","s2","s3","s4"], "pinned": [], "bank": ["bank-1","bank-3"]}},
+    {"name": "id ghim không còn trong đã lưu bị bỏ qua", "settings": {"include_saved": true, "include_bank": false, "pinned_ids": ["gone","s4"], "pinned_only": false},
+     "expect": {"personal": ["s1","s2","s3","s4"], "pinned": ["s4"], "bank": []}}
+  ],
+  "empty_saved_cases": [
+    {"name": "chưa lưu từ nào, đã lưu bật, tắt kho → vẫn dùng kho", "settings": {"include_saved": true, "include_bank": false, "pinned_ids": [], "pinned_only": false},
+     "expect": {"personal": [], "pinned": [], "bank": ["bank-1","bank-2","bank-3"]}}
+  ]
+}
