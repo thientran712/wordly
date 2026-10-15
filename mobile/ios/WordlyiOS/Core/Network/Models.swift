@@ -7,6 +7,8 @@ struct UserProfile: Codable, Identifiable {
     var skillLevel: String?
     var learningGoal: String?
     var timezone: String?
+    /// Phiên bản Điều khoản đã đồng ý (nil = chưa)
+    var termsVersion: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -14,6 +16,7 @@ struct UserProfile: Codable, Identifiable {
         case skillLevel = "skill_level"
         case learningGoal = "learning_goal"
         case timezone
+        case termsVersion = "terms_version"
     }
 }
 
@@ -21,11 +24,14 @@ struct ProfileResponse: Codable {
     let profile: UserProfile?
     let email: String?
     let authProvider: String?
+    /// Phiên bản Điều khoản người dùng phải đồng ý (server cũ không có → nil)
+    let termsCurrentVersion: Int?
 
     enum CodingKeys: String, CodingKey {
         case profile
         case email
         case authProvider = "auth_provider"
+        case termsCurrentVersion = "terms_current_version"
     }
 }
 

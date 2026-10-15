@@ -74,6 +74,9 @@ struct ProfileView: View {
                 }
 
                 Section {
+                    Link(destination: webURL("/terms")) {
+                        settingRow("doc.text.fill", WordlyColors.inkSoft, "Điều khoản sử dụng", nil)
+                    }
                     Link(destination: webURL("/privacy")) {
                         settingRow("hand.raised.fill", WordlyColors.duoBlue, "Chính sách quyền riêng tư", nil)
                     }

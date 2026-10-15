@@ -208,6 +208,13 @@ final class APIClient: ObservableObject {
         return profile
     }
 
+    /// Người dùng bấm "Đồng ý" Điều khoản + Chính sách — server ghi phiên bản + thời điểm.
+    func acceptTerms(version: Int) async throws {
+        struct Body: Encodable { let version: Int }
+        struct Resp: Decodable { let success: Bool? }
+        _ = try await request(path: "/api/consent", method: "POST", body: Body(version: version), responseType: Resp.self)
+    }
+
     // MARK: - Translation
     func translate(text: String, source: String, target: String) async throws -> TranslateResponse {
         try await request(

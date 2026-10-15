@@ -20,6 +20,9 @@ enum PreviewMode {
 
     static func isEnabled(in arguments: [String]) -> Bool { arguments.contains(flag) }
 
+    /// `-WordlyNeedsConsent` → hồ sơ mẫu chưa đồng ý Điều khoản (thấy màn đồng ý)
+    static var needsConsent: Bool { CommandLine.arguments.contains("-WordlyNeedsConsent") }
+
     static func initialTab(from arguments: [String]) -> String? {
         guard let i = arguments.firstIndex(of: flag), i + 1 < arguments.count else { return nil }
         return arguments[i + 1]
@@ -34,7 +37,8 @@ enum PreviewMode {
         case ("GET", "/api/translate-history"): json = history
         case ("GET", "/api/journal"): json = journal
         case ("GET", "/api/practice/sessions"): json = sessions
-        case ("GET", "/api/profile"): json = profile
+        case ("GET", "/api/profile"): json = needsConsent ? profileNoConsent : profile
+        case ("POST", "/api/consent"): json = #"{"success": true, "terms_version": 1}"#
         case ("GET", "/api/stats/streak"): json = #"{"streak": 12, "total_days": 47}"#
         case ("POST", "/api/translate"): json = #"{"translated": "kiên cường, mau phục hồi", "detectedLang": "EN"}"#
         case ("POST", "/api/practice"):
@@ -95,8 +99,13 @@ enum PreviewMode {
     """#
 
     private static let profile = #"""
+    {"profile": {"id": "u1", "name": "Thiên", "skill_level": "B1", "learning_goal": "ielts", "timezone": "Asia/Ho_Chi_Minh", "terms_version": 1},
+     "email": "preview@wordly.app", "auth_provider": "email", "terms_current_version": 1}
+    """#
+
+    private static let profileNoConsent = #"""
     {"profile": {"id": "u1", "name": "Thiên", "skill_level": "B1", "learning_goal": "ielts", "timezone": "Asia/Ho_Chi_Minh"},
-     "email": "preview@wordly.app", "auth_provider": "email"}
+     "email": "preview@wordly.app", "auth_provider": "email", "terms_current_version": 1}
     """#
 }
 
@@ -121,6 +130,7 @@ enum PreviewScreens {
         case "journal": JournalView()
         case "push": PushSettingsView()
         case "widget": WidgetSettingsView()
+        case "login": LoginView()
         case "homestyle": NavigationStack { HomeStyleView(vm: WidgetSettingsViewModel()) }
         case "widgetbg": WidgetBackgroundEditorView(source: sampleBackground, vm: WidgetSettingsViewModel(), onDone: {})
         default: Text("Không có màn \(name)")
