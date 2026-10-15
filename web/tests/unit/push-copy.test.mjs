@@ -104,3 +104,11 @@ test("từ dài (câu đã lưu, > 30 ký tự) → mẫu đặt từ ở cuối
 test("cùng khung giờ: tiêu đề không lặp trong N ngày liên tiếp", () => {
   assert.equal(new Set(days(TITLES.length).map((d) => templateIndex("slot-abc", d, TITLES.length))).size, TITLES.length);
 });
+
+// App Store 5.2: không dùng tên thương hiệu (Siri là của Apple — dễ bị hiểu là app tích hợp Siri).
+test("câu push không chứa tên thương hiệu", () => {
+  const brands = /siri|apple|iphone|google|zalo|facebook|tiktok|instagram|messenger|youtube|netflix|shopee/i;
+  for (const line of [...TITLES, ...QUIZ, ...QUIZ_OWN, ...SHOW]) {
+    assert.ok(!brands.test(line), `"${line}" có tên thương hiệu`);
+  }
+});
