@@ -106,3 +106,14 @@ Alex / luyện nói; gói trọn đời; gói gia đình; đo lường analytics
 - Build cũ / thiếu header khi đang chặn, ở tính năng có giới hạn → **426** `{"error": "Phiên bản Wordly này đã cũ, hãy cập nhật trên App Store để tiếp tục.", "code": "update_required"}`.
 - Tra từ không tính lượt khi từ (đã chuẩn hoá) thuộc: `dictionary_lookups` của người đó, từ đã lưu, kho từ (`words`), hoặc `suggestion_log` của người đó (từ đã hiện trên widget/thông báo). Không cần cờ từ app.
 - Dịch tính lượt "nâng cao" khi: câu (> 3 chữ, đi Gemini), ảnh, giọng nói — chỉ khi thành công.
+
+## 9. An toàn tiền của người dùng (chủ dự án yêu cầu 16/10)
+
+1. Chỉ trừ tiền khi người dùng tự bấm mua và xác nhận trên bảng thanh toán của Apple (StoreKit). Không có thao tác tự động nào dẫn tới thanh toán.
+2. **Đã trả là có Pro ngay**: app tin giao dịch StoreKit đã được Apple xác thực trên máy (`Transaction.currentEntitlements`) kể cả khi server lỗi; đồng bộ server thử lại khi mở app / khi có giao dịch mới. Server báo 402 mà máy có giao dịch hợp lệ → đồng bộ lại rồi thử lại một lần, không hiện paywall cho người đã trả.
+3. **Không trả hai lần**: đang Pro → paywall không có nút mua; thay bằng "Quản lý gói" (`AppStore.showManageSubscriptions`) và "Yêu cầu hoàn tiền" (`Transaction.beginRefundRequest`). Cùng nhóm thuê bao nên Apple cũng không cho mua trùng.
+4. **Xoá tài khoản khi đang có gói**: cảnh báo "Xoá tài khoản KHÔNG huỷ gói trên App Store — hãy huỷ gói trước" + nút mở trang quản lý gói (`has_active_subscription` trong status hoặc giao dịch trên máy).
+5. **Một gói gắn một tài khoản Wordly** (`appAccountToken`): khôi phục từ tài khoản khác → 409 `subscription_other_account`, app báo rõ, không chuyển/nhân bản quyền Pro.
+6. Hoàn tiền / thu hồi / hết hạn → mất Pro; **ân hạn thanh toán → vẫn Pro** tới hết ân hạn. Hạn tính theo giờ server.
+7. Không bao giờ khoá dữ liệu đã có; server lỗi / chưa tải được trạng thái → app không khoá gì. Lượt chỉ trừ khi thành công; người dùng Pro không bị đếm.
+8. Giá luôn lấy từ StoreKit; ghi rõ tự gia hạn, kỳ hạn, cách huỷ (Cài đặt → Apple ID → Đăng ký, trước 24 giờ cuối kỳ). Không bật Family Sharing (bật rồi không tắt được).
