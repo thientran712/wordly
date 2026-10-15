@@ -9,6 +9,7 @@ import { sendFcmMessage, isDeadToken, isFatal } from "./fcm-client.js";
 import { createGoogleTokenProvider } from "./google-access-token.js";
 import { loadFcmConfig } from "./fcm-config.js";
 import { runPool } from "./run-pool.js";
+import { billingEnforced } from "../billing/plan.js";
 
 export const CATCHUP_MINUTES = 30;
 
@@ -29,6 +30,10 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
   // Chọn từ theo nguồn từ chung + lịch widget (select-push-word.js, spec 2026-10-15 §4)
   const selectWord = deps.selectWord || selectPushWord;
   const selectBank = deps.selectBank || selectBankWords;
+  // Wordly Pro (spec 2026-10-16 §3): đang chặn → người miễn phí chỉ nhận khung
+  // sớm nhất (lọc trong SQL). Tắt → gọi y như cũ để chạy được cả khi DB chưa
+  // có migration 20261016000200.
+  const freeOneSlot = "billingEnforced" in deps ? deps.billingEnforced : billingEnforced();
 
   const stats = { due: 0, sent: 0, skipped: 0, failed: 0, claimed_elsewhere: 0, tokens_removed: 0 };
   let fatal = null;
@@ -116,6 +121,7 @@ export async function runDuePushSends(supabase, now = new Date(), deps = {}) {
     if (Date.now() - started >= budgetMs) { budgetExhausted = true; break; }
     const { data: due, error } = await supabase.rpc("due_push_slots", {
       p_now: now.toISOString(), p_catchup_minutes: CATCHUP_MINUTES,
+      ...(freeOneSlot && { p_free_one_slot: true }),
     });
     if (error) throw new Error(`due_push_slots: ${error.message}`);
     if (!due.length) break;

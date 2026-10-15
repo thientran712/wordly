@@ -235,3 +235,17 @@ test("access token hỏng giữa lượt (sau khi đã giành slot) → fatal, d
   assert.equal(sb.db.push_log.length, 1, "chỉ slot đang gửi bị mất, hai slot sau để lượt sau");
   assert.equal(sb.db.push_log[0].status, "failed");
 });
+
+// Wordly Pro (spec 2026-10-16 §3): BILLING_ENFORCE bật → SQL chỉ trả khung
+// sớm nhất cho người miễn phí. Tắt → gọi y như cũ (2 tham số).
+test("billingEnforced → due_push_slots nhận p_free_one_slot: true", async () => {
+  const sb = fakeDb({ due: [] });
+  await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send: okSend(), billingEnforced: true });
+  assert.deepEqual(sb.rpcCalls[0], ["due_push_slots", { p_now: now.toISOString(), p_catchup_minutes: 30, p_free_one_slot: true }]);
+});
+
+test("billingEnforced false → tham số như cũ", async () => {
+  const sb = fakeDb({ due: [] });
+  await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send: okSend(), billingEnforced: false });
+  assert.deepEqual(sb.rpcCalls[0], ["due_push_slots", { p_now: now.toISOString(), p_catchup_minutes: 30 }]);
+});

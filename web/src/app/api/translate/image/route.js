@@ -7,6 +7,8 @@ import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
 import { createSharedClient } from "@/lib/supabase/shared";
 import { callAI } from "@/lib/ai/ai-models";
 import { validateImageDataUrl, parseImageTranslateResponse } from "@/lib/translate/image-validation";
+import { withAdvancedQuota } from "@/lib/billing/enforce";
+import { billingForRequest } from "@/lib/billing/request";
 
 // Ảnh đắt hơn text nhiều (token hình + token OCR) nên hạn mức thấp hơn
 // /api/translate (20/60 mỗi phút).
@@ -42,36 +44,42 @@ export async function POST(request) {
   const { error: validationError } = validateImageDataUrl(image);
   if (validationError) return Response.json({ error: validationError }, { status: 400 });
 
-  let res;
-  try {
-    ({ res } = await callAI("vision", {
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: PROMPT },
-            { type: "image_url", image_url: { url: image } },
-          ],
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 1000,
-      response_format: { type: "json_object" },
-    }));
-  } catch (e) {
-    return Response.json({ error: `Không đọc được ảnh: ${e.message}` }, { status: 502 });
-  }
+  // Wordly Pro: ảnh là lượt "nâng cao" — kiểm trước khi gọi AI, chỉ trừ khi
+  // đọc + dịch thành công (422 "không có chữ" / 502 không trừ).
+  const run = async () => {
+    let res;
+    try {
+      ({ res } = await callAI("vision", {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: PROMPT },
+              { type: "image_url", image_url: { url: image } },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 1000,
+        response_format: { type: "json_object" },
+      }));
+    } catch (e) {
+      return Response.json({ error: `Không đọc được ảnh: ${e.message}` }, { status: 502 });
+    }
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return Response.json({ error: `AI lỗi: ${text.slice(0, 200)}` }, { status: 502 });
-  }
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return Response.json({ error: `AI lỗi: ${text.slice(0, 200)}` }, { status: 502 });
+    }
 
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  const { source_text, translated_text, error } = parseImageTranslateResponse(content);
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    const { source_text, translated_text, error } = parseImageTranslateResponse(content);
 
-  if (error) return Response.json({ error }, { status: 422 });
+    if (error) return Response.json({ error }, { status: 422 });
 
-  return Response.json({ source_text, translated_text });
+    return Response.json({ source_text, translated_text });
+  };
+  const billing = await billingForRequest(request, user);
+  return withAdvancedQuota({ ...billing, user, kind: "image", signal: request.signal }, run);
 }

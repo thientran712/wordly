@@ -4,6 +4,8 @@ import { callGroq, parseJsonResponse } from "@/lib/ai/ai-models";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clientKeyFromRequest, rateLimitResponse } from "@/lib/security/rate-limit";
 import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
+import { withDictionaryQuota } from "@/lib/billing/enforce";
+import { billingForRequest } from "@/lib/billing/request";
 
 // Route CÔNG KHAI nên phải có rate limit: mỗi lần cache miss là một lượt
 // gọi Groq trả phí.
@@ -70,7 +72,7 @@ export async function POST(request) {
   });
   if (!rl.allowed) return rateLimitResponse(rl);
 
-  const { word } = await request.json();
+  const { word, purpose } = await request.json();
   if (!word || typeof word !== "string" || !word.trim()) {
     return Response.json({ error: "Missing word" }, { status: 400 });
   }
@@ -78,76 +80,86 @@ export async function POST(request) {
   const key = word.trim().toLowerCase();
   const supabase = createSharedClient();
 
-  const { data: cached } = await supabase
-    .from("word_dictionary_cache")
-    .select("word, phonetic_us, phonetic_uk, meanings")
-    .eq("word", key)
-    .single();
-
-  if (cached) {
-    return Response.json({
-      detail: {
-        word: cached.word,
-        phoneticUs: cached.phonetic_us,
-        phoneticUk: cached.phonetic_uk,
-        meanings: cached.meanings,
-        // Deterministic, not AI-reported — the 8B model's self-assessment
-        // of "are there more meanings?" was unreliable (e.g. "run" → false).
-        hasMoreMeanings: cached.meanings.length >= 3,
-      },
-    });
-  }
-
-  // Model đọc từ ai-models.js và tự chuyển model dự phòng nếu nhà cung cấp
-  // ngừng model — đã xảy ra 9/2026 khi Groq bỏ llama-3.1-8b-instant.
-  let res;
-  try {
-    ({ res } = await callGroq("fast", {
-      messages: [{ role: "user", content: PROMPT(key) }],
-      temperature: 0.3,
-      max_tokens: 600,
-      response_format: { type: "json_object" },
-    }));
-  } catch (e) {
-    console.error("[api/dictionary] Groq lỗi:", e.message);
-    return Response.json({ error: "Từ điển AI tạm thời không khả dụng" }, { status: 502 });
-  }
-
-  const data = await res.json();
-  let parsed;
-  try {
-    parsed = JSON.parse(data.choices?.[0]?.message?.content || "{}");
-  } catch {
-    return Response.json({ error: "Failed to parse AI response" }, { status: 502 });
-  }
-
-  const phoneticUs = parsed.phonetic_us || "";
-  const phoneticUk = parsed.phonetic_uk || "";
-  const meanings = Array.isArray(parsed.meanings) ? parsed.meanings : [];
-
-  if (meanings.length === 0) {
-    return Response.json({ detail: null });
-  }
-
-  const row = { word: key, phonetic_us: phoneticUs, phonetic_uk: phoneticUk, meanings };
-  const detail = { word: key, phoneticUs, phoneticUk, meanings, hasMoreMeanings: meanings.length >= 3 };
-
-  // Ghi cache KHÔNG chặn phản hồi: kết quả đã có sẵn trong tay, không có lý
-  // gì bắt người dùng chờ thêm một round-trip Supabase (đo được 0.29-0.8s)
-  // chỉ để lưu cho lượt sau.
-  //
-  // `after()` (next/server) là API chính thức của Next cho việc này: nó giữ
-  // function sống tới khi ghi xong nhưng phản hồi đã đi trước. Không dùng
-  // promise trần — serverless có thể đóng function giữa lúc ghi → mất cache.
-  //
-  // Lỗi ghi chỉ làm mất cache (lượt sau gọi AI lại), không làm sai kết quả
-  // đang trả — nên chỉ log, không để nó thành lỗi của người dùng.
-  after(async () => {
-    const { error } = await supabase
+  // Wordly Pro (spec 2026-10-16 §3, §8): thẻ chi tiết tính lượt cho từ MỚI;
+  // từ đã tra/đã lưu/kho từ/đã gợi ý thì miễn phí. Tra ngầm cho widget
+  // (purpose=widget) và khách: chỉ trả cache (cacheOnly), không gọi AI,
+  // không tính lượt. BILLING_ENFORCE tắt → như cũ.
+  const run = async ({ cacheOnly }) => {
+    const { data: cached } = await supabase
       .from("word_dictionary_cache")
-      .upsert(row, { onConflict: "word" });
-    if (error) console.warn("[api/dictionary] ghi cache lỗi:", error.message);
-  });
+      .select("word, phonetic_us, phonetic_uk, meanings")
+      .eq("word", key)
+      .single();
 
-  return Response.json({ detail });
+    if (cached) {
+      return Response.json({
+        detail: {
+          word: cached.word,
+          phoneticUs: cached.phonetic_us,
+          phoneticUk: cached.phonetic_uk,
+          meanings: cached.meanings,
+          // Deterministic, not AI-reported — the 8B model's self-assessment
+          // of "are there more meanings?" was unreliable (e.g. "run" → false).
+          hasMoreMeanings: cached.meanings.length >= 3,
+        },
+      });
+    }
+
+    if (cacheOnly) return Response.json({ detail: null });
+
+    // Model đọc từ ai-models.js và tự chuyển model dự phòng nếu nhà cung cấp
+    // ngừng model — đã xảy ra 9/2026 khi Groq bỏ llama-3.1-8b-instant.
+    let res;
+    try {
+      ({ res } = await callGroq("fast", {
+        messages: [{ role: "user", content: PROMPT(key) }],
+        temperature: 0.3,
+        max_tokens: 600,
+        response_format: { type: "json_object" },
+      }));
+    } catch (e) {
+      console.error("[api/dictionary] Groq lỗi:", e.message);
+      return Response.json({ error: "Từ điển AI tạm thời không khả dụng" }, { status: 502 });
+    }
+
+    const data = await res.json();
+    let parsed;
+    try {
+      parsed = JSON.parse(data.choices?.[0]?.message?.content || "{}");
+    } catch {
+      return Response.json({ error: "Failed to parse AI response" }, { status: 502 });
+    }
+
+    const phoneticUs = parsed.phonetic_us || "";
+    const phoneticUk = parsed.phonetic_uk || "";
+    const meanings = Array.isArray(parsed.meanings) ? parsed.meanings : [];
+
+    if (meanings.length === 0) {
+      return Response.json({ detail: null });
+    }
+
+    const row = { word: key, phonetic_us: phoneticUs, phonetic_uk: phoneticUk, meanings };
+    const detail = { word: key, phoneticUs, phoneticUk, meanings, hasMoreMeanings: meanings.length >= 3 };
+
+    // Ghi cache KHÔNG chặn phản hồi: kết quả đã có sẵn trong tay, không có lý
+    // gì bắt người dùng chờ thêm một round-trip Supabase (đo được 0.29-0.8s)
+    // chỉ để lưu cho lượt sau.
+    //
+    // `after()` (next/server) là API chính thức của Next cho việc này: nó giữ
+    // function sống tới khi ghi xong nhưng phản hồi đã đi trước. Không dùng
+    // promise trần — serverless có thể đóng function giữa lúc ghi → mất cache.
+    //
+    // Lỗi ghi chỉ làm mất cache (lượt sau gọi AI lại), không làm sai kết quả
+    // đang trả — nên chỉ log, không để nó thành lỗi của người dùng.
+    after(async () => {
+      const { error } = await supabase
+        .from("word_dictionary_cache")
+        .upsert(row, { onConflict: "word" });
+      if (error) console.warn("[api/dictionary] ghi cache lỗi:", error.message);
+    });
+
+    return Response.json({ detail });
+  };
+  const billing = await billingForRequest(request, user);
+  return withDictionaryQuota({ ...billing, user, wordKey: key, purpose, signal: request.signal }, run);
 }

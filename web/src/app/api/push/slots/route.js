@@ -6,6 +6,8 @@ import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
 import { rateLimitResponse } from "@/lib/security/rate-limit";
 import { guardSlotTime } from "@/lib/reminders/slot-guard";
 import { MAX_PUSH_SLOTS } from "@/lib/push/validate";
+import { checkPushSlotAllowed } from "@/lib/billing/enforce";
+import { billingForRequest } from "@/lib/billing/request";
 
 async function authed() {
   const user = await getUserFast();
@@ -30,6 +32,9 @@ export async function POST(request) {
   if (res) return res;
   const { count } = await supabase.from("push_slots").select("id", { count: "exact", head: true }).eq("user_id", user.id);
   if (count >= MAX_PUSH_SLOTS) return Response.json({ error: `Tối đa ${MAX_PUSH_SLOTS} khung giờ` }, { status: 400 });
+  // Wordly Pro (spec §3): miễn phí 1 khung đang bật, Pro tới 10 — khung mới luôn bật.
+  const blocked = await checkPushSlotAllowed({ ...(await billingForRequest(request, user)), user });
+  if (blocked) return blocked;
 
   const { send_time } = (await request.json().catch(() => null)) || {};
   const guard = await guardSlotTime(supabase, { table: "push_slots", userId: user.id, value: send_time });
@@ -54,6 +59,20 @@ export async function PUT(request) {
     update.send_time = guard.time;
   }
   if (enabled !== undefined) update.enabled = Boolean(enabled);
+
+  // Wordly Pro: BẬT lại một khung đang tắt = thêm khung gửi → chịu giới hạn.
+  // Đổi giờ / tắt khung không bị chặn (hết Pro vẫn quản lý được dữ liệu cũ).
+  if (update.enabled === true) {
+    const billing = await billingForRequest(request, user);
+    if (billing.config.enforced) {
+      const { data: current } = await supabase.from("push_slots").select("enabled")
+        .eq("id", id).eq("user_id", user.id).maybeSingle();
+      if (current && !current.enabled) {
+        const blocked = await checkPushSlotAllowed({ ...billing, user });
+        if (blocked) return blocked;
+      }
+    }
+  }
 
   const { error } = await supabase.from("push_slots").update(update).eq("id", id).eq("user_id", user.id);
   if (error) return Response.json({ error: error.message }, { status: 500 });

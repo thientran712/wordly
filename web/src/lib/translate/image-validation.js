@@ -57,6 +57,11 @@ export function parseImageTranslateResponse(content) {
     return { source_text: "", translated_text: "", error: "Không tìm thấy chữ trong ảnh" };
   }
 
+  // Đọc được chữ mà không dịch được → coi là lỗi: không trừ lượt, app không hiện ô trống
+  if (!translated_text.trim()) {
+    return { source_text: null, translated_text: null, error: "Không dịch được chữ trong ảnh, thử lại nhé" };
+  }
+
   return { source_text, translated_text, error: null };
 }
 
