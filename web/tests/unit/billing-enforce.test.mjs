@@ -322,3 +322,9 @@ test("quota_key Pro: trần chống lạm dụng cũng gộp theo key (không g�
   await withAdvancedQuota({ config: ON, user: USER, build: "21", kind: "sentence", quotaKey: KEY, deps, now: NOW }, runSpy());
   assert.deepEqual(deps.calls, [["getEntitlement"], ["bumpProCap", "sentence", 200, KEY]]);
 });
+
+test("billingConfig: tài khoản test được bật chặn theo userId", () => {
+  const A = "11111111-1111-4111-8111-111111111111";
+  assert.equal(billingConfig({ BILLING_ENFORCE_TEST_USERS: A }, A).enforced, true);
+  assert.equal(billingConfig({ BILLING_ENFORCE_TEST_USERS: A }).enforced, false);
+});

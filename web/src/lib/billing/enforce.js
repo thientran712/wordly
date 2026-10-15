@@ -14,8 +14,8 @@ import {
   limitBody, UPDATE_REQUIRED_BODY,
 } from "./plan.js";
 
-export function billingConfig(env = process.env) {
-  return { enforced: billingEnforced(env), minBuild: appMinBuild(env) };
+export function billingConfig(env = process.env, userId) {
+  return { enforced: billingEnforced(env, userId), minBuild: appMinBuild(env) };
 }
 
 const updateRequired = () => Response.json(UPDATE_REQUIRED_BODY, { status: 426 });

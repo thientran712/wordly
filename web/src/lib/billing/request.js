@@ -7,7 +7,7 @@ import { billingConfig } from "./enforce.js";
 import { createBillingDeps } from "./store.js";
 
 export async function billingForRequest(request, user) {
-  const config = billingConfig();
+  const config = billingConfig(process.env, user?.id);
   // App từ build có paywall gửi số build mọi request (spec §8)
   const build = request.headers.get("x-wordly-build");
   const deps = config.enforced && user

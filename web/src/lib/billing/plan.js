@@ -52,9 +52,18 @@ export function requiresUpdate(buildHeader, minBuild, enforce) {
   return Number(s) < (minBuild || 0);
 }
 
-/** BILLING_ENFORCE mặc định TẮT: deploy server trước, bật khi bản app có paywall lên store. */
-export function billingEnforced(env = process.env) {
-  return ["1", "true", "on", "yes"].includes(String(env.BILLING_ENFORCE ?? "").trim().toLowerCase());
+/** BILLING_ENFORCE mặc định TẮT: deploy server trước, bật khi bản app có paywall lên store.
+ *  BILLING_ENFORCE_TEST_USERS (UUID, cách nhau dấu phẩy): chỉ những tài khoản này bị
+ *  áp giới hạn như thật — chủ dự án test trước khi bật cho mọi người. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+export function billingEnforced(env = process.env, userId) {
+  if (["1", "true", "on", "yes"].includes(String(env.BILLING_ENFORCE ?? "").trim().toLowerCase())) return true;
+  const id = String(userId ?? "").trim().toLowerCase();
+  if (!UUID_RE.test(id)) return false;
+  return String(env.BILLING_ENFORCE_TEST_USERS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .includes(id);
 }
 
 /** APP_MIN_BUILD (mặc định 0): build thấp hơn → màn "Cập nhật Wordly". */

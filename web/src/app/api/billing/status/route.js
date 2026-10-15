@@ -12,7 +12,7 @@ export async function GET() {
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const deps = createBillingDeps({ supabase: await createClient(), sharedSupabase: createSharedClient(), userId: user.id });
   try {
-    const status = await loadBillingStatus({ deps, enforced: billingConfig().enforced });
+    const status = await loadBillingStatus({ deps, enforced: billingConfig(process.env, user.id).enforced });
     return Response.json(status, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("[billing/status]", e.message);
