@@ -16,6 +16,13 @@ Spec `2026-10-15-shared-word-source-design.md` §2.2 (JS), §2.3, §3, §4, §7.
 
 **Chờ quyết định:** chạy migration `20261016000100_word_source` lên production + deploy web — phải trước khi phát hành app có tính năng này.
 
+### 15/10/2026 (đêm) — BUILD 20 ĐÃ UPLOAD: onboarding 4 màn + thẻ Bắt đầu theo tài khoản + câu báo mã OTP; email OTP mới CHỜ deploy web
+
+- **Onboarding 4 màn bắt buộc khi cài mới** (trước đăng nhập, không nút bỏ qua — chủ dự án chốt), màn 4 mở thẳng Tạo tài khoản / Đăng nhập; người dùng cũ đang đăng nhập không xem. Minh hoạ dựng bằng SwiftUI, không xin quyền, khung điện thoại chung chung (App Store 4.5.4, 5.2.5).
+- **Sửa lỗi build 19:** phần giới thiệu chỉ quyết định một lần mỗi lần chạy + cờ theo máy → đổi tài khoản hoặc tài khoản trước đã xem/ẩn là mất. Giờ cờ theo tài khoản, quyết định trước đồng bộ widget.
+- **Mã OTP:** hạn thật 60 phút (GOTRUE_MAILER_OTP_EXP=3600); "hết hạn nhanh" là do gửi lại làm mã cũ mất hiệu lực + GoTrue trả otp_expired cho cả mã sai + câu lỗi cũ khuyên gửi lại. Câu lỗi/màn nhập mã đã sửa (trong build 20). **Mẫu email mới** (chỉ mã, bỏ nút web, giới thiệu Wordly, hạn 60 phút, logo) nằm ở `web/public/email-templates/` — **chưa deploy web**, chờ chủ dự án.
+- Bằng chứng: iOS unit 258/258, UI 36/36; test mẫu email 7/7; archive 1.0.1 (20) app + widget, `aps-environment = production`, 0 cờ xem trước → **"Upload succeeded" 22:46**. **Lần upload sau: build 21.**
+
 ### 15/10/2026 (khuya) — Nguồn từ chung, Từ ghim, trang Widget gộp, giới thiệu tính năng: ĐÃ LÊN PRODUCTION + BUILD 19 TestFlight
 
 Nhánh `feat/widget-two-entries` (spec `2026-10-15-shared-word-source-design.md`). **Chưa lên production, chưa build 19.**
