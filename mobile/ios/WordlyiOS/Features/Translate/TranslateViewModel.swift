@@ -257,7 +257,10 @@ final class TranslateViewModel: ObservableObject {
             autoLogTask?.cancel()
             historyVersion += 1
             toast = "Đã lưu “\(source)” — sẽ có trong quiz và widget"
-            Task { await WidgetSync.refresh() }
+            Task {
+                await WidgetSync.refresh()
+                await OnboardingCenter.shared.afterSave()
+            }
             Task { await maybeOfferPushReminder() }
         } catch {
             saved = false
@@ -271,6 +274,7 @@ final class TranslateViewModel: ObservableObject {
         let status = await PushManager.shared.authorizationStatus()
         guard PushLogic.shouldOfferPrompt(alreadyShown: shown, status: status, pushAvailable: PushManager.shared.isAvailable) else { return }
         UserDefaults.standard.set(true, forKey: PushLogic.promptShownKey)
+        OnboardingCenter.shared.notePushInvite()
         offerPushReminder = true
     }
 

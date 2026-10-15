@@ -50,6 +50,7 @@ struct SplashView: View {
 struct MainTabView: View {
     @EnvironmentObject private var router: AppRouter
     @Environment(\.scenePhase) private var scenePhase
+    @ObservedObject private var onboarding = OnboardingCenter.shared
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -80,8 +81,19 @@ struct MainTabView: View {
         .task(id: scenePhase) {
             if scenePhase == .active {
                 await WidgetSync.refreshIfStale()
+                // Sau khi đồng bộ mới biết tài khoản mới hay cũ (spec 2026-10-15 §6)
+                onboarding.decideIntro()
+                await onboarding.refreshChecklist()
                 await PushManager.shared.syncIfNeeded()
             }
+        }
+        .fullScreenCover(isPresented: Binding(get: { onboarding.intro == .welcome },
+                                              set: { if !$0 { onboarding.finishIntro() } })) {
+            WelcomeView { onboarding.finishIntro() }
+        }
+        .sheet(isPresented: Binding(get: { onboarding.intro == .whatsNew },
+                                    set: { if !$0 { onboarding.finishIntro() } })) {
+            WhatsNewView { onboarding.finishIntro() }
         }
     }
 }

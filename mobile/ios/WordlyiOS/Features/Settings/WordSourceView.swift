@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 /// Trang "Nguồn từ" — dùng chung cho widget màn hình khoá, màn hình chính và
 /// thông báo nhắc ôn (spec 2026-10-15-shared-word-source-design.md §5.2).
@@ -157,6 +158,7 @@ struct QuickPinButton: View {
     var body: some View {
         let on = store.settings.isPinned(id)
         Button {
+            PinTip().invalidate(reason: .actionPerformed)
             switch store.update({ $0.togglePin(id) }) {
             case .pinned: toast = "Đã ghim — gặp từ này nhiều hơn"
             case .unpinned: toast = "Đã bỏ ghim"
@@ -171,6 +173,7 @@ struct QuickPinButton: View {
                 .clipShape(Circle())
         }
         .accessibilityIdentifier("quickPin")
+        .popoverTip(PinTip())
         .accessibilityLabel(on ? "Bỏ ghim" : "Ghim từ này")
         .accessibilityAddTraits(on ? .isSelected : [])
     }

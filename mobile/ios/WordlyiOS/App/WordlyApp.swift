@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import TipKit
 
 @main
 struct WordlyApp: App {
@@ -9,6 +10,24 @@ struct WordlyApp: App {
     @StateObject private var router = AppRouter()
     @StateObject private var push = PushManager.shared
     @AppStorage("wordly-theme") private var savedTheme: String = "dark"
+
+    init() {
+        #if DEBUG
+        if PreviewMode.isOn {
+            if CommandLine.arguments.contains("-WordlyOnboarding") {
+                // Như máy mới cài: xoá cờ "đã xem" của phần giới thiệu
+                for k in [Onboarding.Key.welcomeSeen, Onboarding.Key.whatsNewSeen, Onboarding.Key.cardDismissed,
+                          Onboarding.Key.cardCelebrated, Onboarding.Key.widgetNudgeShown, Onboarding.Key.pushInviteDay] {
+                    UserDefaults.standard.removeObject(forKey: k)
+                }
+            } else {
+                Tips.hideAllTipsForTesting()   // gợi ý không che nút trong UI test khác
+            }
+        }
+        #endif
+        // Gợi ý tính năng (TipKit) — tối đa 1 gợi ý mỗi ngày (spec 2026-10-15 §6.5)
+        try? Tips.configure([.displayFrequency(.daily)])
+    }
 
     var body: some Scene {
         WindowGroup {

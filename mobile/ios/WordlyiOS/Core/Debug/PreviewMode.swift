@@ -36,7 +36,8 @@ enum PreviewMode {
         let parts = route.split(separator: "/").map(String.init)   // ["api", "classes", "<id>", "sessions"]
         let json: String?
         switch (method, route) {
-        case ("GET", "/api/translate-history"): json = history
+        case ("GET", "/api/translate-history"):
+            json = CommandLine.arguments.contains("-WordlyNoSavedWords") ? #"{"hasMore": false, "history": []}"# : history
         case ("GET", "/api/journal"): json = journal
         case ("GET", "/api/practice/sessions"): json = sessions
         case ("GET", "/api/profile"): json = termsOutdated ? profileOutdatedTerms : needsConsent ? profileNoConsent : profile

@@ -263,7 +263,10 @@ struct WidgetSettingsView: View {
         }
     }
 
-    private var addSteps: [String] {
+    private var addSteps: [String] { Self.addSteps(tab) }
+
+    /// Các bước thêm widget — dùng cả ở trang Widget và hướng dẫn từ thẻ "Bắt đầu".
+    static func addSteps(_ tab: Tab) -> [String] {
         switch tab {
         case .lock:
             return ["Khoá máy, rồi nhấn giữ màn hình khoá.",

@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 /// Tab "Đã nhắc" (đầu tiên trong Từ vựng): từ app đã nhắc 7 ngày qua — thông
 /// báo đẩy, widget (và email cũ). Bấm từ → popup chi tiết; nút ôn bằng quiz.
@@ -51,6 +52,9 @@ struct RemindedWordsView: View {
                         .font(WordlyFonts.body(13, weight: .bold))
                         .foregroundStyle(WordlyColors.electric)
                     }
+                }
+                if !vm.sections.isEmpty {
+                    TipView(RemindedTip())
                 }
                 switch vm.state {
                 case .idle, .loading:
