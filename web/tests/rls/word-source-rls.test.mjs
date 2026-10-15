@@ -72,6 +72,17 @@ describe("Nguồn từ + lịch widget: RLS + hàm cron", { skip: skip ? `Bỏ q
     assert.ok((await a.client.from("widget_schedule").insert({ user_id: a.id, shown_at: t, entry_id: entryA, bank_word_id: wordId })).error, "có cả hai");
   });
 
+  test("widget_schedule: gửi lại cùng slot (kể cả slot cron đã chép) không tạo dòng trùng", async () => {
+    const t = iso(Date.now() - 30 * 60 * 1000);
+    const ins = await admin.from("widget_schedule").insert({ user_id: a.id, shown_at: t, entry_id: entryA, logged: true });
+    assert.ok(!ins.error, ins.error?.message);
+    const again = await a.client.from("widget_schedule")
+      .upsert({ user_id: a.id, shown_at: t, entry_id: entryA }, { onConflict: "user_id,shown_at,entry_id,bank_word_id", ignoreDuplicates: true });
+    assert.ok(!again.error, again.error?.message);
+    assert.equal((await admin.from("widget_schedule").select("id").eq("user_id", a.id)).data.length, 1);
+    await admin.from("widget_schedule").delete().eq("user_id", a.id);
+  });
+
   test("sync_widget_schedule: người dùng không gọi được", async () => {
     assert.ok((await a.client.rpc("sync_widget_schedule", {})).error);
   });

@@ -39,11 +39,15 @@ CREATE TABLE public.widget_schedule (
   -- Cron đã chép dòng này sang suggestion_log (tab "Đã nhắc") chưa — đánh dấu
   -- trong cùng câu lệnh để hai lượt cron chồng nhau không chép đôi.
   logged       boolean NOT NULL DEFAULT false,
-  CONSTRAINT widget_schedule_one_id CHECK ((entry_id IS NULL) <> (bank_word_id IS NULL))
+  CONSTRAINT widget_schedule_one_id CHECK ((entry_id IS NULL) <> (bank_word_id IS NULL)),
+  -- App gửi lại lịch có thể chứa slot đang hiện (đã qua, cron có thể đã chép):
+  -- chèn ON CONFLICT DO NOTHING để "Đã nhắc" không ghi một slot hai lần.
+  CONSTRAINT widget_schedule_slot_uniq UNIQUE NULLS NOT DISTINCT (user_id, shown_at, entry_id, bank_word_id)
 );
-CREATE INDEX widget_schedule_user_shown_idx ON public.widget_schedule (user_id, shown_at);
--- Cron quét theo giờ trên mọi người dùng (chép + dọn)
-CREATE INDEX widget_schedule_shown_idx ON public.widget_schedule (shown_at) WHERE NOT logged;
+-- Không tạo index (user_id, shown_at) riêng: unique ở trên bắt đầu bằng đúng
+-- hai cột này nên push đọc lịch một người dùng luôn index đó (tránh index thừa).
+-- Cron quét theo giờ trên mọi người dùng (chép dòng chưa chép + dọn dòng cũ)
+CREATE INDEX widget_schedule_shown_idx ON public.widget_schedule (shown_at);
 ALTER TABLE public.widget_schedule ENABLE ROW LEVEL SECURITY;
 CREATE POLICY widget_schedule_select_own ON public.widget_schedule
   FOR SELECT TO authenticated USING (auth.uid() = user_id);
