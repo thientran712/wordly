@@ -111,7 +111,7 @@ Alex / luyện nói; gói trọn đời; gói gia đình; đo lường analytics
 
 1. Chỉ trừ tiền khi người dùng tự bấm mua và xác nhận trên bảng thanh toán của Apple (StoreKit). Không có thao tác tự động nào dẫn tới thanh toán.
 2. **Đã trả là có Pro ngay**: app tin giao dịch StoreKit đã được Apple xác thực trên máy (`Transaction.currentEntitlements`) kể cả khi server lỗi; đồng bộ server thử lại khi mở app / khi có giao dịch mới. Server báo 402 mà máy có giao dịch hợp lệ → đồng bộ lại rồi thử lại một lần, không hiện paywall cho người đã trả.
-3. **Không trả hai lần**: đang Pro → paywall không có nút mua; thay bằng "Quản lý gói" (`AppStore.showManageSubscriptions`) và "Yêu cầu hoàn tiền" (`Transaction.beginRefundRequest`). Cùng nhóm thuê bao nên Apple cũng không cho mua trùng.
+3. **Không trả hai lần**: đang Pro → paywall không có nút mua; thay bằng "Quản lý gói" (`AppStore.showManageSubscriptions`). (Nút "Yêu cầu hoàn tiền" đã bỏ theo chủ dự án 16/10 — người dùng vẫn yêu cầu hoàn tiền qua Apple; Apple hoàn thì server nhận REFUND và thu hồi Pro.) Cùng nhóm thuê bao nên Apple cũng không cho mua trùng.
 4. **Xoá tài khoản khi đang có gói**: cảnh báo "Xoá tài khoản KHÔNG huỷ gói trên App Store — hãy huỷ gói trước" + nút mở trang quản lý gói (`has_active_subscription` trong status hoặc giao dịch trên máy).
 5. **Một gói gắn một tài khoản Wordly** (`appAccountToken`): khôi phục từ tài khoản khác → 409 `subscription_other_account`, app báo rõ, không chuyển/nhân bản quyền Pro.
 6. Hoàn tiền / thu hồi / hết hạn → mất Pro; **ân hạn thanh toán → vẫn Pro** tới hết ân hạn. Hạn tính theo giờ server.

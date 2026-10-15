@@ -60,7 +60,6 @@ final class ProStoreTests: XCTestCase {
         let outcome = await s.purchase(PaywallPlan(id: "wordly.pro.yearly", displayName: "", displayPrice: "", price: 0, period: .year))
         XCTAssertEqual(outcome, .purchased)
         XCTAssertTrue(s.isPro, "server lỗi không được làm mất Pro người dùng vừa trả")
-        XCTAssertEqual(s.currentTransactionId, 7)
         XCTAssertEqual(gateway.finished, [7])
     }
 
@@ -118,7 +117,6 @@ final class ProStoreTests: XCTestCase {
         gateway.entitlements = [entitlement(tx: 3)]
         await s.refreshLocal()
         XCTAssertTrue(s.isPro)
-        XCTAssertEqual(s.currentTransactionId, 3, "để mở bảng hoàn tiền của Apple")
     }
 
     /// Gói đang gắn tài khoản khác → báo rõ, không cấp Pro cho tài khoản này qua server.
