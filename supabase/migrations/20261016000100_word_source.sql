@@ -48,6 +48,11 @@ CREATE TABLE public.widget_schedule (
 -- hai cột này nên push đọc lịch một người dùng luôn index đó (tránh index thừa).
 -- Cron quét theo giờ trên mọi người dùng (chép dòng chưa chép + dọn dòng cũ)
 CREATE INDEX widget_schedule_shown_idx ON public.widget_schedule (shown_at);
+-- FK ON DELETE CASCADE cần index, không thì xoá một từ / xoá tài khoản quét cả bảng
+CREATE INDEX widget_schedule_entry_idx ON public.widget_schedule (entry_id) WHERE entry_id IS NOT NULL;
+CREATE INDEX widget_schedule_bank_word_idx ON public.widget_schedule (bank_word_id) WHERE bank_word_id IS NOT NULL;
+-- Cron 5 phút chỉ quét dòng chưa chép sang "Đã nhắc"
+CREATE INDEX widget_schedule_unlogged_idx ON public.widget_schedule (shown_at) WHERE NOT logged;
 ALTER TABLE public.widget_schedule ENABLE ROW LEVEL SECURITY;
 CREATE POLICY widget_schedule_select_own ON public.widget_schedule
   FOR SELECT TO authenticated USING (auth.uid() = user_id);

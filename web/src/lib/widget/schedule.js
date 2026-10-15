@@ -5,9 +5,10 @@ import { parseWidgetItemId } from "./parse-widget-item-id.js";
 
 export const MAX_SCHEDULE_ENTRIES = 200;
 const H = 60 * 60 * 1000;
-// Lùi 1 giờ: lịch tính trên máy có thể bắt đầu từ slot đang hiện (đã bắt đầu
-// trước lúc gửi). Tới 49 giờ: lịch 48 giờ + dư cho đồng hồ máy lệch.
-const PAST_MS = 1 * H;
+// Tới 49 giờ: lịch 48 giờ + dư cho đồng hồ máy lệch.
+// App gửi giờ BẮT ĐẦU slot đang hiện (để mở app nhiều lần trong một slot không
+// tạo dòng trùng) — slot dài nhất 2 giờ, cộng 5 phút dư.
+const PAST_MS = 2 * H + 5 * 60 * 1000;
 const FUTURE_MS = 49 * H;
 
 /**

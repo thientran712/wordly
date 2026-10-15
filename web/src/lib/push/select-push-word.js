@@ -13,6 +13,8 @@ import { buildPool } from "../word-source/pool.js";
 /** Cửa sổ lịch sử push để xếp thứ tự — quá cửa sổ coi như chưa push. */
 export const SHOWN_WINDOW_DAYS = 60;
 const MAX_ROWS = 1000;
+/** Cùng số từ đã lưu app đồng bộ cho widget (/api/translate-history?saved=1&limit=200) */
+export const SAVED_WORDS_LIMIT = 200;
 const H = 60 * 60 * 1000;
 
 /** Map id → lần hiện gần nhất (ms) từ các dòng có shown_at. */
@@ -97,7 +99,7 @@ export async function selectPushWord(supabase, userId, now, { selectBank }) {
     supabase.from("translate_history")
       .select("id, source_text, translated_text, saved_at")
       .eq("user_id", userId).eq("direction", "EN→VI").eq("is_saved", true).is("deleted_at", null)
-      .order("saved_at", { ascending: true }).limit(MAX_ROWS),
+      .order("saved_at", { ascending: false }).limit(SAVED_WORDS_LIMIT),
     // Lấy cả dòng tương lai: cần biết app còn gửi lịch không (bước Loại/1)
     supabase.from("widget_schedule")
       .select("shown_at, entry_id, bank_word_id")
@@ -106,8 +108,13 @@ export async function selectPushWord(supabase, userId, now, { selectBank }) {
     supabase.from("suggestion_log")
       .select("entry_id, bank_word_id, shown_at")
       .eq("user_id", userId).eq("source", "push")
-      .gte("shown_at", new Date(t - SHOWN_WINDOW_DAYS * 24 * H).toISOString()),
+      .gte("shown_at", new Date(t - SHOWN_WINDOW_DAYS * 24 * H).toISOString())
+      // Mới nhất trước: PostgREST cắt ở 1000 dòng — thiếu lần push gần đây là lặp từ
+      .order("shown_at", { ascending: false }).limit(MAX_ROWS),
   ]);
+  // Đọc lỗi (tạm thời) → bỏ lượt, lần cron sau thử lại; không đoán bừa thành
+  // "chưa lưu từ nào" rồi gửi từ kho, hay mất thứ tự xoay vòng.
+  if (saved.error || pushLog.error) return null;
 
   const savedWords = (saved.data || []).map((r) => ({ id: r.id, word: r.source_text, meaning: r.translated_text || "" }));
   // Pool không cần lô kho ở đây: kho chỉ tải khi kế hoạch cần (tiết kiệm truy vấn)
