@@ -3,6 +3,22 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 15/10/2026 — iOS 1.0.1 (18) ĐÃ UPLOAD TestFlight + sửa push lặp từ (production) + mẫu widget
+
+**Trạng thái:** 1.0.0 (14) **đã phát hành** trên App Store (Ready for Distribution). Build 17 mang 1.0.0 nên không nộp được → **1.0.1 (18) upload 15/10 17:22** (PR #41, archive từ `14c849b`; kiểm: app + widget 1.0.1 (18), `aps-environment = production`, có GoogleService-Info.plist + ảnh mẫu, 0 chuỗi WordlyUIPreview, domain production, team 929P8F77XX). **Lần upload sau: build 19.** Web production = `8ff9406` (PR #40, deploy qua nút, `/api/health` báo đúng SHA).
+
+- **Push lặp từ (PR #40, đã lên production):** push chọn theo state/due_at nhưng không bao giờ đổi lịch ôn → lặp vài từ lưu sớm nhất (mô phỏng 20 từ, 2 khung/ngày → 6 từ; chủ dự án thấy "FYI" lặp). Giờ `lib/push/select-push-word.js`: từ chưa hiện (push + widget, suggestion_log 60 ngày) trước, rồi từ hiện lâu nhất. Đổi câu "Hey Siri"/"Dân Zalo" (thương hiệu). Web 407/407, eslint sạch, `next build` OK, CI xanh. **Chưa đối chiếu lịch sử push thật** (đọc DB production bị chặn ở chế độ auto).
+- **Mẫu widget (iOS):** Màn hình chính → "Chọn mẫu có sẵn" → tấm cỡ vừa, nút X, 12 mẫu; mẫu ảnh "Góc học đêm" (tự vẽ SVG, gốc `docs/design/`, ảnh `Resources/WidgetPresets/`) đi đúng đường ảnh người dùng chọn → vẫn chỉnh khung được.
+- **Rà App Store:** đổi tên 25 theme nhóm "Hoạt hình & siêu anh hùng" → nhóm "Rực rỡ", tên tả màu (id giữ nguyên, có test chặn); PrivacyInfo app + widget khai FileTimestamp C617.1.
+- Bằng chứng iOS: unit **235/235**, UI **21/21** (simulator `Wordly-Test`), ảnh chụp màn danh sách mẫu đã xem.
+
+**Chủ dự án làm trên App Store Connect khi nộp 1.0.1:**
+1. Thử build 18 trên máy thật: mẫu widget (nhất là "Góc học đêm" trên widget thật), push mới (không lặp từ), tab Đã nhắc.
+2. (+) iOS App → version **1.0.1** → chọn build 18.
+3. App Privacy: thêm **Identifiers → Device ID** (App Functionality, Linked, không Tracking).
+4. Age Rating: **Profanity or Crude Humor: Infrequent/Mild** (câu mày–tao), còn lại None.
+5. What's New: thông báo nhắc ôn từ (thay email), mục "Đã nhắc", widget 50+ theme + ảnh nền + mẫu có sẵn + câu nhắc vui, thông báo lỗi đăng nhập rõ hơn, sửa lỗi ổn định.
+
 ### 13/10/2026 (khuya, sau) — Câu push/widget v2 "bựa + trend": ĐÃ deploy production + build 17 đã upload TestFlight
 
 **Phát hành:** PR #38 merge `795c7ad` → deploy production thành công (container `wordly-web:795c7ad`, trong bundle có câu mới, câu cũ không còn; cron push chạy bình thường). **iOS 1.0.0 (17) upload TestFlight 13/10 21:16** (archive từ `main` `795c7ad`; IPA build 17, widget 17, `aps-environment = production`). **Lần upload sau: build 18.** Chưa xem trên máy thật: câu push mới, widget icon lộn xộn.
