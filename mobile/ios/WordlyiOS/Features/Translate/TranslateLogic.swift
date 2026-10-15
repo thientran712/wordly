@@ -12,6 +12,19 @@ enum TranslateLogic {
         word.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
+    /// Câu báo lỗi dịch ảnh: 422 = server nói rõ (không có chữ / không dịch được),
+    /// lỗi server khác = đọc ảnh lỗi, còn lại = mất mạng.
+    static func imageErrorMessage(_ error: Error) -> String {
+        guard case APIError.serverError(let raw) = error else { return "Mất kết nối — thử lại nhé" }
+        if raw.hasPrefix("HTTP 422:"),
+           let json = raw.dropFirst("HTTP 422:".count).trimmingCharacters(in: .whitespaces).data(using: .utf8),
+           let body = try? JSONDecoder().decode([String: String].self, from: json),
+           let message = body["error"], !message.isEmpty {
+            return message
+        }
+        return "Không đọc được ảnh, thử lại nhé"
+    }
+
     /// Gợi ý từ Datamuse: luôn để đúng từ đang gõ lên đầu, tối đa 8.
     static func orderSuggestions(typed: String, fetched: [String]) -> [String] {
         let exact = wordKey(typed)

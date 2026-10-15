@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserFast } from "@/lib/auth/get-user-fast";
 import { clearAllTargets } from "@/lib/learning/history-delete";
 import { parseHistoryQuery } from "@/lib/learning/history-query";
+import { checkSaveAllowed } from "@/lib/billing/enforce";
+import { billingForRequest } from "@/lib/billing/request";
 
 export async function POST(request) {
   const user = await getUserFast();
@@ -10,6 +12,13 @@ export async function POST(request) {
   const { source_text, translated_text, direction, is_saved } = await request.json();
   if (!source_text?.trim() || !translated_text?.trim()) {
     return Response.json({ error: "Missing fields" }, { status: 400 });
+  }
+
+  // Wordly Pro: lưu từ (is_saved) chịu giới hạn 30 từ của bản miễn phí.
+  // Tự ghi lịch sử (is_saved false) không bị chặn.
+  if (is_saved) {
+    const blocked = await checkSaveAllowed({ ...(await billingForRequest(request, user)), user });
+    if (blocked) return blocked;
   }
 
   const supabase = await createClient();
@@ -49,6 +58,25 @@ export async function PATCH(request) {
 
   const supabase = await createClient();
   const trimmedSource = source_text.trim();
+
+  // Wordly Pro: đủ 30 từ (miễn phí) → 402, TRỪ KHI từ này đã được lưu rồi
+  // (bấm Lưu lại không làm tăng số từ — không nên mở paywall).
+  const blocked = await checkSaveAllowed({ ...(await billingForRequest(request, user)), user });
+  if (blocked) {
+    if (blocked.status !== 402) return blocked;
+    const { data: already } = await supabase
+      .from("translate_history")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("source_text", trimmedSource)
+      .eq("direction", direction)
+      .eq("is_saved", true)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
+    if (!already) return blocked;
+    return Response.json({ success: true, id: already.id });
+  }
 
   const { data: existing } = await supabase
     .from("translate_history")

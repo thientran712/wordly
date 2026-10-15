@@ -22,6 +22,12 @@ enum WidgetThemePhoto {
         return img
     }
 
+    /// Ảnh xem thử theme (paywall khoe theme Pro) — không ghi file, không cache.
+    static func preview(_ theme: WidgetTheme) -> CGImage? {
+        guard let url = url(theme, thumbnail: false) else { return nil }
+        return WidgetImageIO.downsample(url: url, maxPixel: 900)
+    }
+
     /// Kiểu widget sau khi chọn `theme`. Theme ảnh → cắt + ghi file theme (một lần),
     /// dọn file theme cũ. Ảnh người dùng (`backgroundVersion`) giữ nguyên và vẫn đè lên.
     static func apply(_ theme: WidgetTheme, to old: WidgetSettings.HomeStyle,

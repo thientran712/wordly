@@ -13,6 +13,7 @@ struct TranslateView: View {
     @State private var micPulse = false
 
     @ObservedObject private var onboarding = OnboardingCenter.shared
+    @ObservedObject private var pro = ProStore.shared
 
     var body: some View {
         NavigationStack {
@@ -24,6 +25,9 @@ struct TranslateView: View {
                         StartChecklistCard(center: onboarding) { inputFocused = true }
                     }
                     inputCard
+                    if pro.showsLimits, let line = ProCopy.advanced(pro.status.limits.advancedTranslate) {
+                        ProCounterLine(text: line) { pro.present(.limit(.advancedTranslate, pro.status.limits.advancedTranslate.limit)) }
+                    }
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
                     dictionarySection
@@ -219,7 +223,7 @@ struct TranslateView: View {
                     }
                     .foregroundStyle(WordlyColors.inkSoft)
                     .accessibilityLabel("Sao chép")
-                    if vm.canLookUp {
+                    if vm.canLookUp && !vm.dictionaryLocked {
                         Button { vm.retryLookup() } label: {
                             Label("Tra nghĩa", systemImage: "book.fill")
                                 .font(WordlyFonts.body(13, weight: .bold))
@@ -330,11 +334,37 @@ struct TranslateView: View {
     }
 
     // MARK: Từ điển AI
+    /// Hết lượt tra từ mới: nghĩa ngắn vẫn ở trên, thẻ chi tiết mờ + mở khoá (spec Pro §3)
+    private var lockedDictionaryCard: some View {
+        Button { pro.present(.limit(.dictionary, pro.status.limits.dictionary.limit)) } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Từ điển chi tiết").font(WordlyFonts.body(15, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                    Spacer()
+                    ProBadge(locked: true)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("/ˈsæmpəl/ · noun").font(WordlyFonts.body(13))
+                    Text("Nghĩa chi tiết, ví dụ, từ đồng nghĩa và cách dùng…").font(WordlyFonts.body(13))
+                }
+                .foregroundStyle(WordlyColors.inkSoft)
+                .blur(radius: 4)
+                .accessibilityHidden(true)
+                Text("Bạn đã dùng hết lượt tra từ mới hôm nay. Mở khoá với Pro")
+                    .font(WordlyFonts.body(13, weight: .semibold)).foregroundStyle(WordlyColors.electric)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .wordlyCard(padding: 16)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("dictionary.locked")
+    }
+
     @ViewBuilder
     private var dictionarySection: some View {
         switch vm.dictionary {
         case .hidden:
-            EmptyView()
+            if vm.dictionaryLocked { lockedDictionaryCard }
         case .loading:
             HStack(spacing: 10) {
                 ProgressView().tint(WordlyColors.electric)

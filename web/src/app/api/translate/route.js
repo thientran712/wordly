@@ -5,7 +5,9 @@ import { after } from "next/server";
 import { createSharedClient } from "@/lib/supabase/shared";
 import { createLruCache } from "@/lib/translate/translation-cache";
 import { createTieredCache, hybridTranslate } from "@/lib/translate/hybrid-translate";
-import { persistentCacheKey } from "@/lib/translate/translate-routing";
+import { chooseEngine, persistentCacheKey } from "@/lib/translate/translate-routing";
+import { withAdvancedQuota } from "@/lib/billing/enforce";
+import { billingForRequest } from "@/lib/billing/request";
 import {
   createPostgresTranslationStore,
   translateWithDeepL,
@@ -44,7 +46,7 @@ export async function POST(request) {
   });
   if (!rl.allowed) return rateLimitResponse(rl);
 
-  const { text, source = "EN", target = "VI" } = await request.json();
+  const { text, source = "EN", target = "VI", input, quota_key } = await request.json();
 
   if (!text?.trim()) return Response.json({ error: "No text" }, { status: 400 });
 
@@ -71,20 +73,33 @@ export async function POST(request) {
     target: targetLang,
   });
 
-  try {
-    const body = await hybridTranslate({
-      text,
-      source: sourceLang,
-      target: targetLang,
-      cache,
-      engines: {
-        gemini: (texts) => translateWithGemini(texts, { source: sourceLang, target: targetLang }),
-        deepl: (texts) => translateWithDeepL(texts, { source: sourceLang, target: targetLang }),
-      },
-    });
-    // Hợp đồng { translated, detectedLang } — app iOS dựa vào, KHÔNG đổi
-    return Response.json(body);
-  } catch (e) {
-    return Response.json({ error: e.message }, { status: e.status || 502 });
-  }
+  const run = async () => {
+    try {
+      const body = await hybridTranslate({
+        text,
+        source: sourceLang,
+        target: targetLang,
+        cache,
+        engines: {
+          gemini: (texts) => translateWithGemini(texts, { source: sourceLang, target: targetLang }),
+          deepl: (texts) => translateWithDeepL(texts, { source: sourceLang, target: targetLang }),
+        },
+      });
+      // Hợp đồng { translated, detectedLang } — app iOS dựa vào, KHÔNG đổi
+      return Response.json(body);
+    } catch (e) {
+      return Response.json({ error: e.message }, { status: e.status || 502 });
+    }
+  };
+
+  // Wordly Pro (spec 2026-10-16 §1, §8): dịch từ (≤ 3 chữ, DeepL) miễn phí;
+  // câu (> 3 chữ, Gemini) và văn bản từ giọng nói (app gửi input: "voice",
+  // tính cả khi ≤ 3 chữ) là lượt "nâng cao" — chỉ trừ khi dịch thành công.
+  // App cũ không gửi `input` → chỉ phân theo độ dài như trước.
+  // quota_key: app dịch trực tiếp khi gõ/nói → nhiều request cho một câu; cùng
+  // key chỉ trừ 1 lượt/ngày (40 lượt gọi/key). Không có key → tính theo request.
+  const kind = input === "voice" ? "voice" : chooseEngine(text) === "gemini" ? "sentence" : null;
+  if (!kind) return run();
+  const billing = await billingForRequest(request, user);
+  return withAdvancedQuota({ ...billing, user, kind, quotaKey: quota_key, signal: request.signal }, run);
 }

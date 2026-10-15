@@ -40,4 +40,8 @@ describe("parseImageTranslateResponse", () => {
     assert.ok(parseImageTranslateResponse(null).error);
     assert.ok(parseImageTranslateResponse(undefined).error);
   });
+  test("đọc được chữ nhưng bản dịch rỗng → lỗi (không tính lượt Pro, không hiện ô trống)", () => {
+    const r = parseImageTranslateResponse(JSON.stringify({ source_text: "Hello", translated_text: "  " }));
+    assert.ok(r.error);
+  });
 });

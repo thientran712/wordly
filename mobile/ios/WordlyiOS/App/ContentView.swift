@@ -3,17 +3,21 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var authManager: AuthManager
     @ObservedObject private var onboarding = OnboardingCenter.shared
+    @ObservedObject private var updateGate = AppUpdateGate.shared
     @State private var loginStartsWithSignup = false
 
     var body: some View {
         Group {
-            if authManager.isLoading {
+            if updateGate.required {
+                ForceUpdateView()
+            } else if authManager.isLoading {
                 SplashView()
             } else if authManager.isAuthenticated {
                 TermsGate {
                     #if DEBUG
                     if let screen = PreviewMode.screen {
                         NavigationStack { PreviewScreens.view(for: screen) }
+                            .task { await ProStore.shared.refreshStatus() }
                     } else {
                         MainTabView()
                     }
@@ -33,6 +37,7 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
         .animation(.easeInOut(duration: 0.3), value: authManager.isLoading)
+        .task { await updateGate.check() }
     }
 }
 
@@ -60,6 +65,7 @@ struct MainTabView: View {
     @EnvironmentObject private var authManager: AuthManager
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var onboarding = OnboardingCenter.shared
+    @ObservedObject private var pro = ProStore.shared
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
@@ -86,6 +92,11 @@ struct MainTabView: View {
         .tint(WordlyColors.electric)
         // Đăng nhập (kể cả người khác trên cùng máy) → token chuyển sang người này
         .task { await PushManager.shared.syncIfNeeded(force: true) }
+        // Nghe giao dịch Apple (gia hạn, Ask to Buy duyệt) + đồng bộ quyền Pro
+        .task {
+            pro.start()
+            await pro.refreshAll()
+        }
         // Mỗi lần mở app → cập nhật từ cho widget màn hình khoá + làm mới token push (≤ 1 lần/ngày)
         .task(id: scenePhase) {
             if scenePhase == .active {
@@ -103,11 +114,15 @@ struct MainTabView: View {
                 await WidgetSync.refreshIfStale()
                 await onboarding.refreshChecklist()
                 await PushManager.shared.syncIfNeeded()
+                await AppUpdateGate.shared.check()
+                await pro.refreshStatus()
+                if onboarding.intro != .whatsNew { pro.maybeShowSoftPaywall() }
             }
         }
         .sheet(isPresented: Binding(get: { onboarding.intro == .whatsNew },
                                     set: { if !$0 { onboarding.finishIntro() } })) {
             WhatsNewView { onboarding.finishIntro() }
         }
+        .sheet(item: $pro.paywall) { reason in PaywallView(reason: reason) }
     }
 }

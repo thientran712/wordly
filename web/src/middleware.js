@@ -110,6 +110,10 @@ export async function middleware(request) {
     "/api/spinner/vocab",
     "/api/spinner/history",
     "/api/spinner/preferences",
+    // Wordly Pro (spec 2026-10-16 §8): Apple gọi webhook không có phiên đăng
+    // nhập (an toàn nhờ chữ ký JWS); app hỏi min_build cả khi chưa đăng nhập.
+    "/api/billing/notifications",
+    "/api/app-config",
   ]);
   const isPublicApi = PUBLIC_API_PATHS.has(path);
 

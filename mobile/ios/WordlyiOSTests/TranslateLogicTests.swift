@@ -62,4 +62,13 @@ final class TranslateLogicTests: XCTestCase {
         let e = try JSONDecoder().decode(TranslateHistoryEntry.self, from: Data(json.utf8))
         XCTAssertEqual(e.isSaved, true)
     }
+
+    /// Lỗi dịch ảnh: hiện câu của server (422 không có chữ / không dịch được), lỗi khác mới là mất mạng.
+    func testImageErrorMessage() {
+        let noText = APIError.from(status: 422, body: Data(#"{"error":"Không tìm thấy chữ trong ảnh"}"#.utf8))
+        XCTAssertEqual(TranslateLogic.imageErrorMessage(noText), "Không tìm thấy chữ trong ảnh")
+        let bad = APIError.from(status: 502, body: Data(#"{"error":"AI lỗi: x"}"#.utf8))
+        XCTAssertEqual(TranslateLogic.imageErrorMessage(bad), "Không đọc được ảnh, thử lại nhé")
+        XCTAssertEqual(TranslateLogic.imageErrorMessage(URLError(.notConnectedToInternet)), "Mất kết nối — thử lại nhé")
+    }
 }

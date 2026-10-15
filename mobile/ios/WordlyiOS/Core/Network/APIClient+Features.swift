@@ -11,10 +11,9 @@ extension APIClient {
     }
 
     // MARK: Từ điển AI + lưu từ
-    func lookupWord(_ word: String) async throws -> DictionaryDetail? {
-        struct Body: Encodable { let word: String }
+    func lookupWord(_ word: String, purpose: String? = nil) async throws -> DictionaryDetail? {
         let r = try await request(path: "/api/dictionary", method: "POST",
-                                  body: Body(word: word.trimmingCharacters(in: .whitespaces).lowercased()),
+                                  body: DictionaryRequest(word: word.trimmingCharacters(in: .whitespaces).lowercased(), purpose: purpose),
                                   responseType: DictionaryResponse.self)
         return r.detail
     }
