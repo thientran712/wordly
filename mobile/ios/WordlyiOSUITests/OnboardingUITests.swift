@@ -1,8 +1,9 @@
 import XCTest
 
-// Giới thiệu tính năng (spec 2026-10-15-shared-word-source-design.md §6).
-// `-WordlyOnboarding` bật phần giới thiệu trong chế độ xem trước (mặc định tắt để
-// không chặn UI test khác) và xoá cờ "đã xem" như máy mới cài.
+// Onboarding 4 màn khi cài mới (chủ dự án chốt 15/10: bắt buộc, không nút bỏ qua) +
+// "Có gì mới" / thẻ "Bắt đầu" theo tài khoản (spec 2026-10-15-shared-word-source-design.md §6).
+// `-WordlyOnboarding` bật phần giới thiệu trong chế độ xem trước và xoá cờ như máy mới;
+// `-WordlyFreshInstall` = vừa cài app, chưa đăng nhập.
 final class OnboardingUITests: XCTestCase {
     private func launch(_ extra: [String]) -> XCUIApplication {
         let app = XCUIApplication()
@@ -18,48 +19,51 @@ final class OnboardingUITests: XCTestCase {
         add(a)
     }
 
-    func testNewAccountSeesWelcomeThenChecklist() {
-        let app = launch(["-WordlyNoSavedWords"])
-        let welcome = app.otherElements["onboardingWelcome"]
-        XCTAssertTrue(welcome.waitForExistence(timeout: 10), "tài khoản mới thấy màn chào")
-        shot(app, "welcome-1")
-        app.buttons["welcomeNext"].tap()
-        app.buttons["welcomeNext"].tap()
-        shot(app, "welcome-3")
-        app.buttons["welcomeNext"].tap()   // "Bắt đầu"
-        XCTAssertTrue(app.otherElements["startChecklist"].waitForExistence(timeout: 5), "tab Dịch có thẻ Bắt đầu")
-        XCTAssertFalse(app.otherElements["whatsNew"].exists, "đã xem màn chào thì không hiện Có gì mới")
-        shot(app, "checklist")
+    private func walkToLastPage(_ app: XCUIApplication) {
+        XCTAssertTrue(app.otherElements["onboardingFlow"].waitForExistence(timeout: 10), "cài mới → onboarding")
+        for page in 1...3 {
+            XCTAssertTrue(app.otherElements["onboardingPage\(page)"].waitForExistence(timeout: 3), "màn \(page)")
+            XCTAssertFalse(app.buttons["Bỏ qua"].exists, "bắt buộc, không có nút bỏ qua")
+            shot(app, "onboarding-\(page)")
+            app.buttons["onboardingNext"].tap()
+        }
+        XCTAssertTrue(app.otherElements["onboardingPage4"].waitForExistence(timeout: 3), "màn 4")
+        XCTAssertFalse(app.buttons["onboardingNext"].exists, "màn cuối chỉ có 2 nút đăng ký / đăng nhập")
+        shot(app, "onboarding-4")
     }
 
-    func testWelcomeCanBeSkipped() {
-        let app = launch(["-WordlyNoSavedWords"])
-        XCTAssertTrue(app.buttons["welcomeSkip"].waitForExistence(timeout: 10))
-        app.buttons["welcomeSkip"].tap()
+    func testFreshInstallWalksFourScreensThenSignup() {
+        let app = launch(["-WordlyFreshInstall"])
+        walkToLastPage(app)
+        app.buttons["onboardingSignup"].tap()
+        XCTAssertTrue(app.buttons["signupSubmit"].waitForExistence(timeout: 5), "mở thẳng màn tạo tài khoản")
+    }
+
+    func testFreshInstallLastScreenLogin() {
+        let app = launch(["-WordlyFreshInstall"])
+        walkToLastPage(app)
+        app.buttons["onboardingLogin"].tap()
+        XCTAssertTrue(app.buttons["Tạo tài khoản mới"].waitForExistence(timeout: 5), "về màn đăng nhập")
+        XCTAssertFalse(app.otherElements["onboardingFlow"].exists)
+    }
+
+    func testLoggedInExistingUserSkipsFlowAndSeesWhatsNew() {
+        let app = launch([])
+        XCTAssertTrue(app.otherElements["whatsNew"].waitForExistence(timeout: 10), "tài khoản có từ → Có gì mới")
+        XCTAssertFalse(app.otherElements["onboardingFlow"].exists, "người dùng cũ không xem onboarding")
+        app.buttons["whatsNewDone"].tap()
         XCTAssertTrue(app.otherElements["startChecklist"].waitForExistence(timeout: 5))
     }
 
-    func testExistingAccountSeesWhatsNew() {
-        let app = launch([])
-        let whatsNew = app.otherElements["whatsNew"]
-        XCTAssertTrue(whatsNew.waitForExistence(timeout: 10), "tài khoản có từ thấy Có gì mới")
-        XCTAssertFalse(app.otherElements["onboardingWelcome"].exists)
-        shot(app, "whats-new")
-        app.buttons["whatsNewDone"].tap()
-        XCTAssertFalse(whatsNew.waitForExistence(timeout: 2) && whatsNew.isHittable)
-    }
-
-    func testChecklistOpensWidgetGuideAndCanDismiss() {
+    func testNewAccountNoWhatsNewButChecklistAndGuide() {
         let app = launch(["-WordlyNoSavedWords"])
-        XCTAssertTrue(app.buttons["welcomeSkip"].waitForExistence(timeout: 10))
-        app.buttons["welcomeSkip"].tap()
-        let lock = app.buttons["checklist.lockWidget"]
-        XCTAssertTrue(lock.waitForExistence(timeout: 5))
-        lock.tap()
-        XCTAssertTrue(app.otherElements["widgetAddGuide"].waitForExistence(timeout: 5), "mở hướng dẫn thêm widget")
-        shot(app, "add-guide")
+        let card = app.otherElements["startChecklist"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "tài khoản mới có thẻ Bắt đầu")
+        XCTAssertFalse(app.otherElements["whatsNew"].exists, "tài khoản mới không có Có gì mới")
+        app.buttons["checklist.lockWidget"].tap()
+        XCTAssertTrue(app.otherElements["widgetAddGuide"].waitForExistence(timeout: 5))
         app.buttons["widgetAddGuideClose"].tap()
         app.buttons["checklistDismiss"].tap()
-        XCTAssertFalse(app.otherElements["startChecklist"].waitForExistence(timeout: 2), "✕ ẩn thẻ")
+        XCTAssertFalse(card.waitForExistence(timeout: 2), "✕ ẩn thẻ")
     }
 }

@@ -3,16 +3,21 @@ import XCTest
 
 // Giới thiệu tính năng (spec 2026-10-15-shared-word-source-design.md §6).
 final class OnboardingTests: XCTestCase {
-    func testIntroChoice() {
-        // Tài khoản mới (chưa lưu từ, chưa thấy màn chào) → màn chào
-        XCTAssertEqual(Onboarding.intro(savedCount: 0, welcomeSeen: false, whatsNewSeen: nil), .welcome)
-        // Tài khoản cũ / cài lại app với tài khoản có từ → "Có gì mới" một lần
-        XCTAssertEqual(Onboarding.intro(savedCount: 5, welcomeSeen: false, whatsNewSeen: nil), .whatsNew)
-        XCTAssertEqual(Onboarding.intro(savedCount: 5, welcomeSeen: false, whatsNewSeen: Onboarding.whatsNewVersion), .none)
-        // Đã xem màn chào (đánh dấu luôn bản "Có gì mới") → không gì nữa
-        XCTAssertEqual(Onboarding.intro(savedCount: 0, welcomeSeen: true, whatsNewSeen: Onboarding.whatsNewVersion), .none)
-        // Bản "Có gì mới" cũ hơn → hiện bản mới
-        XCTAssertEqual(Onboarding.intro(savedCount: 3, welcomeSeen: true, whatsNewSeen: "1.0.0"), .whatsNew)
+    /// Onboarding 4 màn gắn với LẦN CÀI APP (chủ dự án chốt 15/10, bắt buộc, không bỏ qua):
+    /// cài mới + chưa đăng nhập → onboarding; đang đăng nhập sẵn (cập nhật app) → không.
+    func testFlowOnlyOnFreshInstall() {
+        XCTAssertEqual(Onboarding.launchFlow(flowSeen: false, authenticated: false), .show)
+        XCTAssertEqual(Onboarding.launchFlow(flowSeen: false, authenticated: true), .markSeen, "người dùng cũ cập nhật app")
+        XCTAssertEqual(Onboarding.launchFlow(flowSeen: true, authenticated: false), .none)
+        XCTAssertEqual(Onboarding.launchFlow(flowSeen: true, authenticated: true), .none)
+    }
+
+    /// "Có gì mới" chỉ cho tài khoản đã có từ, một lần mỗi phiên bản; tài khoản mới không có.
+    func testWhatsNewOnlyForAccountsWithWords() {
+        XCTAssertTrue(Onboarding.showWhatsNew(savedCount: 5, seenVersion: nil))
+        XCTAssertFalse(Onboarding.showWhatsNew(savedCount: 5, seenVersion: Onboarding.whatsNewVersion))
+        XCTAssertTrue(Onboarding.showWhatsNew(savedCount: 5, seenVersion: "1.0.0"))
+        XCTAssertFalse(Onboarding.showWhatsNew(savedCount: 0, seenVersion: nil))
     }
 
     func testChecklist() {
@@ -45,5 +50,24 @@ final class OnboardingTests: XCTestCase {
         XCTAssertFalse(nudge(shown: true), "chỉ một lần")
         XCTAssertFalse(nudge(invite: now), "cùng ngày với lời mời nhắc ôn")
         XCTAssertFalse(nudge(intro: true), "không chồng lên màn chào / Có gì mới")
+    }
+
+    /// Cờ theo TỪNG TÀI KHOẢN: tài khoản cũ đã xem/ẩn không làm tài khoản mới trên cùng máy
+    /// mất phần giới thiệu; đổi tài khoản trong cùng lần chạy app thì quyết định lại (lỗi build 19).
+    @MainActor func testIntroIsPerAccountAndRedecidedOnAccountSwitch() {
+        let d = UserDefaults(suiteName: "onb-\(UUID().uuidString)")!
+        let center = OnboardingCenter(defaults: d)
+        center.decideIntro(userId: "old", savedCount: 12)
+        XCTAssertEqual(center.intro, .whatsNew)
+        center.finishIntro()
+        center.dismissCard()
+        center.decideIntro(userId: "old", savedCount: 12)
+        XCTAssertEqual(center.intro, .none, "cùng tài khoản: không hiện lại")
+
+        center.decideIntro(userId: "other", savedCount: 3)
+        XCTAssertEqual(center.intro, .whatsNew, "tài khoản khác trên cùng máy, cùng lần chạy → tự quyết định lại")
+        center.decideIntro(userId: "new", savedCount: 0)
+        XCTAssertEqual(center.intro, .none, "tài khoản mới không có 'Có gì mới'")
+        XCTAssertFalse(center.isCardDismissed, "ẩn thẻ ở tài khoản cũ không ẩn thẻ của tài khoản mới")
     }
 }

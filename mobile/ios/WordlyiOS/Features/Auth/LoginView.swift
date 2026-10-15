@@ -2,6 +2,8 @@ import SwiftUI
 import AuthenticationServices
 
 struct LoginView: View {
+    /// Từ onboarding bấm "Tạo tài khoản" → mở luôn màn tạo tài khoản
+    var startWithSignup = false
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.colorScheme) var scheme
     @State private var email = ""
@@ -292,6 +294,7 @@ struct LoginView: View {
         .onChange(of: errorBanner.message) { _, new in if new == nil { authManager.authError = nil } }
         .onChange(of: email) { errorBanner.userEdited() }
         .onChange(of: password) { errorBanner.userEdited() }
+        .onAppear { if startWithSignup { showSignup = true } }
         .sheet(isPresented: $showSignup) { SignupView() }
         .sheet(isPresented: $showForgotPassword) { ForgotPasswordView() }
         .sheet(isPresented: Binding(get: { verifyEmail != nil }, set: { if !$0 { verifyEmail = nil } })) {
@@ -493,7 +496,7 @@ struct ForgotPasswordView: View {
                         Text(codeSent ? "Đặt mật khẩu mới" : "Quên mật khẩu")
                             .font(WordlyFonts.display(28))
                             .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                        Text(codeSent ? "Nhập mã 6 số vừa gửi tới \(email)" : "Nhập email, chúng tôi gửi mã xác nhận 6 số")
+                        Text(codeSent ? "Nhập mã 6 số vừa gửi tới \(email)\n\(AuthFlow.codeValidityNote)" : "Nhập email, chúng tôi gửi mã xác nhận 6 số")
                             .font(WordlyFonts.body(14, weight: .medium))
                             .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                             .multilineTextAlignment(.center)
@@ -573,7 +576,7 @@ struct ForgotPasswordView: View {
             try await authManager.resetPassword(email: email.trimmingCharacters(in: .whitespaces))
             codeSent = true
             lastSent = Date()
-            if resend { info = "Đã gửi mã mới, kiểm tra hộp thư (cả mục Spam)" }
+            if resend { info = AuthFlow.resentNote + " Kiểm tra cả mục Spam." }
         } catch {
             let kind = authManager.errorKind(error)
             if kind == .rateLimited {

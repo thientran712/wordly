@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var authManager: AuthManager
+    @ObservedObject private var onboarding = OnboardingCenter.shared
+    @State private var loginStartsWithSignup = false
 
     var body: some View {
         Group {
@@ -19,8 +21,14 @@ struct ContentView: View {
                     MainTabView()
                     #endif
                 }
+            } else if !onboarding.flowSeen {
+                // Cài mới: onboarding 4 màn bắt buộc trước màn đăng nhập
+                OnboardingFlowView { choice in
+                    loginStartsWithSignup = choice == .signup
+                    onboarding.markFlowSeen()
+                }
             } else {
-                LoginView()
+                LoginView(startWithSignup: loginStartsWithSignup)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
@@ -49,6 +57,7 @@ struct SplashView: View {
 
 struct MainTabView: View {
     @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var authManager: AuthManager
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var onboarding = OnboardingCenter.shared
 
@@ -80,16 +89,21 @@ struct MainTabView: View {
         // Mỗi lần mở app → cập nhật từ cho widget màn hình khoá + làm mới token push (≤ 1 lần/ngày)
         .task(id: scenePhase) {
             if scenePhase == .active {
+                // Đang đăng nhập sẵn (cập nhật từ bản cũ) → không bắt xem onboarding 4 màn
+                if Onboarding.launchFlow(flowSeen: onboarding.flowSeen, authenticated: true) == .markSeen {
+                    onboarding.markFlowSeen()
+                }
+                // Quyết định "Có gì mới" + thẻ Bắt đầu TRƯỚC đồng bộ widget (đồng bộ có thể chậm),
+                // theo tài khoản đang đăng nhập (đổi tài khoản trong cùng lần chạy cũng đúng)
+                let uid = authManager.currentUser?.id.uuidString ?? "preview"
+                let saved = (try? await APIClient.shared.fetchSavedHistory().filter { $0.isSaved == true }.count)
+                    ?? AppGroupStorage.shared.words.filter(\.isSaved).count
+                onboarding.decideIntro(userId: uid, savedCount: saved)
+                await onboarding.refreshChecklist()
                 await WidgetSync.refreshIfStale()
-                // Sau khi đồng bộ mới biết tài khoản mới hay cũ (spec 2026-10-15 §6)
-                onboarding.decideIntro()
                 await onboarding.refreshChecklist()
                 await PushManager.shared.syncIfNeeded()
             }
-        }
-        .fullScreenCover(isPresented: Binding(get: { onboarding.intro == .welcome },
-                                              set: { if !$0 { onboarding.finishIntro() } })) {
-            WelcomeView { onboarding.finishIntro() }
         }
         .sheet(isPresented: Binding(get: { onboarding.intro == .whatsNew },
                                     set: { if !$0 { onboarding.finishIntro() } })) {

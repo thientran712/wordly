@@ -43,4 +43,14 @@ final class AuthFlowTests: XCTestCase {
         PendingSignupStore(defaults: defaults).email = nil
         XCTAssertNil(PendingSignupStore(defaults: defaults).email)
     }
+
+    /// GoTrue trả otp_expired cho cả mã sai lẫn mã cũ (gửi lại thì mã cũ hết hiệu lực).
+    /// Câu cũ khuyên "Gửi lại mã" → người dùng càng gửi lại càng nhập trúng mã cũ (15/10).
+    func testCodeInvalidMessagePointsToNewestEmail() {
+        let m = AuthFlow.message(for: .codeInvalid)
+        XCTAssertTrue(m.contains("mới nhất"), m)
+        XCTAssertFalse(m.contains("Bấm \"Gửi lại mã\""), "không khuyên gửi lại mã đầu tiên: \(m)")
+        XCTAssertTrue(AuthFlow.codeValidityNote.contains("60 phút"))
+        XCTAssertTrue(AuthFlow.resentNote.contains("mã cũ"))
+    }
 }

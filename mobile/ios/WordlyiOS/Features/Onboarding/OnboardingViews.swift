@@ -13,9 +13,16 @@ final class OnboardingCenter: ObservableObject {
     @Published private(set) var checklist = Onboarding.checklist(savedCount: 0, hasLockWidget: false, hasHomeWidget: false, pushOn: false)
     @Published private(set) var cardState: Onboarding.CardState = .hidden
     @Published var nudgeWord: WidgetWordItem?
-    private var decided = false
+    /// Tài khoản đang dùng — mọi cờ (trừ onboarding 4 màn) lưu theo tài khoản
+    private(set) var userId = ""
+    private var decidedUser: String?
     private var introThisSession = false
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        flowSeen = defaults.bool(forKey: Onboarding.Key.flowSeen)
+    }
 
     /// Chế độ xem trước (UI test) chỉ bật khi có `-WordlyOnboarding` — không chặn test khác.
     static var enabled: Bool {
@@ -25,45 +32,55 @@ final class OnboardingCenter: ObservableObject {
         return true
     }
 
+    /// Cờ theo tài khoản: tài khoản cũ đã xem/ẩn không ảnh hưởng tài khoản mới trên cùng máy.
+    private func key(_ base: String) -> String { "\(base).\(userId)" }
+
     private var savedCount: Int { AppGroupStorage.shared.words.filter(\.isSaved).count }
 
-    /// Gọi một lần mỗi lần mở app, SAU khi đồng bộ từ (để biết tài khoản mới hay cũ).
-    func decideIntro() {
-        guard Self.enabled, !decided else { return }
-        decided = true
-        intro = Onboarding.intro(savedCount: savedCount,
-                                 welcomeSeen: defaults.bool(forKey: Onboarding.Key.welcomeSeen),
-                                 whatsNewSeen: defaults.string(forKey: Onboarding.Key.whatsNewSeen))
+    var isCardDismissed: Bool { defaults.bool(forKey: key(Onboarding.Key.cardDismissed)) }
+
+    // MARK: Onboarding 4 màn (theo máy)
+    @Published private(set) var flowSeen = false
+    func markFlowSeen() {
+        defaults.set(true, forKey: Onboarding.Key.flowSeen)
+        flowSeen = true
+    }
+
+    /// Mỗi lần vào app với một tài khoản (kể cả đổi tài khoản trong cùng lần chạy).
+    func decideIntro(userId: String, savedCount: Int) {
+        guard Self.enabled, decidedUser != userId else { return }
+        self.userId = userId
+        decidedUser = userId
+        intro = Onboarding.showWhatsNew(savedCount: savedCount,
+                                        seenVersion: defaults.string(forKey: key(Onboarding.Key.whatsNewSeen))) ? .whatsNew : .none
         introThisSession = intro != .none
     }
 
-    /// Xem xong (hoặc bỏ qua) màn chào / "Có gì mới".
+    /// Xem xong "Có gì mới".
     func finishIntro() {
-        if intro == .welcome { defaults.set(true, forKey: Onboarding.Key.welcomeSeen) }
-        defaults.set(Onboarding.whatsNewVersion, forKey: Onboarding.Key.whatsNewSeen)
+        defaults.set(Onboarding.whatsNewVersion, forKey: key(Onboarding.Key.whatsNewSeen))
         intro = .none
     }
 
     /// Kiểm lại thẻ "Bắt đầu" — khi mở app, quay lại app (vừa thêm widget ngoài app), sau khi lưu từ.
     func refreshChecklist() async {
-        guard Self.enabled else { cardState = .hidden; return }
+        guard Self.enabled, !userId.isEmpty else { cardState = .hidden; return }
         let kinds = await Self.installedFamilies()
         let pushOn = await Self.pushOn()
         checklist = Onboarding.checklist(savedCount: savedCount, hasLockWidget: kinds.lock,
                                          hasHomeWidget: kinds.home, pushOn: pushOn)
-        cardState = Onboarding.card(dismissed: defaults.bool(forKey: Onboarding.Key.cardDismissed),
-                                    allDone: checklist.allDone,
-                                    celebrated: defaults.bool(forKey: Onboarding.Key.cardCelebrated))
-        if cardState == .celebrate { defaults.set(true, forKey: Onboarding.Key.cardCelebrated) }
+        cardState = Onboarding.card(dismissed: isCardDismissed, allDone: checklist.allDone,
+                                    celebrated: defaults.bool(forKey: key(Onboarding.Key.cardCelebrated)))
+        if cardState == .celebrate { defaults.set(true, forKey: key(Onboarding.Key.cardCelebrated)) }
     }
 
     func dismissCard() {
-        defaults.set(true, forKey: Onboarding.Key.cardDismissed)
+        defaults.set(true, forKey: key(Onboarding.Key.cardDismissed))
         cardState = .hidden
     }
 
     /// Lời mời bật nhắc ôn vừa hiện → gợi ý widget không cùng ngày.
-    func notePushInvite() { defaults.set(Date(), forKey: Onboarding.Key.pushInviteDay) }
+    func notePushInvite() { defaults.set(Date(), forKey: key(Onboarding.Key.pushInviteDay)) }
 
     /// Sau khi lưu từ: cập nhật thẻ + gợi ý thêm widget (một lần, từ thứ 3).
     func afterSave() async {
@@ -71,11 +88,11 @@ final class OnboardingCenter: ObservableObject {
         guard Self.enabled else { return }
         let kinds = await Self.installedFamilies()
         guard Onboarding.shouldNudgeWidget(savedCount: savedCount, hasWidget: kinds.lock || kinds.home,
-                                           nudgeShown: defaults.bool(forKey: Onboarding.Key.widgetNudgeShown),
-                                           pushInviteDay: defaults.object(forKey: Onboarding.Key.pushInviteDay) as? Date,
+                                           nudgeShown: defaults.bool(forKey: key(Onboarding.Key.widgetNudgeShown)),
+                                           pushInviteDay: defaults.object(forKey: key(Onboarding.Key.pushInviteDay)) as? Date,
                                            now: Date(), introThisSession: introThisSession),
               let word = AppGroupStorage.shared.words.first(where: \.isSaved) else { return }
-        defaults.set(true, forKey: Onboarding.Key.widgetNudgeShown)
+        defaults.set(true, forKey: key(Onboarding.Key.widgetNudgeShown))
         nudgeWord = word
     }
 
@@ -104,108 +121,6 @@ enum PreviewModeFlag {
         #else
         return false
         #endif
-    }
-}
-
-// MARK: - Màn chào 3 trang (tài khoản mới)
-
-struct WelcomeView: View {
-    let onDone: () -> Void
-    @State private var page = 0
-
-    private struct Page { let title: String; let text: String }
-    private let pages = [
-        Page(title: "Dịch & lưu từ", text: "Dịch từ, câu, ảnh hay giọng nói. Bấm Lưu để Wordly giúp bạn ôn."),
-        Page(title: "Từ hiện ngay trên máy", text: "Thêm widget vào màn hình khoá hoặc màn hình chính — liếc là học."),
-        Page(title: "Nhắc ôn đúng giờ", text: "Chọn giờ, Wordly nhắc từng từ để bạn không quên."),
-    ]
-
-    var body: some View {
-        ZStack {
-            WordlyColors.background.ignoresSafeArea()
-            VStack(spacing: 0) {
-                HStack {
-                    Spacer()
-                    Button("Bỏ qua") { onDone() }
-                        .font(WordlyFonts.body(15, weight: .semibold))
-                        .foregroundStyle(WordlyColors.inkSoft)
-                        .accessibilityIdentifier("welcomeSkip")
-                }
-                .padding(.horizontal, 20).padding(.top, 8)
-
-                TabView(selection: $page) {
-                    ForEach(pages.indices, id: \.self) { i in
-                        VStack(spacing: 24) {
-                            Spacer(minLength: 8)
-                            illustration(i).frame(height: 280)
-                            Text(pages[i].title)
-                                .font(WordlyFonts.display(28))
-                                .foregroundStyle(WordlyColors.ink)
-                            Text(pages[i].text)
-                                .font(WordlyFonts.body(16))
-                                .foregroundStyle(WordlyColors.inkSoft)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 32)
-                            Spacer(minLength: 8)
-                        }
-                        .tag(i)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .always))
-                .indexViewStyle(.page(backgroundDisplayMode: .always))
-
-                Button {
-                    if page < pages.count - 1 { withAnimation { page += 1 } } else { onDone() }
-                } label: {
-                    Text(page < pages.count - 1 ? "Tiếp" : "Bắt đầu")
-                        .font(WordlyFonts.body(16, weight: .bold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 16)
-                        .background(WordlyColors.electric).foregroundStyle(WordlyColors.onElectric)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                }
-                .accessibilityIdentifier("welcomeNext")
-                .padding(.horizontal, 24).padding(.bottom, 20)
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("onboardingWelcome")
-    }
-
-    @ViewBuilder private func illustration(_ i: Int) -> some View {
-        switch i {
-        case 0:
-            VStack(spacing: 12) {
-                mockCard(top: "resilient", bottom: "kiên cường, mau phục hồi", icon: "character.bubble.fill")
-                Label("Đã lưu", systemImage: "bookmark.fill")
-                    .font(WordlyFonts.body(14, weight: .bold))
-                    .padding(.horizontal, 16).padding(.vertical, 8)
-                    .background(WordlyColors.electric).foregroundStyle(WordlyColors.onElectric)
-                    .clipShape(Capsule())
-            }
-        case 1:
-            HStack(spacing: 14) {
-                WidgetMock(word: "resilient", meaning: "kiên cường", compact: true)
-                WidgetMock(word: "ephemeral", meaning: "thoáng qua, không bền", compact: false)
-            }
-        default:
-            mockCard(top: "Đố mày nhớ resilient không? 🤔", bottom: "Wordly · bây giờ", icon: "bell.badge.fill")
-        }
-    }
-
-    private func mockCard(top: String, bottom: String, icon: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 22)).foregroundStyle(WordlyColors.electric)
-                .frame(width: 44, height: 44).background(WordlyColors.electricSubtle).clipShape(RoundedRectangle(cornerRadius: 12))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(top).font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
-                Text(bottom).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(16)
-        .background(WordlyColors.surfaceElevated)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .padding(.horizontal, 32)
     }
 }
 
