@@ -15,12 +15,25 @@ struct HomeStyleView: View {
     @State private var savedBackground: CGImage?
     /// Nhóm theme đang mở trong dropdown (nil = nhóm của theme đang dùng)
     @State private var themeGroup: WidgetTheme.Group?
+    @State private var showPresets = false
 
     var body: some View {
         Form {
             Section { preview }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
+
+            Section {
+                Button {
+                    showPresets = true
+                } label: {
+                    Label("Chọn mẫu có sẵn", systemImage: "sparkles")
+                        .font(WordlyFonts.body(16, weight: .semibold))
+                }
+                .accessibilityIdentifier("widgetPresetOpen")
+            } footer: {
+                Text("Phối sẵn màu, kiểu chữ và ảnh nền — chạm một mẫu là xong, vẫn chỉnh tiếp được bên dưới.")
+            }
 
             Section {
                 Picker("Nhóm", selection: Binding(
@@ -119,11 +132,30 @@ struct HomeStyleView: View {
             let v = vm.settings.homeStyle.backgroundVersion
             savedBackground = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup).load(.medium, version: v)
         }
+        .sheet(isPresented: $showPresets) {
+            WidgetPresetGalleryView(current: vm.settings.homeStyle) { applyPreset($0) }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
         .fullScreenCover(isPresented: Binding(get: { editorSource != nil },
                                               set: { if !$0 { editorSource = nil } })) {
             if let editorSource {
                 WidgetBackgroundEditorView(source: editorSource, vm: vm) { self.editorSource = nil }
             }
+        }
+    }
+
+    /// Đổi sang mẫu (didSet lưu App Group + reload widget) rồi mới dọn ảnh cũ.
+    private func applyPreset(_ preset: WidgetPreset) {
+        let store = WidgetBackgroundStore.appGroup(WordlyConfig.appGroup)
+        do {
+            let style = try WidgetPresetBackground.apply(preset, to: vm.settings.homeStyle, store: store)
+            vm.settings.homeStyle = style
+            store.removeAll(except: style.backgroundVersion)
+            themeGroup = nil
+            loadError = nil
+        } catch {
+            loadError = "Không đặt được mẫu này, thử lại."
         }
     }
 

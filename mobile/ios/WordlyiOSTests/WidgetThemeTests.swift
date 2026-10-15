@@ -73,7 +73,7 @@ final class WidgetThemeTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(WidgetTheme.themes(in: g).count, 5, "\(g)")
         }
         XCTAssertEqual(WidgetTheme.Group.allCases.map { WidgetTheme.themes(in: $0).count }.reduce(0, +), WidgetTheme.all.count)
-        XCTAssertGreaterThanOrEqual(WidgetTheme.themes(in: .cartoon).count, 20, "nhiều theme hoạt hình/siêu anh hùng")
+        XCTAssertGreaterThanOrEqual(WidgetTheme.themes(in: .cartoon).count, 20, "nhóm rực rỡ đủ nhiều theme")
     }
 
     // Màu mặc định cũ (chữ trắng trên #1CB0F6/#58CC02) chỉ ~2.1–2.4 — người
@@ -91,5 +91,20 @@ final class WidgetThemeTests: XCTestCase {
         let cartoon = WidgetTheme.themes(in: .cartoon)[0]
         s.apply(cartoon)
         XCTAssertEqual(WidgetTheme.group(containing: s), .cartoon)
+    }
+
+    // App Store 5.2: tên theme không gợi tên phim/nhân vật/thương hiệu có bản quyền.
+    func testThemeNamesAvoidCopyrightedFranchises() {
+        let banned = ["hiệp sĩ bóng đêm", "báo đen", "nữ hoàng băng giá", "ngọc rồng", "lính vàng", "mũ rơm",
+                      "ninja", "kiếm ánh sáng", "phe bóng tối", "nhện", "siêu nhân", "giáp sắt", "khổng lồ xanh",
+                      "đội trưởng", "thần sấm", "chuột điện", "mèo máy", "bọt biển", "phù thủy", "tiên cá",
+                      "cao bồi", "bóng ma", "nữ chiến binh", "siêu anh hùng", "hoạt hình"]
+        let names = WidgetTheme.all.map { $0.name.lowercased() } + WidgetTheme.Group.allCases.map { $0.title.lowercased() }
+        for name in names {
+            for word in banned {
+                XCTAssertFalse(name.contains(word), "\(name) chứa \(word)")
+            }
+        }
+        XCTAssertEqual(Set(WidgetTheme.all.map(\.name)).count, WidgetTheme.all.count, "tên theme không trùng")
     }
 }
