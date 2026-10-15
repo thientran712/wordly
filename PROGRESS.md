@@ -3,7 +3,21 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 16/10/2026 — Wordly Pro (spec `2026-10-16-pro-paywall-design.md`): MIGRATION ĐÃ CHẠY production; PR #49 chờ merge + deploy; build 21 đã archive chờ upload
+### 16/10/2026 — Wordly Pro: ĐÃ LÊN PRODUCTION (BILLING_ENFORCE tắt) + BUILD 21 ĐÃ UPLOAD TestFlight
+
+Đã kiểm tra sau deploy (commit a14259f, container `wordly-green-web-1`):
+- `GET /api/app-config` trả `{min_build:0}`.
+- Notifications: GET trả 405, POST với chữ ký giả trả 400.
+- `/api/billing/status` khi chưa đăng nhập trả 401.
+- Dịch cho khách vẫn 200.
+- Email OTP mới (60 phút) đã lên.
+
+Test giới hạn (PR #50, deploy 98a4d5b): env `BILLING_ENFORCE_TEST_USERS` = UUID của `davidtran712@yopmail.com` (ec6d4925-…). Chỉ tài khoản này bị áp giới hạn; `BILLING_ENFORCE` chung vẫn tắt. Bản `.env` cũ: `.env.bak-pre-test-users`. Khi bật chung thì xoá dòng này.
+
+Việc tiếp theo:
+- Thử mua bằng TestFlight build 21 (không trừ tiền), sau khi Paid Apps Agreement chuyển sang Active.
+- Nộp 1.0.x kèm 2 gói thuê bao.
+- Khi bản có paywall đã phát hành: đặt `APP_MIN_BUILD=21` và `BILLING_ENFORCE=1`.
 
 PR #49 (`feat/pro-paywall`, gồm cả backend). Chủ dự án xác nhận chạy cả 4 việc (16/10).
 - **Migration `20261016000200_pro_billing` ĐÃ CHẠY production (16/10).** 4 bảng mới bật RLS; `due_push_slots(now, 30)` kiểu cũ vẫn chạy. Bản sao hàm cũ lưu trong scratchpad phiên.

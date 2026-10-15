@@ -14,7 +14,7 @@ struct PaywallPlan: Identifiable, Equatable {
 
 enum PaywallMode: Equatable {
     case purchase   // chưa Pro: hiện gói + nút mua
-    case manage     // đang Pro: không có nút mua (tránh trả hai lần) — chỉ quản lý / hoàn tiền
+    case manage     // đang Pro: không có nút mua (tránh trả hai lần) — chỉ quản lý gói
 
     static func `for`(isPro: Bool) -> PaywallMode { isPro ? .manage : .purchase }
 }
@@ -113,8 +113,6 @@ final class ProStore: ObservableObject {
     @Published private(set) var status: BillingStatus = .unlimited
     @Published private(set) var plans: [PaywallPlan] = []
     @Published private(set) var localEntitled = false
-    /// Giao dịch đang có trên máy (để mở bảng hoàn tiền của Apple)
-    @Published private(set) var currentTransactionId: UInt64?
     @Published var message: String?
     /// Paywall đang mở (một chỗ trình bày cho cả app — MainTabView gắn sheet)
     @Published var paywall: PaywallReason?
@@ -212,10 +210,7 @@ final class ProStore: ObservableObject {
         }
         #endif
         let valid = await gateway.currentEntitlements().filter { ProAccess.grantsPro($0, now: Date()) }
-        let entitled = !valid.isEmpty
-        let txId = valid.first?.transactionId
-        localEntitled = entitled
-        currentTransactionId = txId
+        localEntitled = !valid.isEmpty
     }
 
     func refreshStatus() async {
@@ -272,7 +267,6 @@ final class ProStore: ObservableObject {
             switch try await gateway.purchase(planId: plan.id, accountToken: userId()) {
             case .purchased(let e):
                 localEntitled = ProAccess.grantsPro(e, now: Date())   // đã trả → Pro ngay
-                currentTransactionId = e.transactionId
                 await sync(jws: e.jws)                                // server lỗi cũng không mất Pro
                 await gateway.finish(transactionId: e.transactionId)
                 return .purchased
@@ -301,13 +295,5 @@ final class ProStore: ObservableObject {
     func manageSubscriptions() async {
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
         try? await AppStore.showManageSubscriptions(in: scene)
-    }
-
-    /// Bảng yêu cầu hoàn tiền chính thức của Apple.
-    func requestRefund() async {
-        guard let id = currentTransactionId,
-              let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
-        _ = try? await Transaction.beginRefundRequest(for: id, in: scene)
-        await refreshLocal()
     }
 }

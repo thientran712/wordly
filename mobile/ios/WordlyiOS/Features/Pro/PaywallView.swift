@@ -182,9 +182,6 @@ struct PaywallView: View {
                     .font(WordlyFonts.body(14)).foregroundStyle(WordlyColors.inkSoft).multilineTextAlignment(.center)
             }
             manageButton("Quản lý gói (đổi / huỷ)", icon: "creditcard") { await store.manageSubscriptions() }
-            if store.currentTransactionId != nil {
-                manageButton("Yêu cầu hoàn tiền", icon: "arrow.uturn.backward.circle") { await store.requestRefund() }
-            }
         }
     }
 
