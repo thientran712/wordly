@@ -128,6 +128,12 @@ final class AppGroupStorage {
         try? FileManager.default.removeItem(at: url)
     }
 
+    /// 200 từ đã lưu mới nhất gộp TRƯỚC lịch sử — cùng tập từ push dùng trên server
+    /// (select-push-word.js, SAVED_WORDS_LIMIT), kể cả khi lịch sử 200 dòng toàn từ chưa lưu.
+    static func items(saved: [TranslateHistoryEntry], history: [TranslateHistoryEntry]) -> [WidgetWordItem] {
+        items(from: saved + history)
+    }
+
     /// Lịch sử dịch → từ cho widget: chỉ Anh→Việt, bỏ trùng, giữ thứ tự mới nhất trước.
     static func items(from history: [TranslateHistoryEntry]) -> [WidgetWordItem] {
         var seen = Set<String>()
@@ -182,7 +188,9 @@ enum WidgetSync {
         // không còn từ của tài khoản trước trên màn hình khoá
         guard fetchedAny else { return }
         let store = AppGroupStorage.shared
-        let items = AppGroupStorage.items(from: all)
+        // Lỗi tải danh sách đã lưu → dùng lịch sử như trước (không làm mất từ)
+        let saved = (try? await APIClient.shared.fetchSavedHistory()) ?? []
+        let items = AppGroupStorage.items(saved: saved, history: all)
         store.saveWords(items)
         // Nguồn từ chung: lấy bản server / gửi bản máy (sau khi đã có danh sách từ để chuyển cài đặt cũ)
         await WordSourceSync.sync()

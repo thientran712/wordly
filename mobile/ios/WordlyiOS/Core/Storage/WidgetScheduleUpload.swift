@@ -16,8 +16,16 @@ enum WidgetScheduleUpload {
         let id: String
     }
 
-    static func payload(_ entries: [WidgetSchedule.Entry]) -> [Item] {
-        Array(entries.compactMap { e in e.word.map { Item(shownAt: e.date, id: $0.id) } }.prefix(maxEntries))
+    /// Từ đang hiện (entry đầu, ghi giờ "bây giờ") gửi giờ BẮT ĐẦU slot — mở app nhiều
+    /// lần trong một slot ra cùng một dòng, server không ghi "Đã nhắc" trùng.
+    static func payload(_ entries: [WidgetSchedule.Entry], intervalMinutes: Int) -> [Item] {
+        let slot = TimeInterval(max(1, intervalMinutes) * 60)
+        return Array(entries.enumerated().compactMap { i, e in
+            e.word.map { w in
+                let at = i == 0 ? Date(timeIntervalSince1970: (e.date.timeIntervalSince1970 / slot).rounded(.down) * slot) : e.date
+                return Item(shownAt: at, id: w.id)
+            }
+        }.prefix(maxEntries))
     }
 
     static func hasWordlyWidget(kinds: [String]) -> Bool { kinds.contains(widgetKind) }
@@ -39,7 +47,8 @@ enum WidgetScheduleUpload {
         if hasWordlyWidget(kinds: await installedKinds()) {
             let store = AppGroupStorage.shared
             items = payload(WidgetSchedule.entries(words: store.words, bank: store.bank, source: store.wordSource,
-                                                   settings: store.settings, horizonHours: horizonHours))
+                                                   settings: store.settings, horizonHours: horizonHours),
+                            intervalMinutes: store.settings.intervalMinutes)
         } else {
             items = []
         }
