@@ -39,7 +39,6 @@ enum PreviewMode {
         case ("GET", "/api/practice/sessions"): json = sessions
         case ("GET", "/api/profile"): json = needsConsent ? profileNoConsent : profile
         case ("POST", "/api/consent"): json = #"{"success": true, "terms_version": 1}"#
-        case ("GET", "/api/stats/streak"): json = #"{"streak": 12, "total_days": 47}"#
         case ("POST", "/api/translate"): json = #"{"translated": "kiên cường, mau phục hồi", "detectedLang": "EN"}"#
         case ("POST", "/api/practice"):
             return Data("Great job! Tell me more about your weekend — what did you do?".utf8)

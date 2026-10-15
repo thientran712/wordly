@@ -385,11 +385,6 @@ final class APIClient: ObservableObject {
         )
     }
 
-    // MARK: - Streak
-    func fetchStreak() async throws -> StreakResponse {
-        try await request(path: "/api/stats/streak", responseType: StreakResponse.self)
-    }
-
     // MARK: - Datamuse suggestions
     func fetchSuggestions(query: String) async throws -> [String] {
         guard let url = URL(string: "https://api.datamuse.com/words?sp=\(query)*&max=8") else { return [] }
