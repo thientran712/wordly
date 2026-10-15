@@ -73,7 +73,7 @@ final class WidgetThemeTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(WidgetTheme.themes(in: g).count, 5, "\(g)")
         }
         XCTAssertEqual(WidgetTheme.Group.allCases.map { WidgetTheme.themes(in: $0).count }.reduce(0, +), WidgetTheme.all.count)
-        XCTAssertGreaterThanOrEqual(WidgetTheme.themes(in: .cartoon).count, 20, "nhóm rực rỡ đủ nhiều theme")
+        XCTAssertEqual(WidgetTheme.themes(in: .color).count, 10, "10 theme màu cơ bản")
     }
 
     // Màu mặc định cũ (chữ trắng trên #1CB0F6/#58CC02) chỉ ~2.1–2.4 — người
@@ -81,16 +81,17 @@ final class WidgetThemeTests: XCTestCase {
     func testDefaultStyleIsReadableWordlyTheme() {
         let wordly = WidgetTheme.all.first { $0.id == "wordly" }!
         XCTAssertTrue(WidgetSettings.HomeStyle().matches(wordly))
-        XCTAssertEqual(WidgetTheme.group(containing: WidgetSettings.HomeStyle()), .basic)
+        XCTAssertEqual(WidgetTheme.group(containing: WidgetSettings.HomeStyle()), .color)
     }
 
     func testGroupContainingCustomColorsFallsBackToFirst() {
         var s = WidgetSettings.HomeStyle()
         s.bgHex1 = "#123456"
         XCTAssertEqual(WidgetTheme.group(containing: s), WidgetTheme.Group.allCases.first)
-        let cartoon = WidgetTheme.themes(in: .cartoon)[0]
-        s.apply(cartoon)
-        XCTAssertEqual(WidgetTheme.group(containing: s), .cartoon)
+        let space = WidgetTheme.themes(in: .space)[0]
+        s.apply(space)
+        s.themePhotoId = space.id
+        XCTAssertEqual(WidgetTheme.group(containing: s), .space)
     }
 
     // App Store 5.2: tên theme không gợi tên phim/nhân vật/thương hiệu có bản quyền.

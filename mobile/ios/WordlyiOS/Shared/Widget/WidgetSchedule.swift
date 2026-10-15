@@ -88,7 +88,12 @@ struct WidgetSettings: Codable, Equatable {
         /// Khung đã chọn cho từng cỡ — để mở lại màn chỉnh khung đúng chỗ cũ.
         var cropSmall: CropFrame? = nil
         var cropMedium: CropFrame? = nil
+        /// Theme ảnh đang dùng (ảnh kèm app, file đã cắt sẵn trong App Group).
+        /// Ảnh người dùng tự chọn (`backgroundVersion`) luôn đè lên ảnh theme.
+        var themePhotoId: String? = nil
         var hasBackgroundImage: Bool { backgroundVersion > 0 }
+        /// Widget có ảnh nền (của người dùng hoặc của theme) → hiện thanh "Làm tối".
+        var hasAnyBackground: Bool { hasBackgroundImage || themePhotoId != nil }
         /// Hai đầu nền; tắt gradient thì cả hai là bgHex1.
         var backgroundHexes: [String] { [bgHex1, useGradient ? bgHex2 : bgHex1] }
         static let maxDim = 0.6
@@ -136,6 +141,7 @@ extension WidgetSettings.HomeStyle {
         useGradient = try c.decodeIfPresent(Bool.self, forKey: .useGradient) ?? d.useGradient
         cropSmall = try? c.decodeIfPresent(CropFrame.self, forKey: .cropSmall)
         cropMedium = try? c.decodeIfPresent(CropFrame.self, forKey: .cropMedium)
+        themePhotoId = try c.decodeIfPresent(String.self, forKey: .themePhotoId)
         backgroundDim = min(max(try c.decodeIfPresent(Double.self, forKey: .backgroundDim) ?? d.backgroundDim, 0), Self.maxDim)
     }
 }
