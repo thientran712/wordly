@@ -40,6 +40,8 @@ enum PreviewMode {
         case ("GET", "/api/journal"): json = journal
         case ("GET", "/api/practice/sessions"): json = sessions
         case ("GET", "/api/profile"): json = termsOutdated ? profileOutdatedTerms : needsConsent ? profileNoConsent : profile
+        case ("GET", "/api/word-source"), ("PUT", "/api/word-source"):
+            json = #"{"settings": {"include_saved": true, "include_bank": true, "pinned_ids": [], "pinned_only": false}, "updated_at": null}"#
         case ("POST", "/api/consent"): json = #"{"success": true, "terms_version": 1}"#
         case ("POST", "/api/translate"): json = #"{"translated": "kiên cường, mau phục hồi", "detectedLang": "EN"}"#
         case ("POST", "/api/practice"):

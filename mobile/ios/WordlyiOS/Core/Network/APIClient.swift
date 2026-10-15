@@ -208,6 +208,36 @@ final class APIClient: ObservableObject {
         return profile
     }
 
+    // MARK: - Nguồn từ chung (spec 2026-10-15 §2.3)
+    private struct WordSourceDTO: Codable {
+        let include_saved: Bool
+        let include_bank: Bool
+        let pinned_ids: [String]
+        let pinned_only: Bool
+    }
+    private struct WordSourceResp: Decodable {
+        let settings: WordSourceDTO
+        let updated_at: String?
+    }
+
+    private static func settings(from r: WordSourceResp) -> WordSourceSettings {
+        WordSourceSettings(includeSaved: r.settings.include_saved, includeBank: r.settings.include_bank,
+                           pinnedIds: r.settings.pinned_ids, pinnedOnly: r.settings.pinned_only,
+                           updatedAt: r.updated_at.flatMap(APIDate.parse))
+    }
+
+    func fetchWordSource() async throws -> WordSourceSettings {
+        Self.settings(from: try await request(path: "/api/word-source", responseType: WordSourceResp.self))
+    }
+
+    @discardableResult
+    func saveWordSource(_ s: WordSourceSettings) async throws -> WordSourceSettings {
+        let body = WordSourceDTO(include_saved: s.includeSaved, include_bank: s.includeBank,
+                                 pinned_ids: s.pinnedIds, pinned_only: s.pinnedOnly)
+        return Self.settings(from: try await request(path: "/api/word-source", method: "PUT", body: body,
+                                                     responseType: WordSourceResp.self))
+    }
+
     /// Người dùng bấm "Đồng ý" Điều khoản + Chính sách — server ghi phiên bản + thời điểm.
     func acceptTerms(version: Int) async throws {
         struct Body: Encodable { let version: Int }

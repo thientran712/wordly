@@ -162,4 +162,44 @@ final class WordSourceTests: XCTestCase {
         d.set(try JSONEncoder().encode(stored), forKey: WordSourceSettings.storageKey)
         XCTAssertEqual(WordSourceSettings.load(defaults: d, legacy: legacy, words: words), stored)
     }
+
+    /// Dòng tóm tắt ở Cá nhân — chỉ chữ, không số (chủ dự án chốt).
+    func testSummaryText() {
+        let saved: Set<String> = ["s1"]
+        XCTAssertEqual(WordSourceSettings().summary(savedIds: saved), "Đã lưu + từ mới")
+        XCTAssertEqual(WordSourceSettings(includeSaved: true, includeBank: false).summary(savedIds: saved), "Từ đã lưu")
+        XCTAssertEqual(WordSourceSettings(includeSaved: false, includeBank: true).summary(savedIds: saved), "Từ mới trong kho")
+        XCTAssertEqual(WordSourceSettings(pinnedIds: ["s1"]).summary(savedIds: saved), "Đã lưu + từ mới · có từ ghim")
+        XCTAssertEqual(WordSourceSettings(pinnedIds: ["s1"], pinnedOnly: true).summary(savedIds: saved), "Chỉ từ ghim")
+        XCTAssertEqual(WordSourceSettings(pinnedIds: ["gone"], pinnedOnly: true).summary(savedIds: saved), "Đã lưu + từ mới",
+                       "ghim đã xoá hết → như tắt")
+        for s in [WordSourceSettings(), WordSourceSettings(pinnedIds: ["s1"])] {
+            XCTAssertNil(s.summary(savedIds: saved).rangeOfCharacter(from: .decimalDigits))
+        }
+    }
+
+    func testValidPinCount() {
+        let s = WordSourceSettings(pinnedIds: ["s1", "gone", "s2"])
+        XCTAssertEqual(s.validPinCount(savedIds: ["s1", "s2"]), 2)
+    }
+
+    /// Đồng bộ: bản sửa sau thắng; máy chưa có bản mới (vừa chuyển từ cài đặt cũ) → gửi lên.
+    @MainActor func testSyncPickNewerWins() {
+        let old = Date(timeIntervalSince1970: 1000), new = Date(timeIntervalSince1970: 2000)
+        let local = WordSourceSettings(includeBank: false, updatedAt: new)
+        let server = WordSourceSettings(includeBank: true, updatedAt: old)
+        XCTAssertEqual(WordSourceSync.pick(local: local, localStored: true, server: server).use, local)
+        XCTAssertTrue(WordSourceSync.pick(local: local, localStored: true, server: server).upload)
+        let newerServer = WordSourceSettings(includeBank: true, updatedAt: Date(timeIntervalSince1970: 3000))
+        XCTAssertEqual(WordSourceSync.pick(local: local, localStored: true, server: newerServer).use, newerServer)
+        XCTAssertFalse(WordSourceSync.pick(local: local, localStored: true, server: newerServer).upload)
+        // Máy vừa chuyển từ cài đặt cũ, server chưa có dòng (mặc định, không updated_at) → giữ bản máy, gửi lên
+        let migrated = WordSourceSettings(pinnedIds: ["s1"], pinnedOnly: true)
+        let r = WordSourceSync.pick(local: migrated, localStored: false, server: WordSourceSettings())
+        XCTAssertEqual(r.use, migrated)
+        XCTAssertTrue(r.upload)
+        // Lỗi mạng → giữ bản máy, thử gửi
+        XCTAssertTrue(WordSourceSync.pick(local: local, localStored: true, server: nil).upload)
+        XCTAssertFalse(WordSourceSync.pick(local: local, localStored: true, server: local).upload, "bằng nhau → không gửi")
+    }
 }

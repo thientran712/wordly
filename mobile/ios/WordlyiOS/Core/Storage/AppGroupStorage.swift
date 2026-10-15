@@ -34,6 +34,9 @@ final class AppGroupStorage {
         }
     }
 
+    /// Máy đã có bản nguồn từ mới (chưa có = vừa cập nhật từ bản cũ, cần chuyển + gửi server).
+    var hasStoredWordSource: Bool { defaults?.data(forKey: WordSourceSettings.storageKey) != nil }
+
     /// Nguồn từ chung (widget + push). Chưa có → chuyển từ cài đặt widget cũ.
     var wordSource: WordSourceSettings {
         get { WordSourceSettings.load(defaults: defaults, legacy: settings, words: words) }
@@ -191,6 +194,8 @@ enum WidgetSync {
                 Task { await APIClient.shared.logWidgetShown(items: shown) }
             }
         }
+        // Nguồn từ chung: lấy bản server / gửi bản máy (sau khi đã có danh sách từ để chuyển cài đặt cũ)
+        await WordSourceSync.sync()
         await refreshBank()
         await refreshPhonetics()
     }

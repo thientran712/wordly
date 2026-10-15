@@ -75,4 +75,42 @@ final class ReminderScheduleLogicTests: XCTestCase {
         XCTAssertEqual(ReminderScheduleLogic.conflict(for: "08:45", others: [], current: "08:15:00"),
                        ReminderScheduleLogic.halfHourError)
     }
+
+    // MARK: - "Lần tới" trên thẻ trạng thái trang Nhắc ôn (spec 2026-10-15 §5.4)
+    private var cal: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")!
+        return c
+    }
+    private func at(_ s: String) -> Date {   // "2026-10-15 19:00" (thứ 5)
+        let f = DateFormatter(); f.calendar = cal; f.timeZone = cal.timeZone; f.dateFormat = "yyyy-MM-dd HH:mm"
+        return f.date(from: s)!
+    }
+    private func prefs(_ freq: String, _ days: [Int] = [1, 2, 3, 4, 5], on: Bool = true) -> EmailPreferences {
+        EmailPreferences(enabled: on, frequency: freq, customDays: days)
+    }
+
+    func testNextSendTodayLaterSlot() {
+        let d = ReminderScheduleLogic.nextSend(prefs("daily"), slots: ["12:00:00", "20:00:00"], now: at("2026-10-15 19:00"), calendar: cal)
+        XCTAssertEqual(d, at("2026-10-15 20:00"))
+        XCTAssertEqual(ReminderScheduleLogic.nextSendLabel(d!, now: at("2026-10-15 19:00"), calendar: cal), "20:00 hôm nay")
+    }
+
+    func testNextSendTomorrowAndWeekdaysSkipWeekend() {
+        let d = ReminderScheduleLogic.nextSend(prefs("daily"), slots: ["08:00:00"], now: at("2026-10-15 19:00"), calendar: cal)
+        XCTAssertEqual(ReminderScheduleLogic.nextSendLabel(d!, now: at("2026-10-15 19:00"), calendar: cal), "08:00 ngày mai")
+        // Thứ 6 tối, chỉ thứ 2–6 → thứ 2
+        let w = ReminderScheduleLogic.nextSend(prefs("weekdays"), slots: ["08:00:00"], now: at("2026-10-16 21:00"), calendar: cal)
+        XCTAssertEqual(w, at("2026-10-19 08:00"))
+        XCTAssertEqual(ReminderScheduleLogic.nextSendLabel(w!, now: at("2026-10-16 21:00"), calendar: cal), "Thứ 2, 08:00")
+    }
+
+    func testNextSendCustomDaysAndOff() {
+        // Chỉ CN (0) → CN 18/10
+        let c = ReminderScheduleLogic.nextSend(prefs("custom", [0]), slots: ["09:30:00"], now: at("2026-10-15 10:00"), calendar: cal)
+        XCTAssertEqual(c, at("2026-10-18 09:30"))
+        XCTAssertNil(ReminderScheduleLogic.nextSend(prefs("daily", on: false), slots: ["09:30:00"], now: at("2026-10-15 10:00"), calendar: cal))
+        XCTAssertNil(ReminderScheduleLogic.nextSend(prefs("daily"), slots: [], now: at("2026-10-15 10:00"), calendar: cal))
+        XCTAssertNil(ReminderScheduleLogic.nextSend(prefs("custom", []), slots: ["09:30:00"], now: at("2026-10-15 10:00"), calendar: cal))
+    }
 }

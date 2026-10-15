@@ -118,3 +118,23 @@ extension WordSourceSettings {
         return migrated(from: legacy, savedIds: Set(words.filter(\.isSaved).map(\.id)))
     }
 }
+
+extension WordSourceSettings {
+    /// Số từ ghim còn hợp lệ (còn trong danh sách đã lưu).
+    func validPinCount(savedIds: Set<String>) -> Int {
+        Set(pinnedIds).intersection(savedIds).count
+    }
+
+    /// Tóm tắt bằng chữ cho dòng "Nguồn từ" ở Cá nhân — không hiện số lượng từ.
+    func summary(savedIds: Set<String>) -> String {
+        let hasPins = validPinCount(savedIds: savedIds) > 0
+        if pinnedOnly && hasPins { return "Chỉ từ ghim" }
+        let base: String
+        switch (includeSaved, includeBank) {
+        case (true, true): base = "Đã lưu + từ mới"
+        case (true, false): base = "Từ đã lưu"
+        default: base = "Từ mới trong kho"
+        }
+        return hasPins && !pinnedOnly ? base + " · có từ ghim" : base
+    }
+}

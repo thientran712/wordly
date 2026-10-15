@@ -238,6 +238,7 @@ struct SavedWordDetailSheet: View {
     @EnvironmentObject private var router: AppRouter
     @Environment(\.dismiss) private var dismiss
     @State private var dictionary: TranslateViewModel.DictionaryState = .hidden
+    @State private var pinToast: String?
 
     private var canLookUp: Bool {
         entry.direction == "EN→VI" && TranslateLogic.isSingleWord(entry.sourceText)
@@ -257,6 +258,13 @@ struct SavedWordDetailSheet: View {
             }
         }
         .screenBackground()
+        // Ghim nhanh (spec 2026-10-15 §5.3) — chỉ từ đã lưu ghim được
+        .overlay(alignment: .topTrailing) {
+            if entry.isSaved == true {
+                QuickPinButton(id: entry.id, toast: $pinToast).padding(16)
+            }
+        }
+        .toast($pinToast, systemImage: "pin.fill")
         .task {
             guard canLookUp else { return }
             dictionary = .loading

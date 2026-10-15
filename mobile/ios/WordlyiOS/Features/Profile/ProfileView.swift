@@ -7,6 +7,7 @@ struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var themeManager: ThemeManager
     @AppStorage("wordly-theme") private var savedTheme: String = "dark"
+    @ObservedObject private var wordSource = WordSourceStore.shared
     @State private var showChangePassword = false
     @State private var confirmSignOut = false
     @State private var pushSummary = ""
@@ -22,13 +23,20 @@ struct ProfileView: View {
                     NavigationLink { EditProfileView(vm: vm) } label: { accountHeader }
                 }
 
-                Section("Nhắc học") {
+                // Spec 2026-10-15 §5.1 — tóm tắt bằng chữ, không số
+                Section("Học & nhắc") {
+                    NavigationLink { WordSourceView() } label: {
+                        settingRow("books.vertical.fill", WordlyColors.duoBlue, "Nguồn từ", wordSource.summary)
+                    }
+                    .accessibilityIdentifier("entryWordSource")
                     NavigationLink { PushSettingsView() } label: {
                         settingRow("bell.badge.fill", WordlyColors.electric, "Thông báo nhắc ôn", pushSummary)
                     }
+                    .accessibilityIdentifier("entryPush")
                     NavigationLink { WidgetSettingsView() } label: {
-                        settingRow("lock.iphone", WordlyColors.electric, "Widget màn hình khoá", "Từ vựng trên màn hình khoá")
+                        settingRow("square.grid.2x2.fill", WordlyColors.duoOrange, "Widget", "Màn hình khoá & màn hình chính")
                     }
+                    .accessibilityIdentifier("entryWidget")
                 }
 
                 Section("Giao diện") {

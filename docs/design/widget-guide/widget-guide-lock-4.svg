@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+  <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#BAE6FD"/><stop offset="1" stop-color="#BBF7D0"/>
+  </linearGradient>
+  <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#58CC02"/><stop offset="1" stop-color="#1CB0F6"/>
+  </linearGradient>
+  <clipPath id="scr"><rect x="177" y="43" width="246" height="514" rx="38"/></clipPath>
+  <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.18"/>
+  </filter>
+  <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.15"/>
+  </filter>
+  
+</defs>
+<rect x="16" y="16" width="568" height="568" rx="56" fill="#F8FAFC"/>
+<rect x="168" y="34" width="264" height="532" rx="47" fill="#1F2937" filter="url(#sh)"/>
+<g clip-path="url(#scr)">
+<rect x="177" y="43" width="246" height="514" fill="url(#wall)"/><circle cx="389" cy="103" r="15" fill="#58CC02"/><path d="M382 103 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="217" y="129" width="166" height="78" rx="14" fill="none" stroke="#1F2937" stroke-opacity="0.25" stroke-width="2" stroke-dasharray="6 5"/><rect x="266" y="121" width="68" height="8" rx="4" fill="#1F2937" opacity="0.35"/><text x="300" y="193" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700" font-size="56" fill="#1F2937" text-anchor="middle" letter-spacing="-1">9:41</text><rect x="207" y="227" width="186" height="62" rx="14" fill="#FFFFFF" fill-opacity="0.55" stroke="#1F2937" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="7 5"/><rect x="177" y="305" width="246" height="292" rx="26" fill="#FFFFFF" filter="url(#soft)"/><rect x="280" y="314" width="40" height="5" rx="2.5" fill="#D1D5DB"/><rect x="202" y="336" width="34" height="34" rx="9" fill="#E5E7EB"/><rect x="249" y="348" width="90" height="10" rx="5" fill="#CBD5E1" fill-opacity="1"/><rect x="193" y="385" width="214" height="48" rx="14" fill="#58CC02" fill-opacity="0.12"/><rect x="202" y="392" width="34" height="34" rx="9" fill="#58CC02"/><text x="219.0" y="416.5888" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="800" font-size="21.08" fill="#FFFFFF" text-anchor="middle">W</text><rect x="249" y="404" width="120" height="10" rx="5" fill="#1F2937" fill-opacity="0.75"/><rect x="211" y="451" width="178" height="64" rx="16" fill="#F3F4F6" stroke="#E5E7EB" stroke-width="2"/><rect x="227" y="467" width="96" height="13" rx="6.5" fill="#1F2937" fill-opacity="0.7"/><rect x="227" y="489" width="140" height="10" rx="5" fill="#9CA3AF"/><rect x="205" y="445" width="190" height="76" rx="22" fill="none" stroke="#58CC02" stroke-opacity="0.28" stroke-width="10"/><rect x="208" y="448" width="184" height="70" rx="19" fill="none" stroke="#58CC02" stroke-width="4"/><rect x="256" y="543" width="88" height="5" rx="2.5" fill="#1F2937" opacity="0.55"/>
+</g>
+<rect x="262" y="55" width="76" height="22" rx="11" fill="#1F2937"/>
+<circle cx="365" cy="519" r="42" fill="none" stroke="#1CB0F6" stroke-width="3" stroke-opacity="0.45"/><circle cx="365" cy="519" r="27" fill="#1CB0F6" fill-opacity="0.45" stroke="#FFFFFF" stroke-width="3.5"/><circle cx="365" cy="519" r="8" fill="#FFFFFF" fill-opacity="0.9"/>
+</svg>
