@@ -54,9 +54,9 @@ function fakeDb({ due = [], devices = [], pushLog = [], maxRows = Infinity, rpcS
 
 const config = { projectId: "p", serviceAccount: {} };
 const tokenProvider = () => { let n = 0; return { get: async () => `AT${n}`, invalidate: () => { n++; } }; };
-const ownWord = async () => ({ id: "w1", word: "resilient", meaning_vi: "kiên cường" });
+const ownWord = async () => ({ id: "w1", word: "resilient", meaning: "kiên cường", fromBank: false, step: 2 });
 const noWord = async () => null;
-const bankWord = async () => [{ id: 7, word: "go", meaning_vi: "đi", step: "bank" }];
+const bankWord = async () => ({ id: 7, word: "go", meaning: "đi", fromBank: true, step: 5 });
 const okSend = () => { const sent = []; const fn = async (a) => { sent.push(a); return { ok: true, status: 200, code: null }; }; fn.sent = sent; return fn; };
 const slot = (i, user = `u${i}`) => ({ slot_id: `s${i}`, user_id: user, send_date: "2026-10-13" });
 const now = new Date("2026-10-13T13:00:00Z");
@@ -70,7 +70,7 @@ test("thiếu cấu hình FCM → disabled, không gọi DB", async () => {
 test("gửi tới mọi thiết bị, log sent + suggestion_log source=push", async () => {
   const sb = fakeDb({ due: [slot(1)], devices: [{ id: "d1", user_id: "u1", token: "T1" }, { id: "d2", user_id: "u1", token: "T2" }] });
   const send = okSend();
-  const r = await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send, selectWord: ownWord, selectBank: bankWord });
+  const r = await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send, selectWord: ownWord });
   assert.equal(r.sent, 1);
   assert.deepEqual(send.sent.map((s) => s.message.token), ["T1", "T2"]);
   assert.equal(sb.db.push_log[0].status, "sent");
@@ -80,30 +80,24 @@ test("gửi tới mọi thiết bị, log sent + suggestion_log source=push", as
   assert.equal(sb.rpcCalls.at(-1)[0], "cleanup_push_data");
 });
 
-test("chọn từ theo lần hiện gần nhất trong suggestion_log (push + widget) của đúng người đó", async () => {
+test("chọn từ qua selectPushWord(supabase, userId, now, { selectBank }) — đúng người, đúng giờ", async () => {
   const sb = fakeDb({ due: [slot(1)], devices: [{ id: "d1", user_id: "u1", token: "T1" }] });
-  sb.db.suggestion_log.push(
-    { user_id: "u1", source: "widget", entry_id: "a", shown_at: "2026-10-12T00:00:00Z" },
-    { user_id: "u1", source: "push", entry_id: "a", shown_at: "2026-10-10T00:00:00Z" },
-    { user_id: "u1", source: "push", bank_word_id: 7, shown_at: "2026-10-11T00:00:00Z" },
-    { user_id: "u2", source: "push", entry_id: "b", shown_at: "2026-10-12T00:00:00Z" },
-  );
   let seen = null;
-  let bankRecent = null;
+  const selectBank = async () => [];
   await runDuePushSends(sb, now, {
-    config, tokenProvider: tokenProvider(), send: okSend(),
-    selectWord: async (_sb, userId, shownAt) => { seen = { userId, shownAt }; return null; },
-    selectBank: async (_sb, _u, { recentIds }) => { bankRecent = recentIds; return []; },
+    config, tokenProvider: tokenProvider(), send: okSend(), selectBank,
+    selectWord: async (client, userId, at, deps) => { seen = { client, userId, at, deps }; return null; },
   });
+  assert.equal(seen.client, sb);
   assert.equal(seen.userId, "u1");
-  assert.deepEqual([...seen.shownAt.entries()], [["a", Date.parse("2026-10-12T00:00:00Z")]]);
-  assert.deepEqual(bankRecent, [7]);
+  assert.equal(seen.at, now);
+  assert.equal(seen.deps.selectBank, selectBank);
 });
 
 test("hết từ riêng → dùng từ kho, link bank", async () => {
   const sb = fakeDb({ due: [slot(1)], devices: [{ id: "d1", user_id: "u1", token: "T1" }] });
   const send = okSend();
-  await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send, selectWord: noWord, selectBank: bankWord });
+  await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send, selectWord: bankWord });
   assert.match(send.sent[0].message.data.link, /id=bank-7/);
   assert.deepEqual(sb.db.suggestion_log[0], { user_id: "u1", source: "push", entry_type: "bank", bank_word_id: 7 });
 });
@@ -111,7 +105,7 @@ test("hết từ riêng → dùng từ kho, link bank", async () => {
 test("hết cả từ riêng lẫn kho → skipped, không gửi", async () => {
   const sb = fakeDb({ due: [slot(1)], devices: [{ id: "d1", user_id: "u1", token: "T1" }] });
   const send = okSend();
-  const r = await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send, selectWord: noWord, selectBank: async () => [] });
+  const r = await runDuePushSends(sb, now, { config, tokenProvider: tokenProvider(), send, selectWord: noWord });
   assert.equal(r.skipped, 1);
   assert.equal(send.sent.length, 0);
   assert.equal(sb.db.push_log[0].status, "skipped");
