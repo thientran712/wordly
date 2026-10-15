@@ -16,7 +16,7 @@ Spec `2026-10-15-shared-word-source-design.md` §2.2 (JS), §2.3, §3, §4, §7.
 
 **Chờ quyết định:** chạy migration `20261016000100_word_source` lên production + deploy web — phải trước khi phát hành app có tính năng này.
 
-### 15/10/2026 (khuya) — Nguồn từ chung, Từ ghim, trang Widget gộp, giới thiệu tính năng: XONG CODE, CHỜ DUYỆT
+### 15/10/2026 (khuya) — Nguồn từ chung, Từ ghim, trang Widget gộp, giới thiệu tính năng: ĐÃ LÊN PRODUCTION + BUILD 19 TestFlight
 
 Nhánh `feat/widget-two-entries` (spec `2026-10-15-shared-word-source-design.md`). **Chưa lên production, chưa build 19.**
 
@@ -28,7 +28,7 @@ Nhánh `feat/widget-two-entries` (spec `2026-10-15-shared-word-source-design.md`
 - Review độc lập backend: sửa 2 lỗi thật (trùng "Đã nhắc", lịch sử push không thứ tự) + 3 điểm (lệch tập từ >200, index, lỗi đọc → bỏ lượt).
 - Bằng chứng: web 482/482 (gồm RLS 30/30, Supabase local), eslint sạch, `next build` OK; iOS unit 255/255, UI 36/36.
 
-**Chờ chủ dự án:** (1) migration `20261016000100_word_source` lên production (cần PostgreSQL ≥ 15 — kiểm phiên bản trước khi chạy); (2) deploy web; (3) build 19. PR #44 (sửa nhanh xoay vòng push) đã được nhánh này thay thế.
+**Đã phát hành (chủ dự án duyệt 15/10):** migration `20261016000100_word_source` chạy production (PostgreSQL 17.6; 2 bảng bật RLS, 6 policy, 46 hồ sơ nguyên, `NOTIFY pgrst`); PR #45 merge → web production `3cfadd5` (`/api/word-source`, `/api/widget/schedule` trả 401 khi chưa đăng nhập); PR #44 đóng (đã gộp). **iOS 1.0.1 (19) upload TestFlight 15/10 22:07** (archive từ `cf59aba`: app + widget 1.0.1 (19), `aps-environment = production`, 60 ảnh theme + 16 hình hướng dẫn, 0 cờ xem trước, 14 MB). **Lần upload sau: build 20.** Chưa xem trên máy thật: theme ảnh trên widget thật, gửi lịch widget (cần widget thật), thẻ Bắt đầu tự tick khi thêm widget.
 
 ### 15/10/2026 (tối) — Đồng ý Điều khoản ĐÃ LÊN production (web); theme ảnh widget; chờ build 19
 
