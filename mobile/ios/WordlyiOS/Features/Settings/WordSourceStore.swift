@@ -26,6 +26,7 @@ final class WordSourceStore: ObservableObject {
         s.updatedAt = Date()
         apply(s)
         scheduleUpload()
+        WidgetScheduleUpload.schedule()
         return result
     }
 

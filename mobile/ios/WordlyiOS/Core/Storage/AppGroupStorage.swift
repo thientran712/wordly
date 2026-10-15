@@ -183,21 +183,13 @@ enum WidgetSync {
         guard fetchedAny else { return }
         let store = AppGroupStorage.shared
         let items = AppGroupStorage.items(from: all)
-        let changed = items != store.words
         store.saveWords(items)
-        if changed {
-            // Chỉ log đúng pool widget sẽ thực sự hiện (theo settings.source),
-            // không log cả 200 dòng lịch sử thô — tránh làm suggestion_log
-            // phình ra với từ chưa bao giờ lên màn hình khoá.
-            let shown = WidgetSchedule.pool(from: items, settings: store.settings)
-            if !shown.isEmpty {
-                Task { await APIClient.shared.logWidgetShown(items: shown) }
-            }
-        }
         // Nguồn từ chung: lấy bản server / gửi bản máy (sau khi đã có danh sách từ để chuyển cài đặt cũ)
         await WordSourceSync.sync()
         await refreshBank()
         await refreshPhonetics()
+        // Lịch widget thật lên server (thay log cả pool) — push tránh trùng
+        await MainActor.run { WidgetScheduleUpload.schedule() }
     }
 
     /// Tra phiên âm cho những từ sắp lên widget mà chưa có — cùng lượt tra lấy
@@ -236,10 +228,6 @@ enum WidgetSync {
         let changed = words != store.bank
         store.saveBank(words, level: skill)
         guard changed else { return }
-        // bankPool() cũng tôn trọng settings (includeBank + không trộn khi "Tự chọn").
-        let shown = WidgetSchedule.bankPool(words, words: store.words, settings: store.settings)
-        if !shown.isEmpty {
-            Task { await APIClient.shared.logWidgetShown(items: shown) }
-        }
+        await MainActor.run { WidgetScheduleUpload.schedule() }
     }
 }

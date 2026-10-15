@@ -283,6 +283,17 @@ final class APIClient: ObservableObject {
         ).history
     }
 
+    // MARK: - Lịch widget 48 giờ (spec 2026-10-15 §3)
+    func uploadWidgetSchedule(_ items: [WidgetScheduleUpload.Item]) async throws {
+        struct Entry: Encodable { let shown_at: String; let id: String }
+        struct Body: Encodable { let entries: [Entry] }
+        struct Resp: Decodable { let saved: Int? }
+        let iso = ISO8601DateFormatter()
+        _ = try await request(path: "/api/widget/schedule", method: "PUT",
+                              body: Body(entries: items.map { Entry(shown_at: iso.string(from: $0.shownAt), id: $0.id) }),
+                              responseType: Resp.self)
+    }
+
     // MARK: - Widget suggestion log
     func logWidgetShown(items: [WidgetWordItem]) async {
         struct Item: Encodable { let id: String }

@@ -90,20 +90,21 @@ final class WordMixTests: XCTestCase {
         s.intervalMinutes = 15
         s.activeStartMinutes = 0
         s.activeEndMinutes = 0
-        let words = WidgetSchedule.entries(words: personal, bank: bank, settings: s).compactMap(\.word)
+        let words = WidgetSchedule.entries(words: personal, bank: bank, source: WordSourceSettings(), settings: s).compactMap(\.word)
         XCTAssertTrue(words.contains { $0.fromBank })
-        s.includeBank = false
-        let noBank = WidgetSchedule.entries(words: personal, bank: bank, settings: s).compactMap(\.word)
+        let noBank = WidgetSchedule.entries(words: personal, bank: bank, source: WordSourceSettings(includeBank: false),
+                                            settings: s).compactMap(\.word)
         XCTAssertFalse(noBank.contains { $0.fromBank })
     }
 
-    func testCustomSourceNeverAddsBankWords() {
+    /// "Chỉ dùng từ ghim" (thay chế độ "Tự chọn" cũ) không trộn từ kho.
+    func testPinnedOnlyNeverAddsBankWords() {
         var s = WidgetSettings()
-        s.source = .custom
-        s.selectedIds = ["p1", "p2"]
         s.activeStartMinutes = 0
         s.activeEndMinutes = 0
-        let words = WidgetSchedule.entries(words: personal, bank: bank, settings: s).compactMap(\.word)
+        let words = WidgetSchedule.entries(words: personal, bank: bank,
+                                           source: WordSourceSettings(pinnedIds: ["p1", "p2"], pinnedOnly: true),
+                                           settings: s).compactMap(\.word)
         XCTAssertEqual(Set(words.map(\.id)), ["p1", "p2"])
     }
 

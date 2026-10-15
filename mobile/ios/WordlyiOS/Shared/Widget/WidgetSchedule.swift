@@ -28,6 +28,7 @@ extension WidgetWordItem {
 
 /// Cài đặt widget (Hồ sơ → Widget màn hình khoá).
 struct WidgetSettings: Codable, Equatable {
+    /// CŨ — chỉ còn để đọc dữ liệu cũ và chuyển sang WordSourceSettings (spec 2026-10-15 §2.3).
     enum Source: String, Codable, CaseIterable {
         case saved      // từ đã bấm "Lưu"
         case recent     // mọi bản dịch Anh→Việt gần đây (= tick cả "Đã lưu" lẫn "Dịch gần đây")
@@ -107,20 +108,6 @@ struct WidgetSettings: Codable, Equatable {
     var textAlign: TextAlign = .leading
 
     static let intervals = [15, 30, 60, 120]
-
-    // Hai ô chọn "Đã lưu" / "Dịch gần đây" trong cài đặt. "Tự chọn" thì không ô nào.
-    var includesSaved: Bool { source == .saved || source == .recent }
-    var includesRecent: Bool { source == .unsaved || source == .recent }
-
-    /// Bỏ chọn cả hai thì giữ nguyên — widget phải còn ít nhất một nguồn.
-    mutating func setSources(saved: Bool, recent: Bool) {
-        switch (saved, recent) {
-        case (true, true): source = .recent
-        case (true, false): source = .saved
-        case (false, true): source = .unsaved
-        case (false, false): break
-        }
-    }
 }
 
 extension WidgetSettings.HomeStyle {
@@ -322,23 +309,6 @@ enum WidgetSchedule {
         let word: WidgetWordItem?
     }
 
-    /// Lọc từ theo nguồn. Nguồn đang chọn không có từ nào thì dùng mọi từ gần đây để widget không trống.
-    static func pool(from words: [WidgetWordItem], settings: WidgetSettings) -> [WidgetWordItem] {
-        switch settings.source {
-        case .recent:
-            return words
-        case .saved:
-            let saved = words.filter(\.isSaved)
-            return saved.isEmpty ? words : saved
-        case .unsaved:
-            let unsaved = words.filter { !$0.isSaved }
-            return unsaved.isEmpty ? words : unsaved
-        case .custom:
-            let ids = Set(settings.selectedIds)
-            return words.filter { ids.contains($0.id) }
-        }
-    }
-
     private static func minutes(_ date: Date, _ cal: Calendar) -> Int {
         let c = cal.dateComponents([.hour, .minute], from: date)
         return (c.hour ?? 0) * 60 + (c.minute ?? 0)
@@ -379,13 +349,6 @@ enum WidgetSchedule {
         return last
     }
 
-    /// Lịch hiển thị ~24 giờ tới. Ngoài khung giờ → entry `word == nil` (màn nghỉ).
-    /// Từ kho được trộn vào (đã bỏ từ người dùng có rồi). "Tự chọn" thì không trộn.
-    static func bankPool(_ bank: [WidgetWordItem], words: [WidgetWordItem], settings: WidgetSettings) -> [WidgetWordItem] {
-        guard settings.includeBank, settings.source != .custom else { return [] }
-        return WordMix.bank(bank, excluding: words)
-    }
-
     /// Lịch theo nguồn từ chung (spec 2026-10-15 §2): `words` là mọi từ đồng bộ về
     /// (chỉ từ đã lưu được dùng), `bank` là lô kho. Ngoài khung giờ → `word == nil`.
     static func entries(words: [WidgetWordItem], bank: [WidgetWordItem], source: WordSourceSettings,
@@ -409,28 +372,6 @@ enum WidgetSchedule {
         return result
     }
 
-    static func entries(words: [WidgetWordItem], bank: [WidgetWordItem] = [], settings: WidgetSettings, now: Date = Date(),
-                        calendar cal: Calendar = .current, horizonHours: Int = 24) -> [Entry] {
-        let personal = WordMix.dedupe(pool(from: words, settings: settings))
-        let bankWords = bankPool(bank, words: words, settings: settings)
-        guard !personal.isEmpty || !bankWords.isEmpty else { return [Entry(date: now, word: nil)] }
-
-        let horizon = now.addingTimeInterval(TimeInterval(horizonHours * 3600))
-        // Xoay vòng theo số slot kể từ mốc cố định → mỗi slot một từ, lần sau mở app không lặp lại từ đầu
-        var index = Int(now.timeIntervalSince1970 / 60) / max(1, settings.intervalMinutes)
-        var result: [Entry] = []
-        var t = now
-        while t < horizon && result.count < 200 {
-            if isActive(t, settings: settings, calendar: cal) {
-                result.append(Entry(date: t, word: WordMix.item(at: index, personal: personal, bank: bankWords)))
-                index += 1
-            } else {
-                result.append(Entry(date: t, word: nil))
-            }
-            t = nextChange(after: t, settings: settings, calendar: cal)
-        }
-        return result
-    }
 }
 
 /// Link khi bấm widget: `wordly://word?id=…&w=…&m=…&bank=1`. Widget tạo, app

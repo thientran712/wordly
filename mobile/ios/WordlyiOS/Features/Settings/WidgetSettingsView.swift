@@ -7,7 +7,15 @@ import WidgetKit
 @MainActor
 final class WidgetSettingsViewModel: ObservableObject {
     @Published var settings: WidgetSettings {
-        didSet { AppGroupStorage.shared.settings = settings }
+        didSet {
+            AppGroupStorage.shared.settings = settings
+            // Nhịp / khung giờ đổi → lịch widget đổi
+            if settings.intervalMinutes != oldValue.intervalMinutes
+                || settings.activeStartMinutes != oldValue.activeStartMinutes
+                || settings.activeEndMinutes != oldValue.activeEndMinutes {
+                WidgetScheduleUpload.schedule()
+            }
+        }
     }
     @Published var words: [WidgetWordItem]
     @Published var bank: [WidgetWordItem]

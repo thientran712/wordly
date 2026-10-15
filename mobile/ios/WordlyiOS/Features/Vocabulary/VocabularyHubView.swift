@@ -77,7 +77,7 @@ final class SavedWordsViewModel: ObservableObject {
         var ids = Set<String>()
         // Từ kho hiện nghĩa Việt giống trên widget (WidgetMeaning)
         let meaningsVi = store.meaningsVi
-        upcoming = Array(WidgetSchedule.entries(words: store.words, bank: store.bank, settings: settings)
+        upcoming = Array(WidgetSchedule.entries(words: store.words, bank: store.bank, source: store.wordSource, settings: settings)
             .compactMap(\.word).filter { ids.insert($0.id).inserted }.prefix(4))
             .map { WidgetMeaning.localized($0, cache: meaningsVi) }
     }

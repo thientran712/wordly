@@ -17,68 +17,6 @@ final class WidgetScheduleTests: XCTestCase {
         cal.date(from: DateComponents(year: 2026, month: 10, day: 7, hour: h, minute: m))!
     }
 
-    func testSourceFiltering() {
-        var s = WidgetSettings()
-        s.source = .saved
-        XCTAssertEqual(WidgetSchedule.pool(from: words, settings: s).map(\.id), ["1", "3"])
-        s.source = .recent
-        XCTAssertEqual(WidgetSchedule.pool(from: words, settings: s).count, 3)
-        s.source = .custom
-        s.selectedIds = ["3", "2"]
-        XCTAssertEqual(WidgetSchedule.pool(from: words, settings: s).map(\.id), ["2", "3"])
-    }
-
-    // Chưa lưu từ nào thì vẫn hiện từ gần đây thay vì widget trống
-    func testSavedFallsBackToRecentWhenNothingSaved() {
-        var s = WidgetSettings()
-        s.source = .saved
-        let unsaved = words.map { WidgetWordItem(id: $0.id, word: $0.word, meaning: $0.meaning, isSaved: false) }
-        XCTAssertEqual(WidgetSchedule.pool(from: unsaved, settings: s).count, 3)
-    }
-
-    // "Dịch gần đây" (bỏ chọn "Đã lưu") = chỉ những từ đã dịch mà chưa bấm Lưu
-    func testUnsavedSourceShowsOnlyUnsavedWords() {
-        var s = WidgetSettings()
-        s.source = .unsaved
-        XCTAssertEqual(WidgetSchedule.pool(from: words, settings: s).map(\.id), ["2"])
-    }
-
-    // Từ nào cũng đã lưu mà chỉ chọn "Dịch gần đây" → vẫn hiện từ, không để widget trống
-    func testUnsavedFallsBackToAllWhenEverythingSaved() {
-        var s = WidgetSettings()
-        s.source = .unsaved
-        let saved = words.map { WidgetWordItem(id: $0.id, word: $0.word, meaning: $0.meaning, isSaved: true) }
-        XCTAssertEqual(WidgetSchedule.pool(from: saved, settings: s).count, 3)
-    }
-
-    // Hai ô chọn "Đã lưu" / "Dịch gần đây" ↔ source
-    func testSourceCheckboxes() {
-        var s = WidgetSettings()
-        s.setSources(saved: true, recent: true)
-        XCTAssertEqual(s.source, .recent)
-        XCTAssertTrue(s.includesSaved && s.includesRecent)
-        s.setSources(saved: true, recent: false)
-        XCTAssertEqual(s.source, .saved)
-        XCTAssertTrue(s.includesSaved && !s.includesRecent)
-        s.setSources(saved: false, recent: true)
-        XCTAssertEqual(s.source, .unsaved)
-        XCTAssertTrue(!s.includesSaved && s.includesRecent)
-    }
-
-    // Không cho bỏ chọn cả hai — widget sẽ không còn nguồn nào
-    func testSourceCheckboxesKeepAtLeastOne() {
-        var s = WidgetSettings()
-        s.source = .saved
-        s.setSources(saved: false, recent: false)
-        XCTAssertEqual(s.source, .saved)
-    }
-
-    func testCustomSourceChecksNeitherBox() {
-        var s = WidgetSettings()
-        s.source = .custom
-        XCTAssertFalse(s.includesSaved || s.includesRecent)
-    }
-
     func testActiveWindow() {
         var s = WidgetSettings()
         s.activeStartMinutes = 7 * 60
@@ -104,12 +42,12 @@ final class WidgetScheduleTests: XCTestCase {
         s.intervalMinutes = 60
         s.activeStartMinutes = 7 * 60
         s.activeEndMinutes = 22 * 60
-        s.source = .recent
-        let entries = WidgetSchedule.entries(words: words, settings: s, now: at(9, 20), calendar: cal)
+        let entries = WidgetSchedule.entries(words: words, bank: [], source: WordSourceSettings(includeBank: false),
+                                             settings: s, now: at(9, 20), calendar: cal)
         XCTAssertEqual(entries.first?.date, at(9, 20))
         XCTAssertEqual(entries[1].date, at(10))
         let shown = entries.prefix(4).compactMap(\.word?.id)
-        XCTAssertEqual(Set(shown).count, 3)                       // đi qua đủ các từ
+        XCTAssertEqual(Set(shown).count, 2)                       // đi qua đủ các từ đã lưu (bỏ nguồn "dịch gần đây")
         XCTAssertNotEqual(entries[0].word?.id, entries[1].word?.id)
     }
 
@@ -118,14 +56,16 @@ final class WidgetScheduleTests: XCTestCase {
         s.intervalMinutes = 30
         s.activeStartMinutes = 7 * 60
         s.activeEndMinutes = 22 * 60
-        let entries = WidgetSchedule.entries(words: words, settings: s, now: at(23), calendar: cal)
+        let entries = WidgetSchedule.entries(words: words, bank: [], source: WordSourceSettings(includeBank: false),
+                                             settings: s, now: at(23), calendar: cal)
         XCTAssertNil(entries[0].word)                              // ngoài giờ → màn nghỉ
         let firstWord = entries.first { $0.word != nil }
         XCTAssertEqual(firstWord?.date, cal.date(byAdding: .day, value: 1, to: at(7)))
     }
 
     func testNoWordsMeansSingleEmptyEntry() {
-        let entries = WidgetSchedule.entries(words: [], settings: WidgetSettings(), now: at(9), calendar: cal)
+        let entries = WidgetSchedule.entries(words: [], bank: [], source: WordSourceSettings(), settings: WidgetSettings(),
+                                             now: at(9), calendar: cal)
         XCTAssertEqual(entries.count, 1)
         XCTAssertNil(entries[0].word)
     }
@@ -197,9 +137,11 @@ final class WidgetScheduleTests: XCTestCase {
     // lặp liên tục, đốt hết lượt cập nhật của widget. Phải chờ ít nhất 30 phút.
     func testReloadDateNeverImmediate() {
         let now = at(9)
-        let empty = WidgetSchedule.entries(words: [], settings: WidgetSettings(), now: now, calendar: cal)
+        let empty = WidgetSchedule.entries(words: [], bank: [], source: WordSourceSettings(), settings: WidgetSettings(),
+                                           now: now, calendar: cal)
         XCTAssertEqual(WidgetSchedule.reloadDate(entries: empty, now: now), now.addingTimeInterval(30 * 60))
-        let full = WidgetSchedule.entries(words: words, settings: WidgetSettings(), now: now, calendar: cal)
+        let full = WidgetSchedule.entries(words: words, bank: [], source: WordSourceSettings(), settings: WidgetSettings(),
+                                          now: now, calendar: cal)
         XCTAssertEqual(WidgetSchedule.reloadDate(entries: full, now: now), full.last?.date)
     }
 }
