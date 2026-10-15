@@ -270,6 +270,14 @@ struct LoginView: View {
                                             .stroke(WordlyColors.divider(scheme: scheme), lineWidth: 1.5)
                                     )
                             }
+
+                            Text(LegalLinks.sentence("Bằng việc tiếp tục, bạn đồng ý với", suffix: " của Wordly."))
+                                .font(WordlyFonts.body(12))
+                                .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                                .tint(WordlyColors.electric)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 4)
                         }
                         .padding(.horizontal, 24)
                         .padding(.bottom, 40)
@@ -330,6 +338,8 @@ struct SignupView: View {
     @State private var isLoading = false
     @State private var showPassword = false
     @State private var errorBanner = AuthErrorBanner()
+    /// Ô "Tôi đồng ý…" — để trống, chưa tick thì không tạo tài khoản được
+    @State private var agreedToTerms = false
     /// Đăng ký xong → chuyển sang nhập mã 6 số cho email này
     @State private var codeEmail: String?
     @State private var codeSentAt: Date?
@@ -375,6 +385,27 @@ struct SignupView: View {
                                 .transition(.opacity)
                         }
 
+                        HStack(alignment: .top, spacing: 10) {
+                            Button {
+                                agreedToTerms.toggle()
+                            } label: {
+                                Image(systemName: agreedToTerms ? "checkmark.square.fill" : "square")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(agreedToTerms ? WordlyColors.electric : WordlyColors.inkSoft(scheme: scheme))
+                                    .frame(width: 32, height: 32)
+                            }
+                            .accessibilityIdentifier("signupTermsCheckbox")
+                            .accessibilityLabel("Tôi đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư")
+                            .accessibilityAddTraits(agreedToTerms ? .isSelected : [])
+                            Text(LegalLinks.sentence("Tôi đồng ý với"))
+                                .font(WordlyFonts.body(13))
+                                .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                                .tint(WordlyColors.electric)
+                                .padding(.top, 6)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 24)
+
                         Button {
                             Task { await signup() }
                         } label: {
@@ -390,7 +421,9 @@ struct SignupView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                             .shadow(color: WordlyColors.electric.opacity(0.3), radius: 8, y: 4)
                         }
-                        .disabled(isLoading)
+                        .disabled(isLoading || !agreedToTerms)
+                        .opacity(agreedToTerms ? 1 : 0.5)
+                        .accessibilityIdentifier("signupSubmit")
                         .padding(.horizontal, 24)
                         .padding(.bottom, 32)
                     }
@@ -419,6 +452,8 @@ struct SignupView: View {
         guard password == confirmPassword else { errorBanner.show("Mật khẩu xác nhận không khớp"); return }
         isLoading = true
         defer { isLoading = false }
+        // Đã tick đồng ý → đăng nhập xong app ghi lên server, không hỏi lại
+        TermsConsent.PendingStore().markAccepted(email: email)
         guard let outcome = try? await authManager.signUp(email: email, password: password, name: name.isEmpty ? nil : name) else { return }
         if authManager.isAuthenticated { dismiss(); return }
         switch outcome {

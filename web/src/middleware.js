@@ -117,10 +117,10 @@ export async function middleware(request) {
   const isInngestApi = path.startsWith("/api/inngest");
   const isAuthCallback = path.startsWith("/auth/callback") || path === "/auth/confirm";
   // Public pages: homepage (guest can use translate), auth pages, speaking-practice spinner (guest can try it)
-  // /privacy, /support: App Store bắt buộc URL công khai, không cần đăng nhập.
+  // /privacy, /support, /terms: App Store bắt buộc URL công khai, không cần đăng nhập.
   // /email-templates/*: GoTrue tải mẫu email qua URL công khai.
   const isPublicPage = path === "/" || isAuthPage || path.startsWith("/speak")
-    || path === "/privacy" || path === "/support" || path.startsWith("/email-templates/");
+    || path === "/privacy" || path === "/support" || path === "/terms" || path.startsWith("/email-templates/");
 
   // SECURITY: strip any client-supplied auth headers first so a guest can never
   // spoof x-user-id to impersonate another user. We only ever set these from the

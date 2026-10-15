@@ -8,15 +8,17 @@ struct ContentView: View {
             if authManager.isLoading {
                 SplashView()
             } else if authManager.isAuthenticated {
-                #if DEBUG
-                if let screen = PreviewMode.screen {
-                    NavigationStack { PreviewScreens.view(for: screen) }
-                } else {
+                TermsGate {
+                    #if DEBUG
+                    if let screen = PreviewMode.screen {
+                        NavigationStack { PreviewScreens.view(for: screen) }
+                    } else {
+                        MainTabView()
+                    }
+                    #else
                     MainTabView()
+                    #endif
                 }
-                #else
-                MainTabView()
-                #endif
             } else {
                 LoginView()
             }
