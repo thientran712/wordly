@@ -3,6 +3,37 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 16/10/2026 — Wordly Pro (spec `2026-10-16-pro-paywall-design.md`): MIGRATION ĐÃ CHẠY production; PR #49 chờ merge + deploy; build 21 đã archive chờ upload
+
+PR #49 (`feat/pro-paywall`, gồm cả backend). Chủ dự án xác nhận chạy cả 4 việc (16/10).
+- **Migration `20261016000200_pro_billing` ĐÃ CHẠY production (16/10).** 4 bảng mới bật RLS; `due_push_slots(now, 30)` kiểu cũ vẫn chạy. Bản sao hàm cũ lưu trong scratchpad phiên.
+- Merge PR #49 + deploy (`deploy-production.yml`) bị auto mode chặn → chủ dự án tự bấm trên GitHub. Deploy xong: kiểm `POST /api/billing/notifications` với chữ ký giả phải ra 400 (không phải 404), `GET /api/app-config` ra `{min_build: 0}`.
+- Build 1.0.1 (21) đã archive (`aps-environment=production`); upload bị auto mode chặn → chủ dự án bấm Distribute App trong Xcode Organizer.
+- App Store Connect: chủ dự án đã làm bước 1–7 spec §6 (Paid Apps Agreement chờ Active).
+- iOS:
+  - `Features/Pro/`: ProLogic (giới hạn, câu bộ đếm, PaywallReason, ReminderAccess), ProStore (StoreKit 2 qua `StoreGateway` để test được), PaywallView (giá gia hạn to nhất, quy ra tháng nhỏ, câu tự gia hạn và cách huỷ, Khôi phục, Điều khoản, Quyền riêng tư; đang Pro thì vào chế độ quản lý, không có nút mua), ForceUpdateView + AppUpdateGate (426 hoặc `min_build`; lỗi mạng không chặn).
+  - Đã gắn vào: màn Dịch (bộ đếm, 402 mở paywall, thẻ từ điển khoá), theme (huy hiệu 🔒, xem thử không lưu, giữ theme Pro đang dùng), Ảnh của bạn / Tuỳ chỉnh thêm (khoá), khung giờ nhắc (khung thứ 2 trở đi 🔒), Từ vựng ("Đã lưu x/30 từ"), hoàn tác khôi phục từ (402 thì mở paywall và tải lại), Cá nhân (dòng Wordly Pro, cảnh báo khi xoá tài khoản mà còn gói), mời nâng cấp nhẹ theo tài khoản.
+  - Mọi khoá chỉ hiện khi server `enforced` và người dùng chưa Pro. Trước khi bật `BILLING_ENFORCE` app trông như cũ.
+- App gửi lên server:
+  - `/api/translate`: `input:"voice"` và `quota_key` (một lần nhập chỉ tính 1 lượt, vì app dịch dần khi gõ / nói).
+  - `/api/dictionary`: `purpose:"widget"` (không tính lượt). Đã báo agent backend.
+- Kiểm chứng:
+  - Unit: 281/281 xanh. Toàn bộ UI test xanh (exit 0).
+  - Lỗi dịch ảnh hiện đúng câu của server (422) thay vì "Mất kết nối". ProTests 12 + ProStoreTests 10, gồm: không bao giờ mua trùng, server lỗi vẫn giữ Pro, hết hạn / hoàn tiền thì mất Pro, appAccountToken = user id.
+  - Ảnh preview: paywall miễn phí / Pro, theme, khung giờ, cập nhật bắt buộc.
+- CHƯA kiểm chứng: mua thật bằng StoreKit. SKTestSession trên simulator ném `notEntitled` (Apple forum thread 836842), nên phải thử bằng tài khoản sandbox trên máy thật sau khi chủ dự án tạo sản phẩm trên App Store Connect.
+- Backend xong (worktree `.claude/worktrees/pro-backend`, nhánh `feat/pro-backend`, 4 commit local, chưa push):
+  - 611 test, 0 fail. Build sạch.
+  - Migration `20261016000200_pro_billing.sql`.
+  - Env mới: `BILLING_ENFORCE` (mặc định tắt), `APP_MIN_BUILD`.
+  - Đã thêm commit sửa: dịch ảnh có bản dịch rỗng thì không trừ lượt.
+  - Chưa kiểm chứng: giao dịch / thông báo Apple Sandbox thật; migration chưa chạy trên staging hay production.
+- Chờ quyết định / việc của chủ dự án:
+  - Chạy migration billing lên production.
+  - Deploy (`BILLING_ENFORCE` tắt).
+  - Thiết lập App Store Connect (spec §6).
+  - Build 21.
+
 ### 16/10/2026 — Wordly Pro: phần server (nhánh `feat/pro-backend`, CHƯA lên production)
 
 Spec `2026-10-16-pro-paywall-design.md` §1, §3, §4, §8. iOS làm song song. **`BILLING_ENFORCE` mặc định TẮT** → deploy server không đổi hành vi app hiện tại.
