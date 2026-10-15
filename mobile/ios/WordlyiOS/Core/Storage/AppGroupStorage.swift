@@ -34,6 +34,15 @@ final class AppGroupStorage {
         }
     }
 
+    /// Nguồn từ chung (widget + push). Chưa có → chuyển từ cài đặt widget cũ.
+    var wordSource: WordSourceSettings {
+        get { WordSourceSettings.load(defaults: defaults, legacy: settings, words: words) }
+        set {
+            defaults?.set(try? JSONEncoder().encode(newValue), forKey: WordSourceSettings.storageKey)
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+
     /// Đã đăng xuất → widget nhắc đăng nhập thay vì xoay từ. Widget đọc khoá này
     /// trực tiếp (WordlyWidget.swift, `signedOutKey`).
     static let signedOutKey = "wordly.widget.signedOut"
@@ -100,6 +109,8 @@ final class AppGroupStorage {
         defaults?.removeObject(forKey: Self.bankKey)
         defaults?.removeObject(forKey: Self.bankFetchedAtKey)
         defaults?.removeObject(forKey: Self.bankLevelKey)
+        // Nguồn từ của tài khoản này (ghim…) không được sang tài khoản đăng nhập sau
+        defaults?.removeObject(forKey: WordSourceSettings.storageKey)
         signedOut = true
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -191,7 +202,8 @@ enum WidgetSync {
     /// trong DB thì không tốn lượt AI.
     static func refreshPhonetics(limit: Int = 12) async {
         let store = AppGroupStorage.shared
-        let upcoming = WidgetSchedule.entries(words: store.words, bank: store.bank, settings: store.settings)
+        let upcoming = WidgetSchedule.entries(words: store.words, bank: store.bank, source: store.wordSource,
+                                              settings: store.settings)
             .compactMap(\.word)
         let todo = WidgetPhonetic.wordsToFetch(upcoming: upcoming, cache: store.phonetics,
                                                meanings: store.meaningsVi, limit: limit)
