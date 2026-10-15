@@ -94,4 +94,43 @@ enum ReminderScheduleLogic {
             return days.filter { p.customDays.contains($0.value) }.map(\.label).joined(separator: ", ")
         }
     }
+
+    /// Lần gửi tới (thẻ trạng thái trang Nhắc ôn). `slots` dạng "HH:mm" / "HH:mm:ss";
+    /// `customDays` 0 = CN … 6 = T7. Tắt / không có khung giờ / không ngày nào → nil.
+    static func nextSend(_ p: EmailPreferences, slots: [String], now: Date, calendar cal: Calendar = .current) -> Date? {
+        guard p.enabled else { return nil }
+        let minutes = slots.compactMap { s -> Int? in
+            let parts = s.split(separator: ":").compactMap { Int($0) }
+            return parts.count >= 2 ? parts[0] * 60 + parts[1] : nil
+        }.sorted()
+        guard !minutes.isEmpty else { return nil }
+        let days: Set<Int>
+        switch p.frequency {
+        case "daily": days = Set(0...6)
+        case "weekdays": days = Set(1...5)
+        default: days = Set(p.customDays)
+        }
+        guard !days.isEmpty else { return nil }
+        let today = cal.startOfDay(for: now)
+        for offset in 0...7 {
+            guard let day = cal.date(byAdding: .day, value: offset, to: today) else { continue }
+            guard days.contains(cal.component(.weekday, from: day) - 1) else { continue }
+            for m in minutes {
+                if let t = cal.date(byAdding: .minute, value: m, to: day), t > now { return t }
+            }
+        }
+        return nil
+    }
+
+    /// "20:00 hôm nay" / "08:00 ngày mai" / "Thứ 2, 08:00" / "CN, 08:00".
+    static func nextSendLabel(_ date: Date, now: Date, calendar cal: Calendar = .current) -> String {
+        let c = cal.dateComponents([.hour, .minute], from: date)
+        let time = String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
+        if cal.isDate(date, inSameDayAs: now) { return "\(time) hôm nay" }
+        if let tomorrow = cal.date(byAdding: .day, value: 1, to: now), cal.isDate(date, inSameDayAs: tomorrow) {
+            return "\(time) ngày mai"
+        }
+        let wd = cal.component(.weekday, from: date) - 1
+        return "\(wd == 0 ? "CN" : "Thứ \(wd + 1)"), \(time)"
+    }
 }

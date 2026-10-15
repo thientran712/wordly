@@ -12,12 +12,17 @@ struct TranslateView: View {
     @State private var imageSourceType: UIImagePickerController.SourceType = .camera
     @State private var micPulse = false
 
+    @ObservedObject private var onboarding = OnboardingCenter.shared
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 14) {
                     languageBar.id("translateTop")
+                    if onboarding.cardState != .hidden {
+                        StartChecklistCard(center: onboarding) { inputFocused = true }
+                    }
                     inputCard
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
@@ -50,6 +55,7 @@ struct TranslateView: View {
                    systemImage: "exclamationmark.triangle.fill", color: WordlyColors.error, duration: 5)
             .onChange(of: vm.inputText) { _, text in vm.onInputChanged(text) }
             .sheet(isPresented: $vm.offerPushReminder) { PushReminderOfferSheet(isPresented: $vm.offerPushReminder) }
+            .sheet(item: $onboarding.nudgeWord) { WidgetNudgeSheet(word: $0) }
             .sheet(isPresented: $showCamera) {
                 CameraPicker(
                     sourceType: imageSourceType,

@@ -452,8 +452,6 @@ struct SignupView: View {
         guard password == confirmPassword else { errorBanner.show("Mật khẩu xác nhận không khớp"); return }
         isLoading = true
         defer { isLoading = false }
-        // Đã tick đồng ý → đăng nhập xong app ghi lên server, không hỏi lại
-        TermsConsent.PendingStore().markAccepted(email: email)
         guard let outcome = try? await authManager.signUp(email: email, password: password, name: name.isEmpty ? nil : name) else { return }
         if authManager.isAuthenticated { dismiss(); return }
         switch outcome {

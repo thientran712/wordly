@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { pickPushWord, lastShownMap } from "../../src/lib/push/select-push-word.js";
+import { planPushWord, lastShownMap } from "../../src/lib/push/select-push-word.js";
 
 // Push chọn từ đã lưu để nhắc. Lỗi cũ (15/10/2026): push không đổi lịch ôn của
 // từ → lần nào cũng lấy lại nhóm từ lưu sớm nhất (20 từ, 2 khung/ngày → chỉ 6
@@ -13,13 +13,13 @@ const rows = (n) => Array.from({ length: n }, (_, i) => ({
 
 test("20 từ, 2 khung/ngày trong 14 ngày → nhắc đủ 20 từ trước khi lặp", () => {
   const words = rows(20);
-  const shown = new Map();
+  const pushLog = [];
   const sent = [];
   for (let k = 0; k < 28; k++) {
-    const now = t0 + 10 * day + k * day / 2;
-    const w = pickPushWord(words, shown);
-    sent.push(w.id);
-    shown.set(w.id, now);
+    const now = new Date(t0 + 10 * day + k * day / 2);
+    const [p] = planPushWord({ now, personal: words, pinnedIds: [], usesBank: false, schedule: [], pushLog });
+    sent.push(p.id);
+    pushLog.push({ entry_id: p.id, shown_at: now.toISOString() });
   }
   assert.equal(new Set(sent.slice(0, 20)).size, 20, "20 lần đầu là 20 từ khác nhau");
   assert.deepEqual(sent.slice(20), sent.slice(0, 8), "vòng sau bắt đầu lại từ từ nhắc lâu nhất");
@@ -27,29 +27,28 @@ test("20 từ, 2 khung/ngày trong 14 ngày → nhắc đủ 20 từ trước kh
 
 test("ưu tiên từ chưa từng nhắc, rồi từ nhắc lâu nhất", () => {
   const words = rows(3);
-  const shown = new Map([["w1", t0 + 5 * day], ["w2", t0 + 2 * day]]);
-  assert.equal(pickPushWord(words, shown).id, "w3");
-  shown.set("w3", t0 + 6 * day);
-  assert.equal(pickPushWord(words, shown).id, "w2");
+  const now = new Date(t0 + 7 * day);
+  const at = (d) => new Date(t0 + d * day).toISOString();
+  const plan = (pushLog) => planPushWord({ now, personal: words, pinnedIds: [], usesBank: false, schedule: [], pushLog })[0].id;
+  assert.equal(plan([{ entry_id: "w1", shown_at: at(5) }, { entry_id: "w2", shown_at: at(2) }]), "w3");
+  assert.equal(plan([{ entry_id: "w1", shown_at: at(5) }, { entry_id: "w2", shown_at: at(2) }, { entry_id: "w3", shown_at: at(6) }]), "w2");
 });
 
-test("cùng chưa nhắc: từ quá hạn ôn trước (hạn sớm nhất), rồi từ mới theo thứ tự lưu", () => {
-  const words = [
-    { id: "new1", state: "new", due_at: null, saved_at: "2026-09-01T00:00:00Z" },
-    { id: "due2", state: "review", due_at: "2026-10-05T00:00:00Z", saved_at: "2026-09-10T00:00:00Z" },
-    { id: "due1", state: "review", due_at: "2026-10-02T00:00:00Z", saved_at: "2026-09-20T00:00:00Z" },
-  ];
-  assert.equal(pickPushWord(words, new Map()).id, "due1");
-  assert.equal(pickPushWord(words, new Map([["due1", t0]])).id, "due2");
-  assert.equal(pickPushWord(words, new Map([["due1", t0], ["due2", t0]])).id, "new1");
+test("lưu từ mới (app cũ log widget cả pool) không làm push quay về từ cũ nhất — chỉ lịch sử push xếp thứ tự", () => {
+  // Bản cũ đọc cả log widget; nay planPushWord chỉ nhận pushLog (source = push)
+  const words = rows(3);
+  const now = new Date(t0 + 7 * day);
+  const pushLog = [{ entry_id: "w1", shown_at: new Date(t0 + day).toISOString() }];
+  assert.equal(planPushWord({ now, personal: words, pinnedIds: [], usesBank: false, schedule: [], pushLog })[0].id, "w2");
 });
 
-test("một từ duy nhất vẫn được nhắc; không có từ → null", () => {
-  assert.equal(pickPushWord(rows(1), new Map([["w1", t0]])).id, "w1");
-  assert.equal(pickPushWord([], new Map()), null);
+test("một từ duy nhất vẫn được nhắc", () => {
+  const now = new Date(t0 + day);
+  const [p] = planPushWord({ now, personal: rows(1), pinnedIds: [], usesBank: false, schedule: [], pushLog: [{ entry_id: "w1", shown_at: new Date(t0).toISOString() }] });
+  assert.equal(p.id, "w1");
 });
 
-test("lastShownMap: lấy lần hiện gần nhất mỗi từ (push + widget), bỏ dòng không có id", () => {
+test("lastShownMap: lấy lần hiện gần nhất mỗi từ, bỏ dòng không có id", () => {
   const m = lastShownMap([
     { entry_id: "a", shown_at: "2026-10-01T00:00:00Z" },
     { entry_id: "a", shown_at: "2026-10-03T00:00:00Z" },

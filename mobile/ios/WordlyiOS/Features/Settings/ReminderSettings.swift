@@ -12,6 +12,20 @@ final class ReminderSettingsViewModel: ObservableObject {
     @Published var toast: String?
     @Published var error: String?
     let timezone = TimeZone.current.identifier
+    /// Bản đã lưu trên server — tự lưu chỉ khi `prefs` khác bản này; lỗi thì trả về bản này.
+    private(set) var savedPrefs: EmailPreferences?
+    private var autosaveTask: Task<Void, Never>?
+
+    /// Tự lưu (spec 2026-10-15 §5.4): 0,8 giây sau lần chạm cuối.
+    func scheduleAutosave() {
+        guard let savedPrefs, prefs != savedPrefs else { return }
+        autosaveTask?.cancel()
+        autosaveTask = Task {
+            try? await Task.sleep(for: .milliseconds(800))
+            guard !Task.isCancelled else { return }
+            await save()
+        }
+    }
 
     func load() async {
         state = .loading
@@ -22,6 +36,7 @@ final class ReminderSettingsViewModel: ObservableObject {
                 prefs = loaded
                 if prefs.customDays.isEmpty { prefs.customDays = [1, 2, 3, 4, 5] }
             }
+            savedPrefs = prefs
             slots = try await s
             state = .loaded(())
             // Múi giờ theo thiết bị để nhắc đến đúng giờ địa phương
@@ -36,14 +51,18 @@ final class ReminderSettingsViewModel: ObservableObject {
         error = nil
         defer { saving = false }
         do {
-            try await APIClient.shared.savePushPreferences(prefs)
-            if prefs.enabled && slots.isEmpty {
+            let sent = prefs
+            try await APIClient.shared.savePushPreferences(sent)
+            savedPrefs = sent
+            if sent.enabled && slots.isEmpty {
                 // Bật lần đầu: server tự tạo khung 20:00
                 slots = try await APIClient.shared.fetchPushSlots()
             }
-            toast = prefs.enabled ? "Đã lưu — sẽ nhắc theo lịch bạn chọn" : "Đã tắt nhắc học"
+            toast = sent.enabled ? "Đã lưu" : "Đã tắt nhắc ôn"
         } catch {
             self.error = (error as? APIError)?.serverMessage ?? "Lưu thất bại, thử lại nhé."
+            // Không để màn hình hiện một cài đặt chưa lưu được
+            if let savedPrefs { prefs = savedPrefs }
         }
     }
 
@@ -166,40 +185,18 @@ struct ReminderSettingsForm: View {
             )) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(toggleTitle).font(WordlyFonts.body(15, weight: .semibold))
-                    Text(toggleSubtitle).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                    if let next = ReminderScheduleLogic.nextSend(vm.prefs, slots: vm.slots.map(\.sendTime), now: Date()) {
+                        Text("Lần tới: \(ReminderScheduleLogic.nextSendLabel(next, now: Date()))")
+                            .font(WordlyFonts.body(12, weight: .semibold)).foregroundStyle(WordlyColors.electric)
+                    } else {
+                        Text(toggleSubtitle).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                    }
                 }
             }
             .tint(WordlyColors.electric)
         }
 
         if vm.prefs.enabled {
-            Section("Tần suất") {
-                Picker("Tần suất", selection: $vm.prefs.frequency) {
-                    Text("📅 Mỗi ngày").tag("daily")
-                    Text("💼 Thứ 2–6").tag("weekdays")
-                    Text("⚙️ Tuỳ chỉnh").tag("custom")
-                }
-                .pickerStyle(.segmented)
-                if vm.prefs.frequency == "custom" {
-                    HStack(spacing: 6) {
-                        ForEach(ReminderScheduleLogic.days) { day in
-                            let on = vm.prefs.customDays.contains(day.value)
-                            Button {
-                                vm.prefs.customDays = ReminderScheduleLogic.toggle(day: day.value, in: vm.prefs.customDays)
-                            } label: {
-                                Text(day.label)
-                                    .font(WordlyFonts.body(13, weight: .bold))
-                                    .frame(maxWidth: .infinity, minHeight: 36)
-                                    .background(on ? WordlyColors.electric : WordlyColors.hoverBG)
-                                    .foregroundStyle(on ? WordlyColors.onElectric : WordlyColors.inkSoft)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-
             Section {
                 ForEach(vm.slots) { slot in
                     HStack {
@@ -228,23 +225,37 @@ struct ReminderSettingsForm: View {
             } footer: {
                 Text("Chỉ chọn giờ tròn hoặc rưỡi. Theo múi giờ \(vm.timezone). Vuốt sang trái để xoá một khung giờ.")
             }
+
+            Section("Ngày gửi") {
+                Picker("Tần suất", selection: $vm.prefs.frequency) {
+                    Text("Mỗi ngày").tag("daily")
+                    Text("Thứ 2–6").tag("weekdays")
+                    Text("Tuỳ chọn").tag("custom")
+                }
+                .pickerStyle(.segmented)
+                if vm.prefs.frequency == "custom" {
+                    HStack(spacing: 6) {
+                        ForEach(ReminderScheduleLogic.days) { day in
+                            let on = vm.prefs.customDays.contains(day.value)
+                            Button {
+                                vm.prefs.customDays = ReminderScheduleLogic.toggle(day: day.value, in: vm.prefs.customDays)
+                            } label: {
+                                Text(day.label)
+                                    .font(WordlyFonts.body(13, weight: .bold))
+                                    .frame(maxWidth: .infinity, minHeight: 36)
+                                    .background(on ? WordlyColors.electric : WordlyColors.hoverBG)
+                                    .foregroundStyle(on ? WordlyColors.onElectric : WordlyColors.inkSoft)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
         }
 
-        Section {
-            if let e = vm.error {
-                Text(e).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.error)
-            }
-            Button { Task { await vm.save() } } label: {
-                HStack {
-                    if vm.saving { ProgressView().tint(WordlyColors.onElectric) }
-                    Text("Lưu cài đặt").frame(maxWidth: .infinity)
-                }
-                .font(WordlyFonts.body(15, weight: .bold))
-                .padding(.vertical, 6)
-            }
-            .listRowBackground(WordlyColors.electric)
-            .foregroundStyle(WordlyColors.onElectric)
-            .disabled(vm.saving)
+        if let e = vm.error {
+            Section { Text(e).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.error) }
         }
     }
 }

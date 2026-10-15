@@ -7,7 +7,15 @@ import WidgetKit
 @MainActor
 final class WidgetSettingsViewModel: ObservableObject {
     @Published var settings: WidgetSettings {
-        didSet { AppGroupStorage.shared.settings = settings }
+        didSet {
+            AppGroupStorage.shared.settings = settings
+            // Nhịp / khung giờ đổi → lịch widget đổi
+            if settings.intervalMinutes != oldValue.intervalMinutes
+                || settings.activeStartMinutes != oldValue.activeStartMinutes
+                || settings.activeEndMinutes != oldValue.activeEndMinutes {
+                WidgetScheduleUpload.schedule()
+            }
+        }
     }
     @Published var words: [WidgetWordItem]
     @Published var bank: [WidgetWordItem]
@@ -31,17 +39,17 @@ final class WidgetSettingsViewModel: ObservableObject {
     /// Vài từ sắp hiện tiếp theo trên widget — xem trước nhiều thẻ, không chỉ 1 từ.
     /// Từ kho hiện nghĩa Việt giống trên widget (WidgetMeaning).
     var upcomingPreview: [WidgetWordItem] {
-        let scheduled = WidgetSchedule.entries(words: words, bank: bank, settings: settings).compactMap(\.word)
+        let source = AppGroupStorage.shared.wordSource
+        let scheduled = WidgetSchedule.entries(words: words, bank: bank, source: source, settings: settings).compactMap(\.word)
         if !scheduled.isEmpty { return scheduled.prefix(5).map { WidgetMeaning.localized($0, cache: meaningsVi) } }
-        if let fallback = WidgetSchedule.pool(from: words, settings: settings).first { return [fallback] }
-        return []
+        let pool = WordSourcePool.build(settings: source, saved: words.filter(\.isSaved), bank: bank)
+        return (pool.personal.first ?? pool.bank.first).map { [$0] } ?? []
     }
 
     var savedCount: Int { words.filter(\.isSaved).count }
     var unsavedCount: Int { words.count - savedCount }
 
     /// Từ kho thực sự được trộn (đã bỏ từ trùng với từ của bạn)
-    var bankInUse: Int { WidgetSchedule.bankPool(bank, words: words, settings: settings).count }
 
     var allDay: Bool { settings.activeStartMinutes == settings.activeEndMinutes }
 
@@ -84,103 +92,98 @@ final class WidgetSettingsViewModel: ObservableObject {
     }
 }
 
+/// Trang "Widget" gộp (spec 2026-10-15-shared-word-source-design.md §5.5, cách B):
+/// nút chuyển [Màn hình khoá | Màn hình chính] ở đầu; các khối là thẻ tách rời có
+/// tiêu đề rõ — xem trước → hướng dẫn → riêng loại đang chọn → ÁP DỤNG CHO CẢ 2
+/// WIDGET → cách thêm widget. Nguồn từ ở trang riêng (dùng chung với push).
 struct WidgetSettingsView: View {
+    enum Tab: String { case lock, home }
+
     @StateObject private var vm = WidgetSettingsViewModel()
+    @ObservedObject private var source = WordSourceStore.shared
+    @AppStorage("widgetHub.tab") private var tabRaw = Tab.lock.rawValue
+    @State private var guideOpen = false
+
+    private var tab: Tab { Tab(rawValue: tabRaw) ?? .lock }
 
     var body: some View {
         Form {
-            Section { preview }
+            Section {
+                Picker("Loại widget", selection: $tabRaw) {
+                    Text("Màn hình khoá").tag(Tab.lock.rawValue)
+                    Text("Màn hình chính").tag(Tab.home.rawValue)
+                }
+                .pickerStyle(.segmented)
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+
+            if tab == .home {
+                HomeStylePreviewSection(vm: vm)
+            } else {
+                Section {
+                    lockPreview
+                    Picker("Kiểu", selection: $vm.settings.lockStyle) {
+                        Text("Đầy đủ").tag(WidgetSettings.LockStyle.full)
+                        Text("Gọn, chữ to").tag(WidgetSettings.LockStyle.compact)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, 4)
+                } header: {
+                    HubHeader("Xem trước", systemImage: "eye")
+                } footer: {
+                    Text("Màn hình khoá iOS tự tô màu đơn sắc — chỉ chỉnh được kiểu chữ.")
+                }
                 .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-
-            Section {
-                if vm.settings.source == .custom {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Đang dùng danh sách tự chọn")
-                                .font(WordlyFonts.body(14, weight: .semibold))
-                            Text("\(vm.settings.selectedIds.count) từ")
-                                .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
-                        }
-                        Spacer()
-                        Button("Đổi lại") { vm.settings.source = .saved }
-                            .font(WordlyFonts.body(13, weight: .semibold))
-                    }
-                } else {
-                    // Hai ô tick thay cho 2 tab "Đã lưu | Gần đây": tab không
-                    // cho thấy chọn được cả hai, và "Gần đây" vốn đã gồm từ đã
-                    // lưu nên người dùng không hiểu hai tab khác nhau chỗ nào.
-                    // "Tự chọn" nằm ở mục riêng bên dưới.
-                    sourceCheckbox("Từ đã lưu", detail: "\(vm.savedCount) từ bạn bấm Lưu khi dịch",
-                                   isOn: vm.settings.includesSaved) {
-                        vm.settings.setSources(saved: !vm.settings.includesSaved, recent: vm.settings.includesRecent)
-                    }
-                    sourceCheckbox("Từ dịch gần đây", detail: "\(vm.unsavedCount) từ đã dịch nhưng chưa lưu",
-                                   isOn: vm.settings.includesRecent) {
-                        vm.settings.setSources(saved: vm.settings.includesSaved, recent: !vm.settings.includesRecent)
-                    }
-                    Toggle(isOn: $vm.settings.includeBank) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Trộn từ mới từ kho")
-                            Text("Xen kẽ 2 từ của bạn : 1 từ mới theo trình độ")
-                                .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
-                        }
-                    }
-                    .tint(WordlyColors.electric)
-                }
-            } header: {
-                Text("Nguồn từ")
-            } footer: {
-                Text(sourceFooter)
+                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
             }
 
             Section {
-                NavigationLink {
-                    CustomWordPickerView(vm: vm)
+                DisclosureGroup(isExpanded: $guideOpen) {
+                    ForEach(guideItems, id: \.text) { item in
+                        Label(item.text, systemImage: item.icon)
+                            .font(WordlyFonts.body(14))
+                    }
                 } label: {
-                    HStack {
-                        Text("Tự chọn từng từ")
-                        Spacer()
-                        Text("\(vm.settings.selectedIds.count) từ").foregroundStyle(WordlyColors.inkSoft)
-                    }
+                    Label("Hướng dẫn sử dụng", systemImage: "lightbulb")
+                        .font(WordlyFonts.body(15, weight: .semibold))
                 }
-            } footer: {
-                Text("Chỉ dành riêng những từ bạn chọn, không trộn từ kho.")
+                .accessibilityIdentifier("widgetGuideToggle")
             }
 
-            Section("Đổi từ") {
-                Picker("Đổi từ mỗi", selection: $vm.settings.intervalMinutes) {
-                    ForEach(WidgetSettings.intervals, id: \.self) { m in
-                        Text(m < 60 ? "\(m) phút" : "\(m / 60) giờ").tag(m)
-                    }
-                }
+            if tab == .home {
+                HomeStyleSections(vm: vm)
+            }
+
+            // ── Áp dụng cho cả 2 widget ──
+            Section {
                 Toggle("Hiện nghĩa tiếng Việt", isOn: $vm.settings.showMeaning)
                     .tint(WordlyColors.electric)
-            }
-
-            Section {
                 Picker("Căn chữ", selection: $vm.settings.textAlign) {
                     Image(systemName: "text.alignleft").tag(WidgetSettings.TextAlign.leading)
                     Image(systemName: "text.aligncenter").tag(WidgetSettings.TextAlign.center)
                     Image(systemName: "text.alignright").tag(WidgetSettings.TextAlign.trailing)
                 }
                 .pickerStyle(.segmented)
-                Picker("Màn hình khoá", selection: $vm.settings.lockStyle) {
-                    Text("Đầy đủ").tag(WidgetSettings.LockStyle.full)
-                    Text("Gọn, chữ to").tag(WidgetSettings.LockStyle.compact)
-                }
-                NavigationLink {
-                    HomeStyleView(vm: vm)
-                } label: {
-                    Text("Màu & chữ màn hình chính")
-                }
             } header: {
-                Text("Kiểu hiển thị")
-            } footer: {
-                Text("Căn chữ áp dụng cho cả màn hình khoá và màn hình chính. Màn hình khoá iOS tự tô màu đơn sắc; màn hình chính đổi được màu nền, màu chữ, đậm/nghiêng.")
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("ÁP DỤNG CHO CẢ 2 WIDGET", systemImage: "square.on.square")
+                        .font(WordlyFonts.body(13, weight: .heavy))
+                        .foregroundStyle(WordlyColors.electric)
+                        .accessibilityIdentifier("sharedSettingsHeader")
+                    HubHeader("Chữ", systemImage: "textformat")
+                }
+                .textCase(nil)
+                .padding(.top, 8)
             }
 
             Section {
+                Picker("Đổi từ mỗi", selection: $vm.settings.intervalMinutes) {
+                    ForEach(WidgetSettings.intervals, id: \.self) { m in
+                        Text(m < 60 ? "\(m) phút" : "\(m / 60) giờ").tag(m)
+                    }
+                }
+                .pickerStyle(.segmented)
                 Toggle("Hiện cả ngày", isOn: Binding(get: { vm.allDay }, set: { vm.setAllDay($0) }))
                     .tint(WordlyColors.electric)
                 if !vm.allDay {
@@ -194,102 +197,138 @@ struct WidgetSettingsView: View {
                     ), displayedComponents: .hourAndMinute)
                 }
             } header: {
-                Text("Thời điểm hiển thị")
+                HubHeader("Đổi từ", systemImage: "clock.arrow.circlepath")
             } footer: {
                 Text("Ngoài khung giờ này widget hiện màn nghỉ 🌙 để không làm phiền (vd. khi ngủ).")
             }
 
             Section {
-                Button {
-                    Task { await vm.refresh() }
-                } label: {
+                NavigationLink { WordSourceView() } label: {
                     HStack {
-                        if vm.syncing { ProgressView() }
-                        Label("Cập nhật từ mới nhất", systemImage: "arrow.clockwise")
+                        Label("Nguồn từ", systemImage: "books.vertical")
+                        Spacer()
+                        Text(source.summary).foregroundStyle(WordlyColors.inkSoft).lineLimit(1)
                     }
                 }
-                .foregroundStyle(WordlyColors.electric)
             } footer: {
-                Text("\(vm.words.count) từ của bạn (\(vm.words.filter(\.isSaved).count) đã lưu) + \(vm.bankInUse) từ mới từ kho hôm nay. Từ trùng được lọc bỏ; mỗi vòng xáo thứ tự khác nhau.")
+                Text("Dùng chung với thông báo nhắc ôn.")
             }
 
+            // ── Cách thêm widget (theo loại đang chọn) ──
             Section {
-                Text("Thêm widget vào màn hình khoá").font(WordlyFonts.body(13, weight: .semibold))
-                step(1, "Khoá máy, rồi nhấn giữ màn hình khoá.")
-                step(2, "Chọn Tuỳ chỉnh → Màn hình khoá.")
-                step(3, "Bấm vào ô widget dưới đồng hồ, tìm “Wordly”.")
-                step(4, "Chọn kiểu chữ nhật (từ + nghĩa) hoặc tròn, rồi Xong.")
-            } footer: {
-                Text("iOS luôn đặt hàng widget ở giữa màn hình khi hàng chưa đủ chỗ. Muốn Wordly sát mép trái: đặt Wordly đầu hàng rồi thêm 2 widget tròn (pin, thời tiết…) bên phải cho kín hàng.")
-            }
-        }
-        .scrollContentBackground(.hidden)
-        .screenBackground()
-        .navigationTitle("Widget màn hình khoá")
-        .navigationBarTitleDisplayMode(.inline)
-        .task { if vm.words.isEmpty { await vm.refresh() } }
-    }
-
-    private var sourceFooter: String {
-        switch vm.settings.source {
-        case .saved: return "Chỉ hiện từ đã lưu (chưa lưu từ nào thì dùng từ dịch gần đây)."
-        case .unsaved: return "Chỉ hiện từ đã dịch mà chưa lưu (lưu hết rồi thì dùng mọi từ gần đây)."
-        case .recent: return "Hiện cả từ đã lưu lần từ dịch gần đây. Chọn ít nhất một nguồn."
-        case .custom: return "Chỉ những từ bạn chọn bên dưới (\(vm.settings.selectedIds.count) từ) — không trộn từ kho."
-        }
-    }
-
-    /// Ô tick nguồn từ. Ô duy nhất đang tick thì bấm không bỏ được (xem setSources).
-    private func sourceCheckbox(_ title: String, detail: String, isOn: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: isOn ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 22))
-                    .foregroundStyle(isOn ? WordlyColors.electric : WordlyColors.inkSoft)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).foregroundStyle(WordlyColors.ink)
-                    Text(detail).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
-                }
-                Spacer()
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isOn ? .isSelected : [])
-    }
-
-    private var preview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("XEM TRƯỚC — CÁC THẺ SẮP TỚI").font(WordlyFonts.body(11, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
-                .padding(.leading, 12)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    if vm.upcomingPreview.isEmpty {
-                        previewCard(word: nil, isNow: true)
-                    } else {
-                        ForEach(Array(vm.upcomingPreview.enumerated()), id: \.offset) { i, w in
-                            previewCard(word: w, isNow: i == 0)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 12) {
+                        ForEach(Array(addSteps.enumerated()), id: \.offset) { i, text in
+                            stepCard(i + 1, text)
                         }
                     }
+                    .padding(.vertical, 4)
                 }
-                .padding(.horizontal, 4)
+            } header: {
+                HubHeader(tab == .lock ? "Cách thêm widget vào màn hình khoá" : "Cách thêm widget vào màn hình chính",
+                          systemImage: "plus.square.on.square")
+                    .accessibilityIdentifier(tab == .lock ? "addStepsLock" : "addStepsHome")
+                    .padding(.top, 8)
+            } footer: {
+                if tab == .lock {
+                    Text("iOS đặt hàng widget ở giữa khi hàng chưa đủ chỗ. Muốn Wordly sát mép trái: đặt Wordly đầu hàng rồi thêm 2 widget tròn bên phải cho kín hàng.")
+                } else {
+                    Text("Cỡ Vừa có thêm câu nhắc vui bên cạnh từ.")
+                }
             }
         }
-        .padding(.vertical, 8)
+        .listSectionSpacing(20)
+        .scrollContentBackground(.hidden)
+        .screenBackground()
+        .navigationTitle("Widget")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { if vm.words.isEmpty { await vm.refresh() } }
+        .onAppear { source.reload() }
+    }
+
+    private struct GuideItem { let icon: String; let text: String }
+
+    private var guideItems: [GuideItem] {
+        switch tab {
+        case .lock:
+            return [GuideItem(icon: "arrow.triangle.2.circlepath", text: "Từ đổi theo nhịp ở mục “Đổi từ”, lấy từ “Nguồn từ”."),
+                    GuideItem(icon: "hand.tap", text: "Chạm widget để mở đúng từ đó trong app."),
+                    GuideItem(icon: "eye.slash", text: "Tắt “Hiện nghĩa tiếng Việt” để tự đố mình."),
+                    GuideItem(icon: "textformat.size", text: "Kiểu “Gọn, chữ to” chỉ hiện từ, dễ đọc khi liếc.")]
+        case .home:
+            return [GuideItem(icon: "paintpalette", text: "Chọn theme màu hoặc theme ảnh có sẵn."),
+                    GuideItem(icon: "photo", text: "Ảnh của bạn sẽ đè lên ảnh của theme; xoá đi là về ảnh theme."),
+                    GuideItem(icon: "rectangle.split.2x1", text: "Cỡ Vừa có thêm câu nhắc vui; cỡ Nhỏ gọn hơn."),
+                    GuideItem(icon: "hand.tap", text: "Chạm widget để mở đúng từ đó trong app.")]
+        }
+    }
+
+    private var addSteps: [String] { Self.addSteps(tab) }
+
+    /// Các bước thêm widget — dùng cả ở trang Widget và hướng dẫn từ thẻ "Bắt đầu".
+    static func addSteps(_ tab: Tab) -> [String] {
+        switch tab {
+        case .lock:
+            return ["Khoá máy, rồi nhấn giữ màn hình khoá.",
+                    "Chọn Tuỳ chỉnh → Màn hình khoá.",
+                    "Chạm ô widget dưới đồng hồ, tìm “Wordly”.",
+                    "Chọn kiểu chữ nhật (từ + nghĩa), rồi Xong."]
+        case .home:
+            return ["Nhấn giữ chỗ trống trên màn hình chính đến khi biểu tượng rung.",
+                    "Bấm Sửa ở góc trên trái → Thêm tiện ích.",
+                    "Tìm “Wordly”.",
+                    "Chọn cỡ Nhỏ hoặc Vừa → Thêm tiện ích → Xong."]
+        }
+    }
+
+    private func stepCard(_ n: Int, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let img = UIImage(named: "widget-guide-\(tab.rawValue)-\(n)") {
+                Image(uiImage: img).resizable().scaledToFit()
+                    .frame(width: 170, height: 170)
+                    .accessibilityHidden(true)
+            }
+            HStack(alignment: .top, spacing: 8) {
+                Text("\(n)").font(WordlyFonts.body(12, weight: .bold)).foregroundStyle(WordlyColors.onElectric)
+                    .frame(width: 22, height: 22).background(WordlyColors.electric).clipShape(Circle())
+                Text(text).font(WordlyFonts.body(13)).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(width: 170, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var lockPreview: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                if vm.upcomingPreview.isEmpty {
+                    previewCard(word: nil, isNow: true)
+                } else {
+                    ForEach(Array(vm.upcomingPreview.enumerated()), id: \.offset) { i, w in
+                        previewCard(word: w, isNow: i == 0)
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding(.vertical, 4)
     }
 
     private func previewCard(word: WidgetWordItem?, isNow: Bool) -> some View {
         let align = vm.settings.textAlign
+        let compact = vm.settings.lockStyle == .compact
         return VStack(alignment: align.horizontal, spacing: 2) {
             Text(isNow ? "Bây giờ" : "Tiếp theo").font(.system(size: 11, weight: .semibold)).opacity(0.7)
-            Text(word?.word ?? "Chưa có từ").font(.system(size: 18, weight: .bold))
+            Text(word?.word ?? "Chưa có từ").font(.system(size: compact ? 24 : 18, weight: .bold))
                 .lineLimit(1).minimumScaleFactor(0.5)
-            if let p = word.flatMap({ WidgetPhonetic.phonetic(for: $0.word, cache: vm.phonetics) }) {
-                Text(p).font(.system(size: 12)).opacity(0.75).lineLimit(1)
+            if !compact {
+                if let p = word.flatMap({ WidgetPhonetic.phonetic(for: $0.word, cache: vm.phonetics) }) {
+                    Text(p).font(.system(size: 12)).opacity(0.75).lineLimit(1)
+                }
+                Text(word.map { vm.settings.showMeaning ? $0.meaning : WidgetCopy.pick(WidgetCopy.hiddenMeaningPrompts, seed: $0.id) } ?? WidgetCopy.emptySubtitle)
+                    .font(.system(size: 13)).opacity(0.85)
+                    .lineLimit(2).minimumScaleFactor(0.6)
             }
-            Text(word.map { vm.settings.showMeaning ? $0.meaning : WidgetCopy.pick(WidgetCopy.hiddenMeaningPrompts, seed: $0.id) } ?? WidgetCopy.emptySubtitle)
-                .font(.system(size: 13)).opacity(0.85)
-                .lineLimit(2).minimumScaleFactor(0.6)
         }
         .multilineTextAlignment(align.multiline)
         .foregroundStyle(.white)
@@ -300,13 +339,5 @@ struct WidgetSettingsView: View {
         .padding(isNow ? 4 : 10)
         .background(LinearGradient(colors: [Color(hex: "#1CB0F6"), Color(hex: "#58CC02")], startPoint: .topLeading, endPoint: .bottomTrailing))
         .clipShape(RoundedRectangle(cornerRadius: 22))
-    }
-
-    private func step(_ n: Int, _ text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Text("\(n)").font(WordlyFonts.body(12, weight: .bold)).foregroundStyle(WordlyColors.onElectric)
-                .frame(width: 22, height: 22).background(WordlyColors.electric).clipShape(Circle())
-            Text(text).font(WordlyFonts.body(14))
-        }
     }
 }

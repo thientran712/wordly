@@ -7,6 +7,7 @@ struct PushSettingsView: View {
     @StateObject private var vm = ReminderSettingsViewModel()
     @State private var status: UNAuthorizationStatus = .notDetermined
     @Environment(\.openURL) private var openURL
+    @ObservedObject private var source = WordSourceStore.shared
 
     /// Có Firebase (GoogleService-Info.plist) — màn xem trước Debug coi như có.
     private var available: Bool {
@@ -36,9 +37,26 @@ struct PushSettingsView: View {
                 case .failed(let m):
                     Section { ErrorStateView(message: m) { Task { await vm.load() } } }
                 case .loaded:
-                    ReminderSettingsForm(vm: vm, toggleTitle: "Nhận thông báo ôn từ",
+                    ReminderSettingsForm(vm: vm, toggleTitle: "Nhắc ôn từ",
                                          toggleSubtitle: "Mỗi thông báo nhắc một từ, bấm vào để xem ngay",
                                          onToggle: { on in if on { Task { await askPermission() } } })
+                    Section {
+                        DisclosureGroup("Cách hoạt động") {
+                            Label("Mỗi lần nhắc một từ, chạm thông báo để mở đúng từ đó.", systemImage: "hand.tap")
+                            Label("Ưu tiên từ lâu chưa gặp và từ ghim; không trùng từ đang trên widget.", systemImage: "arrow.triangle.2.circlepath")
+                            Label("Chưa lưu từ nào thì nhắc từ mới trong kho.", systemImage: "sparkles")
+                        }
+                        .font(WordlyFonts.body(14))
+                        NavigationLink { WordSourceView() } label: {
+                            HStack {
+                                Label("Nguồn từ", systemImage: "books.vertical")
+                                Spacer()
+                                Text(source.summary).foregroundStyle(WordlyColors.inkSoft).lineLimit(1)
+                            }
+                        }
+                    } footer: {
+                        Text("Thay đổi được lưu ngay.")
+                    }
                 }
             }
         }
@@ -47,6 +65,8 @@ struct PushSettingsView: View {
         .navigationTitle("Thông báo nhắc ôn")
         .navigationBarTitleDisplayMode(.inline)
         .toast($vm.toast)
+        // Tự lưu (spec 2026-10-15 §5.4) — bỏ nút "Lưu cài đặt"
+        .onChange(of: vm.prefs) { _, _ in vm.scheduleAutosave() }
         .task {
             status = await PushManager.shared.authorizationStatus()
             if case .idle = vm.state { await vm.load() }

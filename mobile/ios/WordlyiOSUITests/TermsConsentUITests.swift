@@ -18,10 +18,16 @@ final class TermsConsentUITests: XCTestCase {
         add(a)
     }
 
-    func testUserWithoutConsentSeesGateAndAcceptGoesIn() {
+    func testNeverConsentedUserGoesStraightInWithoutScreen() {
         let app = launch(["-WordlyNeedsConsent"])
+        XCTAssertTrue(app.tabBars.buttons["Dịch"].waitForExistence(timeout: 10), "chưa đồng ý lần nào → tự ghi, vào thẳng")
+        XCTAssertFalse(app.buttons["termsAccept"].exists, "không hiện màn đồng ý")
+    }
+
+    func testOutdatedTermsShowsUpdateScreenAndAcceptGoesIn() {
+        let app = launch(["-WordlyTermsOutdated"])
         let accept = app.buttons["termsAccept"]
-        XCTAssertTrue(accept.waitForExistence(timeout: 10), "chưa đồng ý → phải thấy màn đồng ý")
+        XCTAssertTrue(accept.waitForExistence(timeout: 10), "Điều khoản đổi phiên bản → thấy màn đồng ý lại")
         XCTAssertFalse(app.tabBars.buttons["Dịch"].exists, "chưa đồng ý thì chưa vào app")
         shot(app, "terms-consent-gate")
         accept.tap()
@@ -29,7 +35,7 @@ final class TermsConsentUITests: XCTestCase {
     }
 
     func testDeclineOffersSignOutOrDeleteNotSilentDelete() {
-        let app = launch(["-WordlyNeedsConsent"])
+        let app = launch(["-WordlyTermsOutdated"])
         let decline = app.buttons["termsDecline"]
         XCTAssertTrue(decline.waitForExistence(timeout: 10))
         decline.tap()

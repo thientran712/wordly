@@ -196,17 +196,6 @@ struct PatchSessionRequest: Codable {
     let messages: [ChatMessage]?
 }
 
-// MARK: - Streak
-struct StreakResponse: Codable {
-    let streak: Int
-    let totalDays: Int
-
-    enum CodingKeys: String, CodingKey {
-        case streak
-        case totalDays = "total_days"
-    }
-}
-
 // MARK: - Word Suggestions (Datamuse)
 struct DatamuseWord: Codable {
     let word: String

@@ -15,7 +15,6 @@ final class PreviewModeTests: XCTestCase {
         XCTAssertFalse(try decode(JournalResponse.self, "/api/journal").entries.isEmpty)
         XCTAssertFalse(try decode(PracticeSessionsResponse.self, "/api/practice/sessions").sessions.isEmpty)
         XCTAssertNotNil(try decode(ProfileResponse.self, "/api/profile").profile)
-        XCTAssertGreaterThan(try decode(StreakResponse.self, "/api/stats/streak").streak, 0)
         XCTAssertNotNil(try decode(TranslateResponse.self, "/api/translate", method: "POST").translated)
     }
 

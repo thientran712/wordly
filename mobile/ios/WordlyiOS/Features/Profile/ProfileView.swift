@@ -1,16 +1,16 @@
 import SwiftUI
 
-// Tab Cá nhân: chuỗi ngày học + hồ sơ & cài đặt — gom các mục của web (/profile) + cài đặt
+// Tab Cá nhân: hồ sơ & cài đặt — gom các mục của web (/profile) + cài đặt
 // riêng của app (widget màn hình khoá, giao diện).
 struct ProfileView: View {
     @StateObject private var vm = ProfileViewModel()
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var themeManager: ThemeManager
     @AppStorage("wordly-theme") private var savedTheme: String = "dark"
+    @ObservedObject private var wordSource = WordSourceStore.shared
     @State private var showChangePassword = false
     @State private var confirmSignOut = false
     @State private var pushSummary = ""
-    @State private var streak: StreakResponse?
     @State private var confirmDelete = false
     @State private var isDeleting = false
     @State private var deleteError: String?
@@ -23,17 +23,20 @@ struct ProfileView: View {
                     NavigationLink { EditProfileView(vm: vm) } label: { accountHeader }
                 }
 
-                Section { streakCard }
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
-
-                Section("Nhắc học") {
+                // Spec 2026-10-15 §5.1 — tóm tắt bằng chữ, không số
+                Section("Học & nhắc") {
+                    NavigationLink { WordSourceView() } label: {
+                        settingRow("books.vertical.fill", WordlyColors.duoBlue, "Nguồn từ", wordSource.summary)
+                    }
+                    .accessibilityIdentifier("entryWordSource")
                     NavigationLink { PushSettingsView() } label: {
                         settingRow("bell.badge.fill", WordlyColors.electric, "Thông báo nhắc ôn", pushSummary)
                     }
+                    .accessibilityIdentifier("entryPush")
                     NavigationLink { WidgetSettingsView() } label: {
-                        settingRow("lock.iphone", WordlyColors.electric, "Widget màn hình khoá", "Từ vựng trên màn hình khoá")
+                        settingRow("square.grid.2x2.fill", WordlyColors.duoOrange, "Widget", "Màn hình khoá & màn hình chính")
                     }
+                    .accessibilityIdentifier("entryWidget")
                 }
 
                 Section("Giao diện") {
@@ -96,7 +99,6 @@ struct ProfileView: View {
             .screenBackground()
             .navigationTitle("Cá nhân")
             .task {
-                streak = try? await APIClient.shared.fetchStreak()
                 await vm.fetchProfile()
                 if let p = try? await APIClient.shared.fetchPushPreferences() {
                     pushSummary = ReminderScheduleLogic.summary(p)
@@ -164,25 +166,6 @@ struct ProfileView: View {
             }
         }
         .padding(.vertical, 4)
-    }
-
-    private var streakCard: some View {
-        HStack(spacing: 14) {
-            Text("🔥").font(.system(size: 34))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(streak?.streak ?? 0) ngày liên tiếp")
-                    .font(WordlyFonts.display(20))
-                    .foregroundStyle(WordlyColors.ink)
-                Text("Tổng \(streak?.totalDays ?? 0) ngày đã học")
-                    .font(WordlyFonts.body(13, weight: .medium))
-                    .foregroundStyle(WordlyColors.inkSoft)
-            }
-            Spacer()
-        }
-        .padding(16)
-        .background(WordlyColors.duoOrange.opacity(0.14))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .padding(.bottom, 8)
     }
 
     private var providerLabel: String {

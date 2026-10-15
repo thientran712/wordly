@@ -46,7 +46,9 @@ struct WordlyProvider: TimelineProvider {
 
     func getSnapshot(in context: Context, completion: @escaping (WordlyEntry) -> Void) {
         let settings = loadSettings()
-        let first = WidgetSchedule.entries(words: loadWords(), bank: loadWords(bankKey), settings: settings)
+        let words = loadWords()
+        let source = WordSourceSettings.load(defaults: UserDefaults(suiteName: appGroup), legacy: settings, words: words)
+        let first = WidgetSchedule.entries(words: words, bank: loadWords(bankKey), source: source, settings: settings)
             .first { $0.word != nil }?.word
         completion(entry(date: Date(), word: first ?? Self.sample, resting: false, settings: settings,
                          phonetics: loadPhonetics(), meaningsVi: loadMeaningsVi(),
@@ -64,9 +66,10 @@ struct WordlyProvider: TimelineProvider {
         }
         let words = loadWords()
         let bank = loadWords(bankKey)
-        let hasWords = !WidgetSchedule.pool(from: words, settings: settings).isEmpty
-            || !WidgetSchedule.bankPool(bank, words: words, settings: settings).isEmpty
-        let schedule = WidgetSchedule.entries(words: words, bank: bank, settings: settings)
+        // Nguồn từ chung với push (spec 2026-10-15 §2)
+        let source = WordSourceSettings.load(defaults: UserDefaults(suiteName: appGroup), legacy: settings, words: words)
+        let hasWords = !WordSourcePool.build(settings: source, saved: words.filter(\.isSaved), bank: bank).isEmpty
+        let schedule = WidgetSchedule.entries(words: words, bank: bank, source: source, settings: settings)
         let phonetics = loadPhonetics()
         let meaningsVi = loadMeaningsVi()
         let background = loadBackground(settings, family: context.family)

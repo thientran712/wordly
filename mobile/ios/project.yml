@@ -144,6 +144,7 @@ targets:
       - path: WordlyiOS/Shared/Widget/WidgetSchedule.swift
       - path: WordlyiOS/Shared/Widget/WidgetBackgroundImage.swift
       - path: WordlyiOS/Shared/Widget/WidgetCopy.swift
+      - path: WordlyiOS/Shared/Widget/WordSource.swift
       - path: WordlyiOS/Resources/Fonts
         buildPhase: resources
       - path: WordlyiOS/Resources/Brand.xcassets

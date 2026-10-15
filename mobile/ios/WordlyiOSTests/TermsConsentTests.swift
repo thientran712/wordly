@@ -14,25 +14,17 @@ final class TermsConsentTests: XCTestCase {
         XCTAssertEqual(r.termsCurrentVersion, 2)
     }
 
+    /// Chủ dự án chốt 15/10: đăng nhập (Google/Apple có dòng "Bằng việc tiếp tục…",
+    /// email có ô tick) = đồng ý; tài khoản cũ mặc định đã đồng ý → CHƯA đồng ý lần
+    /// nào thì app tự ghi, không hiện màn. Chỉ hỏi lại khi Điều khoản lên phiên bản mới.
     func testDecision() throws {
-        // Server cũ chưa có trường → không hỏi (không khoá người dùng)
-        XCTAssertEqual(TermsConsent.decision(try response(#"{"profile": {"id": "u1"}}"#), userEmail: nil), .ok)
-        XCTAssertEqual(TermsConsent.decision(try response(#"{"profile": {"id": "u1"}, "terms_current_version": 1}"#), userEmail: nil), .ask(version: 1))
-        XCTAssertEqual(TermsConsent.decision(try response(#"{"profile": {"id": "u1", "terms_version": 1}, "terms_current_version": 2}"#), userEmail: nil), .ask(version: 2))
-        XCTAssertEqual(TermsConsent.decision(try response(#"{"profile": {"id": "u1", "terms_version": 2}, "terms_current_version": 2}"#), userEmail: nil), .ok)
-        // Thiếu hồ sơ → vẫn hỏi
-        XCTAssertEqual(TermsConsent.decision(try response(#"{"terms_current_version": 1}"#), userEmail: nil), .ask(version: 1))
-    }
-
-    func testEmailSignupTickedBoxAcceptsSilently() throws {
-        let defaults = UserDefaults(suiteName: "terms-test-\(UUID().uuidString)")!
-        let store = TermsConsent.PendingStore(defaults: defaults)
-        store.markAccepted(email: "  An@Example.com ")
-        let r = try response(#"{"profile": {"id": "u1"}, "terms_current_version": 1}"#)
-        XCTAssertEqual(TermsConsent.decision(r, userEmail: "an@example.com", pending: store), .acceptSilently(version: 1))
-        // Email khác (người khác đăng nhập trên máy này) → vẫn phải hỏi
-        XCTAssertEqual(TermsConsent.decision(r, userEmail: "b@example.com", pending: store), .ask(version: 1))
-        store.clear()
-        XCTAssertEqual(TermsConsent.decision(r, userEmail: "an@example.com", pending: store), .ask(version: 1))
+        // Server cũ chưa có trường → không làm gì
+        XCTAssertEqual(TermsConsent.decision(try response(#"{"profile": {"id": "u1"}}"#)), .ok)
+        // Chưa đồng ý lần nào (tài khoản mới Google/Apple, tài khoản cũ) → tự ghi
+        XCTAssertEqual(TermsConsent.decision(try response(#"{"profile": {"id": "u1"}, "terms_current_version": 1}"#)), .acceptSilently(version: 1))
+        XCTAssertEqual(TermsConsent.decision(try response(#"{"terms_current_version": 1}"#)), .acceptSilently(version: 1))
+        // Đã đồng ý bản cũ, Điều khoản vừa đổi → hỏi lại một lần
+        XCTAssertEqual(TermsConsent.decision(try response(#"{"profile": {"id": "u1", "terms_version": 1}, "terms_current_version": 2}"#)), .ask(version: 2))
+        XCTAssertEqual(TermsConsent.decision(try response(#"{"profile": {"id": "u1", "terms_version": 2}, "terms_current_version": 2}"#)), .ok)
     }
 }

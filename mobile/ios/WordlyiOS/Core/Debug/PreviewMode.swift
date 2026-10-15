@@ -22,6 +22,8 @@ enum PreviewMode {
 
     /// `-WordlyNeedsConsent` → hồ sơ mẫu chưa đồng ý Điều khoản (thấy màn đồng ý)
     static var needsConsent: Bool { CommandLine.arguments.contains("-WordlyNeedsConsent") }
+    /// `-WordlyTermsOutdated` → đã đồng ý bản cũ, Điều khoản vừa lên bản mới (thấy màn đồng ý lại)
+    static var termsOutdated: Bool { CommandLine.arguments.contains("-WordlyTermsOutdated") }
 
     static func initialTab(from arguments: [String]) -> String? {
         guard let i = arguments.firstIndex(of: flag), i + 1 < arguments.count else { return nil }
@@ -34,12 +36,15 @@ enum PreviewMode {
         let parts = route.split(separator: "/").map(String.init)   // ["api", "classes", "<id>", "sessions"]
         let json: String?
         switch (method, route) {
-        case ("GET", "/api/translate-history"): json = history
+        case ("GET", "/api/translate-history"):
+            json = CommandLine.arguments.contains("-WordlyNoSavedWords") ? #"{"hasMore": false, "history": []}"# : history
         case ("GET", "/api/journal"): json = journal
         case ("GET", "/api/practice/sessions"): json = sessions
-        case ("GET", "/api/profile"): json = needsConsent ? profileNoConsent : profile
+        case ("GET", "/api/profile"): json = termsOutdated ? profileOutdatedTerms : needsConsent ? profileNoConsent : profile
+        case ("PUT", "/api/widget/schedule"): json = #"{"saved": 0, "dropped": 0}"#
+        case ("GET", "/api/word-source"), ("PUT", "/api/word-source"):
+            json = #"{"settings": {"include_saved": true, "include_bank": true, "pinned_ids": [], "pinned_only": false}, "updated_at": null}"#
         case ("POST", "/api/consent"): json = #"{"success": true, "terms_version": 1}"#
-        case ("GET", "/api/stats/streak"): json = #"{"streak": 12, "total_days": 47}"#
         case ("POST", "/api/translate"): json = #"{"translated": "kiên cường, mau phục hồi", "detectedLang": "EN"}"#
         case ("POST", "/api/practice"):
             return Data("Great job! Tell me more about your weekend — what did you do?".utf8)
@@ -101,6 +106,11 @@ enum PreviewMode {
     private static let profile = #"""
     {"profile": {"id": "u1", "name": "Thiên", "skill_level": "B1", "learning_goal": "ielts", "timezone": "Asia/Ho_Chi_Minh", "terms_version": 1},
      "email": "preview@wordly.app", "auth_provider": "email", "terms_current_version": 1}
+    """#
+
+    private static let profileOutdatedTerms = #"""
+    {"profile": {"id": "u1", "name": "Thiên", "skill_level": "B1", "learning_goal": "ielts", "timezone": "Asia/Ho_Chi_Minh", "terms_version": 1},
+     "email": "preview@wordly.app", "auth_provider": "email", "terms_current_version": 2}
     """#
 
     private static let profileNoConsent = #"""

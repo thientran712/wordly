@@ -34,6 +34,18 @@ final class AppGroupStorage {
         }
     }
 
+    /// Máy đã có bản nguồn từ mới (chưa có = vừa cập nhật từ bản cũ, cần chuyển + gửi server).
+    var hasStoredWordSource: Bool { defaults?.data(forKey: WordSourceSettings.storageKey) != nil }
+
+    /// Nguồn từ chung (widget + push). Chưa có → chuyển từ cài đặt widget cũ.
+    var wordSource: WordSourceSettings {
+        get { WordSourceSettings.load(defaults: defaults, legacy: settings, words: words) }
+        set {
+            defaults?.set(try? JSONEncoder().encode(newValue), forKey: WordSourceSettings.storageKey)
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+
     /// Đã đăng xuất → widget nhắc đăng nhập thay vì xoay từ. Widget đọc khoá này
     /// trực tiếp (WordlyWidget.swift, `signedOutKey`).
     static let signedOutKey = "wordly.widget.signedOut"
@@ -100,6 +112,8 @@ final class AppGroupStorage {
         defaults?.removeObject(forKey: Self.bankKey)
         defaults?.removeObject(forKey: Self.bankFetchedAtKey)
         defaults?.removeObject(forKey: Self.bankLevelKey)
+        // Nguồn từ của tài khoản này (ghim…) không được sang tài khoản đăng nhập sau
+        defaults?.removeObject(forKey: WordSourceSettings.storageKey)
         signedOut = true
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -112,6 +126,12 @@ final class AppGroupStorage {
             .appendingPathComponent("widget_home_bg.jpg"),
               FileManager.default.fileExists(atPath: url.path) else { return }
         try? FileManager.default.removeItem(at: url)
+    }
+
+    /// 200 từ đã lưu mới nhất gộp TRƯỚC lịch sử — cùng tập từ push dùng trên server
+    /// (select-push-word.js, SAVED_WORDS_LIMIT), kể cả khi lịch sử 200 dòng toàn từ chưa lưu.
+    static func items(saved: [TranslateHistoryEntry], history: [TranslateHistoryEntry]) -> [WidgetWordItem] {
+        items(from: saved + history)
     }
 
     /// Lịch sử dịch → từ cho widget: chỉ Anh→Việt, bỏ trùng, giữ thứ tự mới nhất trước.
@@ -168,20 +188,16 @@ enum WidgetSync {
         // không còn từ của tài khoản trước trên màn hình khoá
         guard fetchedAny else { return }
         let store = AppGroupStorage.shared
-        let items = AppGroupStorage.items(from: all)
-        let changed = items != store.words
+        // Lỗi tải danh sách đã lưu → dùng lịch sử như trước (không làm mất từ)
+        let saved = (try? await APIClient.shared.fetchSavedHistory()) ?? []
+        let items = AppGroupStorage.items(saved: saved, history: all)
         store.saveWords(items)
-        if changed {
-            // Chỉ log đúng pool widget sẽ thực sự hiện (theo settings.source),
-            // không log cả 200 dòng lịch sử thô — tránh làm suggestion_log
-            // phình ra với từ chưa bao giờ lên màn hình khoá.
-            let shown = WidgetSchedule.pool(from: items, settings: store.settings)
-            if !shown.isEmpty {
-                Task { await APIClient.shared.logWidgetShown(items: shown) }
-            }
-        }
+        // Nguồn từ chung: lấy bản server / gửi bản máy (sau khi đã có danh sách từ để chuyển cài đặt cũ)
+        await WordSourceSync.sync()
         await refreshBank()
         await refreshPhonetics()
+        // Lịch widget thật lên server (thay log cả pool) — push tránh trùng
+        await MainActor.run { WidgetScheduleUpload.schedule() }
     }
 
     /// Tra phiên âm cho những từ sắp lên widget mà chưa có — cùng lượt tra lấy
@@ -191,7 +207,8 @@ enum WidgetSync {
     /// trong DB thì không tốn lượt AI.
     static func refreshPhonetics(limit: Int = 12) async {
         let store = AppGroupStorage.shared
-        let upcoming = WidgetSchedule.entries(words: store.words, bank: store.bank, settings: store.settings)
+        let upcoming = WidgetSchedule.entries(words: store.words, bank: store.bank, source: store.wordSource,
+                                              settings: store.settings)
             .compactMap(\.word)
         let todo = WidgetPhonetic.wordsToFetch(upcoming: upcoming, cache: store.phonetics,
                                                meanings: store.meaningsVi, limit: limit)
@@ -219,10 +236,6 @@ enum WidgetSync {
         let changed = words != store.bank
         store.saveBank(words, level: skill)
         guard changed else { return }
-        // bankPool() cũng tôn trọng settings (includeBank + không trộn khi "Tự chọn").
-        let shown = WidgetSchedule.bankPool(words, words: store.words, settings: store.settings)
-        if !shown.isEmpty {
-            Task { await APIClient.shared.logWidgetShown(items: shown) }
-        }
+        await MainActor.run { WidgetScheduleUpload.schedule() }
     }
 }

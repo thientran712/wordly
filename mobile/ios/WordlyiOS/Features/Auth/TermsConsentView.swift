@@ -12,8 +12,9 @@ enum LegalLinks {
     }
 }
 
-/// Bọc nội dung sau đăng nhập: người chưa đồng ý phiên bản Điều khoản hiện tại
-/// thấy màn đồng ý trước. Người đã đồng ý trên máy này vào thẳng, kiểm lại ở nền.
+/// Bọc nội dung sau đăng nhập: chưa ghi đồng ý → tự ghi (đăng nhập là đồng ý);
+/// Điều khoản lên phiên bản mới → màn đồng ý lại một lần. Đã đồng ý trên máy này
+/// thì vào thẳng, kiểm lại ở nền.
 /// Lỗi mạng → cho vào (không khoá người dùng vì mạng), lần mở sau kiểm lại.
 struct TermsGate<Content: View>: View {
     @EnvironmentObject private var authManager: AuthManager
@@ -52,24 +53,23 @@ struct TermsGate<Content: View>: View {
             phase = .ok
             return
         }
-        switch TermsConsent.decision(response, userEmail: authManager.currentUser?.email) {
+        switch TermsConsent.decision(response) {
         case .ok:
             accepted()
         case .ask(let version):
             phase = .ask(version)
         case .acceptSilently(let version):
-            // Đã tick ô đồng ý lúc đăng ký email → ghi lên server, không hỏi lại
+            // Đăng nhập = đồng ý → ghi lên server. Lỗi mạng → vẫn cho vào, lần mở sau ghi lại
             if (try? await APIClient.shared.acceptTerms(version: version)) != nil {
-                TermsConsent.PendingStore().clear()
                 accepted()
             } else {
-                phase = .ask(version)
+                phase = .ok
             }
         }
     }
 }
 
-/// Màn đồng ý Điều khoản + Chính sách (Nghị định 13/2023: người dùng tự bấm đồng ý).
+/// Màn đồng ý lại khi Điều khoản / Chính sách lên phiên bản mới.
 struct TermsConsentView: View {
     let version: Int
     let onAccepted: () -> Void
@@ -90,12 +90,12 @@ struct TermsConsentView: View {
                         WordlyLogo(size: 56)
                             .frame(maxWidth: .infinity)
                             .padding(.top, 24)
-                        Text("Điều khoản sử dụng Wordly")
+                        Text("Wordly cập nhật Điều khoản")
                             .font(WordlyFonts.display(28))
                             .foregroundStyle(WordlyColors.ink(scheme: scheme))
                             .frame(maxWidth: .infinity)
                             .multilineTextAlignment(.center)
-                        Text("Trước khi bắt đầu, bạn đọc và đồng ý với cách Wordly lưu dữ liệu của bạn:")
+                        Text("Điều khoản sử dụng và Chính sách quyền riêng tư vừa được cập nhật. Đọc và đồng ý để dùng tiếp:")
                             .font(WordlyFonts.body(15))
                             .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
 
@@ -128,7 +128,7 @@ struct TermsConsentView: View {
                     Button { Task { await accept() } } label: {
                         HStack(spacing: 8) {
                             if isSaving { ProgressView().tint(WordlyColors.onElectric).scaleEffect(0.85) }
-                            Text("Đồng ý và bắt đầu").font(WordlyFonts.body(16, weight: .bold))
+                            Text("Đồng ý và tiếp tục").font(WordlyFonts.body(16, weight: .bold))
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
