@@ -94,3 +94,15 @@ Tính năng Pro **luôn hiện**, không ẩn:
 ## Ngoài phạm vi
 
 Alex / luyện nói; gói trọn đời; gói gia đình; đo lường analytics bên thứ ba; Android.
+
+## 8. Hợp đồng API (app ↔ server)
+
+- App mới gửi `X-Wordly-Build: <số build>` mọi request.
+- `GET /api/app-config` (công khai) → `{"min_build": 21}` (env `APP_MIN_BUILD`, mặc định 0).
+- `GET /api/billing/status` → `{"pro": bool, "expires_at": ISO|null, "source": "app_store"|"gift"|null, "in_grace": bool, "enforced": bool, "limits": {"saved_words": {"used": n, "limit": 30|null}, "advanced_translate": {"used": n, "limit": 5|null}, "dictionary": {"used": n, "limit": 5|null}, "push_slots": {"limit": 1|10}}}` — `limit: null` = không giới hạn. `BILLING_ENFORCE` tắt → `enforced: false`, mọi `limit: null` (push_slots 10).
+- `POST /api/billing/sync` `{"signed_transaction": "<JWS StoreKit 2>"}` → giống status. Sai chữ ký / bundle khác / `appAccountToken` khác user → 400.
+- `POST /api/billing/notifications` (công khai) `{"signedPayload": "..."}` → 200 (App Store Server Notifications V2).
+- Chạm giới hạn → **402** `{"error": "<câu tiếng Việt>", "code": "limit_saved_words"|"limit_advanced_translate"|"limit_dictionary"|"limit_push_slots", "limit": n}`.
+- Build cũ / thiếu header khi đang chặn, ở tính năng có giới hạn → **426** `{"error": "Phiên bản Wordly này đã cũ, hãy cập nhật trên App Store để tiếp tục.", "code": "update_required"}`.
+- Tra từ không tính lượt khi từ (đã chuẩn hoá) thuộc: `dictionary_lookups` của người đó, từ đã lưu, kho từ (`words`), hoặc `suggestion_log` của người đó (từ đã hiện trên widget/thông báo). Không cần cờ từ app.
+- Dịch tính lượt "nâng cao" khi: câu (> 3 chữ, đi Gemini), ảnh, giọng nói — chỉ khi thành công.
