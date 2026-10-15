@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Chứng chỉ gốc Apple đọc bằng fs lúc chạy (lib/billing/apple-verifier.js) —
+  // tracing không tự thấy file .cer nên phải khai, không thì bản standalone
+  // thiếu chứng chỉ và mọi giao dịch đều bị từ chối.
+  outputFileTracingIncludes: {
+    "/api/billing/*": ["./src/lib/billing/certs/*.cer"],
+  },
   async headers() {
     return [
       {

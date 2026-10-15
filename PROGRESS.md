@@ -3,6 +3,17 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 16/10/2026 — Wordly Pro: phần server (nhánh `feat/pro-backend`, CHƯA lên production)
+
+Spec `2026-10-16-pro-paywall-design.md` §1, §3, §4, §8. iOS làm song song. **`BILLING_ENFORCE` mặc định TẮT** → deploy server không đổi hành vi app hiện tại.
+
+- **Migration `20261016000200_pro_billing`** — CHỈ chạy local, **chưa chạy production (cần chủ dự án đồng ý)**. Bảng `entitlements` (chỉ đọc của mình; ghi qua `apply_entitlement` service role — chặn chuyển gói sang tài khoản khác, bỏ sự kiện Apple tới trễ), `usage_daily`, `dictionary_lookups`, `translate_quota_keys` (gộp lượt theo câu đang soạn); hàm `consume_quota` (nguyên tử, ngày giờ VN, từ đã biết miễn phí, `p_quota_key`: 1 lượt/key/ngày, 40 lượt gọi/key), `usage_today`, `is_pro`, `is_known_word`; `due_push_slots` thêm `p_free_one_slot` (mặc định như cũ). Thêm cột ngoài spec: `grace_expires_at`, `auto_renew`, `last_event_at`.
+- `lib/billing/`: `plan.js` (giới hạn, isPro gồm ân hạn, cổng build 426), `enforce.js` (chặn từng route, Pro không gọi hàm hạn mức, lỗi/huỷ không trừ lượt, DB billing lỗi → cho qua), `store.js`, `apple.js` + `apple-verifier.js` (thư viện chính thức `@apple/app-store-server-library` 3.1.0, chứng chỉ gốc Apple trong `certs/`), `status.js`.
+- API mới: `POST /api/billing/sync`, `POST /api/billing/notifications` (công khai), `GET /api/billing/status` (+ `has_active_subscription`), `GET /api/app-config` (công khai). Chặn khi bật: dịch câu/giọng nói (`input: "voice"`, `quota_key`)/ảnh, tra từ (`purpose: "widget"` chỉ cache), lưu từ (POST/PATCH/khôi phục), thêm/bật khung nhắc; cron chỉ gửi khung sớm nhất cho người miễn phí.
+- Bằng chứng: `npm test` (có RLS, Supabase local) xanh, `test:rls` xanh, eslint sạch, `next build` (Turbopack) "Compiled successfully", chứng chỉ có trong `.next/standalone`. **Chưa thử với giao dịch Sandbox thật của Apple** (chỉ verifier giả + JWS giả mạo bị chặn).
+
+**Chờ quyết định:** chạy migration `20261016000200_pro_billing` lên production + deploy web; đặt env (`BILLING_ENFORCE` để trống tới khi bản app có paywall lên store, `APP_MIN_BUILD`); khai URL notifications trên App Store Connect.
+
 ### 16/10/2026 — Nguồn từ chung + lịch widget: phần server (nhánh `feat/word-source-backend`, CHƯA lên production)
 
 Spec `2026-10-15-shared-word-source-design.md` §2.2 (JS), §2.3, §3, §4, §7. iOS làm song song ở nhánh khác.
