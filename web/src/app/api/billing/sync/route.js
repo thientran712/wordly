@@ -39,6 +39,6 @@ export async function POST(request) {
 
   // Trả trạng thái mới (hình như GET /api/billing/status)
   const deps = createBillingDeps({ supabase: await createClient(), sharedSupabase: shared, userId: user.id });
-  const status = await loadBillingStatus({ deps, enforced: billingConfig().enforced });
+  const status = await loadBillingStatus({ deps, enforced: billingConfig(process.env, user.id).enforced });
   return Response.json(status, { headers: { "Cache-Control": "no-store" } });
 }

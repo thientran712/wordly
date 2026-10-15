@@ -145,3 +145,13 @@ test("limitBody / UPDATE_REQUIRED_BODY đúng hợp đồng §8", () => {
     code: "update_required",
   });
 });
+
+test("billingEnforced: BILLING_ENFORCE_TEST_USERS chỉ bật chặn cho tài khoản test, người khác như cũ", () => {
+  const A = "11111111-1111-4111-8111-111111111111";
+  const env = { BILLING_ENFORCE_TEST_USERS: ` ${A.toUpperCase()} , not-a-uuid ` };
+  assert.equal(billingEnforced(env, A), true, "tài khoản test bị áp giới hạn như thật");
+  assert.equal(billingEnforced(env, "22222222-2222-4222-8222-222222222222"), false, "người dùng thật không bị ảnh hưởng");
+  assert.equal(billingEnforced(env), false, "không biết người dùng (cron, khách) → tắt");
+  assert.equal(billingEnforced(env, "not-a-uuid"), false, "chỉ nhận UUID");
+  assert.equal(billingEnforced({ BILLING_ENFORCE: "1" }, "22222222-2222-4222-8222-222222222222"), true, "bật chung vẫn áp cho mọi người");
+});
