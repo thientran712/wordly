@@ -9,6 +9,8 @@ import { checkRateLimitDb } from "@/lib/security/rate-limit-db";
 import { createSharedClient } from "@/lib/supabase/shared";
 import { transcribeAudio } from "@/lib/ai/ai-models";
 import { validateVoiceUpload } from "@/lib/translate/image-validation";
+import { withAdvancedQuota } from "@/lib/billing/enforce";
+import { billingForRequest } from "@/lib/billing/request";
 
 const GUEST_LIMIT = 5;
 const USER_LIMIT = 15;
@@ -31,13 +33,18 @@ export async function POST(request) {
   const { error: validationError } = validateVoiceUpload(file);
   if (validationError) return Response.json({ error: validationError }, { status: 400 });
 
-  try {
-    const { text } = await transcribeAudio(file, { language: "en" });
-    if (!text?.trim()) {
-      return Response.json({ error: "Không nghe được giọng nói, thử lại nhé" }, { status: 422 });
+  // Wordly Pro: giọng nói là lượt "nâng cao", chỉ trừ khi nghe ra chữ.
+  const run = async () => {
+    try {
+      const { text } = await transcribeAudio(file, { language: "en" });
+      if (!text?.trim()) {
+        return Response.json({ error: "Không nghe được giọng nói, thử lại nhé" }, { status: 422 });
+      }
+      return Response.json({ text });
+    } catch (e) {
+      return Response.json({ error: `Không chuyển được giọng nói thành văn bản: ${e.message}` }, { status: 502 });
     }
-    return Response.json({ text });
-  } catch (e) {
-    return Response.json({ error: `Không chuyển được giọng nói thành văn bản: ${e.message}` }, { status: 502 });
-  }
+  };
+  const billing = await billingForRequest(request, user);
+  return withAdvancedQuota({ ...billing, user, kind: "voice", signal: request.signal }, run);
 }

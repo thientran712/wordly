@@ -143,6 +143,70 @@ describe("Wordly Pro: RLS + hàm hạn mức", { skip: skip ? `Bỏ qua: ${skip}
     assert.equal((await b.client.rpc("usage_today", { p_word_key: "gone" })).data.known_word, false);
   });
 
+  // App dịch trực tiếp khi gõ/nói (debounce 300ms) → một câu = nhiều request.
+  // quota_key (UUID mỗi lần soạn) gộp lại: tối đa 1 lượt / key / ngày, mỗi key
+  // phủ 40 lượt gọi thành công, lượt thứ 41 trừ lượt mới.
+  test("consume_quota quota_key: một câu nhiều request chỉ trừ 1 lượt, 40 lượt gọi thì sang lượt mới", async () => {
+    const u = await createTestUser("proKey");
+    try {
+      const key = crypto.randomUUID();
+      const c = (k, limit = 5) => u.client.rpc("consume_quota", { p_kind: "advanced_translate", p_limit: limit, p_quota_key: k });
+      const first = (await c(key)).data;
+      assert.deepEqual([first.allowed, first.used, first.charged], [true, 1, true]);
+      for (let i = 2; i <= 40; i++) {
+        const r = (await c(key)).data;
+        assert.deepEqual([r.allowed, r.used, r.charged], [true, 1, false], `lượt gọi ${i}`);
+      }
+      const rollover = (await c(key)).data;
+      assert.deepEqual([rollover.allowed, rollover.used, rollover.charged], [true, 2, true], "lượt gọi 41 trừ lượt mới");
+      assert.equal((await c(key)).data.charged, false, "đếm lại từ đầu sau khi sang lượt mới");
+      const other = (await c(crypto.randomUUID())).data;
+      assert.deepEqual([other.used, other.charged], [3, true], "key khác = câu khác");
+      const { data: u1 } = await u.client.rpc("usage_today", { p_quota_key: key });
+      assert.equal(u1.key_active, true);
+      assert.equal((await u.client.rpc("usage_today", { p_quota_key: crypto.randomUUID() })).data.key_active, false);
+    } finally {
+      await cleanupUsers(u);
+    }
+  });
+
+  test("consume_quota quota_key: đã hết lượt nhưng key đã trừ hôm nay → vẫn cho; key mới → chặn", async () => {
+    const u = await createTestUser("proKeyLimit");
+    try {
+      const key = crypto.randomUUID();
+      const c = (k) => u.client.rpc("consume_quota", { p_kind: "advanced_translate", p_limit: 2, p_quota_key: k });
+      assert.equal((await c(key)).data.allowed, true);
+      assert.equal((await c(crypto.randomUUID())).data.allowed, true);
+      const same = (await c(key)).data;
+      assert.deepEqual([same.allowed, same.used, same.charged], [true, 2, false], "giữa câu không bị chặn");
+      const fresh = crypto.randomUUID();
+      const blocked = (await c(fresh)).data;
+      assert.deepEqual([blocked.allowed, blocked.used], [false, 2]);
+      assert.equal((await u.client.rpc("usage_today", { p_quota_key: fresh })).data.key_active, false, "key bị từ chối không được ghi");
+      // Người khác không mượn được key của u
+      const theft = (await b.client.rpc("usage_today", { p_quota_key: key })).data;
+      assert.equal(theft.key_active, false);
+      assert.deepEqual((await b.client.from("translate_quota_keys").select("quota_key").eq("user_id", u.id)).data, []);
+      assert.ok((await u.client.from("translate_quota_keys").insert({ user_id: u.id, day: "2026-10-16", quota_key: crypto.randomUUID(), calls: 0 })).error, "không tự ghi key");
+    } finally {
+      await cleanupUsers(u);
+    }
+  });
+
+  test("consume_quota quota_key đồng thời: cùng key chỉ trừ 1 lượt", async () => {
+    const u = await createTestUser("proKeyRace");
+    try {
+      const key = crypto.randomUUID();
+      const all = await Promise.all(Array.from({ length: 6 }, () =>
+        u.client.rpc("consume_quota", { p_kind: "advanced_translate", p_limit: 5, p_quota_key: key })));
+      assert.ok(all.every((r) => !r.error && r.data.allowed), all.find((r) => r.error)?.error?.message);
+      assert.equal(all.filter((r) => r.data.charged).length, 1);
+      assert.equal((await u.client.rpc("usage_today", {})).data.advanced_translate, 1);
+    } finally {
+      await cleanupUsers(u);
+    }
+  });
+
   test("due_push_slots(p_free_one_slot): miễn phí chỉ khung sớm nhất, Pro gửi đủ", async () => {
     const u = await createTestUser("proPush");
     try {

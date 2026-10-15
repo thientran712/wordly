@@ -58,6 +58,24 @@ ALTER TABLE public.dictionary_lookups ENABLE ROW LEVEL SECURITY;
 CREATE POLICY dictionary_lookups_select_own ON public.dictionary_lookups
   FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
+-- ── Gộp lượt dịch theo câu đang soạn (quota_key) ─────────────────────────────
+-- App dịch trực tiếp khi gõ/nói (debounce 300ms): một câu = nhiều request.
+-- Trừ mỗi request thì một câu đốt hết 5 lượt. App gửi quota_key (UUID mỗi lần
+-- soạn) → tối đa 1 lượt / (người, ngày VN, key); một key phủ tối đa 40 lượt
+-- gọi thành công (chống dùng một key mãi), lượt thứ 41 trừ lượt mới.
+CREATE TABLE public.translate_quota_keys (
+  user_id   uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  day       date NOT NULL,
+  quota_key uuid NOT NULL,
+  calls     integer NOT NULL DEFAULT 0 CHECK (calls >= 0),
+  PRIMARY KEY (user_id, day, quota_key)
+);
+ALTER TABLE public.translate_quota_keys ENABLE ROW LEVEL SECURITY;
+CREATE POLICY translate_quota_keys_select_own ON public.translate_quota_keys
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
+-- Không policy ghi: chỉ consume_quota ghi. Dòng ngày cũ vô hại (vài chục
+-- byte/câu); dọn sau nếu cần.
+
 -- Tra "từ đã biết" so khớp lower(word) trên kho từ — không có index thì mỗi
 -- lượt tra quét cả bảng words.
 CREATE INDEX IF NOT EXISTS words_lower_word_idx ON public.words (lower(word));
@@ -104,13 +122,18 @@ GRANT EXECUTE ON FUNCTION public.is_known_word(uuid, text) TO service_role;
 -- thời không thể cùng đọc ra số cũ rồi cùng vượt giới hạn.
 -- p_limit NULL = không giới hạn (vẫn đếm). Gọi SAU khi tính năng thành công
 -- (lỗi không trừ lượt) — route quyết định, hàm này chỉ đếm.
-CREATE FUNCTION public.consume_quota(p_kind text, p_limit int, p_word_key text DEFAULT NULL)
+-- p_quota_key (chỉ advanced_translate): xem bảng translate_quota_keys.
+-- Trả { allowed, used, remaining, free, charged }.
+CREATE FUNCTION public.consume_quota(p_kind text, p_limit int, p_word_key text DEFAULT NULL, p_quota_key uuid DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_catalog AS $$
 DECLARE
-  v_uid  uuid := auth.uid();
-  v_day  date := (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date;
-  v_key  text := NULLIF(lower(btrim(p_word_key)), '');
-  v_used int;
+  v_uid      uuid := auth.uid();
+  v_day      date := (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date;
+  v_key      text := NULLIF(lower(btrim(p_word_key)), '');
+  v_qkey     uuid := CASE WHEN p_kind = 'advanced_translate' THEN p_quota_key END;
+  v_used     int;
+  v_calls    int;
+  v_inserted boolean;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
   IF p_kind IS NULL OR p_kind NOT IN ('advanced_translate', 'dictionary') THEN RAISE EXCEPTION 'invalid kind'; END IF;
@@ -122,8 +145,22 @@ BEGIN
 
   -- Từ đã biết: không trừ lượt
   IF p_kind = 'dictionary' AND is_known_word(v_uid, v_key) THEN
-    RETURN jsonb_build_object('allowed', true, 'used', v_used, 'free', true,
+    RETURN jsonb_build_object('allowed', true, 'used', v_used, 'free', true, 'charged', false,
       'remaining', CASE WHEN p_limit IS NULL THEN NULL ELSE GREATEST(p_limit - v_used, 0) END);
+  END IF;
+
+  -- Câu đang soạn đã trừ hôm nay và còn trong 40 lượt gọi → không trừ thêm.
+  -- INSERT giữ khoá dòng key: các request đồng thời cùng key xếp hàng ở đây
+  -- nên chỉ một request trừ lượt.
+  IF v_qkey IS NOT NULL THEN
+    INSERT INTO translate_quota_keys AS k (user_id, day, quota_key, calls) VALUES (v_uid, v_day, v_qkey, 1)
+    ON CONFLICT (user_id, day, quota_key) DO UPDATE SET calls = k.calls + 1 WHERE k.calls < 40
+    RETURNING k.calls, (k.xmax = 0) INTO v_calls, v_inserted;
+    IF v_calls IS NOT NULL AND NOT v_inserted THEN
+      RETURN jsonb_build_object('allowed', true, 'used', v_used, 'free', false, 'charged', false,
+        'remaining', CASE WHEN p_limit IS NULL THEN NULL ELSE GREATEST(p_limit - v_used, 0) END);
+    END IF;
+    -- Key mới (vừa chèn) hoặc đã đủ 40 lượt gọi → trừ một lượt mới bên dưới
   END IF;
 
   IF p_limit IS NOT NULL AND p_limit = 0 THEN
@@ -136,22 +173,32 @@ BEGIN
   END IF;
 
   IF v_used IS NULL THEN
+    -- Hết lượt: key mới không được ghi (lần sau vẫn là "key mới" → vẫn chặn)
+    IF v_qkey IS NOT NULL AND v_inserted THEN
+      DELETE FROM translate_quota_keys WHERE user_id = v_uid AND day = v_day AND quota_key = v_qkey;
+    END IF;
     SELECT u.count INTO v_used FROM usage_daily u WHERE u.user_id = v_uid AND u.day = v_day AND u.kind = p_kind;
-    RETURN jsonb_build_object('allowed', false, 'used', COALESCE(v_used, 0), 'remaining', 0, 'free', false);
+    RETURN jsonb_build_object('allowed', false, 'used', COALESCE(v_used, 0), 'remaining', 0, 'free', false, 'charged', false);
   END IF;
 
+  -- Key đã đủ 40 lượt gọi vừa được trừ lượt mới → đếm lại từ 1
+  IF v_qkey IS NOT NULL AND v_calls IS NULL THEN
+    UPDATE translate_quota_keys SET calls = 1 WHERE user_id = v_uid AND day = v_day AND quota_key = v_qkey;
+  END IF;
   IF p_kind = 'dictionary' AND v_key IS NOT NULL THEN
     INSERT INTO dictionary_lookups (user_id, word_key) VALUES (v_uid, v_key) ON CONFLICT DO NOTHING;
   END IF;
-  RETURN jsonb_build_object('allowed', true, 'used', v_used, 'free', false,
+  RETURN jsonb_build_object('allowed', true, 'used', v_used, 'free', false, 'charged', true,
     'remaining', CASE WHEN p_limit IS NULL THEN NULL ELSE GREATEST(p_limit - v_used, 0) END);
 END $$;
-REVOKE ALL ON FUNCTION public.consume_quota(text, int, text) FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.consume_quota(text, int, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.consume_quota(text, int, text, uuid) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.consume_quota(text, int, text, uuid) TO authenticated;
 
--- Đọc lượt đã dùng hôm nay (giờ VN) + từ này đã biết chưa — route kiểm TRƯỚC
--- khi gọi AI (hết lượt thì không đốt tiền AI), /api/billing/status hiện bộ đếm.
-CREATE FUNCTION public.usage_today(p_word_key text DEFAULT NULL)
+-- Đọc lượt đã dùng hôm nay (giờ VN) + từ này đã biết chưa + câu đang soạn đã
+-- trừ lượt chưa (key_active) — route kiểm TRƯỚC khi gọi AI (hết lượt thì
+-- không đốt tiền AI, nhưng câu đã trừ thì không chặn giữa chừng),
+-- /api/billing/status hiện bộ đếm.
+CREATE FUNCTION public.usage_today(p_word_key text DEFAULT NULL, p_quota_key uuid DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, pg_catalog AS $$
 DECLARE
   v_uid uuid := auth.uid();
@@ -163,11 +210,14 @@ BEGIN
     'day', v_day,
     'advanced_translate', COALESCE((SELECT count FROM usage_daily WHERE user_id = v_uid AND day = v_day AND kind = 'advanced_translate'), 0),
     'dictionary', COALESCE((SELECT count FROM usage_daily WHERE user_id = v_uid AND day = v_day AND kind = 'dictionary'), 0),
-    'known_word', CASE WHEN v_key IS NULL THEN NULL ELSE is_known_word(v_uid, v_key) END
+    'known_word', CASE WHEN v_key IS NULL THEN NULL ELSE is_known_word(v_uid, v_key) END,
+    'key_active', CASE WHEN p_quota_key IS NULL THEN NULL ELSE EXISTS (
+      SELECT 1 FROM translate_quota_keys k
+      WHERE k.user_id = v_uid AND k.day = v_day AND k.quota_key = p_quota_key AND k.calls < 40) END
   );
 END $$;
-REVOKE ALL ON FUNCTION public.usage_today(text) FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.usage_today(text) TO authenticated;
+REVOKE ALL ON FUNCTION public.usage_today(text, uuid) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.usage_today(text, uuid) TO authenticated;
 
 -- ── Ghi quyền Pro (chỉ service role) ─────────────────────────────────────────
 -- Trả 'applied' | 'stale' (sự kiện cũ hơn cái đã áp dụng) | 'other_account'
