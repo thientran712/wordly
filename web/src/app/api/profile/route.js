@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUserFast } from "@/lib/auth/get-user-fast";
+import { CURRENT_TERMS_VERSION } from "@/lib/legal/terms";
 
 export async function GET() {
   const user = await getUserFast();
@@ -25,6 +26,8 @@ export async function GET() {
     profile: data,
     email: user.email,
     auth_provider: user.provider || 'email',
+    // Phiên bản điều khoản cần đồng ý — app so với profile.terms_version
+    terms_current_version: CURRENT_TERMS_VERSION,
   });
 }
 

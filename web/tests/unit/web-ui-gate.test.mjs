@@ -18,7 +18,7 @@ test("đang bật → mọi trang đi như cũ", () => {
 
 test("đang tắt → API, privacy, support, auth, reset-password, email-templates vẫn chạy", () => {
   for (const p of ["/api/translate", "/api/push/devices", "/api/cron/send-emails", "/api/health",
-    "/privacy", "/support", "/auth/confirm", "/auth/callback", "/reset-password",
+    "/privacy", "/support", "/terms", "/auth/confirm", "/auth/callback", "/reset-password",
     "/email-templates/recovery.html", MOBILE_ONLY_PATH]) {
     assert.equal(webUiGate(p, false), "allow", p);
   }
@@ -32,7 +32,7 @@ test("đang tắt → các trang còn lại về trang 'có trên iPhone'", () =
 });
 
 test("không lọt qua bằng tiền tố giả: /privacy-x, /apix, /supportive", () => {
-  for (const p of ["/privacy-x", "/apix", "/supportive", "/auth", "/reset-password-old"]) {
+  for (const p of ["/privacy-x", "/apix", "/supportive", "/terms-old", "/auth", "/reset-password-old"]) {
     assert.equal(webUiGate(p, false), "mobile-only", p);
   }
 });
@@ -43,4 +43,10 @@ test("middleware dùng cổng web-ui-gate trước mọi bước khác", async (
   const body = src.slice(src.indexOf("export async function middleware"));
   assert.ok(body.includes("webUiGate("), "middleware chưa gọi webUiGate");
   assert.ok(body.indexOf("webUiGate(") < body.indexOf("createServerClient("), "phải kiểm cổng trước khi tạo client Supabase");
+});
+
+test("middleware: /terms là trang công khai (không cần đăng nhập) như /privacy", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const src = await readFile(new URL("../../src/middleware.js", import.meta.url), "utf8");
+  assert.match(src, /path === "\/terms"/);
 });
