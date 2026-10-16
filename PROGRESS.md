@@ -25,6 +25,12 @@
   - tự tải lại 30 giây, có khối "Hôm nay (đến giờ)";
   - watchdog chạy 5 phút/lần;
   - đã kiểm: không mật khẩu / sai mật khẩu trả 401, đúng mật khẩu trả 200.
+  - **Giao diện dashboard (PR #59, migration `20261016000500_admin_dashboard` ĐÃ CHẠY production):**
+    - khối server lên đầu, biểu đồ ổ đĩa / RAM 7 ngày (`server_status_log`, giữ 8 ngày);
+    - người dùng hoạt động và đăng ký mới 30 ngày;
+    - phễu kích hoạt, cách đăng ký, điểm quiz, sức khoẻ nhắc ôn;
+    - top từ (chỉ từ ≥ 2 người lưu), MRR ước tính.
+    - SVG thuần, không thư viện ngoài.
 - **localex (staging) và pehub (PRODUCTION) ĐÃ DỪNG** theo yêu cầu chủ dự án (`docker stop`, giữ dữ liệu, không tự bật lại khi khởi động máy).
 
 ### 16/10/2026 — THU PHÍ WORDLY PRO ĐÃ BẬT trên production
