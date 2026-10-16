@@ -3,6 +3,24 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 16/10/2026 — Theo dõi server + thống kê sử dụng ĐÃ CHẠY production
+
+- **Dọn ổ đĩa:** từ 79% xuống 35% (xoá 37,6 GB bộ nhớ đệm build). Cron 04:00 mỗi đêm tự dọn phần cũ hơn 7 ngày.
+- **Watchdog** (`infra/vps/web/watchdog.sh`, cron 15 phút/lần):
+  - kiểm ổ đĩa, RAM, health web, container Supabase, cron nhắc ôn, độ mới bản sao lưu;
+  - báo email `huythien7122@gmail.com` qua Resend, nhắc lại mỗi 6 giờ, báo khi đã ổn;
+  - gửi tình trạng lên `POST /api/admin/server-status`.
+- **Thống kê** (spec `2026-10-16-admin-stats-design.md`, PR #54, migration `20261016000300_admin_stats` ĐÃ CHẠY production):
+  - `touch_activity` ghi ngày mở app qua `/api/billing/status`;
+  - `admin_stats()` chỉ service role;
+  - trang `/api/admin/stats?t=…` dùng link ký HMAC hạn 7 ngày;
+  - email báo cáo 08:00 VN (`daily-report-cron.sh`, `ADMIN_REPORT_EMAIL`).
+  - DAU, giữ chân và build chỉ có từ 16/10.
+- **Chép sao lưu lên R2** (`infra/vps/supabase/backup-offsite.sh`, cron 03:15): CHỜ chủ dự án tạo bucket riêng tư `wordly-backups` + token. Không dùng bucket âm thanh (công khai).
+- Chờ chủ dự án:
+  - UptimeRobot theo dõi `/api/health`;
+  - quyết định tắt localex (staging) / pehub (PRODUCTION) trên cùng VPS.
+
 ### 16/10/2026 — THU PHÍ WORDLY PRO ĐÃ BẬT trên production
 
 - 1.0.1 (22) và 2 gói thuê bao đã được Apple duyệt và phát hành. Chủ dự án đã cập nhật từ App Store và thấy bảng giá.
