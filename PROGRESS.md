@@ -16,10 +16,11 @@
   - trang `/api/admin/stats?t=…` dùng link ký HMAC hạn 7 ngày;
   - email báo cáo 08:00 VN (`daily-report-cron.sh`, `ADMIN_REPORT_EMAIL`).
   - DAU, giữ chân và build chỉ có từ 16/10.
-- **Chép sao lưu lên R2** (`infra/vps/supabase/backup-offsite.sh`, cron 03:15): CHỜ chủ dự án tạo bucket riêng tư `wordly-backups` + token. Không dùng bucket âm thanh (công khai).
-- Chờ chủ dự án:
-  - UptimeRobot theo dõi `/api/health`;
-  - quyết định tắt localex (staging) / pehub (PRODUCTION) trên cùng VPS.
+- **Chép sao lưu lên R2** (`infra/vps/supabase/backup-offsite.sh`, cron 03:15) ĐÃ CHẠY:
+  - bucket riêng tư `wordly-backups`, khoá `BACKUP_R2_*` trong `.env` web (token chỉ cho bucket này, giới hạn IP VPS);
+  - lần đầu chép `db-20261015.sql.gz` khớp byte; giữ 30 ngày.
+- **UptimeRobot** đã theo dõi `/api/health` 5 phút/lần, báo qua email.
+- **localex (staging) và pehub (PRODUCTION) ĐÃ DỪNG** theo yêu cầu chủ dự án (`docker stop`, giữ dữ liệu, không tự bật lại khi khởi động máy).
 
 ### 16/10/2026 — THU PHÍ WORDLY PRO ĐÃ BẬT trên production
 
