@@ -20,6 +20,11 @@
   - bucket riêng tư `wordly-backups`, khoá `BACKUP_R2_*` trong `.env` web (token chỉ cho bucket này, giới hạn IP VPS);
   - lần đầu chép `db-20261015.sql.gz` khớp byte; giữ 30 ngày.
 - **UptimeRobot** đã theo dõi `/api/health` 5 phút/lần, báo qua email.
+- **Trang cố định `https://app.wordly.skillproof.work/admin`** (PR #57, migration `20261016000400_admin_stats_today` ĐÃ CHẠY production):
+  - mật khẩu HTTP Basic `ADMIN_DASHBOARD_PASSWORD` trong `.env` web (16 ký tự, chủ dự án giữ);
+  - tự tải lại 30 giây, có khối "Hôm nay (đến giờ)";
+  - watchdog chạy 5 phút/lần;
+  - đã kiểm: không mật khẩu / sai mật khẩu trả 401, đúng mật khẩu trả 200.
 - **localex (staging) và pehub (PRODUCTION) ĐÃ DỪNG** theo yêu cầu chủ dự án (`docker stop`, giữ dữ liệu, không tự bật lại khi khởi động máy).
 
 ### 16/10/2026 — THU PHÍ WORDLY PRO ĐÃ BẬT trên production
