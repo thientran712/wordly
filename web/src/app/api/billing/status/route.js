@@ -6,13 +6,21 @@ import { createSharedClient } from "@/lib/supabase/shared";
 import { billingConfig } from "@/lib/billing/enforce";
 import { createBillingDeps } from "@/lib/billing/store";
 import { loadBillingStatus } from "@/lib/billing/status";
+import { buildFromHeader } from "@/lib/admin/activity";
 
-export async function GET() {
+export async function GET(request) {
   const user = await getUserFast();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const deps = createBillingDeps({ supabase: await createClient(), sharedSupabase: createSharedClient(), userId: user.id });
+  const supabase = await createClient();
+  // App gọi route này mỗi lần mở / quay lại app → ghi ngày hoạt động cho thống kê
+  // (spec 2026-10-16-admin-stats-design.md). Lỗi ghi không ảnh hưởng trạng thái gói.
+  const touch = supabase.rpc("touch_activity", { p_build: buildFromHeader(request?.headers?.get("x-wordly-build")) })
+    .then(({ error }) => { if (error) console.error("[billing/status] touch_activity", error.message); })
+    .catch((e) => console.error("[billing/status] touch_activity", e.message));
+  const deps = createBillingDeps({ supabase, sharedSupabase: createSharedClient(), userId: user.id });
   try {
     const status = await loadBillingStatus({ deps, enforced: billingConfig(process.env, user.id).enforced });
+    await touch;
     return Response.json(status, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("[billing/status]", e.message);

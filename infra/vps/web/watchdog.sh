@@ -104,4 +104,14 @@ Các sự cố trước đã hết:
 $(printf '%s\n' "$last" | sed 's/^/• /')" && date +%s > "$STATE_DIR/last_sent"
 fi
 printf '%s' "$current" > "$STATE_DIR/last"
+
+# Gửi tình trạng lên trang thống kê / email sáng (spec 2026-10-16-admin-stats-design.md).
+# Lỗi gửi không quan trọng — email báo động ở trên là kênh chính.
+if [ "${WATCHDOG_DRY_RUN:-0}" != "1" ]; then
+  secret=$(grep '^CRON_SECRET=' "$WEB/.env" | cut -d= -f2-)
+  printf '%s\n' "${problems[@]+"${problems[@]}"}" | jq -R . | jq -s --argjson d "$disk" --argjson m "$mem" \
+    '{disk_pct:$d, mem_mb:$m, problems: map(select(length > 0))}' |
+    curl -sf --max-time 10 -X POST "http://localhost:$port/api/admin/server-status" \
+      -H "Authorization: Bearer $secret" -H 'Content-Type: application/json' -d @- >/dev/null || true
+fi
 echo "$(date -Is) disk=${disk}% mem=${mem}MB problems=${#problems[@]}"
