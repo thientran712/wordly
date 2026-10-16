@@ -2,11 +2,11 @@
 // CHỈ TẮT — code trang web giữ nguyên; bật lại bằng WEB_UI_ENABLED=1 trên VPS.
 // Khi tắt vẫn chạy: API (backend app iOS + cron), trang app/App Store mở
 // (/privacy, /support, /terms), link trong email Auth (/auth/*, /reset-password) và mẫu
-// email GoTrue tải về (/email-templates/*). Trang khác → MOBILE_ONLY_PATH.
+// email GoTrue tải về (/email-templates/*), trang thống kê /admin (mật khẩu riêng). Trang khác → MOBILE_ONLY_PATH.
 
 export const MOBILE_ONLY_PATH = "/mobile-only";
 
-const EXACT = new Set(["/privacy", "/support", "/terms", "/reset-password", MOBILE_ONLY_PATH]);
+const EXACT = new Set(["/privacy", "/support", "/terms", "/reset-password", "/admin", MOBILE_ONLY_PATH]);
 const PREFIXES = ["/api/", "/auth/", "/email-templates/"];
 
 export function isWebUiEnabled(env = process.env) {

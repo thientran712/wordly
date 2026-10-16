@@ -68,6 +68,16 @@ describe("Thống kê: RLS + touch_activity + admin_stats", { skip: skip ? `Bỏ
     assert.ok(s.users.dau >= 1);
   });
 
+  test("admin_stats_today: số trong ngày (giờ VN), chỉ service role", async () => {
+    assert.ok((await a.client.rpc("admin_stats_today", {})).error, "người dùng không gọi được");
+    await a.client.rpc("touch_activity", { p_build: 22 });
+    const r = await admin.rpc("admin_stats_today", {});
+    assert.ok(!r.error, r.error?.message);
+    for (const k of ["new_users", "active", "saved", "quiz", "push_sent", "advanced_used", "dictionary_used"]) assert.equal(typeof r.data[k], "number", k);
+    assert.ok(r.data.active >= 1, "a vừa mở app hôm nay");
+    assert.ok(r.data.new_users >= 2, "a, b tạo hôm nay");
+  });
+
   test("xoá user → dữ liệu hoạt động sạch (cascade)", async () => {
     const c = await createTestUser("statsC");
     await c.client.rpc("touch_activity", { p_build: 22 });

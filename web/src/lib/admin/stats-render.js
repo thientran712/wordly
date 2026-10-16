@@ -8,8 +8,9 @@ export function pct(part, whole) {
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
-const vnTime = (iso) => iso
-  ? new Date(iso).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
+const vnTime = (iso, seconds = false) => iso
+  ? new Date(iso).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit",
+      ...(seconds ? { second: "2-digit" } : {}), day: "2-digit", month: "2-digit" })
   : "—";
 
 const proPaying = (pro) => (pro?.yearly || 0) + (pro?.monthly || 0);
@@ -61,14 +62,14 @@ const card = (title, rows) => `<section><h2>${esc(title)}</h2><table>${
 }</table></section>`;
 
 /** Trang /api/admin/stats — HTML tĩnh, không script, không tải gì bên ngoài. */
-export function renderStatsPage(s) {
+export function renderStatsPage(s, { refreshSeconds = 0 } = {}) {
   const u = s.users, f = s.features, l = s.limits_yesterday || {};
   const maxActive = Math.max(1, ...s.series.map((d) => Math.max(d.active, d.new_users)));
   const bars = s.series.map((d) => `<tr><td>${esc(d.day.slice(8, 10))}/${esc(d.day.slice(5, 7))}</td>
     <td><span class="bar a" style="width:${(d.active / maxActive) * 100}%"></span> ${d.active}</td>
     <td><span class="bar n" style="width:${(d.new_users / maxActive) * 100}%"></span> ${d.new_users}</td></tr>`).join("");
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">${refreshSeconds ? `<meta http-equiv="refresh" content="${Number(refreshSeconds)}">` : ""}
 <title>Thống kê Wordly</title><style>
 :root{--bg:#fff;--ink:#2b2b2b;--soft:#5e5e5e;--line:#e5e5e5;--green:#58cc02;--blue:#1cb0f6}
 @media (prefers-color-scheme:dark){:root{--bg:#131f24;--ink:#fff;--soft:#afafaf;--line:#2a3a42}}
@@ -80,7 +81,10 @@ td{padding:4px 0;border-bottom:1px solid var(--line)}td:last-child{text-align:ri
 .chart td:nth-child(2),.chart td:nth-child(3){width:40%;text-align:left}
 .bar{display:inline-block;height:10px;border-radius:5px;vertical-align:middle;min-width:2px}.a{background:var(--green)}.n{background:var(--blue)}
 </style></head><body>
-<h1>Thống kê Wordly</h1><p class="sub">Cập nhật ${esc(vnTime(s.generated_at))} (giờ Việt Nam)</p>
+<h1>Thống kê Wordly</h1><p class="sub">Cập nhật ${esc(vnTime(s.generated_at, true))} (giờ Việt Nam)${refreshSeconds ? ` · tự tải lại mỗi ${Number(refreshSeconds)} giây` : ""}</p>
+${s.today ? card("Hôm nay (đến giờ)", [["Đang dùng hôm nay", s.today.active], ["Người mới hôm nay", s.today.new_users],
+    ["Từ lưu mới", s.today.saved], ["Quiz", s.today.quiz], ["Nhắc ôn đã gửi", s.today.push_sent],
+    ["Lượt dịch nâng cao (bản miễn phí)", s.today.advanced_used], ["Lượt tra từ mới (bản miễn phí)", s.today.dictionary_used]]) : ""}
 ${card("Người dùng", [["Tổng tài khoản", u.total], ["Mới hôm qua / 7 ngày / 30 ngày", `${u.new_1d} / ${u.new_7d} / ${u.new_30d}`],
     ["Hoạt động hôm qua (DAU)", u.dau], ["Hoạt động 7 ngày (WAU)", u.wau], ["Hoạt động 30 ngày (MAU)", u.mau]])}
 <section><h2>14 ngày gần nhất</h2><table class="chart"><tr><td>Ngày</td><td>Hoạt động</td><td>Mới</td></tr>${bars}</table></section>

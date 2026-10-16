@@ -50,3 +50,14 @@ test("middleware: /terms là trang công khai (không cần đăng nhập) như 
   const src = await readFile(new URL("../../src/middleware.js", import.meta.url), "utf8");
   assert.match(src, /path === "\/terms"/);
 });
+
+test("/admin (trang thống kê chủ dự án) vẫn mở khi web tắt", () => {
+  assert.equal(webUiGate("/admin", false), "allow");
+  assert.equal(webUiGate("/admin/x", false), "mobile-only", "chỉ đúng /admin");
+});
+
+test("middleware: /admin không chuyển về /login (route tự kiểm mật khẩu)", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const src = await readFile(new URL("../../src/middleware.js", import.meta.url), "utf8");
+  assert.match(src, /path === "\/admin"/);
+});
