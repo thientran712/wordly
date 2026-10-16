@@ -13,6 +13,9 @@ const API = join(WEB, "src/app/api");
 const ADMIN_ALLOWED = {
   "account/route.js": "xoá user khỏi auth.users",
   "admin/email-status/route.js": "trang admin xem mọi người dùng",
+  "admin/stats/route.js": "thống kê tổng hợp cho chủ dự án (admin_stats chỉ service role); vào bằng link ký HMAC có hạn hoặc CRON_SECRET",
+  "admin/server-status/route.js": "watchdog VPS ghi server_status (CRON_SECRET), không có người dùng",
+  "cron/daily-report/route.js": "cron email báo cáo sáng cho chủ dự án (CRON_SECRET), đọc admin_stats",
   "billing/sync/route.js": "ghi entitlements qua apply_entitlement — người dùng không được tự cấp Pro (RLS chặn ghi); chỉ ghi SAU khi JWS Apple đã xác thực và appAccountToken = chính người gọi",
   "billing/notifications/route.js": "webhook App Store Server Notifications: không có người dùng đăng nhập, ghi entitlements sau khi xác thực JWS Apple",
   "cron/send-emails/route.js": "cron hệ thống (email + push), không có người dùng đăng nhập",
