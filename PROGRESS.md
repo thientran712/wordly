@@ -3,6 +3,24 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 16/10/2026 — THU PHÍ WORDLY PRO ĐÃ BẬT trên production
+
+- 1.0.1 (22) và 2 gói thuê bao đã được Apple duyệt và phát hành. Chủ dự án đã cập nhật từ App Store và thấy bảng giá.
+- `.env` production: `BILLING_ENFORCE=1`, `APP_MIN_BUILD=22`, đã xoá `BILLING_ENFORCE_TEST_USERS`. Bản sao lưu: `.env.bak-pre-enforce-202610160245`. Deploy `1fd8f3c` (container `wordly-blue-web-1`).
+- Đã kiểm tra:
+  - `/api/app-config` trả `{min_build:22}`.
+  - Khách dịch câu trả 401; dịch từ đơn vẫn 200.
+  - Thông báo Apple giả trả 400.
+- Muốn tắt nhanh: đặt `BILLING_ENFORCE=0` (hoặc dùng lại file sao lưu) rồi chạy lại `deploy-production.yml`.
+- Lưu ý: server nhận cả giao dịch Sandbox (TestFlight), nên tester TestFlight mua thử sẽ có Pro thật trên tài khoản của họ. Hiện chỉ có 1 dòng là `davidtran712@yopmail.com` (Sandbox, gói tháng, tự hết hạn).
+
+### 16/10/2026 — ĐÃ NỘP App Review: 1.0.1 (22) + Wordly Pro (2 gói + nhóm, 4 mục)
+
+- Build 22 = build 21 bỏ nút "Yêu cầu hoàn tiền" (chủ dự án quyết; PR #51).
+- Gói `wordly.pro.yearly` (1 Year Upfront) và `wordly.pro.monthly`. KHÔNG bật "Monthly with 12-Month Commitment", KHÔNG bật Family Sharing (server gắn gói với một tài khoản; bật rồi không tắt được).
+- Sau khi Apple duyệt và phát hành, chờ người dùng cập nhật vài ngày, rồi hỏi chủ dự án trước khi bật thu phí: `BILLING_ENFORCE=1`, `APP_MIN_BUILD=22`, xoá `BILLING_ENFORCE_TEST_USERS`, deploy lại, kiểm tra.
+- Mô tả / What's New trên App Store Connect: không dùng emoji (Apple báo ký tự không hợp lệ).
+
 ### 16/10/2026 — Wordly Pro: ĐÃ LÊN PRODUCTION (BILLING_ENFORCE tắt) + BUILD 21 ĐÃ UPLOAD TestFlight
 
 Đã kiểm tra sau deploy (commit a14259f, container `wordly-green-web-1`):
