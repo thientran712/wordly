@@ -16,12 +16,16 @@ export async function GET(request) {
       status: 401, headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   }
-  const { data, error } = await createAdminClient().rpc("admin_stats", {});
+  const admin = createAdminClient();
+  const [{ data, error }, today, extra] = await Promise.all([
+    admin.rpc("admin_stats", {}), admin.rpc("admin_stats_today", {}), admin.rpc("admin_stats_extra", {}),
+  ]);
   if (error) {
     console.error("[admin/stats]", error.message);
     return Response.json({ error: "Không tải được thống kê" }, { status: 500 });
   }
   const headers = { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow", "Referrer-Policy": "no-referrer" };
   if (bearer) return Response.json(data, { headers });
-  return new Response(renderStatsPage(data), { headers: { ...headers, "Content-Type": "text/html; charset=utf-8" } });
+  const page = renderStatsPage({ ...data, today: today.error ? null : today.data, extra: extra.error ? null : extra.data });
+  return new Response(page, { headers: { ...headers, "Content-Type": "text/html; charset=utf-8" } });
 }

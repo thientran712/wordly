@@ -78,6 +78,41 @@ describe("Thống kê: RLS + touch_activity + admin_stats", { skip: skip ? `Bỏ
     assert.ok(r.data.new_users >= 2, "a, b tạo hôm nay");
   });
 
+  test("admin_stats_extra + server_status_log: chỉ service role, đủ khối cho dashboard", async () => {
+    assert.ok((await a.client.rpc("admin_stats_extra", {})).error, "người dùng không gọi được");
+    assert.deepEqual((await a.client.from("server_status_log").select("*")).data ?? [], [], "người dùng không đọc được lịch sử server");
+    assert.ok((await a.client.from("server_status_log").insert({ disk_pct: 1, mem_mb: 1, problems_count: 0 })).error, "không ghi được");
+
+    const ins = await admin.from("server_status_log").insert({ disk_pct: 40, mem_mb: 1500, problems_count: 1 });
+    assert.ok(!ins.error, ins.error?.message);
+    const r = await admin.rpc("admin_stats_extra", {});
+    assert.ok(!r.error, r.error?.message);
+    const x = r.data;
+    for (const k of ["series30", "funnel", "providers", "quiz", "push_health", "top_words_7d", "server_history"]) assert.ok(k in x, `thiếu ${k}`);
+    assert.equal(x.series30.length, 30);
+    for (const k of ["day", "active", "new_users", "saved", "quiz", "push_sent", "limit_hits"]) assert.ok(k in x.series30[29], `series30 thiếu ${k}`);
+    for (const k of ["signed_up", "saved_1", "saved_5", "widget_30d", "push_enabled", "pro_paid"]) assert.equal(typeof x.funnel[k], "number", k);
+    assert.ok(x.funnel.signed_up >= 2);
+    assert.ok(Array.isArray(x.providers) && x.providers.length >= 1);
+    assert.ok(x.server_history.some((h) => h.disk_pct === 40), "có điểm vừa ghi");
+  });
+
+  test("top_words_7d: chỉ từ có ít nhất 2 người lưu (không lộ nội dung riêng một người)", async () => {
+    const word = `zzword${Date.now()}`;
+    const solo = `zzsolo${Date.now()}`;
+    const now = new Date().toISOString();
+    const rows = [
+      { user_id: a.id, source_text: word, translated_text: "x", direction: "EN→VI", is_saved: true, saved_at: now },
+      { user_id: b.id, source_text: word.toUpperCase(), translated_text: "x", direction: "EN→VI", is_saved: true, saved_at: now },
+      { user_id: a.id, source_text: solo, translated_text: "x", direction: "EN→VI", is_saved: true, saved_at: now },
+    ];
+    const w = await admin.from("translate_history").insert(rows);
+    assert.ok(!w.error, w.error?.message);
+    const top = (await admin.rpc("admin_stats_extra", {})).data.top_words_7d;
+    assert.ok(top.some((t) => t.word === word && t.users === 2), JSON.stringify(top));
+    assert.ok(!top.some((t) => t.word === solo), "từ chỉ một người lưu không được hiện");
+  });
+
   test("xoá user → dữ liệu hoạt động sạch (cascade)", async () => {
     const c = await createTestUser("statsC");
     await c.client.rpc("touch_activity", { p_build: 22 });
