@@ -22,6 +22,11 @@ const ADMIN_ALLOWED = {
   "widget/log-shown/route.js": "suggestion_log chỉ service role được ghi (spec 2026-10-10)",
 };
 
+// Route NGOÀI src/app/api được dùng service role (cũng phải có lý do).
+const ADMIN_ALLOWED_OUTSIDE_API = {
+  "admin/route.js": "trang thống kê chủ dự án /admin — đọc admin_stats (chỉ service role) sau khi kiểm mật khẩu ADMIN_DASHBOARD_PASSWORD",
+};
+
 function routeFiles(dir) {
   return readdirSync(dir).flatMap((name) => {
     const p = join(dir, name);
@@ -45,6 +50,16 @@ function fakeClient() {
     rpc: (fn) => { calls.push(["rpc", fn]); return { fn }; },
   };
 }
+
+test("route ngoài /api cũng chỉ dùng createAdminClient khi được cho phép", () => {
+  const APP = join(WEB, "src/app");
+  const offenders = routeFiles(APP)
+    .filter((f) => !f.startsWith(API))
+    .filter((f) => readFileSync(f, "utf8").includes("@/lib/supabase/admin"))
+    .map((f) => relative(APP, f))
+    .filter((rel) => !(rel in ADMIN_ALLOWED_OUTSIDE_API));
+  assert.deepEqual(offenders, []);
+});
 
 test("shared client cho đọc bảng dùng chung", () => {
   const raw = fakeClient();

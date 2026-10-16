@@ -93,3 +93,30 @@ test("buildFromHeader: X-Wordly-Build hợp lệ → số; thiếu / lạ → nu
   assert.equal(buildFromHeader(" 23 "), 23);
   for (const bad of [null, undefined, "", "abc", "22.5", "-1", "0", "9999999"]) assert.equal(buildFromHeader(bad), null, String(bad));
 });
+
+import { checkBasicAuth } from "../../src/lib/admin/basic-auth.js";
+
+const basic = (u, p) => `Basic ${Buffer.from(`${u}:${p}`).toString("base64")}`;
+
+test("trang /admin: mật khẩu đúng mới vào, server chưa đặt mật khẩu thì khoá hẳn", () => {
+  const pw = "mot-mat-khau-dai-123";
+  assert.equal(checkBasicAuth(basic("admin", pw), pw), true);
+  assert.equal(checkBasicAuth(basic("bat-ky", pw), pw), true, "tên đăng nhập không quan trọng");
+  assert.equal(checkBasicAuth(basic("admin", "sai"), pw), false);
+  assert.equal(checkBasicAuth(basic("admin", `${pw}x`), pw), false);
+  assert.equal(checkBasicAuth(basic("admin", pw), ""), false, "chưa cấu hình → không ai vào");
+  assert.equal(checkBasicAuth(basic("admin", pw), "ngan"), false, "mật khẩu server dưới 12 ký tự → khoá");
+  for (const bad of [null, "", "Bearer x", "Basic", "Basic !!!", `Basic ${Buffer.from("khongcohaicham").toString("base64")}`]) {
+    assert.equal(checkBasicAuth(bad, pw), false, String(bad));
+  }
+  assert.equal(checkBasicAuth(basic("a", "pa:ss:word-dai-12"), "pa:ss:word-dai-12"), true, "mật khẩu có dấu hai chấm");
+});
+
+test("trang thống kê: khối Hôm nay + tự tải lại khi bật", () => {
+  const withToday = { ...STATS, today: { new_users: 1, active: 5, saved: 7, quiz: 2, push_sent: 3, advanced_used: 9, dictionary_used: 4 } };
+  const html = renderStatsPage(withToday, { refreshSeconds: 30 });
+  assert.match(html, /<meta http-equiv="refresh" content="30">/);
+  for (const s of ["Hôm nay (đến giờ)", "Đang dùng hôm nay"]) assert.ok(html.includes(s), `thiếu "${s}"`);
+  assert.ok(!renderStatsPage(STATS).includes('http-equiv="refresh"'), "link email: không tự tải lại");
+  assert.ok(!renderStatsPage(STATS).includes("Hôm nay (đến giờ)"), "thiếu dữ liệu hôm nay → không hiện khối");
+});

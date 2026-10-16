@@ -35,3 +35,10 @@ Không cần cập nhật app. Không thêm SDK theo dõi. Không phải khai th
 ## Ghi chú
 - Các số DAU, giữ chân và build chỉ có từ ngày bật (16/10). Dữ liệu cũ không có ngày mở app.
 - Đây là route admin dùng service role, nên phải nằm trong `ADMIN_ALLOWED` kèm lý do.
+
+## 6. Trang cố định /admin (chủ dự án chọn phương án A, 16/10)
+- `GET /admin`: HTTP Basic với `ADMIN_DASHBOARD_PASSWORD` (tối thiểu 12 ký tự). Server chưa đặt mật khẩu thì không ai vào được.
+- Mỗi IP tối đa 120 lượt / 15 phút (tính cả lượt đúng) để chặn dò mật khẩu.
+- Số liệu tính lại mỗi lần mở. Trang tự tải lại mỗi 30 giây. Có thêm khối "Hôm nay (đến giờ)" từ hàm `admin_stats_today()` (chỉ service role).
+- Watchdog chạy 5 phút/lần, nên tình trạng server trên trang trễ tối đa 5 phút.
+

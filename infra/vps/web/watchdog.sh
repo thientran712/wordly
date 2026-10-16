@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tự kiểm tra server Wordly — cron 15 phút/lần (chủ dự án yêu cầu 16/10/2026).
+# Tự kiểm tra server Wordly — cron 5 phút/lần (chủ dự án yêu cầu 16/10/2026; 5 phút để trang /admin gần thời gian thực).
 # Có sự cố mới → email ngay; sự cố kéo dài → nhắc lại mỗi 6 giờ; hết → email "đã ổn".
 # Gửi qua Resend (khoá RESEND_API_KEY trong .env của web), không cần dịch vụ ngoài khác.
 #

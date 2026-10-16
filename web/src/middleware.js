@@ -123,8 +123,10 @@ export async function middleware(request) {
   // Public pages: homepage (guest can use translate), auth pages, speaking-practice spinner (guest can try it)
   // /privacy, /support, /terms: App Store bắt buộc URL công khai, không cần đăng nhập.
   // /email-templates/*: GoTrue tải mẫu email qua URL công khai.
+  // /admin: trang thống kê chủ dự án — route tự kiểm mật khẩu (HTTP Basic).
   const isPublicPage = path === "/" || isAuthPage || path.startsWith("/speak")
-    || path === "/privacy" || path === "/support" || path === "/terms" || path.startsWith("/email-templates/");
+    || path === "/privacy" || path === "/support" || path === "/terms" || path.startsWith("/email-templates/")
+    || path === "/admin";
 
   // SECURITY: strip any client-supplied auth headers first so a guest can never
   // spoof x-user-id to impersonate another user. We only ever set these from the
