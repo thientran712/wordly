@@ -56,3 +56,18 @@ export async function withTranslateQuota({ config, user, build, quotaKey: rawKey
   }
   return res;
 }
+
+/**
+ * POST /api/ads/fallback: quảng cáo không tải được hoặc callback SSV chưa tới
+ * sau 10 giây → cấp 1 lượt dự phòng (tối đa 5/ngày, hàm SQL giữ trần).
+ */
+export async function adFallbackResponse({ user, deps }) {
+  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const r = await deps.grantAdFallback();
+    return Response.json({ granted: !!r?.granted, credits: r?.credits ?? 0 }, { headers: { "Cache-Control": "no-store" } });
+  } catch (e) {
+    console.error("[ads/fallback]", e?.message || e);
+    return Response.json({ error: "Lỗi máy chủ" }, { status: 500 });
+  }
+}
