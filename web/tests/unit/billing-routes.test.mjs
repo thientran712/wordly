@@ -22,6 +22,13 @@ test("webhook Apple + app-config công khai; sync/status cần đăng nhập", (
   assert.ok(!pub.has("/api/billing/status"));
 });
 
+test("quảng cáo: callback SSV công khai; fallback cần đăng nhập", () => {
+  const pub = publicApiPaths();
+  assert.ok(pub.has("/api/ads/reward-callback"), "Google gọi callback SSV không có phiên đăng nhập");
+  assert.ok(!pub.has("/api/ads/fallback"));
+  assert.ok(existsSync(join(WEB, "src/app/api/ads/reward-callback/route.js")));
+});
+
 test("route billing tồn tại", () => {
   for (const r of ["billing/sync", "billing/notifications", "billing/status", "app-config"]) {
     assert.ok(existsSync(join(WEB, "src/app/api", r, "route.js")), r);

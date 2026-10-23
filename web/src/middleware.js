@@ -114,6 +114,9 @@ export async function middleware(request) {
     // nhập (an toàn nhờ chữ ký JWS); app hỏi min_build cả khi chưa đăng nhập.
     "/api/billing/notifications",
     "/api/app-config",
+    // Quảng cáo (spec 2026-10-23): Google gọi callback SSV không có phiên đăng
+    // nhập — an toàn nhờ chữ ký ECDSA của Google.
+    "/api/ads/reward-callback",
   ]);
   const isPublicApi = PUBLIC_API_PATHS.has(path);
 

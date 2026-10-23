@@ -12,6 +12,7 @@ const API = join(WEB, "src/app/api");
 // đây = cần lý do rõ ràng — rò dữ liệu chéo người dùng là sự cố nặng nhất.
 const ADMIN_ALLOWED = {
   "account/route.js": "xoá user khỏi auth.users",
+  "ads/reward-callback/route.js": "callback SSV của Google: không có người dùng đăng nhập, ghi thưởng qua grant_ad_reward sau khi kiểm chữ ký ECDSA",
   "admin/email-status/route.js": "trang admin xem mọi người dùng",
   "admin/stats/route.js": "thống kê tổng hợp cho chủ dự án (admin_stats chỉ service role); vào bằng link ký HMAC có hạn hoặc CRON_SECRET",
   "admin/server-status/route.js": "watchdog VPS ghi server_status (CRON_SECRET), không có người dùng",
