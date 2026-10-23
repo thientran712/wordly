@@ -7,6 +7,8 @@
 
 - Spec `docs/superpowers/specs/2026-10-23-in-app-ads-design.md`, plan `docs/superpowers/plans/2026-10-23-in-app-ads.md`.
 - **Migration `20261023000100_ads`** — CHỈ chạy local, **chưa chạy production (cần chủ dự án đồng ý)**. `usage_daily.kind` thêm `translate`, `ad_fallback`; bảng `ad_credits` (lượt thưởng tích luỹ), `ad_rewards` (khoá chống cộng trùng giao dịch SSV), `theme_unlocks`, `translate_ad_keys` (gộp lượt theo câu đang soạn — tách khỏi `translate_quota_keys` vì cùng `quota_key` đi qua `consume_quota`); hàm `translate_quota_today`, `consume_translate` (key → miễn phí ngày → lượt thưởng, nguyên tử), `grant_ad_fallback` (≤ 5/ngày), `grant_ad_reward` (chỉ service role). Bằng chứng: RLS 58/58 pass trên Supabase local (`ads-rls` 7/7, đã thấy fail trước khi viết migration).
+- **Migration `20261023000200_admin_stats_ads`** — CHỈ chạy local, **chưa chạy production**. Hàm `admin_stats_ads()` (chỉ service role): thưởng hôm nay / 7 ngày, lượt dự phòng hôm nay, theme đã mở, lượt thưởng chưa dùng → khối "Quảng cáo" trên /admin.
+- **Điều khoản bản 2** (`CURRENT_TERMS_VERSION = 2`): deploy web là MỌI người dùng (cả app cũ chưa có quảng cáo) được hỏi đồng ý lại một lần.
 
 ### 23/10/2026 — iOS: chống bấm dồn + cập nhật tức thì (branch `fix/ios-tap-spam-realtime`, CHƯA commit)
 

@@ -127,9 +127,10 @@ export async function middleware(request) {
   // /privacy, /support, /terms: App Store bắt buộc URL công khai, không cần đăng nhập.
   // /email-templates/*: GoTrue tải mẫu email qua URL công khai.
   // /admin: trang thống kê chủ dự án — route tự kiểm mật khẩu (HTTP Basic).
+  // /app-ads.txt: crawler của Google đọc để xác nhận tài khoản AdMob.
   const isPublicPage = path === "/" || isAuthPage || path.startsWith("/speak")
     || path === "/privacy" || path === "/support" || path === "/terms" || path.startsWith("/email-templates/")
-    || path === "/admin";
+    || path === "/admin" || path === "/app-ads.txt";
 
   // SECURITY: strip any client-supplied auth headers first so a guest can never
   // spoof x-user-id to impersonate another user. We only ever set these from the

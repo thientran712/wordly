@@ -2,7 +2,7 @@
 // dịch phía server + cấu hình hiển thị quảng cáo gửi app qua /api/app-config.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { adsConfig, adsApplyToBuild, adsAppConfig } from "../../src/lib/ads/config.js";
+import { adsConfig, adsApplyToBuild, adsAppConfig, appAdsTxt } from "../../src/lib/ads/config.js";
 import { appConfigBody } from "../../src/lib/billing/status.js";
 
 test("adsConfig: mặc định tắt, 10 lượt miễn phí, thưởng 10 lượt", () => {
@@ -47,4 +47,10 @@ test("appConfigBody: kèm min_build + ads", () => {
   const body = appConfigBody({ APP_MIN_BUILD: "22" });
   assert.equal(body.min_build, 22);
   assert.deepEqual(body.ads, adsAppConfig({}));
+});
+
+test("app-ads.txt: một dòng của Google theo ADMOB_PUBLISHER_ID, thiếu env → null", () => {
+  assert.equal(appAdsTxt({ ADMOB_PUBLISHER_ID: " pub-1 " }), "google.com, pub-1, DIRECT, f08c47fec0942fa0\n");
+  assert.equal(appAdsTxt({}), null);
+  assert.equal(appAdsTxt({ ADMOB_PUBLISHER_ID: "pub-1\ninjected" }), null);
 });

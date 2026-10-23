@@ -27,6 +27,9 @@ test("quảng cáo: callback SSV công khai; fallback cần đăng nhập", () =
   assert.ok(pub.has("/api/ads/reward-callback"), "Google gọi callback SSV không có phiên đăng nhập");
   assert.ok(!pub.has("/api/ads/fallback"));
   assert.ok(existsSync(join(WEB, "src/app/api/ads/reward-callback/route.js")));
+  // Google crawler đọc app-ads.txt không đăng nhập — không được chuyển về /login
+  assert.match(read("src/middleware.js"), /path === "\/app-ads\.txt"/);
+  assert.ok(existsSync(join(WEB, "src/app/app-ads.txt/route.js")));
 });
 
 test("route billing tồn tại", () => {

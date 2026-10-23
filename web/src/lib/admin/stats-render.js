@@ -133,6 +133,9 @@ export function renderStatsPage(s, { refreshSeconds = 0 } = {}) {
         : `<p class="muted">Chưa có từ nào được từ 2 người trở lên lưu trong 7 ngày.</p>`, { note: "≥ 2 người lưu" }) : "",
     x ? panel("Nhắc ôn", `${kv([["Đã gửi 7 ngày", fmt(x.push_health.sent_7d)], ["Lỗi / bỏ qua 7 ngày", fmt(x.push_health.failed_7d)], ["Thiết bị nhận thông báo", fmt(x.push_health.devices)]])}
       <div class="mini"><h3>Đã gửi · 30 ngày</h3>${columnChart(series.map((d) => ({ label: dm(d.day), value: d.push_sent })), { title: "Nhắc ôn đã gửi", unit: "thông báo" })}</div>`) : "",
+    s.ads ? panel("Quảng cáo", kv([["Quảng cáo thưởng hôm nay", fmt(s.ads.rewards_today)], ["Quảng cáo thưởng 7 ngày", fmt(s.ads.rewards_7d)],
+        ["Lượt dự phòng hôm nay", fmt(s.ads.fallback_today)], ["Theme đã mở bằng quảng cáo", fmt(s.ads.theme_unlocks_total)],
+        ["Lượt thưởng chưa dùng", fmt(s.ads.credits_outstanding)]]), { note: "đã xác thực SSV" }) : "",
     panel("Phiên bản app (7 ngày)", funnelChart(builds, { relative: "max" }), { wide: true }),
   ].filter(Boolean).join("");
 

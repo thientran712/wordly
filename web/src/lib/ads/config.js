@@ -47,3 +47,10 @@ export function adsAppConfig(env = process.env) {
     premium_theme_ids: String(env.ADS_PREMIUM_THEMES ?? "").split(",").map((s) => s.trim()).filter(Boolean),
   };
 }
+
+/** Nội dung /app-ads.txt (AdMob đối chiếu nhà phát triển); thiếu / sai env → null (404). */
+export function appAdsTxt(env = process.env) {
+  const id = String(env.ADMOB_PUBLISHER_ID ?? "").trim();
+  if (!/^pub-\d{1,20}$/.test(id)) return null;
+  return `google.com, ${id}, DIRECT, f08c47fec0942fa0\n`;
+}
