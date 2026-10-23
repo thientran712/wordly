@@ -61,3 +61,8 @@ test("middleware: /admin không chuyển về /login (route tự kiểm mật kh
   const src = await readFile(new URL("../../src/middleware.js", import.meta.url), "utf8");
   assert.match(src, /path === "\/admin"/);
 });
+
+test("đang tắt web → /app-ads.txt vẫn trả file cho AdMob (không bị đổi thành trang mobile-only)", () => {
+  assert.equal(webUiGate("/app-ads.txt", false), "allow");
+  assert.equal(webUiGate("/app-ads.txt.bak", false), "mobile-only");
+});
