@@ -105,6 +105,9 @@ struct TranslateHistoryEntry: Codable, Identifiable, Equatable {
     var savedDate: Date {
         APIDate.parse(savedAt) ?? Date()
     }
+
+    /// Giọng đọc câu gốc theo chiều dịch.
+    var speakLang: String { direction == "EN→VI" ? "en-US" : "vi-VN" }
 }
 
 struct TranslateHistoryResponse: Codable {
