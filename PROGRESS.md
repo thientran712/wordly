@@ -3,12 +3,22 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 23/10/2026 — Quảng cáo trong app (AdMob) (branch `feat/in-app-ads`, đang làm)
+### 23/10/2026 — Quảng cáo trong app (AdMob) (branch `feat/in-app-ads`, đủ 12 task, chờ review cuối + merge)
 
 - Spec `docs/superpowers/specs/2026-10-23-in-app-ads-design.md`, plan `docs/superpowers/plans/2026-10-23-in-app-ads.md`.
 - **Migration `20261023000100_ads`** — CHỈ chạy local, **chưa chạy production (cần chủ dự án đồng ý)**. `usage_daily.kind` thêm `translate`, `ad_fallback`; bảng `ad_credits` (lượt thưởng tích luỹ), `ad_rewards` (khoá chống cộng trùng giao dịch SSV), `theme_unlocks`, `translate_ad_keys` (gộp lượt theo câu đang soạn — tách khỏi `translate_quota_keys` vì cùng `quota_key` đi qua `consume_quota`); hàm `translate_quota_today`, `consume_translate` (key → miễn phí ngày → lượt thưởng, nguyên tử), `grant_ad_fallback` (≤ 5/ngày), `grant_ad_reward` (chỉ service role). Bằng chứng: RLS 58/58 pass trên Supabase local (`ads-rls` 7/7, đã thấy fail trước khi viết migration).
 - **Migration `20261023000200_admin_stats_ads`** — CHỈ chạy local, **chưa chạy production**. Hàm `admin_stats_ads()` (chỉ service role): thưởng hôm nay / 7 ngày, lượt dự phòng hôm nay, theme đã mở, lượt thưởng chưa dùng → khối "Quảng cáo" trên /admin.
 - **Điều khoản bản 2** (`CURRENT_TERMS_VERSION = 2`): deploy web là MỌI người dùng (cả app cũ chưa có quảng cáo) được hỏi đồng ý lại một lần.
+- **Server:** `/api/translate` + `/api/translate/image` tính lượt (10 miễn phí/ngày → lượt thưởng; 402 `limit_translate`), `GET /api/ads/reward-callback` (SSV Google, kiểm chữ ký ECDSA, chống trùng), `POST /api/ads/fallback`, khối `ads` trong `/api/billing/status` và `/api/app-config`, `/app-ads.txt`, chính sách + điều khoản có mục quảng cáo, khối "Quảng cáo" trên /admin. Tất cả sau cờ `ADS_*` (mặc định TẮT) — danh sách biến ở `web/.env.example`.
+- **iOS:** SDK GoogleMobileAds 12 + UMP + ATT; quảng cáo mở app (≤ 2/ngày, 2 lần mở đầu), biểu ngữ (Từ vựng, Ôn tập, Cá nhân, Lịch sử, Dịch), xen màn hình (quiz, đóng sheet — cách nhau ≥ 3 phút, ≤ 6/ngày); hết lượt dịch → sheet "Xem quảng cáo" → chờ server cộng lượt → dịch lại đúng câu (quảng cáo lỗi → lượt dự phòng ≤ 5/ngày); theme đặc biệt mở bằng quảng cáo (bỏ khoá theme theo Pro).
+- **Bằng chứng (23/10):** web `npm test` 708/708, `npm run test:rls` 59/59 (Supabase local), `next build` Compiled successfully, eslint sạch trên mọi file đổi; iOS `WordlyiOSTests` 316/316 trên Wordly-Test. Trên simulator đã thấy: quảng cáo mở app test + trần 2/ngày, biểu ngữ ở Từ vựng, ổ khoá chỉ ở theme đặc biệt.
+- **Chưa kiểm được:** callback SSV thật (quảng cáo test không gửi SSV → luồng dịch sau quảng cáo trên sim chỉ đi nhánh dự phòng; logic chuyển trạng thái phủ bằng `RewardFlowTests`); sheet "Hết lượt dịch" chưa bấm tay trên sim (server local chưa bật `ADS_ENFORCE`); máy thật; form đồng ý UMP với tài khoản AdMob thật.
+- **Chờ quyết định / việc của chủ dự án:**
+  1. Tạo tài khoản AdMob + app + 4 ad unit (mở app, biểu ngữ, xen màn hình, thưởng — bật SSV callback `https://<domain>/api/ads/reward-callback`), cấu hình form đồng ý GDPR + giải thích IDFA trong AdMob.
+  2. Điền ID thật vào `mobile/ios/Config/Secrets.xcconfig` (chỉ `[config=Release]`), `ADMOB_PUBLISHER_ID` vào env production.
+  3. App Store Connect: App Privacy khai thu thập Device ID + dữ liệu quảng cáo (bên thứ ba), có ATT.
+  4. Duyệt chạy 2 migration `20261023000100_ads`, `20261023000200_admin_stats_ads` lên production.
+  5. Thứ tự bật: deploy web với `ADS_ENFORCE=0` (lưu ý: điều khoản bản 2 → mọi người đồng ý lại) → bản app có quảng cáo lên store → `ADS_ENABLED=1`, `ADS_MIN_BUILD=<build>`, `ADS_ENFORCE=1`; đặt `ADS_PREMIUM_THEMES`.
 
 ### 23/10/2026 — iOS: chống bấm dồn + cập nhật tức thì (branch `fix/ios-tap-spam-realtime`, CHƯA commit)
 
