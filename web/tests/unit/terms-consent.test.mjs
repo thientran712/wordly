@@ -30,3 +30,17 @@ test("needsConsent: chưa có hoặc phiên bản cũ hơn → cần hỏi", () 
   assert.equal(needsConsent({ terms_version: CURRENT_TERMS_VERSION - 1 }), true);
   assert.equal(needsConsent({ terms_version: CURRENT_TERMS_VERSION }), false);
 });
+
+import { readFileSync } from "node:fs";
+
+// Quảng cáo (spec 2026-10-23): điều khoản + chính sách đổi theo cách người
+// dùng cần biết → bản 2, app hỏi đồng ý lại một lần.
+test("điều khoản bản 2 nói rõ lượt dịch + quảng cáo; chính sách nêu AdMob", () => {
+  assert.equal(CURRENT_TERMS_VERSION, 2);
+  const terms = readFileSync(new URL("../../src/app/terms/page.js", import.meta.url), "utf8");
+  assert.match(terms, /10 lượt dịch/);
+  assert.match(terms, /không quy đổi/);
+  const privacy = readFileSync(new URL("../../src/app/privacy/page.js", import.meta.url), "utf8");
+  assert.match(privacy, /Google AdMob/);
+  assert.match(privacy, /IDFA/);
+});

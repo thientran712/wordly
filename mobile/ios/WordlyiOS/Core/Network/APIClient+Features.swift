@@ -145,3 +145,14 @@ extension APIClient {
                                  body: Body(messages: messages), responseType: Resp.self).session?.title
     }
 }
+
+// MARK: - Quảng cáo (spec 2026-10-23)
+extension APIClient {
+    /// Lượt dự phòng khi quảng cáo thưởng không tải được / callback SSV trễ (server giữ trần 5/ngày).
+    func postAdFallback() async throws -> (granted: Bool, credits: Int) {
+        struct Resp: Decodable { let granted: Bool; let credits: Int }
+        struct Empty: Encodable {}
+        let r = try await request(path: "/api/ads/fallback", method: "POST", body: Empty(), responseType: Resp.self)
+        return (r.granted, r.credits)
+    }
+}

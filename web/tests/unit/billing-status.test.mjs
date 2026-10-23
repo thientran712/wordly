@@ -55,6 +55,6 @@ test("entitlementWriter: gọi apply_entitlement đủ tham số, lỗi DB ném 
 });
 
 test("app-config: min_build từ APP_MIN_BUILD, mặc định 0", () => {
-  assert.deepEqual(appConfigBody({}), { min_build: 0 });
-  assert.deepEqual(appConfigBody({ APP_MIN_BUILD: "21" }), { min_build: 21 });
+  assert.equal(appConfigBody({}).min_build, 0);
+  assert.equal(appConfigBody({ APP_MIN_BUILD: "21" }).min_build, 21);
 });

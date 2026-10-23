@@ -8,6 +8,8 @@ enum LimitCode: String, Equatable {
     case advancedTranslate = "limit_advanced_translate"
     case dictionary = "limit_dictionary"
     case pushSlots = "limit_push_slots"
+    /// Hết lượt dịch (quảng cáo, spec 2026-10-23) — mời xem quảng cáo thưởng, không mở paywall
+    case translate = "limit_translate"
 }
 
 extension APIError {
@@ -52,10 +54,12 @@ struct BillingStatus: Decodable, Equatable {
     let limits: Limits
     /// Còn gói Apple đang chạy (để cảnh báo trước khi xoá tài khoản)
     var hasActiveSubscription = false
+    /// Quảng cáo (spec 2026-10-23) — server cũ không trả → nil
+    var ads: AdsStatus?
 
     enum CodingKeys: String, CodingKey {
         case pro, expiresAt = "expires_at", source, inGrace = "in_grace", enforced, limits
-        case hasActiveSubscription = "has_active_subscription"
+        case hasActiveSubscription = "has_active_subscription", ads
     }
 
     init(pro: Bool, expiresAt: String?, source: String?, inGrace: Bool, enforced: Bool, limits: Limits,
@@ -73,6 +77,7 @@ struct BillingStatus: Decodable, Equatable {
         enforced = try c.decodeIfPresent(Bool.self, forKey: .enforced) ?? false
         limits = try c.decode(Limits.self, forKey: .limits)
         hasActiveSubscription = try c.decodeIfPresent(Bool.self, forKey: .hasActiveSubscription) ?? false
+        ads = try c.decodeIfPresent(AdsStatus.self, forKey: .ads)
     }
 
     var isPro: Bool { pro }
@@ -91,17 +96,6 @@ enum ForceUpdate {
 
     static var currentBuild: Int {
         Int(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "") ?? 0
-    }
-}
-
-/// Theme nào miễn phí (spec §1): 5 theme màu cơ bản. Đang dùng sẵn theme Pro thì giữ.
-enum ThemeAccess {
-    static let freeThemeIds: Set<String> = ["wordly", "midnight", "ink", "paper", "ocean"]
-
-    static func isFree(_ theme: WidgetTheme) -> Bool { freeThemeIds.contains(theme.id) }
-
-    static func canApply(_ theme: WidgetTheme, isPro: Bool, current: WidgetSettings.HomeStyle) -> Bool {
-        isPro || isFree(theme) || current.matches(theme)
     }
 }
 
@@ -168,6 +162,7 @@ enum PaywallReason: Equatable, Identifiable {
         case .limit(.advancedTranslate, let n): return "Hết \(n ?? 5) lượt dịch nâng cao hôm nay"
         case .limit(.dictionary, let n): return "Hết \(n ?? 5) lượt tra từ mới hôm nay"
         case .limit(.pushSlots, _): return "Thêm khung giờ nhắc ôn với Pro"
+        case .limit(.translate, _): return "Hết lượt dịch hôm nay"
         case .theme: return "Mở khoá toàn bộ theme"
         case .customStyle: return "Ảnh của bạn và tuỳ chỉnh màu"
         case .general: return "Học không giới hạn với Wordly Pro"

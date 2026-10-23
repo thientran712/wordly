@@ -8,6 +8,7 @@ import { createTieredCache, hybridTranslate } from "@/lib/translate/hybrid-trans
 import { chooseEngine, persistentCacheKey } from "@/lib/translate/translate-routing";
 import { withAdvancedQuota } from "@/lib/billing/enforce";
 import { billingForRequest } from "@/lib/billing/request";
+import { withTranslateQuota } from "@/lib/ads/enforce";
 import {
   createPostgresTranslationStore,
   translateWithDeepL,
@@ -99,7 +100,13 @@ export async function POST(request) {
   // quota_key: app dịch trực tiếp khi gõ/nói → nhiều request cho một câu; cùng
   // key chỉ trừ 1 lượt/ngày (40 lượt gọi/key). Không có key → tính theo request.
   const kind = input === "voice" ? "voice" : chooseEngine(text) === "gemini" ? "sentence" : null;
-  if (!kind) return run();
   const billing = await billingForRequest(request, user);
-  return withAdvancedQuota({ ...billing, user, kind, quotaKey: quota_key, signal: request.signal }, run);
+  const advanced = () => kind
+    ? withAdvancedQuota({ ...billing, user, kind, quotaKey: quota_key, signal: request.signal }, run)
+    : run();
+  // Quảng cáo (spec 2026-10-23): MỌI lần dịch (cả từ đơn, cả trúng cache) tính
+  // một lượt dịch; hết lượt miễn phí + lượt thưởng → 402 mời xem quảng cáo.
+  return withTranslateQuota({
+    config: billing.ads, user, build: billing.build, quotaKey: quota_key, deps: billing.deps, signal: request.signal,
+  }, advanced);
 }

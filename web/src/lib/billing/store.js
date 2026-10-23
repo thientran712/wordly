@@ -66,6 +66,26 @@ export function createBillingDeps({ supabase, sharedSupabase, userId, now = () =
         .eq("user_id", userId).eq("is_saved", true).is("deleted_at", null);
       return must(r, "countSaved") ?? 0;
     },
+    // ── Quảng cáo (spec 2026-10-23-in-app-ads-design.md) ──
+    async translateToday(quotaKey) {
+      const args = quotaKey ? { p_quota_key: quotaKey } : {};
+      return must(await supabase.rpc("translate_quota_today", args), "translate_quota_today");
+    },
+    async consumeTranslate(dailyFree, quotaKey) {
+      const args = { p_daily_free: dailyFree };
+      if (quotaKey) args.p_quota_key = quotaKey;
+      return must(await supabase.rpc("consume_translate", args), "consume_translate");
+    },
+    async refundTranslate(chargeId) {
+      return must(await supabase.rpc("refund_translate", { p_charge_id: chargeId }), "refund_translate");
+    },
+    async grantAdFallback() {
+      return must(await supabase.rpc("grant_ad_fallback", {}), "grant_ad_fallback");
+    },
+    async unlockedThemes() {
+      const rows = must(await supabase.from("theme_unlocks").select("theme_id").eq("user_id", userId), "theme_unlocks");
+      return (rows ?? []).map((r) => r.theme_id);
+    },
     async countEnabledSlots() {
       const r = await supabase.from("push_slots").select("id", { count: "exact", head: true })
         .eq("user_id", userId).eq("enabled", true);

@@ -63,6 +63,9 @@ enum PreviewMode {
         case ("GET", "/api/push/slots"): json = PreviewFixtures.pushSlots
         case ("PUT", "/api/push/slots"): json = #"{"success": true}"#
         case ("GET", "/api/suggestion-log"): json = PreviewFixtures.reminded
+        // `-WordlyAds` → bật quảng cáo (ID test của Google) để chụp màn hình kiểm vị trí
+        case ("GET", "/api/app-config") where CommandLine.arguments.contains("-WordlyAds"):
+            json = #"{"min_build": 0, "ads": {"enabled": true, "app_open_per_day": 2, "interstitial_min_gap_sec": 180, "interstitial_per_day": 6, "banner": true, "grace_hours": 0, "premium_theme_ids": ["sunset", "lavender", "forest"]}}"#
         case ("POST", "/api/journal"):
             json = #"{"entry": {"id": "j-new", "content": "New entry", "created_at": "2026-10-06T09:00:00.000000+00:00"}}"#
         case ("PUT", "/api/profile"): json = #"{"success": true, "profile": {"id": "u1", "name": "Thiên"}}"#
@@ -141,7 +144,7 @@ enum PreviewScreens {
         case "push": PushSettingsView()
         case "widget": WidgetSettingsView()
         case "login": LoginView()
-        case "homestyle": NavigationStack { HomeStyleView(vm: WidgetSettingsViewModel()) }
+        case "homestyle": NavigationStack { HomeStyleView(vm: WidgetSettingsViewModel()) }.task { await AdsCenter.shared.refresh() }
         case "paywall": PaywallView(reason: .limit(.savedWords, 30))
         case "forceupdate": ForceUpdateView()
         case "widgetbg": WidgetBackgroundEditorView(source: sampleBackground, vm: WidgetSettingsViewModel(), onDone: {})

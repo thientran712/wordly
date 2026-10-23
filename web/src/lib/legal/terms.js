@@ -2,7 +2,8 @@
 // 2026-10-15-terms-consent-design.md). Đổi nội dung /terms hoặc /privacy theo
 // cách người dùng cần biết → tăng CURRENT_TERMS_VERSION: app hỏi lại một lần.
 
-export const CURRENT_TERMS_VERSION = 1;
+// 2 (23/10/2026): quảng cáo AdMob + lượt dịch có thưởng (spec 2026-10-23-in-app-ads-design.md).
+export const CURRENT_TERMS_VERSION = 2;
 
 /** Body của POST /api/consent → { version } hoặc { error: "invalid" | "outdated" }. */
 export function parseConsentBody(body, current = CURRENT_TERMS_VERSION) {

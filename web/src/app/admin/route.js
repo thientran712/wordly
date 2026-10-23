@@ -32,15 +32,16 @@ export async function GET(request) {
     });
   }
   const admin = createAdminClient();
-  const [stats, today, extra] = await Promise.all([
-    admin.rpc("admin_stats", {}), admin.rpc("admin_stats_today", {}), admin.rpc("admin_stats_extra", {}),
+  const [stats, today, extra, ads] = await Promise.all([
+    admin.rpc("admin_stats", {}), admin.rpc("admin_stats_today", {}), admin.rpc("admin_stats_extra", {}), admin.rpc("admin_stats_ads", {}),
   ]);
   if (stats.error) {
     console.error("[admin]", stats.error.message);
     return Response.json({ error: "Không tải được thống kê" }, { status: 500, headers: HEADERS });
   }
   // Khối phụ lỗi → trang vẫn hiện phần chính (không vỡ cả dashboard)
-  const page = renderStatsPage({ ...stats.data, today: today.error ? null : today.data, extra: extra.error ? null : extra.data },
+  const page = renderStatsPage({ ...stats.data, today: today.error ? null : today.data, extra: extra.error ? null : extra.data,
+    ads: ads.error ? null : ads.data },
     { refreshSeconds: 30 });
   return new Response(page, { headers: { ...HEADERS, "Content-Type": "text/html; charset=utf-8" } });
 }

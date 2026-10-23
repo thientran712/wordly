@@ -9,7 +9,9 @@ import AVFoundation
 /// port nhánh dự phòng Whisper (/api/translate/voice) của web.
 @MainActor
 final class DictationManager: NSObject, ObservableObject {
-    @Published var isListening = false
+    @Published var isListening = false {
+        didSet { AdsCenter.shared.isRecording = isListening }
+    }
     @Published var transcript = ""
     @Published var error: String?
     /// Mức âm lượng 0...1 để vẽ sóng âm động trên UI — lấy mẫu thưa (~12

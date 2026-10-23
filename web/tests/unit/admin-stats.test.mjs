@@ -120,3 +120,10 @@ test("trang thống kê: khối Hôm nay + tự tải lại khi bật", () => {
   assert.ok(!renderStatsPage(STATS).includes('http-equiv="refresh"'), "link email: không tự tải lại");
   assert.ok(!renderStatsPage(STATS).includes("Hôm nay (đến giờ)"), "thiếu dữ liệu hôm nay → không hiện khối");
 });
+
+test("trang thống kê: khối Quảng cáo khi có số liệu, thiếu thì bỏ qua", () => {
+  const html = renderStatsPage({ ...STATS, ads: { rewards_today: 3, rewards_7d: 41, fallback_today: 2, theme_unlocks_total: 5, credits_outstanding: 120 } });
+  assert.ok(html.includes("Quảng cáo"));
+  for (const v of ["41", "120"]) assert.ok(html.includes(v), `thiếu ${v}`);
+  assert.ok(!renderStatsPage(STATS).includes("Quảng cáo thưởng"));
+});

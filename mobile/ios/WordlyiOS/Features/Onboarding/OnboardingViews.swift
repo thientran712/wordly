@@ -56,6 +56,16 @@ final class OnboardingCenter: ObservableObject {
         introThisSession = intro != .none
     }
 
+    /// Chờ quyết định "Có gì mới" của lần vào app này (false = hết giờ / bị huỷ).
+    func waitIntroDecided(timeout: TimeInterval) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Self.enabled && decidedUser == nil {
+            guard Date() < deadline else { return false }
+            do { try await Task.sleep(for: .milliseconds(200)) } catch { return false }
+        }
+        return true
+    }
+
     /// Xem xong "Có gì mới".
     func finishIntro() {
         defaults.set(Onboarding.whatsNewVersion, forKey: key(Onboarding.Key.whatsNewSeen))
