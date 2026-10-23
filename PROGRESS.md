@@ -3,6 +3,54 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 23/10/2026 — iOS: chống bấm dồn + cập nhật tức thì (branch `fix/ios-tap-spam-realtime`, CHƯA commit)
+
+- **Nút loa** (`TTSManager` viết lại + `TapControl.swift`): một nguồn phát tại một thời điểm — đang đọc thì các nút loa khác mờ đi, không bấm được; bấm lại nút đang đọc = dừng; chặn bấm dồn 0,4 giây. Áp cho mọi nút loa (Dịch, từ điển, Lịch sử, Đã lưu, Kho chủ đề, Spinner, chat Alex). Sửa 3 lỗi gốc: task cũ bị huỷ xoá trạng thái của lần đọc mới; giọng dự phòng không dừng được; sau ghi âm session kẹt `.record` nên phát không ra tiếng.
+- **Ghi âm dịch** tối đa 30 giây rồi tự dừng (đếm ngược trên pill, toast báo). Nút mic chặn bấm dồn 0,8 giây; bật mic thì dừng loa. Nút ảnh / Tra nghĩa bỏ qua bấm khi đang chạy.
+- **Tab Đã lưu** tự tải lại khi lưu từ ở tab Dịch, xoá/hoàn tác ở lịch sử (`SavedWordsSignal`).
+- **Lịch sử dịch** tự ghi sau 2 giây (trước 10 giây); bấm X xoá ô nhập thì ghi ngay.
+- **Câu dài** (> 6 từ hoặc > 60 ký tự) vẫn vào lịch sử nhưng không có nút Lưu (ghi chú "Câu dài chỉ lưu trong lịch sử"). Câu đã lưu từ trước vẫn hiện "Đã lưu". Chỉ chặn ở app — server `PATCH /api/translate-history` chưa chặn (app cũ vẫn lưu được câu dài).
+- Kiểm chứng: `WordlyiOSTests` 293/293 pass (thêm `TapControlTests`, 3 test trong `TranslateLogicTests`, đã thấy fail trước khi viết code), build không warning mới.
+- **Chưa kiểm:** phát âm/ghi âm trên máy thật (simulator không kiểm được âm thanh), UI test chưa chạy. Cần build mới mới tới người dùng.
+- **Quiz (review + sửa, cùng branch):**
+  - Server `/api/quiz`:
+    - bỏ bù kho chung (kho chỉ có nghĩa tiếng Anh → đáp án lẫn 2 thứ tiếng). Dưới 4 từ trả 409 "Lưu thêm X từ nữa để mở quiz nhé." kèm `needed`;
+    - lấy cả từ lưu chiều VI→EN (tối đa 300 từ mới nhất, trước 60);
+    - bỏ câu dài, bỏ từ trùng hoa/thường;
+    - đáp án nhiễu không cùng nghĩa với câu hỏi, dài gần bằng đáp án đúng;
+    - chấm có trim;
+    - hỏi trước từ "đang ôn lại" đã tới hạn;
+    - trả lời đúng một từ đang ôn lại **lúc đã tới hạn** → thoát ôn lại (hẹn 3 ngày); đúng ngay sau khi vừa sai thì chưa tính;
+    - sai lần nữa khi hạn đã qua → hẹn lại.
+  - Push (`select-push-word.js`): thêm bước 0 — từ quiz trả lời sai, còn ≤ 6 giờ là tới hạn, chưa push kể từ lần sai → gửi trước mọi bước khác. Trước đây `due_at` không ai đọc (email đã bỏ) nên "từ sai sẽ được nhắc" là hứa suông.
+  - App:
+    - nhớ chế độ, hiện "Lần trước đúng X%";
+    - đúng thì tự sang câu sau 0,8 giây, có rung đúng/sai, nút loa ở câu hỏi Anh→Việt;
+    - câu cuối "Xem kết quả" là tự nộp;
+    - chấm-ngay lỗi mạng thì thôi quay vòng;
+    - 409 hiện nguyên văn + nút "Đi dịch & lưu từ";
+    - màn kết quả có "Ôn lại N từ sai", "Lượt mới", "Đổi chế độ".
+  - Kiểm chứng:
+    - web `npm test` 605 pass / 0 fail (51 test RLS bị huỷ vì không có Supabase local — trước khi sửa cũng vậy);
+    - `next build` Compiled successfully, eslint sạch;
+    - iOS 297/297.
+  - **Cần deploy production** (web) mới có hiệu lực phía server — CHƯA deploy. App cũ vẫn chạy được với server mới (409 vẫn hiện câu báo chung).
+  - Chưa làm: widget chưa ưu tiên từ đang ôn lại (lịch widget dựng trên máy); kho chung chưa có nghĩa tiếng Việt nên người mới < 4 từ chưa làm được quiz.
+
+### 17/10/2026 — TẮT THU PHÍ: mở miễn phí toàn bộ để lấy người dùng trước
+
+- Chủ dự án quyết (sau research mô hình kiếm tiền ở VN): cho dùng miễn phí hết, bật Pro sau.
+- 2 gói `wordly.pro.monthly` / `wordly.pro.yearly` đã **Remove from Sale** trên App Store Connect (chủ dự án làm) → StoreKit không trả gói → dòng "Wordly Pro" ở Cá nhân tự ẩn. Thuê bao đã mua (nếu có) vẫn tự gia hạn tới khi người mua huỷ.
+- `.env` production: `BILLING_ENFORCE=0`, giữ `APP_MIN_BUILD=22` (mọi người lên bản có code Pro, bật lại là chạy). Bản sao lưu: `.env.bak-pre-free-202610172334`.
+- Deploy lại `bc028f3` qua `deploy-production.yml` (run 39050085455, success) → container `wordly-green-web-1`.
+- Đã kiểm: trong container `BILLING_ENFORCE=0`, không có `BILLING_ENFORCE_TEST_USERS`; `/api/app-config` → `{min_build:22}`; `/api/health` 200; khách dịch câu → **200** (lúc bật chặn là 401).
+- Chưa kiểm trên máy thật: app không còn ổ khoá/bộ đếm/paywall (theo code: mọi khoá phụ thuộc `enforced && !pro`).
+- **Bật lại:** mở bán lại 2 gói trên App Store Connect → `BILLING_ENFORCE=1` → deploy → kiểm như 16/10.
+- **Chờ quyết định:** ngày bật lại + con số để quyết (D7/D30, DAU, từ lưu trung bình); có ghi "miễn phí giai đoạn ra mắt" trong app / mô tả App Store không; theo dõi chi phí Gemini/Groq khi không còn giới hạn.
+- Chủ dự án xác nhận trên máy thật (17/10): mọi thứ đã miễn phí, **trừ dòng "Wordly Pro" ở Cá nhân vẫn hiện**. Dòng này hiện khi `isPro || enforced || !plans.isEmpty` (`ProfileView.swift:38`) → nhiều khả năng App Store chưa kịp gỡ gói vừa Remove from Sale (≤ 24 giờ). Chưa biết dòng phụ ghi "Nâng cấp" hay "Đang dùng Pro". Còn hiện sau 24 giờ → build sau ẩn dòng khi `!enforced && !isPro` (cần build mới, TDD).
+- **Ý tưởng để sau (chủ dự án tạm bỏ qua):** thứ tự nhóm theme widget viết cứng trong `WidgetThemes.swift` (`Group.allCases`) → đổi phải nộp app. Hướng nếu làm: `/api/app-config` trả `theme_group_order`, app dùng nếu có; người chưa chọn theme mở sẵn nhóm ảnh.
+- **Research mô hình kiếm tiền (17/10, chỉ trong chat, chưa lưu file):** quảng cáo không hợp (widget/push không gắn quảng cáo được, eCPM VN ~1–2 USD) → chỉ cân nhắc rewarded ads đổi lượt. Ra nước ngoài: thử trước với người Việt ở nước ngoài (mở storefront + giá theo nước); bản địa hoá Nhật/Hàn tốn công (~1.334 chuỗi tiếng Việt viết cứng, schema `meaning_vi`/`memory_vi`, mất giọng mày–tao). Thị trường VN: app từ vựng bán 500k–1.000k/năm (Mochi, ELSA, Lingoland), gói trọn đời phổ biến, bán theo kết quả ("IELTS 6.5"), giá gạch + sale theo lễ, web rẻ hơn store; bán web VietQR hợp lệ theo 3.1.3(b) nếu gói cũng có IAP, mở theo tài khoản, không link/nút trong app. Khi bật lại Pro nên cân nhắc: tháng 49k / năm 399k + ưu đãi năm đầu, gói trọn đời ~599–799k (giới hạn AI/ngày), paywall theo kết quả, lịch sale. Kiểm tra đã đăng ký Small Business Program (15%) chưa.
+
 ### 16/10/2026 — Theo dõi server + thống kê sử dụng ĐÃ CHẠY production
 
 - **Dọn ổ đĩa:** từ 79% xuống 35% (xoá 37,6 GB bộ nhớ đệm build). Cron 04:00 mỗi đêm tự dọn phần cũ hơn 7 ngày.
