@@ -3,6 +3,11 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 23/10/2026 — Quảng cáo trong app (AdMob) (branch `feat/in-app-ads`, đang làm)
+
+- Spec `docs/superpowers/specs/2026-10-23-in-app-ads-design.md`, plan `docs/superpowers/plans/2026-10-23-in-app-ads.md`.
+- **Migration `20261023000100_ads`** — CHỈ chạy local, **chưa chạy production (cần chủ dự án đồng ý)**. `usage_daily.kind` thêm `translate`, `ad_fallback`; bảng `ad_credits` (lượt thưởng tích luỹ), `ad_rewards` (khoá chống cộng trùng giao dịch SSV), `theme_unlocks`, `translate_ad_keys` (gộp lượt theo câu đang soạn — tách khỏi `translate_quota_keys` vì cùng `quota_key` đi qua `consume_quota`); hàm `translate_quota_today`, `consume_translate` (key → miễn phí ngày → lượt thưởng, nguyên tử), `grant_ad_fallback` (≤ 5/ngày), `grant_ad_reward` (chỉ service role). Bằng chứng: RLS 58/58 pass trên Supabase local (`ads-rls` 7/7, đã thấy fail trước khi viết migration).
+
 ### 23/10/2026 — iOS: chống bấm dồn + cập nhật tức thì (branch `fix/ios-tap-spam-realtime`, CHƯA commit)
 
 - **Nút loa** (`TTSManager` viết lại + `TapControl.swift`): một nguồn phát tại một thời điểm — đang đọc thì các nút loa khác mờ đi, không bấm được; bấm lại nút đang đọc = dừng; chặn bấm dồn 0,4 giây. Áp cho mọi nút loa (Dịch, từ điển, Lịch sử, Đã lưu, Kho chủ đề, Spinner, chat Alex). Sửa 3 lỗi gốc: task cũ bị huỷ xoá trạng thái của lần đọc mới; giọng dự phòng không dừng được; sau ghi âm session kẹt `.record` nên phát không ra tiếng.
