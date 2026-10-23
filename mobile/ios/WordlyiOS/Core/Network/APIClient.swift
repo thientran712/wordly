@@ -14,6 +14,19 @@ enum WordlyConfig {
     // App Group identifier (shared with Widget)
     static let appGroup = infoValue("WordlyAppGroup")
 
+    // Quảng cáo AdMob (Base.xcconfig: ID test; Release đặt ID thật) — thiếu thì không hiện quảng cáo
+    static let adMobAppId = optionalInfoValue("GADApplicationIdentifier")
+    static let adUnitAppOpen = optionalInfoValue("WordlyAdUnitAppOpen")
+    static let adUnitBanner = optionalInfoValue("WordlyAdUnitBanner")
+    static let adUnitInterstitial = optionalInfoValue("WordlyAdUnitInterstitial")
+    static let adUnitRewarded = optionalInfoValue("WordlyAdUnitRewarded")
+
+    private static func optionalInfoValue(_ key: String) -> String? {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+              value.hasPrefix("ca-app-pub-") else { return nil }
+        return value
+    }
+
     private static func infoValue(_ key: String) -> String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
               !value.isEmpty, !value.contains("REPLACE_ME") else {
