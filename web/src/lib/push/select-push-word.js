@@ -16,6 +16,8 @@ const MAX_ROWS = 1000;
 /** Cùng số từ đã lưu app đồng bộ cho widget (/api/translate-history?saved=1&limit=200) */
 export const SAVED_WORDS_LIMIT = 200;
 const H = 60 * 60 * 1000;
+/** Từ quiz trả lời sai được gửi khi còn ≤ 6 giờ là tới hạn ôn (push 20:00 không lỡ ngày). */
+export const DUE_LEAD_HOURS = 6;
 
 /** Map id → lần hiện gần nhất (ms) từ các dòng có shown_at. */
 export function lastShownMap(logRows, key) {
@@ -38,9 +40,10 @@ export function lastShownMap(logRows, key) {
  *
  * personal: từ của bạn theo thứ tự lưu (cũ trước); pinnedIds: id ghim hợp lệ;
  * usesBank: pool có trộn kho; schedule: dòng widget_schedule; pushLog: dòng
- * suggestion_log source = push.
+ * suggestion_log source = push; due: [{ id, due_at }] từ quiz trả lời sai
+ * (state relearning, hẹn ôn = lúc sai + 1 ngày).
  */
-export function planPushWord({ now, personal, pinnedIds, usesBank, schedule, pushLog }) {
+export function planPushWord({ now, personal, pinnedIds, usesBank, schedule, pushLog, due = [] }) {
   const t = now.getTime();
   const pinned = new Set(pinnedIds || []);
   const lastPush = lastShownMap(pushLog, "entry_id");
@@ -63,6 +66,13 @@ export function planPushWord({ now, personal, pinnedIds, usesBank, schedule, pus
 
   const candidates = (personal || []).filter((w) => !excluded.has(w.id));
   if (candidates.length) {
+    // Bước 0: từ quiz trả lời sai, sắp/đã đến hạn ôn, chưa push từ lúc sai
+    const inPool = new Set(candidates.map((w) => w.id));
+    const step0 = (due || [])
+      .map((d) => ({ id: d.id, dueT: Date.parse(d.due_at) }))
+      .filter((d) => inPool.has(d.id) && d.dueT <= t + DUE_LEAD_HOURS * H && pushed(d.id) < d.dueT - 24 * H)
+      .sort((a, b) => a.dueT - b.dueT);
+    if (step0.length) return [{ step: 0, id: step0[0].id }];
     if (hasSchedule) {
       const seen = lastShownMap(rows.filter((r) => r.t >= t - 48 * H && r.t <= t - 6 * H), "entry_id");
       const step1 = candidates
@@ -97,7 +107,7 @@ export async function selectPushWord(supabase, userId, now, { selectBank }) {
       .select("include_saved, include_bank, pinned_ids, pinned_only")
       .eq("user_id", userId).maybeSingle(),
     supabase.from("translate_history")
-      .select("id, source_text, translated_text, saved_at")
+      .select("id, source_text, translated_text, saved_at, state, due_at")
       .eq("user_id", userId).eq("direction", "EN→VI").eq("is_saved", true).is("deleted_at", null)
       .order("saved_at", { ascending: false }).limit(SAVED_WORDS_LIMIT),
     // Lấy cả dòng tương lai: cần biết app còn gửi lịch không (bước Loại/1)
@@ -126,6 +136,7 @@ export async function selectPushWord(supabase, userId, now, { selectBank }) {
     usesBank: pool.usesBank,
     schedule: schedule.data || [],
     pushLog: pushLog.data || [],
+    due: (saved.data || []).filter((r) => r.state === "relearning" && r.due_at).map((r) => ({ id: r.id, due_at: r.due_at })),
   });
 
   const byId = new Map(savedWords.map((w) => [w.id, w]));

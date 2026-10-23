@@ -7,7 +7,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createSharedClient } from "@/lib/supabase/shared";
 import { getUserFast } from "@/lib/auth/get-user-fast";
-import { buildQuizQuestions, scoreQuiz, QUIZ_MODES, bankWordToQuizWord } from "@/lib/learning/quiz-generation";
+import {
+  buildQuizQuestions, scoreQuiz, QUIZ_MODES, bankWordToQuizWord,
+  savedRowToQuizWord, dedupeQuizWords, quizShortfall, reviewUpdates,
+} from "@/lib/learning/quiz-generation";
 
 /** UUID v4 hợp lệ — dùng để lọc word_id client gửi lên trước khi query DB. */
 function isUuid(value) {
@@ -18,6 +21,8 @@ const MAX_QUESTIONS = 20;
 const DEFAULT_QUESTIONS = 10;
 // Lấy nhiều hơn số câu cần để có đủ từ làm đáp án nhiễu và tăng tính đa dạng
 const POOL_MULTIPLIER = 6;
+// Lấy rộng để từ cũ vẫn được hỏi và từ cần ôn lại không bị cắt mất
+const SAVED_POOL_LIMIT = 300;
 
 export async function GET(request) {
   const user = await getUserFast();
@@ -43,30 +48,36 @@ export async function GET(request) {
   if (source === "saved") {
     // Ưu tiên ôn CHÍNH từ người học đã lưu — đúng triết lý của Wordly:
     // từ đáng học nhất là từ chính bạn vừa tra.
+    // Cả hai chiều dịch; câu dài và từ trùng bị loại (savedRowToQuizWord).
     const { data, error } = await supabase
       .from("translate_history")
-      .select("id, source_text, translated_text")
+      .select("id, source_text, translated_text, direction, state, due_at")
       .eq("user_id", user.id)
-      .eq("direction", "EN→VI")
       .eq("is_saved", true)
       .is("deleted_at", null)
       .order("saved_at", { ascending: false })
-      .limit(count * POOL_MULTIPLIER);
+      .limit(SAVED_POOL_LIMIT);
 
     if (error) {
       console.error("[api/quiz] lỗi đọc từ đã lưu:", error.message);
       return Response.json({ error: "Không tải được từ vựng" }, { status: 500 });
     }
 
-    words = (data || []).map((r) => ({
-      id: r.id,
-      word: r.source_text,
-      def_vi: r.translated_text,
-    }));
+    words = dedupeQuizWords((data || []).map(savedRowToQuizWord).filter(Boolean));
+
+    // KHÔNG bù bằng kho chung: kho chỉ có nghĩa tiếng Anh, trộn vào thì đáp
+    // án lẫn hai thứ tiếng — nhìn ngôn ngữ là đoán ra (review quiz 23/10).
+    const needed = quizShortfall(words.length);
+    if (needed > 0) {
+      return Response.json(
+        { error: `Lưu thêm ${needed} từ nữa để mở quiz nhé.`, needed, available: words.length, questions: [] },
+        { status: 409 }
+      );
+    }
   }
 
-  // Không đủ từ đã lưu thì bù bằng kho từ chung.
-  if (words.length < 4) {
+  // Kho từ chung chỉ khi gọi rõ source=bank.
+  if (source === "bank") {
     const shared = createSharedClient();
     let query = shared
       .from("words")
@@ -114,6 +125,7 @@ export async function GET(request) {
   return Response.json({
     questions: safeQuestions,
     mode,
+    available: words.length,
   });
 }
 
@@ -156,15 +168,19 @@ export async function POST(request) {
   const [savedRes, bankRes] = await Promise.all([
     supabase
       .from("translate_history")
-      .select("id, source_text, translated_text")
+      .select("id, source_text, translated_text, direction, state, due_at")
       .eq("user_id", user.id)
       .in("id", wordIds.filter(isUuid)),
     shared.from("words").select("id, word, def_en, level").in("id", wordIds.filter(isUuid)),
   ]);
 
   const truth = new Map();
+  const ownRows = new Map();
   for (const r of savedRes.data || []) {
-    truth.set(r.id, { word: r.source_text, def_vi: r.translated_text });
+    const w = savedRowToQuizWord(r);
+    if (!w) continue;
+    truth.set(r.id, { word: w.word, def_vi: w.def_vi });
+    ownRows.set(r.id, { state: r.state ?? null, due_at: r.due_at ?? null });
   }
   for (const r of bankRes.data || []) {
     const bank = bankWordToQuizWord(r);
@@ -219,31 +235,40 @@ export async function POST(request) {
   //
   // Chỉ áp dụng cho từ thuộc translate_history của CHÍNH người dùng (từ họ
   // đã lưu). Từ lấy từ kho chung `words` không có hàng riêng để cập nhật.
-  const wrongIds = Object.values(result.details)
-    .filter((d) => !d.correct && d.word_id)
-    .map((d) => d.word_id)
-    .filter(isUuid);
+  const updates = reviewUpdates(result.details, ownRows, new Date());
 
   let requeued = 0;
-  if (wrongIds.length > 0) {
-    const dueSoon = new Date(Date.now() + 86400_000).toISOString(); // +1 ngày
+  if (updates.wrongIds.length > 0) {
+    const nowIso = new Date().toISOString();
     const { data: updated, error: reqErr } = await supabase
       .from("translate_history")
-      .update({ due_at: dueSoon, state: "relearning" })
+      .update({ due_at: updates.relearnDueAt, state: "relearning" })
       .eq("user_id", user.id)
-      .in("id", wrongIds)
+      .in("id", updates.wrongIds)
       .eq("is_saved", true)
-      // Không kéo lùi từ đang hẹn SỚM hơn 1 ngày — tránh làm loãng hàng đợi
-      .or(`due_at.is.null,due_at.gt.${dueSoon}`)
+      // Không kéo lùi từ đang hẹn SỚM hơn 1 ngày; hạn đã qua thì hẹn lại
+      // (sai lần nữa phải được nhắc lần nữa — push chỉ gửi 1 lần mỗi hạn)
+      .or(`due_at.is.null,due_at.gt.${updates.relearnDueAt},due_at.lte.${nowIso}`)
       .select("id");
 
     if (reqErr) {
       // Không làm request thất bại: người chơi đã có kết quả, việc hẹn ôn lại
-      // là phần thêm. Job đồng bộ hằng ngày vẫn chạy bình thường.
+      // là phần thêm.
       console.error("[api/quiz] không đẩy được từ sai vào hàng đợi:", reqErr.message);
     } else {
       requeued = (updated || []).length;
     }
+  }
+
+  // Từ đang ôn lại mà lần này trả lời đúng → thoát ôn lại, thông báo thôi ưu tiên
+  if (updates.recoveredIds.length > 0) {
+    const { error: recErr } = await supabase
+      .from("translate_history")
+      .update({ due_at: updates.recoveredDueAt, state: "review" })
+      .eq("user_id", user.id)
+      .in("id", updates.recoveredIds)
+      .eq("state", "relearning");
+    if (recErr) console.error("[api/quiz] không cập nhật từ đã nhớ lại:", recErr.message);
   }
 
   return Response.json({

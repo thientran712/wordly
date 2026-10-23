@@ -84,4 +84,56 @@ final class QuizSessionTests: XCTestCase {
         XCTAssertNotNil(s.checkedResult(for: "a"))
         XCTAssertNil(s.checkedResult(for: "b"))
     }
+
+    // MARK: Review quiz 23/10/2026
+
+    // Chấm-ngay lỗi mạng → không quay vòng mãi, vẫn đi tiếp được
+    func testCheckFailureStopsSpinner() {
+        var s = QuizSession(questions: questions)
+        s.pick("kiên cường")
+        XCTAssertTrue(s.isChecking)
+        s.recordCheckFailed(questionId: "a")
+        XCTAssertFalse(s.isChecking)
+        XCTAssertTrue(s.canAdvance)
+    }
+
+    // Trả lời đúng → tự sang câu; sai → dừng cho xem đáp án; chưa chấm → chờ
+    func testAutoAdvanceOnlyWhenCurrentAnswerIsCorrect() {
+        var s = QuizSession(questions: questions)
+        XCTAssertFalse(s.shouldAutoAdvance)
+        s.pick("kiên cường")
+        XCTAssertFalse(s.shouldAutoAdvance)
+        s.recordCheck(questionId: "a", correct: true, correctAnswer: "kiên cường")
+        XCTAssertTrue(s.shouldAutoAdvance)
+        _ = s.advance()
+        s.pick("lười")
+        s.recordCheck(questionId: "b", correct: false, correctAnswer: "chăm chỉ")
+        XCTAssertFalse(s.shouldAutoAdvance)
+    }
+
+    // "Ôn lại các từ sai" — lượt mới chỉ gồm câu sai, trả lời lại từ đầu
+    func testRetryWrongBuildsSessionFromWrongQuestionsOnly() {
+        let result = QuizResult(correct: 1, total: 2, percent: 50, details: [
+            "a": .init(correct: true, given: "kiên cường", correctAnswer: "kiên cường"),
+            "b": .init(correct: false, given: "lười", correctAnswer: "chăm chỉ"),
+        ])
+        let retry = QuizSession.retryingWrong(questions, result: result)
+        XCTAssertEqual(retry.questions.map(\.id), ["b"])
+        XCTAssertEqual(Set(retry.questions[0].options), Set(questions[1].options))
+        XCTAssertNil(retry.picked)
+        XCTAssertFalse(retry.isFinished)
+        XCTAssertTrue(QuizSession.retryingWrong(questions, result: QuizResult(correct: 2, total: 2, percent: 100, details: [
+            "a": .init(correct: true, given: nil, correctAnswer: nil),
+            "b": .init(correct: true, given: nil, correctAnswer: nil),
+        ])).questions.isEmpty)
+    }
+
+    // 409 "Lưu thêm X từ" từ server hiện nguyên văn; lỗi khác → câu chung
+    func testQuizErrorMessageUsesServerText() {
+        let e409 = APIError.serverError(#"HTTP 409: {"error":"Lưu thêm 2 từ nữa để mở quiz nhé.","needed":2}"#)
+        XCTAssertEqual(QuizCopy.errorMessage(e409), "Lưu thêm 2 từ nữa để mở quiz nhé.")
+        XCTAssertTrue(QuizCopy.isNotEnoughWords(e409))
+        XCTAssertEqual(QuizCopy.errorMessage(APIError.noData), "Có lỗi xảy ra, vui lòng thử lại.")
+        XCTAssertFalse(QuizCopy.isNotEnoughWords(APIError.noData))
+    }
 }
