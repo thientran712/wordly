@@ -10,10 +10,17 @@ final class RewardFlowTests: XCTestCase {
     }
 
     func testAfterPoll() {
-        XCTAssertEqual(RewardFlow.afterPoll(creditsBefore: 5, creditsNow: 15, elapsed: 2), .retry)
-        XCTAssertEqual(RewardFlow.afterPoll(creditsBefore: 5, creditsNow: 5, elapsed: 3), .poll)
-        XCTAssertEqual(RewardFlow.afterPoll(creditsBefore: 5, creditsNow: nil, elapsed: 3), .poll)
-        XCTAssertEqual(RewardFlow.afterPoll(creditsBefore: 5, creditsNow: 5, elapsed: 10), .fallback)
+        // Vừa bị 402 → lúc đó lượt thưởng = 0; có lượt (> 0) là server đã cộng
+        XCTAssertEqual(RewardFlow.afterPoll(creditsNow: 10, elapsed: 2), .retry)
+        XCTAssertEqual(RewardFlow.afterPoll(creditsNow: 0, elapsed: 3), .poll)
+        XCTAssertEqual(RewardFlow.afterPoll(creditsNow: nil, elapsed: 3), .poll)
+        XCTAssertEqual(RewardFlow.afterPoll(creditsNow: 0, elapsed: 10), .fallback)
+    }
+
+    /// Review cuối: lần thưởng thứ 2 trong phiên — số lượt cũ (10) còn nằm trong
+    /// trạng thái app, server cộng xong cũng là 10 → vẫn phải dịch tiếp ngay.
+    func testSecondRewardWithStaleCachedCredits() {
+        XCTAssertEqual(RewardFlow.afterPoll(creditsNow: 10, elapsed: 1.5), .retry)
     }
 
     func testLimitTranslateFromServer() {

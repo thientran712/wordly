@@ -25,8 +25,10 @@ enum RewardFlow {
         }
     }
 
-    static func afterPoll(creditsBefore: Int, creditsNow: Int?, elapsed: TimeInterval, timeout: TimeInterval = pollTimeout) -> Next {
-        if let now = creditsNow, now > creditsBefore { return .retry }
+    /// Chỉ gọi sau 402 hết lượt: lúc đó lượt thưởng = 0, nên có lượt là đã được cộng
+    /// (không so với số cũ trong app — số đó có thể đã cũ từ lần thưởng trước).
+    static func afterPoll(creditsNow: Int?, elapsed: TimeInterval, timeout: TimeInterval = pollTimeout) -> Next {
+        if let now = creditsNow, now > 0 { return .retry }
         return elapsed < timeout ? .poll : .fallback
     }
 

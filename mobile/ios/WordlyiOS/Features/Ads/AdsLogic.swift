@@ -105,7 +105,10 @@ enum AdsPolicy {
         case .foreground(let away): guard away >= foregroundMinAway else { return false }
         case .widget, .push: return false
         }
-        return ledger.rolled(now: now).appOpenShown < config.appOpenPerDay
+        let l = ledger.rolled(now: now)
+        // Không hai quảng cáo toàn màn liền nhau (vd. vừa xen màn hình rồi về nền 30 giây)
+        if let last = l.lastFullscreenAt, now.timeIntervalSince(last) < TimeInterval(config.interstitialMinGapSec) { return false }
+        return l.appOpenShown < config.appOpenPerDay
     }
 
     static func shouldShowInterstitial(config: AdsConfig, ledger: AdLedger, adFree: Bool, firstOpenAt: Date?, now: Date) -> Bool {
@@ -184,11 +187,32 @@ struct AdLedgerStore {
     }
 }
 
-enum OpenSourceTracker {
-    /// `pending`: widget/thông báo vừa mở app; `backgroundAt`: lúc vào nền (nil = mở lạnh).
-    static func resolve(pending: OpenSource?, backgroundAt: Date?, now: Date) -> OpenSource {
-        if let pending { return pending }
-        guard let backgroundAt else { return .launch }
-        return .foreground(awaySeconds: now.timeIntervalSince(backgroundAt))
+/// Biến chuyển trạng thái scene thành "lần mở app" thật. Chớp inactive (trung
+/// tâm điều khiển, hộp thoại xin quyền) không phải lần mở; lần đầu vào màn chính
+/// ngay sau khi đăng nhập / đăng ký trong lần chạy này cũng không (spec §4.5).
+struct ActivationTracker {
+    /// Lần đầu xác định phiên trong process: đã đăng nhập sẵn hay chưa
+    private(set) var signedInAtLaunch: Bool?
+    private var launchConsumed = false
+    private var backgroundAt: Date?
+
+    var isFirstActivation: Bool { !launchConsumed }
+
+    mutating func noteAuthResolved(authenticated: Bool) {
+        if signedInAtLaunch == nil { signedInAtLaunch = authenticated }
+    }
+
+    mutating func noteBackground(_ now: Date) { backgroundAt = now }
+
+    /// nil = không phải lần mở app (không xét quảng cáo mở app).
+    mutating func becameActive(now: Date, pending: OpenSource?) -> OpenSource? {
+        if let at = backgroundAt {
+            backgroundAt = nil
+            launchConsumed = true
+            return pending ?? .foreground(awaySeconds: now.timeIntervalSince(at))
+        }
+        guard !launchConsumed else { return nil }
+        launchConsumed = true
+        return signedInAtLaunch == true ? (pending ?? .launch) : nil
     }
 }

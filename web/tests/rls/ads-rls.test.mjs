@@ -10,7 +10,7 @@ import { skipReason, createTestUser, cleanupUsers, adminClient, guestClient } fr
 const skip = skipReason();
 
 describe("Quảng cáo: RLS + hàm lượt dịch / thưởng", { skip: skip ? `Bỏ qua: ${skip}` : false }, () => {
-  let a, b, c, d;
+  let a, b, c, d, e;
   const admin = skip ? null : adminClient();
   const tx = () => `tx-${randomUUID()}`;
 
@@ -19,9 +19,10 @@ describe("Quảng cáo: RLS + hàm lượt dịch / thưởng", { skip: skip ? `
     b = await createTestUser("adsB");
     c = await createTestUser("adsC");
     d = await createTestUser("adsD");
+    e = await createTestUser("adsE");
   });
   after(async () => {
-    await cleanupUsers(a, b, c, d);
+    await cleanupUsers(a, b, c, d, e);
   });
 
   const consume = (u, free, key = null) => u.client.rpc("consume_translate", { p_daily_free: free, p_quota_key: key });
@@ -111,4 +112,31 @@ describe("Quảng cáo: RLS + hàm lượt dịch / thưởng", { skip: skip ? `
     assert.deepEqual(rs.map((r) => r.granted), [true, true, true, true, true, false]);
     assert.equal(rs[5].credits, 5);
   });
+
+  // Giữ lượt trước khi gọi AI → dịch lỗi thì hoàn (review cuối: chặn song song)
+  const refund = (u, id) => u.client.rpc("refund_translate", { p_charge_id: id });
+
+  test("refund_translate: hoàn đúng một lần lượt miễn phí, câu đó phải trừ lại", async () => {
+    const key = randomUUID();
+    const r = (await consume(e, 10, key)).data;
+    assert.equal(r.charged, "free");
+    assert.ok(r.charge_id);
+    assert.equal((await refund(e, r.charge_id)).data, true);
+    assert.equal((await refund(e, r.charge_id)).data, false, "không hoàn hai lần");
+    const today = (await e.client.rpc("translate_quota_today", { p_quota_key: key })).data;
+    assert.equal(today.used, 0);
+    assert.equal(today.key_active, false);
+  });
+
+  test("refund_translate: hoàn lượt thưởng; người khác / khách không hoàn được", async () => {
+    assert.equal((await grant({ tx: tx(), user_id: e.id, credits: 1 })).data, "applied");
+    const r = (await consume(e, 0)).data;
+    assert.equal(r.charged, "credit");
+    assert.equal((await refund(b, r.charge_id)).data, false);
+    assert.ok((await guestClient().rpc("refund_translate", { p_charge_id: r.charge_id })).error);
+    assert.equal((await refund(e, r.charge_id)).data, true);
+    assert.equal((await e.client.rpc("translate_quota_today", {})).data.credits, 1);
+    assert.equal((await refund(e, randomUUID())).data, false, "id bịa → không cộng gì");
+  });
+
 });

@@ -18,7 +18,7 @@ final class AdsCenter: ObservableObject {
     private let defaults: UserDefaults
     private var store: AdLedgerStore { AdLedgerStore(defaults: defaults) }
     private var pendingSource: OpenSource?
-    private var backgroundAt: Date?
+    private var activation = ActivationTracker()
     private var bag: Set<AnyCancellable> = []
 
     private enum Key {
@@ -31,6 +31,12 @@ final class AdsCenter: ObservableObject {
         if defaults.object(forKey: Key.firstOpenAt) == nil { defaults.set(Date(), forKey: Key.firstOpenAt) }
         ProStore.shared.$status
             .sink { [weak self] status in self?.apply(status) }
+            .store(in: &bag)
+        // Phiên có sẵn lúc mở app hay vừa đăng nhập — tạo AdsCenter sớm (WordlyApp.init)
+        AuthManager.shared.$isLoading
+            .filter { !$0 }
+            .first()
+            .sink { [weak self] _ in self?.activation.noteAuthResolved(authenticated: AuthManager.shared.isAuthenticated) }
             .store(in: &bag)
     }
 
@@ -57,34 +63,43 @@ final class AdsCenter: ObservableObject {
     /// Widget / thông báo vừa mở app — gọi trước hoặc ngay sau khi app active.
     func noteOpenSource(_ source: OpenSource) { pendingSource = source }
 
-    func noteBackground() { backgroundAt = Date() }
+    func noteBackground() { activation.noteBackground(Date()) }
 
     /// App vừa active: lần đầu khởi động SDK, hỏi ATT khi tới lượt, rồi xét quảng cáo mở app.
-    func handleBecameActive(onboardingDone: Bool, inOnboarding: Bool) async {
-        let isLaunch = backgroundAt == nil
-        if isLaunch { defaults.set(defaults.integer(forKey: Key.launchCount) + 1, forKey: Key.launchCount) }
+    func handleBecameActive() async {
+        if activation.isFirstActivation {
+            defaults.set(defaults.integer(forKey: Key.launchCount) + 1, forKey: Key.launchCount)
+        }
+        // onOpenURL của widget/thông báo tới sau scenePhase .active một chút
+        try? await Task.sleep(for: .milliseconds(600))
+        let source = activation.becameActive(now: Date(), pending: pendingSource)
+        pendingSource = nil
         await refresh()
-        guard config.enabled, !adFree else { backgroundAt = nil; return }
-        if AdsPolicy.shouldAskTracking(onboardingDone: onboardingDone, launchCount: defaults.integer(forKey: Key.launchCount)) {
+        guard config.enabled, !adFree else { return }
+        let onboarding = OnboardingCenter.shared
+        if AdsPolicy.shouldAskTracking(onboardingDone: onboarding.flowSeen, launchCount: defaults.integer(forKey: Key.launchCount)) {
             await AdsManager.shared.requestTrackingIfNeeded()
         }
         await AdsManager.shared.start()
-        // onOpenURL của widget/thông báo tới sau scenePhase .active một chút
-        try? await Task.sleep(nanoseconds: 600_000_000)
-        let source = OpenSourceTracker.resolve(pending: pendingSource, backgroundAt: backgroundAt, now: Date())
-        pendingSource = nil
-        backgroundAt = nil
-        var ledger = store.load(userId: userId, now: Date())
-        guard AdsPolicy.shouldShowAppOpen(config: config, ledger: ledger, source: source, adFree: adFree,
-                                          inOnboarding: inOnboarding, isRecording: isRecording,
-                                          firstOpenAt: firstOpenAt, now: Date()) else { return }
+        guard let source, appOpenAllowed(source) else { return }
         // Mở lạnh: quảng cáo vừa bắt đầu tải — chờ tối đa 3 giây, không kịp thì thôi
-        guard await AdsManager.shared.waitForAppOpen(timeout: source == .launch ? 3 : 0) else { return }
+        guard await AdsManager.shared.waitForAppOpen(timeout: source == .launch ? 3 : 0),
+              // "Có gì mới" quyết định sau khi tải dữ liệu — chờ rồi xét lại, không chồng sheet
+              await onboarding.waitIntroDecided(timeout: 3),
+              UIApplication.shared.applicationState == .active,
+              appOpenAllowed(source) else { return }
+        var ledger = store.load(userId: userId, now: Date())
         // Ghi sổ NGAY KHI sắp hiện (không đợi đóng): người dùng thoát app giữa quảng cáo vẫn tính lượt
         _ = await AdsManager.shared.showAppOpen {
             ledger.noteAppOpen(now: Date())
             self.store.save(ledger, userId: self.userId)
         }
+    }
+
+    private func appOpenAllowed(_ source: OpenSource) -> Bool {
+        AdsPolicy.shouldShowAppOpen(config: config, ledger: store.load(userId: userId, now: Date()), source: source,
+                                    adFree: adFree, inOnboarding: OnboardingCenter.shared.intro != .none,
+                                    isRecording: isRecording, firstOpenAt: firstOpenAt, now: Date())
     }
 
     /// Điểm chuyển màn tự nhiên (xong quiz, đóng thẻ từ) — hiện nếu đủ khoảng cách.

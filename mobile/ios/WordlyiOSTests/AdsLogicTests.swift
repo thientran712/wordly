@@ -133,10 +133,54 @@ final class AdsLogicTests: XCTestCase {
         XCTAssertEqual(store.load(userId: "b", now: now).appOpenShown, 0, "tài khoản khác có sổ riêng")
     }
 
-    func testOpenSourceResolution() {
-        XCTAssertEqual(OpenSourceTracker.resolve(pending: nil, backgroundAt: nil, now: now), .launch)
-        XCTAssertEqual(OpenSourceTracker.resolve(pending: nil, backgroundAt: now.addingTimeInterval(-45), now: now),
-                       .foreground(awaySeconds: 45))
-        XCTAssertEqual(OpenSourceTracker.resolve(pending: .widget, backgroundAt: now.addingTimeInterval(-45), now: now), .widget)
+    // Review cuối: không hai quảng cáo toàn màn liền nhau (spec §4.6)
+    func testAppOpenRespectsGapAfterOtherFullscreenAd() {
+        XCTAssertFalse(appOpen(ledger(last: now.addingTimeInterval(-60)), .foreground(awaySeconds: 40)))
+        XCTAssertTrue(appOpen(ledger(last: now.addingTimeInterval(-200)), .foreground(awaySeconds: 40)))
     }
+
+
+    // MARK: Review cuối — chỉ lần mở app thật mới tính
+
+    private func signedIn() -> ActivationTracker {
+        var t = ActivationTracker()
+        t.noteAuthResolved(authenticated: true)
+        return t
+    }
+
+    func testColdLaunchAlreadySignedInIsLaunch() {
+        var t = signedIn()
+        XCTAssertEqual(t.becameActive(now: now, pending: nil), .launch)
+    }
+
+    func testInactiveBlipIsNotAnOpen() {
+        var t = signedIn()
+        _ = t.becameActive(now: now, pending: nil)
+        // Trung tâm điều khiển / hộp thoại xin quyền micro: active → inactive → active
+        XCTAssertNil(t.becameActive(now: now.addingTimeInterval(20), pending: nil))
+    }
+
+    func testReturnFromBackground() {
+        var t = signedIn()
+        _ = t.becameActive(now: now, pending: nil)
+        t.noteBackground(now)
+        XCTAssertEqual(t.becameActive(now: now.addingTimeInterval(45), pending: nil), .foreground(awaySeconds: 45))
+        t.noteBackground(now)
+        XCTAssertEqual(t.becameActive(now: now.addingTimeInterval(45), pending: .widget), .widget)
+    }
+
+    func testFirstLandingAfterLoginOrSignupIsNotAnOpen() {
+        var t = ActivationTracker()
+        t.noteAuthResolved(authenticated: false)   // mở app chưa đăng nhập
+        t.noteAuthResolved(authenticated: true)    // đăng ký / đăng nhập xong — không đổi kết luận
+        XCTAssertNil(t.becameActive(now: now, pending: nil))
+    }
+
+    func testFirstActivationIsCountedOnceAsProcessLaunch() {
+        var t = signedIn()
+        XCTAssertTrue(t.isFirstActivation)
+        _ = t.becameActive(now: now, pending: nil)
+        XCTAssertFalse(t.isFirstActivation)
+    }
+
 }

@@ -119,12 +119,11 @@ struct MainTabView: View {
                 if onboarding.intro != .whatsNew { pro.maybeShowSoftPaywall() }
             }
         }
-        // Quảng cáo mở app (spec 2026-10-23): task riêng để không phải chờ đồng bộ widget/push
-        .task(id: scenePhase) {
-            switch scenePhase {
-            case .active:
-                await AdsCenter.shared.handleBecameActive(onboardingDone: onboarding.flowSeen,
-                                                          inOnboarding: onboarding.intro != .none)
+        // Quảng cáo mở app (spec 2026-10-23): theo chuyển trạng thái, không theo task bị huỷ giữa chừng
+        .task { if scenePhase == .active { await AdsCenter.shared.handleBecameActive() } }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .active: Task { await AdsCenter.shared.handleBecameActive() }
             case .background: AdsCenter.shared.noteBackground()
             default: break
             }

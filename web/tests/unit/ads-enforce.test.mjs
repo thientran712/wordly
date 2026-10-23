@@ -10,17 +10,18 @@ const KEY = "22222222-2222-2222-2222-222222222222";
 const ON = { enforced: true, dailyFree: 10, rewardCredits: 10, minBuild: 23 };
 const PRO = { source: "gift", expires_at: null };
 
-function fakeDeps({ today = { used: 0, credits: 0, key_active: false }, entitlement = null, todayError } = {}) {
+// `consume`: kết quả consume_translate (mặc định còn lượt, trừ lượt miễn phí)
+function fakeDeps({ consume = { allowed: true, charged: "free", charge_id: "c1" }, entitlement = null, consumeError } = {}) {
   const calls = [];
   return {
     calls,
     async getEntitlement() { calls.push("getEntitlement"); return entitlement; },
-    async translateToday(k) {
-      calls.push(["translateToday", k]);
-      if (todayError) throw new Error("db down");
-      return today;
+    async consumeTranslate(free, k) {
+      calls.push(["consumeTranslate", free, k]);
+      if (consumeError) throw new Error("db down");
+      return typeof consume === "function" ? consume() : consume;
     },
-    async consumeTranslate(free, k) { calls.push(["consumeTranslate", free, k]); return { allowed: true }; },
+    async refundTranslate(id) { calls.push(["refundTranslate", id]); },
   };
 }
 
@@ -67,8 +68,8 @@ test("Pro / được tặng → không giới hạn, không đọc lượt", asy
   assert.deepEqual(deps.calls, ["getEntitlement"]);
 });
 
-test("hết lượt miễn phí + hết thưởng → 402 mời xem quảng cáo, không gọi AI", async () => {
-  const deps = fakeDeps({ today: { used: 10, credits: 0, key_active: false } });
+test("hết lượt (consume không cho) → 402 mời xem quảng cáo, không gọi AI", async () => {
+  const deps = fakeDeps({ consume: { allowed: false, charged: "none" } });
   const run = runner();
   const res = await call({ deps }, run);
   assert.equal(res.status, 402);
@@ -79,44 +80,51 @@ test("hết lượt miễn phí + hết thưởng → 402 mời xem quảng cáo
   assert.equal(run.count, 0);
 });
 
-test("hết lượt miễn phí nhưng còn thưởng → dịch rồi trừ lượt", async () => {
-  const deps = fakeDeps({ today: { used: 10, credits: 3, key_active: false } });
+test("giữ lượt TRƯỚC khi gọi AI, dịch xong không trừ thêm", async () => {
+  const deps = fakeDeps();
   const run = runner();
   const res = await call({ deps }, run);
   assert.equal(res.status, 200);
   assert.equal(run.count, 1);
-  assert.deepEqual(deps.calls.at(-1), ["consumeTranslate", 10, KEY]);
+  assert.deepEqual(deps.calls, ["getEntitlement", ["consumeTranslate", 10, KEY]]);
 });
 
-test("câu đang soạn đã trừ lượt → không chặn giữa chừng", async () => {
-  const deps = fakeDeps({ today: { used: 10, credits: 0, key_active: true } });
+test("song song khi còn đúng 1 lượt → chỉ một request được dịch", async () => {
+  let left = 1;
+  const deps = fakeDeps({ consume: () => (left-- > 0 ? { allowed: true, charged: "credit", charge_id: "c1" } : { allowed: false, charged: "none" }) });
   const run = runner();
-  const res = await call({ deps }, run);
-  assert.equal(res.status, 200);
+  const rs = await Promise.all([call({ deps }, run), call({ deps }, run), call({ deps }, run)]);
+  assert.deepEqual(rs.map((r) => r.status).sort(), [200, 402, 402]);
   assert.equal(run.count, 1);
 });
 
-test("dịch lỗi → không trừ lượt", async () => {
+test("dịch lỗi → hoàn lại lượt đã giữ", async () => {
   const deps = fakeDeps();
   const res = await call({ deps }, runner(502));
   assert.equal(res.status, 502);
-  assert.ok(!deps.calls.some((c) => c[0] === "consumeTranslate"));
+  assert.deepEqual(deps.calls.at(-1), ["refundTranslate", "c1"]);
 });
 
-test("đọc lượt lỗi → cho qua, không chặn", async () => {
-  const deps = fakeDeps({ todayError: true });
+test("câu đang soạn (không trừ lượt) dịch lỗi → không có gì để hoàn", async () => {
+  const deps = fakeDeps({ consume: { allowed: true, charged: "none" } });
+  await call({ deps }, runner(502));
+  assert.ok(!deps.calls.some((c) => c[0] === "refundTranslate"));
+});
+
+test("trừ lượt lỗi DB → cho qua, không chặn", async () => {
+  const deps = fakeDeps({ consumeError: true });
   const run = runner();
   const res = await call({ deps }, run);
   assert.equal(res.status, 200);
   assert.equal(run.count, 1);
 });
 
-test("app huỷ request → không trừ lượt", async () => {
+test("app huỷ request → hoàn lại lượt", async () => {
   const deps = fakeDeps();
   const ctl = new AbortController();
   ctl.abort();
   await call({ deps, signal: ctl.signal }, runner());
-  assert.ok(!deps.calls.some((c) => c[0] === "consumeTranslate"));
+  assert.deepEqual(deps.calls.at(-1), ["refundTranslate", "c1"]);
 });
 
 test("quota_key không phải UUID → bỏ qua (tính theo request)", async () => {

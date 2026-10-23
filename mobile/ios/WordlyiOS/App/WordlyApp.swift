@@ -12,6 +12,8 @@ struct WordlyApp: App {
     @AppStorage("wordly-theme") private var savedTheme: String = "dark"
 
     init() {
+        // Tạo sớm để biết phiên đăng nhập có sẵn lúc mở app (quảng cáo mở app)
+        _ = AdsCenter.shared
         #if DEBUG
         if PreviewMode.isOn {
             if CommandLine.arguments.contains("-WordlyOnboarding") {

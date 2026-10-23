@@ -76,6 +76,9 @@ export function createBillingDeps({ supabase, sharedSupabase, userId, now = () =
       if (quotaKey) args.p_quota_key = quotaKey;
       return must(await supabase.rpc("consume_translate", args), "consume_translate");
     },
+    async refundTranslate(chargeId) {
+      return must(await supabase.rpc("refund_translate", { p_charge_id: chargeId }), "refund_translate");
+    },
     async grantAdFallback() {
       return must(await supabase.rpc("grant_ad_fallback", {}), "grant_ad_fallback");
     },

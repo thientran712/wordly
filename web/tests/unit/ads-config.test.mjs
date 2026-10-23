@@ -10,7 +10,7 @@ test("adsConfig: mặc định tắt, 10 lượt miễn phí, thưởng 10 lư�
 });
 
 test("adsConfig: đọc env, số không hợp lệ về mặc định", () => {
-  assert.equal(adsConfig({ ADS_ENFORCE: " On " }).enforced, true);
+  assert.equal(adsConfig({ ADS_ENFORCE: " On ", ADS_ENABLED: "1" }).enforced, true);
   assert.equal(adsConfig({ ADS_ENFORCE: "0" }).enforced, false);
   assert.equal(adsConfig({ ADS_DAILY_FREE: "abc" }).dailyFree, 10);
   assert.equal(adsConfig({ ADS_DAILY_FREE: "-3" }).dailyFree, 10);
@@ -53,4 +53,10 @@ test("app-ads.txt: một dòng của Google theo ADMOB_PUBLISHER_ID, thiếu env
   assert.equal(appAdsTxt({ ADMOB_PUBLISHER_ID: " pub-1 " }), "google.com, pub-1, DIRECT, f08c47fec0942fa0\n");
   assert.equal(appAdsTxt({}), null);
   assert.equal(appAdsTxt({ ADMOB_PUBLISHER_ID: "pub-1\ninjected" }), null);
+});
+
+test("ADS_ENABLED tắt (công tắc khẩn) → không tính lượt dịch dù ADS_ENFORCE bật — app không xem quảng cáo được", () => {
+  assert.equal(adsConfig({ ADS_ENFORCE: "1", ADS_ENABLED: "0" }).enforced, false);
+  assert.equal(adsConfig({ ADS_ENFORCE: "1" }).enforced, false);
+  assert.equal(adsConfig({ ADS_ENFORCE: "1", ADS_ENABLED: "1" }).enforced, true);
 });

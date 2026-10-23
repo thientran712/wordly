@@ -3,8 +3,10 @@
 // Mọi lần dịch (từ, câu, giọng nói, ảnh; kể cả trúng cache) của người đã đăng
 // nhập trên bản app có quảng cáo tính một lượt: hết lượt miễn phí trong ngày
 // thì trừ lượt thưởng, hết cả hai → 402 mời xem quảng cáo.
-// Cùng nguyên tắc với billing/enforce.js: tắt chặn → y như cũ; chỉ trừ khi
-// thành công; DB lỗi → cho qua (rate limit vẫn chặn thô); Pro/được tặng → không giới hạn.
+// Giữ lượt TRƯỚC khi gọi AI (một hàm SQL nguyên tử) — kiểm trước, trừ sau thì
+// nhiều request song song khi còn 1 lượt đều được dịch. Dịch lỗi / app huỷ →
+// hoàn lượt bằng phiếu. Tắt chặn → y như cũ; DB lỗi → cho qua (rate limit vẫn
+// chặn thô); Pro/được tặng → không giới hạn.
 import { isPro } from "../billing/plan.js";
 import { normalizeQuotaKey } from "../billing/enforce.js";
 import { adsApplyToBuild } from "./config.js";
@@ -36,22 +38,23 @@ export async function withTranslateQuota({ config, user, build, quotaKey: rawKey
   }
 
   const quotaKey = normalizeQuotaKey("translate", rawKey);
+  let charge;
   try {
-    const t = await deps.translateToday(quotaKey);
-    if ((t?.used || 0) >= config.dailyFree && !(t?.credits > 0) && !t?.key_active) {
-      return Response.json(translateLimitBody(config.dailyFree, config.rewardCredits), { status: 402 });
-    }
+    charge = await deps.consumeTranslate(config.dailyFree, quotaKey);
   } catch (e) {
-    logFail("translateToday", e);
+    logFail("consumeTranslate", e);
     return run();
+  }
+  if (!charge?.allowed) {
+    return Response.json(translateLimitBody(config.dailyFree, config.rewardCredits), { status: 402 });
   }
 
   const res = await run();
-  if (isSuccess(res, signal)) {
+  if (!isSuccess(res, signal) && charge.charge_id) {
     try {
-      await deps.consumeTranslate(config.dailyFree, quotaKey);
+      await deps.refundTranslate(charge.charge_id);
     } catch (e) {
-      logFail("consumeTranslate", e);
+      logFail("refundTranslate", e);
     }
   }
   return res;

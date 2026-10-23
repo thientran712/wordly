@@ -436,13 +436,12 @@ final class TranslateViewModel: ObservableObject {
         guard let uid = AuthManager.shared.currentUser?.id else { adGate = nil; return }
         isRewarding = true
         defer { isRewarding = false }
-        let before = ProStore.shared.status.ads?.translate?.credits ?? 0
         var next = RewardFlow.afterAd(await AdsManager.shared.showRewarded(userId: uid, customData: RewardData.translate))
         let started = Date()
         while next == .poll {
             try? await Task.sleep(for: .milliseconds(1500))
             await ProStore.shared.refreshStatus()
-            next = RewardFlow.afterPoll(creditsBefore: before, creditsNow: ProStore.shared.status.ads?.translate?.credits,
+            next = RewardFlow.afterPoll(creditsNow: ProStore.shared.status.ads?.translate?.credits,
                                         elapsed: Date().timeIntervalSince(started))
         }
         switch next {

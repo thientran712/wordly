@@ -19,6 +19,7 @@ final class AdsManager: NSObject, ObservableObject {
     @Published private(set) var canRequestAds = false
 
     private var started = false
+    private var starting = false
     private var appOpen: AppOpenAd?
     private var appOpenLoadedAt: Date?
     private var interstitial: InterstitialAd?
@@ -29,9 +30,11 @@ final class AdsManager: NSObject, ObservableObject {
     /// Quảng cáo mở app hết hạn sau 4 giờ (Google).
     private static let appOpenTTL: TimeInterval = 4 * 3600
 
+    /// Chỉ chốt "đã khởi động" khi xong hẳn — lỗi mạng / chưa đồng ý thì lần sau thử lại.
     func start() async {
-        guard !started, WordlyConfig.adMobAppId != nil else { return }
-        started = true
+        guard !started, !starting, WordlyConfig.adMobAppId != nil else { return }
+        starting = true
+        defer { starting = false }
         _ = try? await ConsentInformation.shared.requestConsentInfoUpdate(with: RequestParameters())
         var showForm = true
         #if DEBUG
@@ -44,6 +47,7 @@ final class AdsManager: NSObject, ObservableObject {
         canRequestAds = ConsentInformation.shared.canRequestAds
         guard canRequestAds else { return }
         _ = await MobileAds.shared.start()
+        started = true
         preloadAll()
     }
 
@@ -62,7 +66,7 @@ final class AdsManager: NSObject, ObservableObject {
     func waitForAppOpen(timeout: TimeInterval) async -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while appOpen == nil && Date() < deadline {
-            try? await Task.sleep(nanoseconds: 200_000_000)
+            do { try await Task.sleep(nanoseconds: 200_000_000) } catch { return false }
         }
         return appOpen != nil
     }
@@ -91,6 +95,8 @@ final class AdsManager: NSObject, ObservableObject {
 
     /// `customData`: "translate" | "theme:<id>" — server đọc trong callback SSV.
     func showRewarded(userId: UUID, customData: String) async -> RewardOutcome {
+        // Người dùng chủ động xem → khởi động nếu lúc mở app chưa xong (quảng cáo tắt, mạng lỗi…)
+        await start()
         if rewarded == nil { await loadRewardedNow() }
         guard let ad = rewarded, let vc = presentable() else { return .failed }
         rewarded = nil

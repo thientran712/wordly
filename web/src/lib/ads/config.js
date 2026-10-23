@@ -18,10 +18,13 @@ function count(value, fallback) {
   return /^\d+$/.test(s) ? Number(s) : fallback;
 }
 
-/** Luật lượt dịch phía server. */
+/**
+ * Luật lượt dịch phía server. Chỉ tính lượt khi quảng cáo đang bật: tắt
+ * ADS_ENABLED (công tắc khẩn) thì app không xem quảng cáo được → không chặn.
+ */
 export function adsConfig(env = process.env) {
   return {
-    enforced: flag(env.ADS_ENFORCE, false),
+    enforced: flag(env.ADS_ENFORCE, false) && flag(env.ADS_ENABLED, false),
     dailyFree: count(env.ADS_DAILY_FREE, 10),
     rewardCredits: count(env.ADS_REWARD_CREDITS, 10) || 10,
     minBuild: count(env.ADS_MIN_BUILD, 0),
