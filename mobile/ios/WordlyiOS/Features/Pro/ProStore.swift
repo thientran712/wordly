@@ -145,6 +145,8 @@ final class ProStore: ObservableObject {
     @discardableResult
     func handle(_ error: Error) -> Bool {
         guard case APIError.limitReached(let code, _, let limit) = error else { return false }
+        // Hết lượt dịch → màn xem quảng cáo (TranslateViewModel), không phải paywall
+        guard code != .translate else { return false }
         paywall = .limit(code, limit)
         Task { await refreshStatus() }
         return true

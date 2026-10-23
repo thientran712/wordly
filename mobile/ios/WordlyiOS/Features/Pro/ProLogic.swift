@@ -8,6 +8,8 @@ enum LimitCode: String, Equatable {
     case advancedTranslate = "limit_advanced_translate"
     case dictionary = "limit_dictionary"
     case pushSlots = "limit_push_slots"
+    /// Hết lượt dịch (quảng cáo, spec 2026-10-23) — mời xem quảng cáo thưởng, không mở paywall
+    case translate = "limit_translate"
 }
 
 extension APIError {
@@ -171,6 +173,7 @@ enum PaywallReason: Equatable, Identifiable {
         case .limit(.advancedTranslate, let n): return "Hết \(n ?? 5) lượt dịch nâng cao hôm nay"
         case .limit(.dictionary, let n): return "Hết \(n ?? 5) lượt tra từ mới hôm nay"
         case .limit(.pushSlots, _): return "Thêm khung giờ nhắc ôn với Pro"
+        case .limit(.translate, _): return "Hết lượt dịch hôm nay"
         case .theme: return "Mở khoá toàn bộ theme"
         case .customStyle: return "Ảnh của bạn và tuỳ chỉnh màu"
         case .general: return "Học không giới hạn với Wordly Pro"
