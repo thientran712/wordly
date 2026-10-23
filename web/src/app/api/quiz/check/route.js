@@ -12,7 +12,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createSharedClient } from "@/lib/supabase/shared";
 import { getUserFast } from "@/lib/auth/get-user-fast";
-import { scoreQuiz, QUIZ_MODES, bankWordToQuizWord } from "@/lib/learning/quiz-generation";
+import { scoreQuiz, QUIZ_MODES, bankWordToQuizWord, savedRowToQuizWord } from "@/lib/learning/quiz-generation";
 
 function isUuid(value) {
   return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -48,15 +48,16 @@ export async function POST(request) {
   const [savedRes, bankRes] = await Promise.all([
     supabase
       .from("translate_history")
-      .select("id, source_text, translated_text")
+      .select("id, source_text, translated_text, direction")
       .eq("user_id", user.id)
       .eq("id", word_id),
     shared.from("words").select("id, word, def_en, level").eq("id", word_id),
   ]);
 
   let truth = null;
-  if (savedRes.data?.[0]) {
-    truth = { word: savedRes.data[0].source_text, def_vi: savedRes.data[0].translated_text };
+  const own = savedRowToQuizWord(savedRes.data?.[0]);
+  if (own) {
+    truth = { word: own.word, def_vi: own.def_vi };
   } else if (bankRes.data?.[0]) {
     const bank = bankWordToQuizWord(bankRes.data[0]);
     if (bank) truth = { word: bank.word, def_vi: bank.def_vi };

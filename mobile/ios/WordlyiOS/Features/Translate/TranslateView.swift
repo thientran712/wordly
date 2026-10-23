@@ -235,18 +235,26 @@ struct TranslateView: View {
                         }
                     }
                     Spacer()
-                    Button {
-                        Task { await vm.save() }
-                    } label: {
-                        Label(vm.saved ? "Đã lưu" : "Lưu", systemImage: vm.saved ? "bookmark.fill" : "bookmark")
-                            .font(WordlyFonts.body(13, weight: .bold))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(vm.saved ? WordlyColors.electric : WordlyColors.cardBG)
-                            .foregroundStyle(vm.saved ? WordlyColors.onElectric : WordlyColors.electric)
-                            .clipShape(Capsule())
+                    if vm.isTooLongToSave {
+                        // Câu dài chỉ vào lịch sử — widget/quiz/nhắc ôn dành cho từ, cụm ngắn
+                        Text("Câu dài chỉ lưu trong lịch sử")
+                            .font(WordlyFonts.body(11, weight: .medium))
+                            .foregroundStyle(WordlyColors.inkSoft)
+                            .multilineTextAlignment(.trailing)
+                    } else {
+                        Button {
+                            Task { await vm.save() }
+                        } label: {
+                            Label(vm.saved ? "Đã lưu" : "Lưu", systemImage: vm.saved ? "bookmark.fill" : "bookmark")
+                                .font(WordlyFonts.body(13, weight: .bold))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(vm.saved ? WordlyColors.electric : WordlyColors.cardBG)
+                                .foregroundStyle(vm.saved ? WordlyColors.onElectric : WordlyColors.electric)
+                                .clipShape(Capsule())
+                        }
+                        .disabled(!vm.canSave)
                     }
-                    .disabled(!vm.canSave)
                 }
             }
         }
@@ -278,6 +286,12 @@ struct TranslateView: View {
                 .font(WordlyFonts.body(13, weight: .semibold))
                 .foregroundStyle(WordlyColors.error)
             Spacer()
+            // Tối đa 30 giây rồi tự dừng
+            Text(DictationLimit.label(remaining: vm.dictationRemaining))
+                .font(WordlyFonts.body(13, weight: .bold))
+                .foregroundStyle(WordlyColors.error)
+                .monospacedDigit()
+                .accessibilityLabel("Còn \(vm.dictationRemaining) giây")
             Button {
                 Task { await vm.toggleDictation() }
             } label: {
@@ -306,7 +320,7 @@ struct TranslateView: View {
 
     private func speakChip(_ label: String, lang: String, text: String) -> some View {
         Button {
-            Task { await tts.speak(text, lang: lang) }
+            tts.toggle(text, lang: lang)
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "speaker.wave.2.fill")
@@ -319,6 +333,7 @@ struct TranslateView: View {
             .foregroundStyle(WordlyColors.electric)
             .clipShape(Capsule())
         }
+        .speakLocked(tts, text: text, lang: lang)
         .accessibilityLabel("Phát âm \(label)")
     }
 
@@ -461,7 +476,7 @@ struct DictionaryCard: View {
     private func phonetic(_ flag: String, _ ipa: String, lang: String) -> some View {
         if !ipa.isEmpty {
             Button {
-                Task { await tts.speak(detail.word, lang: lang) }
+                tts.toggle(detail.word, lang: lang)
             } label: {
                 HStack(spacing: 6) {
                     Text(flag)
@@ -474,6 +489,7 @@ struct DictionaryCard: View {
                 .foregroundStyle(WordlyColors.ink)
                 .clipShape(Capsule())
             }
+            .speakLocked(tts, text: detail.word, lang: lang)
         }
     }
 }

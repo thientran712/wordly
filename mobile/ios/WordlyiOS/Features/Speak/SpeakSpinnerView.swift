@@ -352,9 +352,10 @@ struct SpeakTimerSheet: View {
                         Text(w.word).font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
                         if let ipa = w.ipa { Text(ipa).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft) }
                         Spacer()
-                        Button { Task { await tts.speak(w.word) } } label: {
+                        Button { tts.toggle(w.word) } label: {
                             Image(systemName: "speaker.wave.2.fill").foregroundStyle(WordlyColors.electric)
                         }
+                        .speakLocked(tts, text: w.word, lang: "en-US")
                         .accessibilityLabel("Phát âm")
                     }
                     if let vi = w.meaningVi { Text(vi).font(WordlyFonts.body(13, weight: .medium)).foregroundStyle(WordlyColors.grass) }

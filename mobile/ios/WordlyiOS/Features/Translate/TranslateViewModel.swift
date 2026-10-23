@@ -4,7 +4,8 @@ import Combine
 
 /// Màn Dịch & tra từ — hành vi giống web (components/home/InlineTranslate.js):
 /// dịch tự động khi gõ, gợi ý từ (Datamuse), từ điển AI cho từ đơn, tự ghi lịch
-/// sử sau 10 giây, nút Lưu đánh dấu "Đã lưu" (vào quiz + widget + thông báo nhắc ôn).
+/// sử sau 2 giây, nút Lưu đánh dấu "Đã lưu" (vào quiz + widget + thông báo nhắc ôn)
+/// — chỉ cho từ/cụm ngắn, câu dài chỉ nằm trong lịch sử.
 @MainActor
 final class TranslateViewModel: ObservableObject {
     enum Direction: String, CaseIterable {
@@ -39,7 +40,13 @@ final class TranslateViewModel: ObservableObject {
 
     let charLimit = 10_000
     var isOverLimit: Bool { inputText.count > charLimit }
-    var canSave: Bool { !inputText.trimmingCharacters(in: .whitespaces).isEmpty && !translatedText.isEmpty && !isTranslating }
+    var canSave: Bool {
+        !inputText.trimmingCharacters(in: .whitespaces).isEmpty && !translatedText.isEmpty && !isTranslating
+            && TranslateLogic.canSaveForReview(inputText)
+    }
+    /// Câu/đoạn dài: có bản dịch nhưng không lưu để nhắc ôn (chỉ vào lịch sử).
+    /// Câu đã lưu từ trước (bản cũ chưa chặn) vẫn hiện "Đã lưu".
+    var isTooLongToSave: Bool { !saved && !translatedText.isEmpty && !TranslateLogic.canSaveForReview(inputText) }
 
     private let api = APIClient.shared
     private var translateTask: Task<Void, Never>?
@@ -64,13 +71,20 @@ final class TranslateViewModel: ObservableObject {
     @Published var imageError: String?
     @Published var isDictating = false
     @Published var dictationLevel: Float = 0
+    @Published var dictationRemaining = DictationLimit.maxSeconds
     let dictation = DictationManager()
     private var dictationCancellables: Set<AnyCancellable> = []
+    /// Chống bấm dồn nút mic (xin quyền là async — bấm 2 lần nhanh từng bật 2 lần).
+    private var dictationThrottle = TapThrottle(interval: 0.8)
+    private var isTogglingDictation = false
 
     /// Dịch ngay khi đang nói, không đợi dừng ghi âm — đẩy transcript từng
     /// phần (partial results của Speech framework) vào `inputText` giống
     /// gõ tay, tự chạy qua debounce dịch (300ms) đã có sẵn.
     private func observeDictation() {
+        dictation.onLimitReached = { [weak self] in
+            self?.toast = "Đã đủ \(DictationLimit.maxSeconds) giây — tự dừng ghi âm"
+        }
         dictation.$isListening
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in self?.isDictating = $0 }
@@ -78,6 +92,10 @@ final class TranslateViewModel: ObservableObject {
         dictation.$audioLevel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in self?.dictationLevel = $0 }
+            .store(in: &dictationCancellables)
+        dictation.$remainingSeconds
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.dictationRemaining = $0 }
             .store(in: &dictationCancellables)
         dictation.$transcript
             .receive(on: DispatchQueue.main)
@@ -159,21 +177,40 @@ final class TranslateViewModel: ObservableObject {
         scheduleAutoLog()
     }
 
-    /// Web tự ghi bản dịch vào lịch sử sau 10 giây đứng yên (chưa "Lưu").
+    /// Tự ghi bản dịch vào lịch sử sau `TranslateLogic.autoLogDelay` đứng yên
+    /// (chưa "Lưu") — web chờ 10 giây, quá lâu nên lịch sử trông như không cập nhật.
     private func scheduleAutoLog() {
         autoLogTask?.cancel()
         let source = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         let translated = translatedText
         let dir = direction.rawValue
         autoLogTask = Task {
-            try? await Task.sleep(for: .seconds(10))
-            guard !Task.isCancelled, autoLog.shouldLog(direction: dir, text: source) else { return }
-            do {
-                try await api.saveTranslation(sourceText: source, translatedText: translated, direction: dir)
-                historyVersion += 1
-            } catch {
-                autoLog.forget(direction: dir, text: source)
-            }
+            try? await Task.sleep(for: TranslateLogic.autoLogDelay)
+            guard !Task.isCancelled else { return }
+            await logHistory(source: source, translated: translated, direction: dir)
+        }
+    }
+
+    /// Xoá ô nhập trước khi kịp tự ghi → ghi ngay, không mất bản dịch vừa xong.
+    private func flushAutoLog() {
+        let source = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let dir = direction.rawValue
+        // Chỉ khi bản dịch đang hiện đúng là của chữ đang nhập (không phải bản cũ
+        // còn chờ debounce)
+        guard !source.isEmpty, !translatedText.isEmpty, !isTranslating,
+              translateCache["\(dir)::\(source)"] == translatedText else { return }
+        autoLogTask?.cancel()
+        let translated = translatedText
+        Task { await logHistory(source: source, translated: translated, direction: dir) }
+    }
+
+    private func logHistory(source: String, translated: String, direction dir: String) async {
+        guard autoLog.shouldLog(direction: dir, text: source) else { return }
+        do {
+            try await api.saveTranslation(sourceText: source, translatedText: translated, direction: dir)
+            historyVersion += 1
+        } catch {
+            autoLog.forget(direction: dir, text: source)
         }
     }
 
@@ -241,6 +278,7 @@ final class TranslateViewModel: ObservableObject {
     }
 
     func retryLookup() {
+        guard dictionary != .loading else { return }   // đang tra → bỏ qua bấm dồn
         Task { await lookUp(inputText) }
     }
 
@@ -258,6 +296,7 @@ final class TranslateViewModel: ObservableObject {
     }
 
     func clear() {
+        flushAutoLog()
         translateTask?.cancel()
         suggestTask?.cancel()
         autoLogTask?.cancel()
@@ -280,6 +319,7 @@ final class TranslateViewModel: ObservableObject {
             _ = autoLog.shouldLog(direction: direction.rawValue, text: source) // đã có trong lịch sử, khỏi tự ghi
             autoLogTask?.cancel()
             historyVersion += 1
+            SavedWordsSignal.shared.changed()
             toast = "Đã lưu “\(source)” — sẽ có trong quiz và widget"
             Task {
                 await WidgetSync.refresh()
@@ -306,6 +346,7 @@ final class TranslateViewModel: ObservableObject {
     // MARK: Chụp ảnh dịch — gửi thẳng ảnh gốc (giống web, không resize/crop
     // client-side), server (Gemini vision) OCR + dịch cùng lúc.
     func handleImagePicked(_ image: UIImage) {
+        guard !isReadingImage else { return }
         guard let jpeg = image.jpegData(compressionQuality: 0.85) else {
             imageError = "Không đọc được ảnh, thử lại nhé"
             return
@@ -341,11 +382,15 @@ final class TranslateViewModel: ObservableObject {
     // MARK: Ghi âm dịch — lấy text bằng Speech framework on-device rồi dịch
     // qua pipeline sẵn có (DeepL), giống web nhưng không cần fallback Whisper.
     func toggleDictation() async {
+        guard !isTogglingDictation, dictationThrottle.allow() else { return }
         if dictation.isListening {
             dictation.stop()
             return
         }
+        isTogglingDictation = true
+        defer { isTogglingDictation = false }
         guard await dictation.requestPermissions() else { return }
+        TTSManager.shared.stop()   // mic và loa không chạy cùng lúc
         clear()
         dictation.start(localeId: direction == .enToVi ? "en-US" : "vi-VN")
     }

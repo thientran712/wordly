@@ -16,82 +16,136 @@ enum QuizMode: String, CaseIterable, Identifiable {
 final class QuizViewModel: ObservableObject {
     enum Phase { case setup, playing, submitting, done }
 
+    private static let modeKey = "quiz.mode"
+    private static let lastPercentKey = "quiz.lastPercent"
+
     @Published var phase: Phase = .setup
-    @Published var mode: QuizMode = .enToVi
+    /// Nhớ chế độ lần trước — khỏi chọn lại mỗi lần
+    @Published var mode: QuizMode = QuizMode(rawValue: UserDefaults.standard.string(forKey: modeKey) ?? "") ?? .enToVi {
+        didSet { UserDefaults.standard.set(mode.rawValue, forKey: Self.modeKey) }
+    }
     @Published var session = QuizSession(questions: [])
     @Published var result: QuizResult?
     @Published var requeued = 0
     @Published var error: String?
+    /// Server báo chưa đủ từ → hiện nút sang tab Dịch
+    @Published var needsMoreWords = false
     @Published var isLoading = false
+    @Published private(set) var lastPercent: Int? = UserDefaults.standard.object(forKey: lastPercentKey) as? Int
 
     private var startedAt: Date?
+    /// Câu hỏi của lượt vừa nộp — dùng cho "Ôn lại các từ sai"
+    private var finishedQuestions: [QuizQuestion] = []
+    private var autoAdvanceTask: Task<Void, Never>?
+    private var startThrottle = TapThrottle(interval: 0.8)
+
+    var wrongCount: Int {
+        guard let result else { return 0 }
+        return finishedQuestions.filter { result.details[$0.id]?.correct != true }.count
+    }
 
     func start() async {
+        guard !isLoading, startThrottle.allow() else { return }
         isLoading = true
         error = nil
+        needsMoreWords = false
         defer { isLoading = false }
         do {
             let r = try await APIClient.shared.fetchQuiz(mode: mode.rawValue)
             guard !r.questions.isEmpty else {
                 error = r.error ?? "Chưa đủ từ vựng để tạo quiz. Hãy lưu thêm từ khi dịch."
+                needsMoreWords = true
+                phase = .setup
                 return
             }
-            session = QuizSession(questions: r.questions)
-            result = nil
-            startedAt = Date()
-            phase = .playing
+            begin(QuizSession(questions: r.questions))
         } catch {
-            self.error = Self.message(for: error)
+            self.error = QuizCopy.errorMessage(error)
+            needsMoreWords = QuizCopy.isNotEnoughWords(error)
+            phase = .setup
         }
     }
 
+    /// Lượt mới chỉ gồm các câu vừa trả lời sai.
+    func retryWrong() {
+        guard let result else { return }
+        let retry = QuizSession.retryingWrong(finishedQuestions, result: result)
+        guard !retry.questions.isEmpty else { return }
+        begin(retry)
+    }
+
+    private func begin(_ newSession: QuizSession) {
+        autoAdvanceTask?.cancel()
+        session = newSession
+        result = nil
+        error = nil
+        startedAt = Date()
+        phase = .playing
+    }
+
     func pick(_ option: String) {
-        guard let q = session.current else { return }
+        guard let q = session.current, session.picked == nil else { return }
         session.pick(option)
         Task {
             do {
                 let r = try await APIClient.shared.checkQuizAnswer(
                     .init(wordId: q.wordId, mode: mode.rawValue, given: option))
                 session.recordCheck(questionId: q.id, correct: r.correct, correctAnswer: r.correctAnswer)
+                UINotificationFeedbackGenerator().notificationOccurred(r.correct ? .success : .error)
+                if session.shouldAutoAdvance { scheduleAutoAdvance(from: q.id) }
             } catch {
                 // Không chặn làm bài nếu chấm-ngay lỗi mạng — vẫn nộp được cả
-                // bài bình thường ở cuối, chỉ là không có phản hồi tức thì.
+                // bài ở cuối; chỉ thôi hiện vòng xoay.
+                session.recordCheckFailed(questionId: q.id)
             }
         }
     }
 
+    /// Đúng → tự sang câu sau 0,8 giây (đủ thấy ô xanh). Người dùng bấm "Tiếp"
+    /// trước thì thôi.
+    private func scheduleAutoAdvance(from questionId: String) {
+        autoAdvanceTask?.cancel()
+        autoAdvanceTask = Task {
+            try? await Task.sleep(for: .milliseconds(800))
+            guard !Task.isCancelled, session.current?.id == questionId, phase == .playing else { return }
+            await next()
+        }
+    }
+
     func next() async {
+        guard phase == .playing else { return }
+        autoAdvanceTask?.cancel()
         // Lượt đã xong mà nộp lỗi trước đó → nộp lại thẳng (advance() không chạy lại được)
         guard session.isFinished || session.advance() else { return }
+        // Xong câu cuối → tự nộp, không cần bấm "Nộp bài"
         phase = .submitting
         let ms = startedAt.map { Int(Date().timeIntervalSince($0) * 1000) }
         do {
             let r = try await APIClient.shared.submitQuiz(session.submitRequest(mode: mode.rawValue, durationMs: ms))
             result = r.result
             requeued = r.requeuedWords ?? 0
+            finishedQuestions = session.questions
+            lastPercent = r.result.percent
+            UserDefaults.standard.set(r.result.percent, forKey: Self.lastPercentKey)
             phase = .done
         } catch {
-            self.error = Self.message(for: error)
+            self.error = "Chưa nộp được bài — kiểm tra mạng rồi thử lại."
             phase = .playing
         }
     }
 
     func restart() {
+        autoAdvanceTask?.cancel()
         phase = .setup
         result = nil
         error = nil
-    }
-
-    private static func message(for error: Error) -> String {
-        if case APIError.serverError(let m) = error, m.contains("409") {
-            return "Chưa đủ từ vựng để tạo quiz. Hãy lưu thêm từ khi dịch."
-        }
-        return "Có lỗi xảy ra, vui lòng thử lại."
     }
 }
 
 struct QuizView: View {
     @StateObject private var vm = QuizViewModel()
+    @StateObject private var tts = TTSManager.shared
+    @EnvironmentObject private var router: AppRouter
 
     private func optionBackground(isPicked: Bool, isCorrectAnswer: Bool, isWrongPick: Bool) -> Color {
         if isCorrectAnswer { return WordlyColors.grassSoft }
@@ -131,9 +185,14 @@ struct QuizView: View {
                 Text("Kiểm tra trí nhớ của bạn")
                     .font(WordlyFonts.display(24))
                     .foregroundStyle(WordlyColors.ink)
-                Text("10 câu từ những từ bạn đã lưu. Từ trả lời sai sẽ được nhắc ôn lại.")
+                Text("Tối đa 10 câu từ những từ bạn đã lưu. Từ trả lời sai được ưu tiên hỏi lại và nhắc qua thông báo ngày hôm sau.")
                     .font(WordlyFonts.body(14))
                     .foregroundStyle(WordlyColors.inkSoft)
+                if let last = vm.lastPercent {
+                    Label("Lần trước đúng \(last)%", systemImage: "chart.bar.fill")
+                        .font(WordlyFonts.body(13, weight: .semibold))
+                        .foregroundStyle(WordlyColors.electric)
+                }
             }
             ForEach(QuizMode.allCases) { mode in
                 Button { vm.mode = mode } label: {
@@ -154,9 +213,18 @@ struct QuizView: View {
                 .buttonStyle(.plain)
             }
             if let error = vm.error {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .font(WordlyFonts.body(13, weight: .medium))
-                    .foregroundStyle(WordlyColors.error)
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(error, systemImage: vm.needsMoreWords ? "bookmark" : "exclamationmark.triangle.fill")
+                        .font(WordlyFonts.body(13, weight: .medium))
+                        .foregroundStyle(vm.needsMoreWords ? WordlyColors.ink : WordlyColors.error)
+                    if vm.needsMoreWords {
+                        Button { router.selectedTab = .translate } label: {
+                            Label("Đi dịch & lưu từ", systemImage: "character.bubble")
+                                .font(WordlyFonts.body(13, weight: .bold))
+                                .foregroundStyle(WordlyColors.electric)
+                        }
+                    }
+                }
             }
             Button {
                 Task { await vm.start() }
@@ -187,6 +255,19 @@ struct QuizView: View {
                         .foregroundStyle(WordlyColors.ink)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
+                    // Nghe từ tiếng Anh (Anh → Việt) — nghe + nhìn nhớ lâu hơn
+                    if vm.mode == .enToVi {
+                        Button { tts.toggle(q.prompt, lang: "en-US") } label: {
+                            Image(systemName: "speaker.wave.2.fill")
+                                .font(.system(size: 14))
+                                .frame(width: 36, height: 36)
+                                .background(WordlyColors.electricSubtle)
+                                .foregroundStyle(WordlyColors.electric)
+                                .clipShape(Circle())
+                        }
+                        .speakLocked(tts, text: q.prompt, lang: "en-US")
+                        .accessibilityLabel("Phát âm")
+                    }
                     Text(vm.mode == .enToVi ? "Chọn nghĩa đúng" : "Chọn từ đúng")
                         .font(WordlyFonts.body(13))
                         .foregroundStyle(WordlyColors.inkSoft)
@@ -212,7 +293,7 @@ struct QuizView: View {
                                 if checked != nil && (isCorrectAnswer || isWrongPick) {
                                     Image(systemName: isCorrectAnswer ? "checkmark.circle.fill" : "xmark.circle.fill")
                                         .foregroundStyle(isCorrectAnswer ? WordlyColors.grass : WordlyColors.error)
-                                } else if isPicked && checked == nil {
+                                } else if isPicked && vm.session.isChecking {
                                     ProgressView().controlSize(.small)
                                 } else if isPicked {
                                     Image(systemName: "checkmark.circle.fill").foregroundStyle(WordlyColors.electric)
@@ -241,7 +322,7 @@ struct QuizView: View {
             Button {
                 Task { await vm.next() }
             } label: {
-                Text(vm.session.isFinished ? "Nộp lại" : vm.session.isLastQuestion ? "Nộp bài" : "Tiếp")
+                Text(vm.session.isFinished ? "Thử nộp lại" : vm.session.isLastQuestion ? "Xem kết quả" : "Tiếp")
             }
             .buttonStyle(ElectricButtonStyle(isLoading: vm.phase == .submitting, isFullWidth: true))
             .disabled(!vm.session.canAdvance || vm.phase == .submitting)
@@ -268,9 +349,10 @@ struct QuizView: View {
                     .font(WordlyFonts.body(18, weight: .bold))
                     .foregroundStyle(WordlyColors.ink)
                 if vm.requeued > 0 {
-                    Text("\(vm.requeued) từ trả lời sai sẽ được nhắc ôn lại.")
+                    Text("\(vm.requeued) từ trả lời sai sẽ được ưu tiên hỏi lại và nhắc qua thông báo từ ngày mai.")
                         .font(WordlyFonts.body(13))
                         .foregroundStyle(WordlyColors.inkSoft)
+                        .multilineTextAlignment(.center)
                 }
 
                 VStack(spacing: 0) {
@@ -296,8 +378,21 @@ struct QuizView: View {
                 }
                 .wordlyCard(padding: 16)
 
-                Button("Làm lại") { vm.restart() }
-                    .buttonStyle(ElectricButtonStyle(isFullWidth: true))
+                if vm.wrongCount > 0 {
+                    Button("Ôn lại \(vm.wrongCount) từ sai") { vm.retryWrong() }
+                        .buttonStyle(ElectricButtonStyle(isFullWidth: true))
+                }
+                Button { Task { await vm.start() } } label: {
+                    Text("Lượt mới")
+                        .font(WordlyFonts.body(15, weight: .bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .foregroundStyle(WordlyColors.electric)
+                .disabled(vm.isLoading)
+                Button("Đổi chế độ") { vm.restart() }
+                    .font(WordlyFonts.body(13, weight: .semibold))
+                    .foregroundStyle(WordlyColors.inkSoft)
             }
         }
     }

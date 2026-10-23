@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // Tab Từ vựng: từ bạn đã lưu (kèm lượt từ widget sắp hiện — từ của bạn xen kẽ
 // từ mới trong kho) và kho từ theo chủ đề.
@@ -34,6 +35,16 @@ struct VocabularyHubView: View {
     }
 }
 
+/// Báo "danh sách từ đã lưu vừa đổi" (lưu ở tab Dịch, xoá/hoàn tác ở lịch sử)
+/// → tab Đã lưu tải lại ngay, không phải tắt mở app.
+@MainActor
+final class SavedWordsSignal: ObservableObject {
+    static let shared = SavedWordsSignal()
+    @Published private(set) var version = 0
+
+    func changed() { version += 1 }
+}
+
 @MainActor
 final class SavedWordsViewModel: ObservableObject {
     @Published var saved: [TranslateHistoryEntry] = []
@@ -42,7 +53,18 @@ final class SavedWordsViewModel: ObservableObject {
     /// `.task` chạy lại mỗi lần SavedWordsView được dựng lại (đổi qua "Kho
     /// theo chủ đề" rồi đổi lại) — chỉ tải thật khi chưa có dữ liệu, tránh
     /// gọi lại 4 trang API + refresh bank mỗi lần chuyển tab (cảm giác lag).
+    /// Dữ liệu đổi thật thì `SavedWordsSignal` báo và tải lại ngầm.
     private var hasLoadedOnce = false
+    private var signalCancellable: AnyCancellable?
+
+    init(signal: SavedWordsSignal? = nil) {
+        signalCancellable = (signal ?? .shared).$version
+            .dropFirst()
+            .sink { [weak self] _ in
+                guard let self, self.hasLoadedOnce else { return }
+                Task { await self.load() }
+            }
+    }
 
     func loadIfNeeded() async {
         guard !hasLoadedOnce else { return }
@@ -204,7 +226,7 @@ struct SavedWordsView: View {
             }
             .buttonStyle(.plain)
             Button {
-                Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") }
+                tts.toggle(entry.sourceText, lang: entry.speakLang)
             } label: {
                 Image(systemName: "speaker.wave.2.fill")
                     .font(.system(size: 13))
@@ -213,6 +235,7 @@ struct SavedWordsView: View {
                     .foregroundStyle(WordlyColors.electric)
                     .clipShape(Circle())
             }
+            .speakLocked(tts, text: entry.sourceText, lang: entry.speakLang)
             .accessibilityLabel("Phát âm")
             Menu {
                 if AppRouter.alexPracticeEnabled {
@@ -287,7 +310,7 @@ struct SavedWordDetailSheet: View {
                 .font(TranslateLogic.isSingleWord(entry.sourceText) ? WordlyFonts.display(28) : WordlyFonts.body(20, weight: .bold))
                 .foregroundStyle(WordlyColors.ink)
             HStack(spacing: 10) {
-                Button { Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") } } label: {
+                Button { tts.toggle(entry.sourceText, lang: entry.speakLang) } label: {
                     Label("Phát âm", systemImage: "speaker.wave.2.fill")
                         .font(WordlyFonts.body(13, weight: .bold))
                         .padding(.horizontal, 14).padding(.vertical, 8)
@@ -295,6 +318,7 @@ struct SavedWordDetailSheet: View {
                         .foregroundStyle(WordlyColors.electric)
                         .clipShape(Capsule())
                 }
+                .speakLocked(tts, text: entry.sourceText, lang: entry.speakLang)
             }
             if dictionary == .loading {
                 ProgressView().tint(WordlyColors.electric).frame(maxWidth: .infinity).padding(.top, 8)

@@ -38,9 +38,23 @@ enum TranslateLogic {
     static func imageDataURL(jpegData: Data) -> String {
         "data:image/jpeg;base64,\(jpegData.base64EncodedString())"
     }
+
+    /// Chỉ từ hoặc cụm ngắn mới lưu để nhắc ôn (widget, quiz, thông báo) —
+    /// câu/đoạn dài vẫn vào lịch sử dịch nhưng không có nút Lưu.
+    static let maxSaveWords = 6
+    static let maxSaveChars = 60
+    static func canSaveForReview(_ text: String) -> Bool {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty, t.count <= maxSaveChars else { return false }
+        return t.split(whereSeparator: \.isWhitespace).count <= maxSaveWords
+    }
+
+    /// Đứng yên bao lâu thì tự ghi bản dịch vào lịch sử (web: 10 giây — quá lâu,
+    /// người dùng tưởng lịch sử không cập nhật).
+    static let autoLogDelay: Duration = .seconds(2)
 }
 
-/// Web tự ghi bản dịch vào lịch sử sau 10 giây; mỗi (chiều dịch, câu) chỉ ghi
+/// Tự ghi bản dịch vào lịch sử sau `TranslateLogic.autoLogDelay`; mỗi (chiều dịch, câu) chỉ ghi
 /// một lần trong phiên. Ghi lỗi thì `forget` để lần sau thử lại.
 struct AutoLogTracker {
     private var sent: Set<String> = []
@@ -56,5 +70,23 @@ struct AutoLogTracker {
 
     mutating func forget(direction: String, text: String) {
         sent.remove(key(direction, text))
+    }
+}
+
+/// Ghi âm dịch tối đa 30 giây rồi tự dừng.
+enum DictationLimit {
+    static let maxSeconds = 30
+
+    static func remaining(startedAt: Date, now: Date = Date()) -> Int {
+        let left = Double(maxSeconds) - now.timeIntervalSince(startedAt)
+        return max(0, Int(left.rounded(.up)))
+    }
+
+    static func isOver(startedAt: Date, now: Date = Date()) -> Bool {
+        now.timeIntervalSince(startedAt) >= Double(maxSeconds)
+    }
+
+    static func label(remaining: Int) -> String {
+        String(format: "%d:%02d", remaining / 60, remaining % 60)
     }
 }

@@ -261,7 +261,7 @@ struct HistoryEntryRow: View {
                 Spacer()
                 HStack(spacing: 4) {
                     Button {
-                        Task { await tts.speak(entry.sourceText, lang: entry.direction == "EN→VI" ? "en-US" : "vi-VN") }
+                        tts.toggle(entry.sourceText, lang: entry.speakLang)
                     } label: {
                         Image(systemName: "speaker.wave.2")
                             .font(WordlyFonts.body(12))
@@ -270,6 +270,7 @@ struct HistoryEntryRow: View {
                             .background(WordlyColors.electricSubtle)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
+                    .speakLocked(tts, text: entry.sourceText, lang: entry.speakLang)
                 }
             }
             // .plain chỉ nhận chạm ở phần có nội dung — thiếu dòng này thì bấm
@@ -347,6 +348,7 @@ final class HistoryViewModel: ObservableObject {
 
     func delete(id: String) {
         let snapshot = groups
+        let wasSaved = groups.contains { $0.entries.contains { $0.id == id && $0.isSaved == true } }
         groups = groups.compactMap { g in
             var g = g
             g.entries.removeAll { $0.id == id }
@@ -354,6 +356,7 @@ final class HistoryViewModel: ObservableObject {
         }
         Task {
             let ids = (try? await APIClient.shared.deleteHistoryEntry(id: id)) ?? []
+            if wasSaved { SavedWordsSignal.shared.changed() }   // tab Đã lưu bỏ từ này ngay
             showUndo("Đã xoá 1 mục", ids: ids, snapshot: snapshot)
         }
     }
@@ -374,8 +377,10 @@ final class HistoryViewModel: ObservableObject {
         groups = undo.snapshot
         self.undo = nil
         Task {
-            do { try await APIClient.shared.restoreHistory(ids: undo.ids) }
-            catch {
+            do {
+                try await APIClient.shared.restoreHistory(ids: undo.ids)
+                SavedWordsSignal.shared.changed()
+            } catch {
                 // Đủ giới hạn từ đã lưu → server từ chối khôi phục: hiện đúng dữ liệu thật + paywall
                 if ProStore.shared.handle(error) { await fetchHistory() }
             }

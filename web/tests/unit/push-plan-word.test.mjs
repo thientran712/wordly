@@ -139,3 +139,22 @@ test("selectPushWord: bước 3 kho lỗi/hết → rơi xuống bước 4; khô
   assert.deepEqual([w.id, w.step], ["a", 4]);
   assert.equal(await selectPushWord(fakeDb({}), "u1", now, { selectBank: async () => [] }), null);
 });
+
+// Quiz trả lời sai → từ "đang ôn lại", hẹn ôn sau 1 ngày. Push ưu tiên từ đó
+// khi sắp/đã đến hạn (trong 6 giờ tới) và chưa push lại kể từ lần sai.
+test("bước 0: từ trả lời sai trong quiz, đến hạn ôn → gửi trước mọi bước khác", () => {
+  const due = [{ id: "c", due_at: ago(-2) }]; // đến hạn sau 2 giờ nữa
+  const p = plan({ personal: words("a", "b", "c"), schedule: [sched(10, "a"), future()], due });
+  assert.deepEqual(p[0], { step: 0, id: "c" });
+});
+
+test("bước 0: chưa tới hạn (còn > 6 giờ) hoặc đã push sau lần sai → bỏ qua", () => {
+  assert.notEqual(plan({ personal: words("a", "c"), due: [{ id: "c", due_at: ago(-10) }] })[0].step, 0);
+  // sai lúc due-24h = 20 giờ trước; đã push 5 giờ trước → không gửi lại
+  assert.notEqual(plan({ personal: words("a", "c"), due: [{ id: "c", due_at: ago(-4) }], pushLog: [push(5, "c")] })[0].step, 0);
+});
+
+test("bước 0: từ đến hạn đang trên widget thì không gửi trùng", () => {
+  const p = plan({ personal: words("a", "c"), due: [{ id: "c", due_at: ago(1) }], schedule: [sched(0.5, "c"), future()] });
+  assert.notEqual(p[0].id, "c");
+});

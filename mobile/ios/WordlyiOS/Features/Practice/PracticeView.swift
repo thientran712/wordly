@@ -426,13 +426,14 @@ struct MessageBubble: View {
                             .overlay(BubbleShape(isUser: false).stroke(WordlyColors.divider(scheme: scheme), lineWidth: 1))
 
                         Button {
-                            Task { await tts.speak(message.content, lang: "en-US") }
+                            tts.toggle(message.content, lang: "en-US")
                         } label: {
                             Image(systemName: "speaker.wave.2")
                                 .font(WordlyFonts.body(11))
                                 .foregroundStyle(WordlyColors.electric.opacity(0.5))
                                 .padding(6)
                         }
+                        .speakLocked(tts, text: message.content, lang: "en-US")
                     } else {
                         Text(message.content)
                             .font(WordlyFonts.body(14))

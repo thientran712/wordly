@@ -221,7 +221,7 @@ struct TopicWordDetailSheet: View {
     }
 
     private func accentButton(_ label: String, lang: String) -> some View {
-        Button { Task { await tts.speak(word.word, lang: lang) } } label: {
+        Button { tts.toggle(word.word, lang: lang) } label: {
             Label(label, systemImage: "speaker.wave.2.fill")
                 .font(WordlyFonts.body(13, weight: .bold))
                 .padding(.horizontal, 14)
@@ -230,6 +230,7 @@ struct TopicWordDetailSheet: View {
                 .foregroundStyle(WordlyColors.electric)
                 .clipShape(Capsule())
         }
+        .speakLocked(tts, text: word.word, lang: lang)
     }
 
     private func labeled(_ title: String, _ text: String, color: Color = WordlyColors.ink) -> some View {

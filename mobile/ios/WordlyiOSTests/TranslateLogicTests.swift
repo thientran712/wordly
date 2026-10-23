@@ -71,4 +71,29 @@ final class TranslateLogicTests: XCTestCase {
         XCTAssertEqual(TranslateLogic.imageErrorMessage(bad), "Không đọc được ảnh, thử lại nhé")
         XCTAssertEqual(TranslateLogic.imageErrorMessage(URLError(.notConnectedToInternet)), "Mất kết nối — thử lại nhé")
     }
+
+    // Câu/đoạn dài vẫn vào lịch sử nhưng không lưu để nhắc ôn (widget/quiz chỉ hợp từ, cụm ngắn)
+    func testOnlyWordsAndShortPhrasesCanBeSavedForReview() {
+        XCTAssertTrue(TranslateLogic.canSaveForReview("resilient"))
+        XCTAssertTrue(TranslateLogic.canSaveForReview("take something for granted"))
+        XCTAssertTrue(TranslateLogic.canSaveForReview("cà phê sữa đá"))
+        XCTAssertTrue(TranslateLogic.canSaveForReview("one two three four five six"))
+        XCTAssertFalse(TranslateLogic.canSaveForReview("one two three four five six seven"))
+        XCTAssertFalse(TranslateLogic.canSaveForReview("I would like to order a cup of coffee, please."))
+        XCTAssertFalse(TranslateLogic.canSaveForReview(String(repeating: "a", count: 61)))
+        XCTAssertFalse(TranslateLogic.canSaveForReview("   "))
+    }
+
+    // Lịch sử phải hiện bản dịch gần như ngay — trước đây chờ 10 giây
+    func testAutoLogDelayIsShort() {
+        XCTAssertLessThanOrEqual(TranslateLogic.autoLogDelay, .seconds(2))
+    }
+
+    @MainActor
+    func testSavedWordsSignalBumpsVersion() {
+        let signal = SavedWordsSignal()
+        let before = signal.version
+        signal.changed()
+        XCTAssertEqual(signal.version, before + 1)
+    }
 }

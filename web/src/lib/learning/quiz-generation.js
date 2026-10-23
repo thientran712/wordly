@@ -5,7 +5,15 @@
 // soạn nội dung mới — chi phí gần bằng 0, đúng tinh thần tận dụng tài sản
 // đã có của Wordly.
 
+import { normalizeWord } from "../email/select-word-for-email.js";
+
 export const QUIZ_MODES = ["en_to_vi", "vi_to_en"];
+/** Dưới số từ này quiz 4 đáp án vô nghĩa — app báo "Lưu thêm X từ". */
+export const MIN_QUIZ_WORDS = 4;
+/** Khớp app (TranslateLogic.canSaveForReview): câu dài không vào quiz. */
+const MAX_WORDS = 6;
+const MAX_CHARS = 60;
+const DAY = 24 * 60 * 60 * 1000;
 
 const OPTIONS_PER_QUESTION = 4;
 const DISTRACTORS_NEEDED = OPTIONS_PER_QUESTION - 1;
@@ -32,6 +40,98 @@ export function pickDistractors(words, correctWordId, count = DISTRACTORS_NEEDED
   return shuffle(pool).slice(0, count);
 }
 
+/**
+ * Đáp án nhiễu cho một câu: bỏ từ có CÙNG nghĩa/cùng chữ với câu hỏi (nếu
+ * không câu hỏi có 2 đáp án đúng, ví dụ "lớn" → big / large), rồi ưu tiên
+ * đáp án dài gần bằng đáp án đúng — đáp án dài lạc loài là lộ ngay.
+ */
+function distractorsFor(word, usable, mode) {
+  const correct = normalizeWord(answerTextFor(word, mode));
+  const prompt = normalizeWord(promptTextFor(word, mode));
+  const len = answerTextFor(word, mode).length;
+  const seen = new Set([correct]);
+  const candidates = [];
+  for (const w of shuffle(usable)) {
+    if (w.id === word.id || normalizeWord(promptTextFor(w, mode)) === prompt) continue;
+    const text = answerTextFor(w, mode);
+    const key = normalizeWord(text);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    candidates.push(text);
+  }
+  // Lấy trong nhóm gần độ dài nhất (rộng hơn số cần một chút để vẫn ngẫu nhiên)
+  const nearest = candidates
+    .sort((a, b) => Math.abs(a.length - len) - Math.abs(b.length - len))
+    .slice(0, DISTRACTORS_NEEDED + 1);
+  return shuffle(nearest).slice(0, DISTRACTORS_NEEDED);
+}
+
+/**
+ * Dòng translate_history đã lưu → từ cho quiz. Hai chiều dịch đều dùng được
+ * (VI→EN thì từ tiếng Anh là bản dịch). Câu dài / thiếu chữ → null.
+ */
+export function savedRowToQuizWord(row) {
+  if (!row?.id) return null;
+  const source = (row.source_text || "").trim();
+  const translated = (row.translated_text || "").trim();
+  const viToEn = row.direction === "VI→EN";
+  const word = viToEn ? translated : source;
+  const def_vi = viToEn ? source : translated;
+  if (!word || !def_vi) return null;
+  if (word.length > MAX_CHARS || word.split(/\s+/).length > MAX_WORDS) return null;
+  return { id: row.id, word, def_vi, state: row.state ?? null, due_at: row.due_at ?? null };
+}
+
+/** Bỏ từ trùng ("Run" / "run"), giữ dòng đầu (mới lưu nhất). */
+export function dedupeQuizWords(words) {
+  const seen = new Set();
+  return (words || []).filter((w) => {
+    const key = normalizeWord(w?.word);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** Còn thiếu bao nhiêu từ để làm được quiz. */
+export function quizShortfall(usableCount) {
+  return Math.max(0, MIN_QUIZ_WORDS - usableCount);
+}
+
+function isDue(w, t) {
+  return w?.state === "relearning" && w.due_at && Date.parse(w.due_at) <= t;
+}
+
+/** Từ đang ôn lại đã đến hạn lên đầu (quá hạn lâu nhất trước), còn lại xáo trộn. */
+export function orderForQuiz(words, now = new Date()) {
+  const t = now.getTime();
+  const due = words.filter((w) => isDue(w, t)).sort((a, b) => Date.parse(a.due_at) - Date.parse(b.due_at));
+  return [...due, ...shuffle(words.filter((w) => !isDue(w, t)))];
+}
+
+/**
+ * Sau khi nộp bài: từ sai → ôn lại sau 1 ngày; từ đang ôn lại mà trả lời
+ * đúng LÚC ĐÃ TỚI HẠN → thoát ôn lại, hẹn 3 ngày. Đúng ngay sau khi vừa xem
+ * đáp án ("Ôn lại các từ sai") chưa tính là nhớ — thông báo ngày mai vẫn nhắc.
+ * Chỉ từ của chính người dùng (`rows`).
+ */
+export function reviewUpdates(details, rows, now = new Date()) {
+  const wrongIds = [];
+  const recoveredIds = [];
+  for (const d of Object.values(details || {})) {
+    const row = rows.get(d?.word_id);
+    if (!row) continue;
+    if (!d.correct) wrongIds.push(d.word_id);
+    else if (isDue(row, now.getTime())) recoveredIds.push(d.word_id);
+  }
+  return {
+    wrongIds,
+    recoveredIds,
+    relearnDueAt: new Date(now.getTime() + DAY).toISOString(),
+    recoveredDueAt: new Date(now.getTime() + 3 * DAY).toISOString(),
+  };
+}
+
 /** Lấy phần văn bản dùng làm đáp án theo chế độ. */
 function answerTextFor(word, mode) {
   if (mode === "en_to_vi") return (word?.def_vi || "").trim();
@@ -52,7 +152,7 @@ function promptTextFor(word, mode) {
  * Trả về mảng { id, word_id, prompt, options[], correct_answer, level }
  * Mảng rỗng nếu không đủ dữ liệu để làm quiz có nghĩa.
  */
-export function buildQuizQuestions(words, { count = 10, mode = "en_to_vi" } = {}) {
+export function buildQuizQuestions(words, { count = 10, mode = "en_to_vi", now = new Date() } = {}) {
   if (!Array.isArray(words)) return [];
   if (!QUIZ_MODES.includes(mode)) return [];
 
@@ -65,22 +165,14 @@ export function buildQuizQuestions(words, { count = 10, mode = "en_to_vi" } = {}
   // Cần ít nhất 2 từ: một đáp án đúng và một đáp án nhiễu.
   if (usable.length < 2) return [];
 
-  const selected = shuffle(usable).slice(0, Math.min(count, usable.length));
+  // Từ cần ôn lại (quiz trước trả lời sai) được hỏi trước, còn lại ngẫu nhiên
+  const selected = orderForQuiz(usable, now).slice(0, Math.min(count, usable.length));
   const questions = [];
 
   for (const word of selected) {
     const correct = answerTextFor(word, mode);
-
-    const distractors = pickDistractors(usable, word.id, DISTRACTORS_NEEDED)
-      .map((w) => answerTextFor(w, mode))
-      // Loại đáp án nhiễu trùng đáp án đúng (hai từ khác nhau có thể cùng
-      // nghĩa Việt, ví dụ "xinh đẹp")
-      .filter((text) => text && text !== correct);
-
-    // Khử trùng lặp giữa các đáp án nhiễu với nhau
-    const uniqueDistractors = [...new Set(distractors)];
-
-    const options = shuffle([correct, ...uniqueDistractors]);
+    // Đáp án nhiễu không trùng/cùng nghĩa với đáp án đúng, dài gần bằng nó
+    const options = shuffle([correct, ...distractorsFor(word, usable, mode)]);
 
     questions.push({
       id: `q-${word.id}`,
@@ -110,7 +202,8 @@ export function scoreQuiz(questions, answers) {
   for (const q of qs) {
     if (!q?.id) continue;
     const given = ans[q.id];
-    const ok = typeof given === "string" && given === q.correct_answer;
+    // Trim: dòng cũ lưu trước khi server trim có thể dư khoảng trắng
+    const ok = typeof given === "string" && given.trim() === String(q.correct_answer ?? "").trim();
     if (ok) correctCount += 1;
     details[q.id] = {
       correct: ok,

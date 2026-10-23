@@ -15,12 +15,17 @@ final class DictationManager: NSObject, ObservableObject {
     /// Mức âm lượng 0...1 để vẽ sóng âm động trên UI — lấy mẫu thưa (~12
     /// lần/giây) từ buffer audio, không cập nhật mỗi buffer (quá dày, phí).
     @Published var audioLevel: Float = 0
+    /// Giây còn lại trước khi tự dừng (`DictationLimit`, tối đa 30 giây).
+    @Published var remainingSeconds = DictationLimit.maxSeconds
+    /// Gọi khi tự dừng vì đủ 30 giây — màn hình báo cho người dùng biết.
+    var onLimitReached: (() -> Void)?
 
     private var recognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     private var lastLevelUpdate = Date.distantPast
+    private var limitTask: Task<Void, Never>?
 
     func requestPermissions() async -> Bool {
         let speechStatus = await withCheckedContinuation { continuation in
@@ -82,13 +87,34 @@ final class DictationManager: NSObject, ObservableObject {
                 }
             }
             isListening = true
+            startLimitTimer()
         } catch {
             self.error = "Không thể bật mic: \(error.localizedDescription)"
         }
     }
 
+    private func startLimitTimer() {
+        let startedAt = Date()
+        remainingSeconds = DictationLimit.maxSeconds
+        limitTask?.cancel()
+        limitTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                guard let self, self.isListening, !Task.isCancelled else { return }
+                self.remainingSeconds = DictationLimit.remaining(startedAt: startedAt)
+                if DictationLimit.isOver(startedAt: startedAt) {
+                    self.stop()
+                    self.onLimitReached?()
+                    return
+                }
+            }
+        }
+    }
+
     func stop() {
         guard isListening else { return }
+        limitTask?.cancel()
+        limitTask = nil
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionRequest?.endAudio()
