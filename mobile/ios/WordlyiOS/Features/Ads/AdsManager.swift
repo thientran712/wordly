@@ -33,7 +33,12 @@ final class AdsManager: NSObject, ObservableObject {
         guard !started, WordlyConfig.adMobAppId != nil else { return }
         started = true
         _ = try? await ConsentInformation.shared.requestConsentInfoUpdate(with: RequestParameters())
-        if let vc = Self.topViewController() {
+        var showForm = true
+        #if DEBUG
+        // Chế độ xem trước (chụp màn hình tự động): không có ai bấm form đồng ý
+        showForm = !PreviewMode.isOn
+        #endif
+        if showForm, let vc = Self.topViewController() {
             try? await ConsentForm.loadAndPresentIfRequired(from: vc)
         }
         canRequestAds = ConsentInformation.shared.canRequestAds
@@ -44,26 +49,41 @@ final class AdsManager: NSObject, ObservableObject {
 
     /// Hộp thoại "Cho phép theo dõi" của iOS — chỉ hỏi một lần (hệ thống nhớ).
     func requestTrackingIfNeeded() async {
+        #if DEBUG
+        if PreviewMode.isOn { return }
+        #endif
         guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
         _ = await ATTrackingManager.requestTrackingAuthorization()
     }
 
     // MARK: Hiện quảng cáo
 
-    func showAppOpen() async -> Bool {
+    /// Chờ quảng cáo mở app tải xong (mở lạnh) — tối đa `timeout` giây.
+    func waitForAppOpen(timeout: TimeInterval) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while appOpen == nil && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+        return appOpen != nil
+    }
+
+    /// `willPresent`: gọi ngay trước khi hiện (để ghi sổ kể cả khi người dùng thoát app giữa chừng).
+    func showAppOpen(willPresent: () -> Void = {}) async -> Bool {
         if let at = appOpenLoadedAt, Date().timeIntervalSince(at) > Self.appOpenTTL { appOpen = nil }
         guard let ad = appOpen, let vc = presentable() else { preloadAll(); return false }
         appOpen = nil
         ad.fullScreenContentDelegate = self
+        willPresent()
         let ok = await present { ad.present(from: vc) }
         loadAppOpen()
         return ok
     }
 
-    func showInterstitial() async -> Bool {
+    func showInterstitial(willPresent: () -> Void = {}) async -> Bool {
         guard let ad = interstitial, let vc = presentable() else { preloadAll(); return false }
         interstitial = nil
         ad.fullScreenContentDelegate = self
+        willPresent()
         let ok = await present { ad.present(from: vc) }
         loadInterstitial()
         return ok

@@ -247,6 +247,12 @@ final class APIClient: ObservableObject {
                                  responseType: BillingStatus.self)
     }
 
+    /// Cấu hình quảng cáo (khối `ads` của /api/app-config) — server cũ không có → tắt.
+    func adsConfig() async throws -> AdsConfig {
+        struct Resp: Decodable { let ads: AdsConfig? }
+        return try await request(path: "/api/app-config", responseType: Resp.self).ads ?? .off
+    }
+
     func appMinBuild() async throws -> Int {
         struct Resp: Decodable { let min_build: Int }
         return try await request(path: "/api/app-config", responseType: Resp.self).min_build

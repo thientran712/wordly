@@ -139,3 +139,56 @@ enum RewardData {
     static let translate = "translate"
     static func theme(_ id: String) -> String { "theme:\(id)" }
 }
+
+/// Khối `ads` của GET /api/billing/status.
+struct AdsStatus: Decodable, Equatable {
+    struct Translate: Decodable, Equatable {
+        let usedToday: Int
+        let freeDaily: Int
+        let credits: Int
+        /// Server đang tính lượt dịch cho bản app này
+        let enforced: Bool
+        enum CodingKeys: String, CodingKey {
+            case usedToday = "used_today", freeDaily = "free_daily", credits, enforced
+        }
+    }
+
+    let adFree: Bool
+    let translate: Translate?
+    let unlockedThemeIds: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case adFree = "ad_free", translate, unlockedThemeIds = "unlocked_theme_ids"
+    }
+
+    /// Không quảng cáo: server báo ad_free, hoặc server cũ nhưng đang Pro.
+    static func adFree(_ status: BillingStatus) -> Bool { status.ads?.adFree ?? status.pro }
+    static func unlocked(_ status: BillingStatus) -> Set<String> { Set(status.ads?.unlockedThemeIds ?? []) }
+}
+
+/// Sổ quảng cáo lưu theo tài khoản — đổi tài khoản trên cùng máy không dùng chung lượt.
+struct AdLedgerStore {
+    let defaults: UserDefaults
+
+    private func key(_ userId: String) -> String { "ads.ledger.\(userId)" }
+
+    func load(userId: String, now: Date) -> AdLedger {
+        let empty = AdLedger(day: AdLedger.vnDayKey(now), appOpenShown: 0, interstitialShown: 0, lastFullscreenAt: nil)
+        guard let data = defaults.data(forKey: key(userId)),
+              let saved = try? JSONDecoder().decode(AdLedger.self, from: data) else { return empty }
+        return saved.rolled(now: now)
+    }
+
+    func save(_ ledger: AdLedger, userId: String) {
+        if let data = try? JSONEncoder().encode(ledger) { defaults.set(data, forKey: key(userId)) }
+    }
+}
+
+enum OpenSourceTracker {
+    /// `pending`: widget/thông báo vừa mở app; `backgroundAt`: lúc vào nền (nil = mở lạnh).
+    static func resolve(pending: OpenSource?, backgroundAt: Date?, now: Date) -> OpenSource {
+        if let pending { return pending }
+        guard let backgroundAt else { return .launch }
+        return .foreground(awaySeconds: now.timeIntervalSince(backgroundAt))
+    }
+}

@@ -102,4 +102,41 @@ final class AdsLogicTests: XCTestCase {
         XCTAssertFalse(AdsPolicy.shouldAskTracking(onboardingDone: true, launchCount: 1))
         XCTAssertTrue(AdsPolicy.shouldAskTracking(onboardingDone: true, launchCount: 2))
     }
+
+    // MARK: Task 9 — trạng thái từ server + sổ theo tài khoản
+
+    private let statusBase = #""pro":false,"enforced":false,"limits":{"saved_words":{"used":0,"limit":null},"advanced_translate":{"used":0,"limit":null},"dictionary":{"used":0,"limit":null},"push_slots":{"limit":10}}"#
+
+    func testBillingStatusDecodesAdsBlock() throws {
+        let json = "{\(statusBase),\"ads\":{\"ad_free\":false,\"translate\":{\"used_today\":4,\"free_daily\":10,\"credits\":7,\"enforced\":true},\"unlocked_theme_ids\":[\"space_1\"]}}"
+        let s = try JSONDecoder().decode(BillingStatus.self, from: Data(json.utf8))
+        XCTAssertEqual(s.ads?.adFree, false)
+        XCTAssertEqual(s.ads?.translate, AdsStatus.Translate(usedToday: 4, freeDaily: 10, credits: 7, enforced: true))
+        XCTAssertEqual(s.ads?.unlockedThemeIds, ["space_1"])
+    }
+
+    func testBillingStatusWithoutAdsBlock() throws {
+        let s = try JSONDecoder().decode(BillingStatus.self, from: Data("{\(statusBase)}".utf8))
+        XCTAssertNil(s.ads)
+        XCTAssertFalse(AdsStatus.adFree(s))
+        XCTAssertEqual(AdsStatus.unlocked(s), [])
+    }
+
+    func testLedgerStoredPerAccount() {
+        let defaults = UserDefaults(suiteName: "AdsLogicTests.\(UUID().uuidString)")!
+        let store = AdLedgerStore(defaults: defaults)
+        var a = store.load(userId: "a", now: now)
+        XCTAssertEqual(a.appOpenShown, 0)
+        a.noteAppOpen(now: now)
+        store.save(a, userId: "a")
+        XCTAssertEqual(store.load(userId: "a", now: now).appOpenShown, 1)
+        XCTAssertEqual(store.load(userId: "b", now: now).appOpenShown, 0, "tài khoản khác có sổ riêng")
+    }
+
+    func testOpenSourceResolution() {
+        XCTAssertEqual(OpenSourceTracker.resolve(pending: nil, backgroundAt: nil, now: now), .launch)
+        XCTAssertEqual(OpenSourceTracker.resolve(pending: nil, backgroundAt: now.addingTimeInterval(-45), now: now),
+                       .foreground(awaySeconds: 45))
+        XCTAssertEqual(OpenSourceTracker.resolve(pending: .widget, backgroundAt: now.addingTimeInterval(-45), now: now), .widget)
+    }
 }

@@ -31,6 +31,8 @@ struct TranslateView: View {
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
                     dictionarySection
+                    // Biểu ngữ nằm trong nội dung cuộn — không ghim, không dính bàn phím
+                    AdBanner()
                     HistoryView(isEmbedded: true, reloadToken: vm.historyVersion) { entry in
                         vm.load(entry: entry)
                         inputFocused = false

@@ -42,9 +42,14 @@ struct WordlyApp: App {
                     KeyboardDismiss.install()
                 }
                 // Bấm widget (wordly://word?...) → mở đúng từ trong tab Từ vựng
-                .onOpenURL { router.open($0) }
+                .onOpenURL {
+                    // Mở từ widget → không chen quảng cáo mở app
+                    AdsCenter.shared.noteOpenSource(.widget)
+                    router.open($0)
+                }
                 // Bấm thông báo nhắc ôn → mở đúng từ như bấm widget
                 .onReceive(push.$pendingURL.compactMap { $0 }) { url in
+                    AdsCenter.shared.noteOpenSource(.push)
                     router.open(url)
                     push.pendingURL = nil
                 }

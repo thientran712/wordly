@@ -119,6 +119,16 @@ struct MainTabView: View {
                 if onboarding.intro != .whatsNew { pro.maybeShowSoftPaywall() }
             }
         }
+        // Quảng cáo mở app (spec 2026-10-23): task riêng để không phải chờ đồng bộ widget/push
+        .task(id: scenePhase) {
+            switch scenePhase {
+            case .active:
+                await AdsCenter.shared.handleBecameActive(onboardingDone: onboarding.flowSeen,
+                                                          inOnboarding: onboarding.intro != .none)
+            case .background: AdsCenter.shared.noteBackground()
+            default: break
+            }
+        }
         .sheet(isPresented: Binding(get: { onboarding.intro == .whatsNew },
                                     set: { if !$0 { onboarding.finishIntro() } })) {
             WhatsNewView { onboarding.finishIntro() }

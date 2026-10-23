@@ -92,7 +92,9 @@ struct RemindedWordsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await vm.loadIfNeeded() }
         .refreshable { await vm.load() }
-        .sheet(item: $selected) { entry in SavedWordDetailSheet(entry: entry) }
+        .sheet(item: $selected, onDismiss: { Task { await AdsCenter.shared.maybeInterstitial() } }) { entry in
+            SavedWordDetailSheet(entry: entry)
+        }
     }
 
     private func rowView(_ row: RemindedLogic.Row) -> some View {

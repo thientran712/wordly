@@ -52,10 +52,12 @@ struct BillingStatus: Decodable, Equatable {
     let limits: Limits
     /// Còn gói Apple đang chạy (để cảnh báo trước khi xoá tài khoản)
     var hasActiveSubscription = false
+    /// Quảng cáo (spec 2026-10-23) — server cũ không trả → nil
+    var ads: AdsStatus?
 
     enum CodingKeys: String, CodingKey {
         case pro, expiresAt = "expires_at", source, inGrace = "in_grace", enforced, limits
-        case hasActiveSubscription = "has_active_subscription"
+        case hasActiveSubscription = "has_active_subscription", ads
     }
 
     init(pro: Bool, expiresAt: String?, source: String?, inGrace: Bool, enforced: Bool, limits: Limits,
@@ -73,6 +75,7 @@ struct BillingStatus: Decodable, Equatable {
         enforced = try c.decodeIfPresent(Bool.self, forKey: .enforced) ?? false
         limits = try c.decode(Limits.self, forKey: .limits)
         hasActiveSubscription = try c.decodeIfPresent(Bool.self, forKey: .hasActiveSubscription) ?? false
+        ads = try c.decodeIfPresent(AdsStatus.self, forKey: .ads)
     }
 
     var isPro: Bool { pro }
