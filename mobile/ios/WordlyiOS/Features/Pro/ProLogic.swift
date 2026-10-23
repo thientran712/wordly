@@ -99,17 +99,6 @@ enum ForceUpdate {
     }
 }
 
-/// Theme nào miễn phí (spec §1): 5 theme màu cơ bản. Đang dùng sẵn theme Pro thì giữ.
-enum ThemeAccess {
-    static let freeThemeIds: Set<String> = ["wordly", "midnight", "ink", "paper", "ocean"]
-
-    static func isFree(_ theme: WidgetTheme) -> Bool { freeThemeIds.contains(theme.id) }
-
-    static func canApply(_ theme: WidgetTheme, isPro: Bool, current: WidgetSettings.HomeStyle) -> Bool {
-        isPro || isFree(theme) || current.matches(theme)
-    }
-}
-
 enum PaywallPricing {
     /// Giá năm quy ra tháng — chỉ là dòng phụ, cỡ chữ nhỏ hơn giá năm (App Store 3.1.2).
     static func perMonth(yearly: Decimal) -> Decimal {

@@ -53,21 +53,6 @@ final class ProTests: XCTestCase {
         XCTAssertFalse(ForceUpdate.required(build: 21, minBuild: 0))
     }
 
-    // MARK: Theme
-
-    func testFreeThemesAndGrandfathering() {
-        let free = WidgetTheme.all.filter { ThemeAccess.isFree($0) }.map(\.id)
-        XCTAssertEqual(Set(free), ["wordly", "midnight", "ink", "paper", "ocean"])
-        let galaxy = WidgetTheme.all.first { $0.id == "space-milkyway" }!
-        XCTAssertFalse(ThemeAccess.canApply(galaxy, isPro: false, current: WidgetSettings.HomeStyle()))
-        XCTAssertTrue(ThemeAccess.canApply(galaxy, isPro: true, current: WidgetSettings.HomeStyle()))
-        // Đang dùng sẵn theme Pro (build 19/20, hoặc hết Pro) → giữ, chạm lại không bị chặn
-        var using = WidgetSettings.HomeStyle()
-        using.apply(galaxy)
-        XCTAssertTrue(ThemeAccess.canApply(galaxy, isPro: false, current: using))
-        XCTAssertTrue(ThemeAccess.canApply(WidgetTheme.all.first { $0.id == "wordly" }!, isPro: false, current: using))
-    }
-
     // MARK: Giá
 
     func testYearlyPerMonthIsSmallerHint() {

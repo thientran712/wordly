@@ -29,4 +29,33 @@ enum RewardFlow {
         if let now = creditsNow, now > creditsBefore { return .retry }
         return elapsed < timeout ? .poll : .fallback
     }
+
+    // MARK: Theme đặc biệt — chỉ mở khi server xác nhận, không có lượt dự phòng
+
+    enum ThemeNext: Equatable {
+        /// Server đã ghi mở khoá → áp dụng theme
+        case apply
+        case poll
+        /// Đóng quảng cáo trước khi xong
+        case stay
+        /// Không tải / hiện được quảng cáo
+        case adFailed
+        /// Chờ hết hạn mà server chưa xác nhận
+        case unconfirmed
+    }
+
+    static func themeAfterAd(_ outcome: RewardOutcome) -> ThemeNext {
+        switch outcome {
+        case .earned: .poll
+        case .dismissed: .stay
+        case .failed: .adFailed
+        }
+    }
+
+    static func themeAfterPoll(themeId: String, unlocked: Set<String>, elapsed: TimeInterval,
+                               timeout: TimeInterval = pollTimeout) -> ThemeNext {
+        if unlocked.contains(themeId) { return .apply }
+        return elapsed < timeout ? .poll : .unconfirmed
+    }
+
 }

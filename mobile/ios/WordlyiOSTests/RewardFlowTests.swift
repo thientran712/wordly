@@ -25,4 +25,19 @@ final class RewardFlowTests: XCTestCase {
         XCTAssertTrue(msg.contains("10 lượt"))
         XCTAssertEqual(limit, 10)
     }
+
+    // MARK: Theme đặc biệt (Task 11) — không có lượt dự phòng
+
+    func testThemeAfterAd() {
+        XCTAssertEqual(RewardFlow.themeAfterAd(.earned), .poll)
+        XCTAssertEqual(RewardFlow.themeAfterAd(.dismissed), .stay)
+        XCTAssertEqual(RewardFlow.themeAfterAd(.failed), .adFailed)
+    }
+
+    func testThemeAfterPoll() {
+        XCTAssertEqual(RewardFlow.themeAfterPoll(themeId: "space_1", unlocked: ["space_1"], elapsed: 2), .apply)
+        XCTAssertEqual(RewardFlow.themeAfterPoll(themeId: "space_1", unlocked: ["luxury_2"], elapsed: 3), .poll)
+        XCTAssertEqual(RewardFlow.themeAfterPoll(themeId: "space_1", unlocked: [], elapsed: 10), .unconfirmed)
+    }
+
 }
