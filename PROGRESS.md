@@ -3,7 +3,15 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 23/10/2026 — Quảng cáo trong app (AdMob) (branch `feat/in-app-ads`, đủ 12 task, chờ review cuối + merge)
+### 23/10/2026 — Quảng cáo ĐÃ LÊN PRODUCTION (chưa tính lượt dịch) + 1.0.2 (23) ĐÃ UPLOAD TestFlight
+
+- **Chủ dự án duyệt 23/10.** Sao lưu schema trước khi chạy: scratchpad phiên (`prod-schema-pre-ads.sql`, 3757 dòng). 3 migration `20261023000100/0200/0300` ĐÃ CHẠY production (mỗi file một transaction, `NOTIFY pgrst`): 5 bảng mới bật RLS; `grant_ad_reward`/`admin_stats_ads` chỉ service role; `usage_daily.kind` chỉ nới thêm 2 giá trị; 75 hồ sơ nguyên. Không câu lệnh nào sửa/xoá dữ liệu đang có.
+- PR #62 merge → deploy qua workflow, production = `8654da2` (`/api/health` đúng SHA). Lần deploy này mang luôn PR #61 (quiz). `.env` production thêm `ADS_ENABLED=1`, `ADS_ENFORCE=0`, `ADS_MIN_BUILD=0`, `ADS_PREMIUM_THEMES=` (sao lưu `.env.bak-pre-ads-202610231955`). App trên store (build 22) không đọc cấu hình quảng cáo → người dùng hiện tại không thấy gì khác, trừ việc được hỏi đồng ý điều khoản bản 2.
+- Đã kiểm production: `/api/app-config` có khối `ads`; khách dịch vẫn 200; `/api/ads/fallback` khách 401; callback SSV không chữ ký 400.
+- **Lỗi tìm thấy sau deploy:** `/app-ads.txt` bị middleware tắt-web đổi thành trang `/mobile-only` → sửa ở PR #64 (CHƯA merge/deploy — deploy cùng lúc đặt `ADMOB_PUBLISHER_ID`).
+- **iOS 1.0.2 (23) upload TestFlight 23/10 23:04** (archive từ `1def316` = main `8654da2` + nâng phiên bản, PR #63): app + widget 23, `aps-environment = production`, domain production, 0 cờ xem trước. Quảng cáo trong bản này dùng **ID test của Google** (chưa có tài khoản AdMob) — thử bố cục/luồng được, chưa có doanh thu, quảng cáo thưởng không gửi SSV (luồng dịch sau quảng cáo đi nhánh dự phòng). **Lần upload sau: build 24.**
+
+### 23/10/2026 — Quảng cáo trong app (AdMob) (branch `feat/in-app-ads`, PR #62 đã merge)
 
 - Spec `docs/superpowers/specs/2026-10-23-in-app-ads-design.md`, plan `docs/superpowers/plans/2026-10-23-in-app-ads.md`.
 - **Migration `20261023000100_ads`** — CHỈ chạy local, **chưa chạy production (cần chủ dự án đồng ý)**. `usage_daily.kind` thêm `translate`, `ad_fallback`; bảng `ad_credits` (lượt thưởng tích luỹ), `ad_rewards` (khoá chống cộng trùng giao dịch SSV), `theme_unlocks`, `translate_ad_keys` (gộp lượt theo câu đang soạn — tách khỏi `translate_quota_keys` vì cùng `quota_key` đi qua `consume_quota`); hàm `translate_quota_today`, `consume_translate` (key → miễn phí ngày → lượt thưởng, nguyên tử), `grant_ad_fallback` (≤ 5/ngày), `grant_ad_reward` (chỉ service role). Bằng chứng: RLS 58/58 pass trên Supabase local (`ads-rls` 7/7, đã thấy fail trước khi viết migration).
