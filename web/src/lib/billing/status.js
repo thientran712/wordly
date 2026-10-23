@@ -1,6 +1,7 @@
 // Trạng thái gói cho app (GET /api/billing/status, POST /api/billing/sync) +
 // ghi quyền Pro bằng service role + cấu hình app công khai. Spec 2026-10-16 §8.
 import { isPro, buildStatus, appMinBuild } from "./plan.js";
+import { adsAppConfig } from "../ads/config.js";
 
 /**
  * Hình §8 + has_active_subscription. `deps` từ createBillingDeps (client
@@ -31,7 +32,8 @@ export function entitlementWriter(adminClient) {
   };
 }
 
-/** GET /api/app-config (công khai): build tối thiểu, dưới mức → "Cập nhật Wordly". */
+/** GET /api/app-config (công khai): build tối thiểu (dưới mức → "Cập nhật
+ *  Wordly") + cấu hình hiển thị quảng cáo. */
 export function appConfigBody(env = process.env) {
-  return { min_build: appMinBuild(env) };
+  return { min_build: appMinBuild(env), ads: adsAppConfig(env) };
 }
