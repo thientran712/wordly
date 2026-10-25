@@ -94,9 +94,10 @@ enum ForceUpdate {
     }
 }
 
-/// Theme nào miễn phí (spec §1): 5 theme màu cơ bản. Đang dùng sẵn theme Pro thì giữ.
+/// Theme nào miễn phí (spec §1): 5 theme màu cơ bản + 1 theme ảnh dùng thử. Đang dùng sẵn theme Pro thì giữ.
 enum ThemeAccess {
-    static let freeThemeIds: Set<String> = ["wordly", "midnight", "ink", "paper", "ocean"]
+    // "study-bright" = Bàn sáng mai (Góc học tập) — gói free dùng thử theme ảnh (chủ dự án 25/10)
+    static let freeThemeIds: Set<String> = ["wordly", "midnight", "ink", "paper", "ocean", "study-bright"]
 
     static func isFree(_ theme: WidgetTheme) -> Bool { freeThemeIds.contains(theme.id) }
 

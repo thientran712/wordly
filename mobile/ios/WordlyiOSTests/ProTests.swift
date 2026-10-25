@@ -57,7 +57,7 @@ final class ProTests: XCTestCase {
 
     func testFreeThemesAndGrandfathering() {
         let free = WidgetTheme.all.filter { ThemeAccess.isFree($0) }.map(\.id)
-        XCTAssertEqual(Set(free), ["wordly", "midnight", "ink", "paper", "ocean"])
+        XCTAssertEqual(Set(free), ["wordly", "midnight", "ink", "paper", "ocean", "study-bright"])
         let galaxy = WidgetTheme.all.first { $0.id == "space-milkyway" }!
         XCTAssertFalse(ThemeAccess.canApply(galaxy, isPro: false, current: WidgetSettings.HomeStyle()))
         XCTAssertTrue(ThemeAccess.canApply(galaxy, isPro: true, current: WidgetSettings.HomeStyle()))
@@ -66,6 +66,17 @@ final class ProTests: XCTestCase {
         using.apply(galaxy)
         XCTAssertTrue(ThemeAccess.canApply(galaxy, isPro: false, current: using))
         XCTAssertTrue(ThemeAccess.canApply(WidgetTheme.all.first { $0.id == "wordly" }!, isPro: false, current: using))
+    }
+
+    /// Gói free dùng thử một theme ảnh (chủ dự án 25/10): "Bàn sáng mai" ở Góc học tập,
+    /// các ảnh khác trong nhóm vẫn là Pro.
+    func testFreePlanGetsOneStudyPhotoTheme() {
+        let none = WidgetSettings.HomeStyle()
+        let bright = WidgetTheme.all.first { $0.id == "study-bright" }!
+        XCTAssertEqual(bright.group, .study)
+        XCTAssertTrue(ThemeAccess.canApply(bright, isPro: false, current: none))
+        let lamp = WidgetTheme.all.first { $0.id == "study-lamp" }!
+        XCTAssertFalse(ThemeAccess.canApply(lamp, isPro: false, current: none))
     }
 
     // MARK: Giá
