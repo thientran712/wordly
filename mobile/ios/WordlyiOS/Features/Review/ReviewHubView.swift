@@ -19,8 +19,6 @@ struct ReviewHubView: View {
                           icon: { $0 == .quiz ? "bolt.fill" : "book.closed.fill" })
                     .background(WordlyColors.background)
             }
-            // Quảng cáo biểu ngữ (spec 2026-10-23) — ghim trên thanh tab
-            .safeAreaInset(edge: .bottom, spacing: 0) { AdBanner() }
         }
     }
 }

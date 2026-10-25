@@ -33,11 +33,8 @@ struct HomeStyleSections: View {
     @State private var themeGroup: WidgetTheme.Group?
     @State private var moreOpen = false
     @ObservedObject private var pro = ProStore.shared
-    @ObservedObject private var ads = AdsCenter.shared
-    /// Theme đặc biệt đang xem thử (không lưu) — mở khoá bằng quảng cáo thưởng
+    /// Theme Pro đang xem thử (không lưu)
     @State private var tryOn: WidgetTheme?
-    @State private var unlocking = false
-    @State private var unlockMessage: String?
 
     /// Ảnh của bạn + tuỳ chỉnh màu là Pro (spec §1); chỉ khoá khi server đang chặn.
     private var customLocked: Bool { pro.showsLimits }
@@ -55,8 +52,9 @@ struct HomeStyleSections: View {
             .pickerStyle(.menu)
             themeGrid
                 .sheet(item: $tryOn) { theme in
-                    ThemeTryOnSheet(theme: theme, busy: unlocking, message: unlockMessage) {
-                        Task { await unlockWithAd(theme) }
+                    ThemeTryOnSheet(theme: theme) {
+                        tryOn = nil
+                        pro.present(.theme)
                     }
                 }
         } header: {
@@ -195,45 +193,17 @@ struct HomeStyleSections: View {
         }
     }
 
-    /// Xem quảng cáo thưởng → chờ server ghi mở khoá (callback SSV) → áp dụng theme.
-    private func unlockWithAd(_ theme: WidgetTheme) async {
-        guard !unlocking, let uid = AuthManager.shared.currentUser?.id else { return }
-        unlocking = true
-        unlockMessage = nil
-        defer { unlocking = false }
-        var next = RewardFlow.themeAfterAd(await AdsManager.shared.showRewarded(userId: uid, customData: RewardData.theme(theme.id)))
-        let started = Date()
-        while next == .poll {
-            try? await Task.sleep(for: .milliseconds(1500))
-            await ProStore.shared.refreshStatus()
-            next = RewardFlow.themeAfterPoll(themeId: theme.id, unlocked: AdsStatus.unlocked(ProStore.shared.status),
-                                             elapsed: Date().timeIntervalSince(started))
-        }
-        switch next {
-        case .apply:
-            ads.unlockedThemeIds.insert(theme.id)
-            tryOn = nil
-            applyTheme(theme)
-        case .adFailed: unlockMessage = "Chưa tải được quảng cáo, thử lại sau ít phút nhé"
-        case .unconfirmed: unlockMessage = "Chưa xác nhận được, thử lại sau nhé"
-        case .stay, .poll: break
-        }
-    }
-
     /// Lưới theme: mỗi ô là widget thu nhỏ — theme màu vẽ màu, theme ảnh hiện ảnh nhỏ (360 px, có cache).
     private var themeGrid: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 10)], spacing: 10) {
             ForEach(WidgetTheme.themes(in: themeGroup ?? WidgetTheme.group(containing: vm.settings.homeStyle))) { theme in
                 let selected = vm.settings.homeStyle.matches(theme)
-                // Theme đang dùng không bao giờ bị khoá
-                let locked = ThemeLock.isLocked(themeId: theme.id, config: ads.config, unlocked: ads.unlockedThemeIds,
-                                                adFree: ads.adFree, isCurrent: selected)
+                let locked = pro.showsLimits && !ThemeAccess.isFree(theme)
                 Button {
-                    if locked {
-                        unlockMessage = nil
-                        tryOn = theme   // khoe: xem thử ngay, không lưu
-                    } else {
+                    if ThemeAccess.canApply(theme, isPro: !pro.showsLimits, current: vm.settings.homeStyle) {
                         applyTheme(theme)
+                    } else {
+                        tryOn = theme   // khoe: xem thử ngay, không lưu
                     }
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -248,7 +218,7 @@ struct HomeStyleSections: View {
                     .overlay(RoundedRectangle(cornerRadius: 12)
                         .stroke(selected ? WordlyColors.electric : Color.primary.opacity(0.12), lineWidth: selected ? 3 : 1))
                     .overlay(alignment: .topTrailing) {
-                        if locked { AdLockBadge().padding(5) }
+                        if locked { ProBadge(locked: true).padding(5) }
                     }
                 }
                 .buttonStyle(.plain)
@@ -304,11 +274,9 @@ struct HomeStyleSections: View {
     }
 }
 
-/// Xem thử theme đặc biệt ở cỡ widget thật — không đổi cài đặt; mở khoá bằng quảng cáo thưởng.
+/// Xem thử theme Pro ở cỡ widget thật — không đổi cài đặt (spec Pro §2).
 struct ThemeTryOnSheet: View {
     let theme: WidgetTheme
-    var busy = false
-    var message: String?
     let unlock: () -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -317,7 +285,7 @@ struct ThemeTryOnSheet: View {
             HStack {
                 Text("Xem thử “\(theme.name)”").font(WordlyFonts.display(20)).foregroundStyle(WordlyColors.ink)
                 Spacer()
-                AdLockBadge()
+                ProBadge(locked: true)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text("resilient").font(.system(size: 26, weight: .bold)).foregroundStyle(Color(hex: theme.word))
@@ -328,45 +296,20 @@ struct ThemeTryOnSheet: View {
             .frame(height: 150)
             .background { ThemeTileBackground(theme: theme, large: true) }
             .clipShape(RoundedRectangle(cornerRadius: 22))
-            if let message {
-                Text(message).font(WordlyFonts.body(14)).foregroundStyle(WordlyColors.error)
-                    .multilineTextAlignment(.center)
-            }
             Button(action: unlock) {
-                HStack(spacing: 8) {
-                    if busy { ProgressView().tint(WordlyColors.onElectric) }
-                    Text(busy ? "Đang mở khoá…" : "Xem quảng cáo để mở khoá")
-                }
+                Text("Dùng theme này")
                     .font(WordlyFonts.body(16, weight: .bold))
                     .frame(maxWidth: .infinity).padding(.vertical, 16)
                     .background(WordlyColors.electric).foregroundStyle(WordlyColors.onElectric)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
             }
-            .disabled(busy)
             .accessibilityIdentifier("theme.tryOn.use")
             Button("Để sau") { dismiss() }
-                .disabled(busy)
                 .font(WordlyFonts.body(15, weight: .semibold)).foregroundStyle(WordlyColors.inkSoft)
         }
         .padding(24)
         .presentationDetents([.medium])
-        .interactiveDismissDisabled(busy)
         .screenBackground()
-    }
-}
-
-/// Ổ khoá theme đặc biệt — mở bằng một quảng cáo ngắn.
-private struct AdLockBadge: View {
-    var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "lock.fill").font(.system(size: 9, weight: .bold))
-            Image(systemName: "play.rectangle.fill").font(.system(size: 10, weight: .bold))
-        }
-        .padding(.horizontal, 6).padding(.vertical, 3)
-        .background(Color.black.opacity(0.55))
-        .foregroundStyle(.white)
-        .clipShape(Capsule())
-        .accessibilityLabel("Xem quảng cáo để mở khoá")
     }
 }
 

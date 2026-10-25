@@ -86,36 +86,3 @@ test("bumpProCap có quota_key: chỉ tính trần khi key mới (lượt gọi 
   assert.equal(capBumps, 2, "lượt gọi 1 và 41");
   assert.equal(sb.log[0][2].p_bucket_key, "pro-key:u1:k1");
 });
-
-test("quảng cáo: translateToday / consumeTranslate / grantAdFallback gọi đúng RPC", async () => {
-  const sb = fakeSb({ rpc: { translate_quota_today: { used: 1 }, consume_translate: { allowed: true }, grant_ad_fallback: { granted: true } } });
-  const deps = createBillingDeps({ supabase: sb, sharedSupabase: sb, userId: "u1" });
-  assert.deepEqual(await deps.translateToday("k1"), { used: 1 });
-  await deps.translateToday();
-  assert.deepEqual(await deps.consumeTranslate(10, "k1"), { allowed: true });
-  await deps.consumeTranslate(10);
-  assert.deepEqual(await deps.grantAdFallback(), { granted: true });
-  assert.deepEqual(sb.log.map((l) => l.slice(1)), [
-    ["translate_quota_today", { p_quota_key: "k1" }],
-    ["translate_quota_today", {}],
-    ["consume_translate", { p_daily_free: 10, p_quota_key: "k1" }],
-    ["consume_translate", { p_daily_free: 10 }],
-    ["grant_ad_fallback", {}],
-  ]);
-});
-
-test("quảng cáo: unlockedThemes đọc theme của đúng người", async () => {
-  const seen = [];
-  const sb = {
-    from(table) {
-      const api = {
-        select(cols) { seen.push(["select", table, cols]); return api; },
-        eq(c, v) { seen.push(["eq", c, v]); return Promise.resolve({ data: [{ theme_id: "aurora" }, { theme_id: "neon" }], error: null }); },
-      };
-      return api;
-    },
-  };
-  const deps = createBillingDeps({ supabase: sb, sharedSupabase: sb, userId: "u1" });
-  assert.deepEqual(await deps.unlockedThemes(), ["aurora", "neon"]);
-  assert.deepEqual(seen, [["select", "theme_unlocks", "theme_id"], ["eq", "user_id", "u1"]]);
-});

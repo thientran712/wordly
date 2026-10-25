@@ -31,8 +31,6 @@ struct TranslateView: View {
                     if !vm.suggestions.isEmpty, inputFocused { suggestionBar }
                     if vm.isTranslating || !vm.translatedText.isEmpty { resultCard }
                     dictionarySection
-                    // Biểu ngữ nằm trong nội dung cuộn — không ghim, không dính bàn phím
-                    AdBanner()
                     HistoryView(isEmbedded: true, reloadToken: vm.historyVersion) { entry in
                         vm.load(entry: entry)
                         inputFocused = false
@@ -60,11 +58,6 @@ struct TranslateView: View {
             .toast(Binding(get: { vm.dictation.error }, set: { vm.dictation.error = $0 }),
                    systemImage: "exclamationmark.triangle.fill", color: WordlyColors.error, duration: 5)
             .onChange(of: vm.inputText) { _, text in vm.onInputChanged(text) }
-            .sheet(item: $vm.adGate) { gate in
-                AdGateSheet(gate: gate, isRewarding: vm.isRewarding,
-                            onWatch: { Task { await vm.watchRewardAd() } },
-                            onLater: { vm.adGate = nil })
-            }
             .sheet(isPresented: $vm.offerPushReminder) { PushReminderOfferSheet(isPresented: $vm.offerPushReminder) }
             .sheet(item: $onboarding.nudgeWord) { WidgetNudgeSheet(word: $0) }
             .sheet(isPresented: $showCamera) {

@@ -17,8 +17,8 @@ export async function GET(request) {
     });
   }
   const admin = createAdminClient();
-  const [{ data, error }, today, extra, ads] = await Promise.all([
-    admin.rpc("admin_stats", {}), admin.rpc("admin_stats_today", {}), admin.rpc("admin_stats_extra", {}), admin.rpc("admin_stats_ads", {}),
+  const [{ data, error }, today, extra] = await Promise.all([
+    admin.rpc("admin_stats", {}), admin.rpc("admin_stats_today", {}), admin.rpc("admin_stats_extra", {}),
   ]);
   if (error) {
     console.error("[admin/stats]", error.message);
@@ -26,7 +26,6 @@ export async function GET(request) {
   }
   const headers = { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow", "Referrer-Policy": "no-referrer" };
   if (bearer) return Response.json(data, { headers });
-  const page = renderStatsPage({ ...data, today: today.error ? null : today.data, extra: extra.error ? null : extra.data,
-    ads: ads.error ? null : ads.data });
+  const page = renderStatsPage({ ...data, today: today.error ? null : today.data, extra: extra.error ? null : extra.data });
   return new Response(page, { headers: { ...headers, "Content-Type": "text/html; charset=utf-8" } });
 }

@@ -20,7 +20,6 @@ struct HistoryView: View {
         } else {
             NavigationStack {
                 fullscreenView
-                    .safeAreaInset(edge: .bottom, spacing: 0) { AdBanner() }
                     .navigationTitle("Lịch sử dịch")
                     .navigationBarTitleDisplayMode(.large)
             }

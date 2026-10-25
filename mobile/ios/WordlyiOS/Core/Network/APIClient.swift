@@ -14,19 +14,6 @@ enum WordlyConfig {
     // App Group identifier (shared with Widget)
     static let appGroup = infoValue("WordlyAppGroup")
 
-    // Quảng cáo AdMob (Base.xcconfig: ID test; Release đặt ID thật) — thiếu thì không hiện quảng cáo
-    static let adMobAppId = optionalInfoValue("GADApplicationIdentifier")
-    static let adUnitAppOpen = optionalInfoValue("WordlyAdUnitAppOpen")
-    static let adUnitBanner = optionalInfoValue("WordlyAdUnitBanner")
-    static let adUnitInterstitial = optionalInfoValue("WordlyAdUnitInterstitial")
-    static let adUnitRewarded = optionalInfoValue("WordlyAdUnitRewarded")
-
-    private static func optionalInfoValue(_ key: String) -> String? {
-        guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
-              value.hasPrefix("ca-app-pub-") else { return nil }
-        return value
-    }
-
     private static func infoValue(_ key: String) -> String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
               !value.isEmpty, !value.contains("REPLACE_ME") else {
@@ -245,12 +232,6 @@ final class APIClient: ObservableObject {
         struct Body: Encodable { let signed_transaction: String }
         return try await request(path: "/api/billing/sync", method: "POST", body: Body(signed_transaction: jws),
                                  responseType: BillingStatus.self)
-    }
-
-    /// Cấu hình quảng cáo (khối `ads` của /api/app-config) — server cũ không có → tắt.
-    func adsConfig() async throws -> AdsConfig {
-        struct Resp: Decodable { let ads: AdsConfig? }
-        return try await request(path: "/api/app-config", responseType: Resp.self).ads ?? .off
     }
 
     func appMinBuild() async throws -> Int {

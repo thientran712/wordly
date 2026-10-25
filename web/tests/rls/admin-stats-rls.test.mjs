@@ -119,18 +119,4 @@ describe("Thống kê: RLS + touch_activity + admin_stats", { skip: skip ? `Bỏ
     await cleanupUsers(c);
     assert.deepEqual((await admin.from("app_activity_daily").select("user_id").eq("user_id", c.id)).data, []);
   });
-
-  test("admin_stats_ads: chỉ service role, đếm thưởng quảng cáo", async () => {
-    const tx = `stats-tx-${Date.now()}`;
-    const g = await admin.rpc("grant_ad_reward", { p_transaction_id: tx, p_user_id: a.id, p_kind: "translate", p_theme_id: null, p_credits: 10 });
-    assert.equal(g.data, "applied", g.error?.message);
-    const r = await admin.rpc("admin_stats_ads", {});
-    assert.ok(!r.error, r.error?.message);
-    assert.ok(r.data.rewards_today >= 1);
-    assert.ok(r.data.rewards_7d >= 1);
-    assert.ok(r.data.credits_outstanding >= 10);
-    for (const k of ["fallback_today", "theme_unlocks_total"]) assert.equal(typeof r.data[k], "number", k);
-    assert.ok((await a.client.rpc("admin_stats_ads", {})).error, "người dùng không gọi được");
-    assert.ok((await guestClient().rpc("admin_stats_ads", {})).error);
-  });
 });

@@ -3,6 +3,17 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 25/10/2026 — TẠM GÁC QUẢNG CÁO: production lùi về bản trước quảng cáo
+
+- **Chủ dự án quyết 25/10:** quay lại phiên bản trước, tạm gác quảng cáo trong app.
+- Web production = `5539acf` (main trước PR #62 — vẫn có sửa quiz PR #61), deploy qua workflow; `/api/health` đúng SHA, `/api/app-config` → `{min_build:22}` (không còn khối `ads`), khách dịch 200, `/terms` không còn mục quảng cáo. (Lần chạy workflow đầu báo lỗi vì truyền SHA rút gọn — VPS chỉ nhận SHA đủ 40 ký tự; production không đổi gì ở lần đó.)
+- `.env` production khôi phục từ `.env.bak-pre-ads-202610231955` (chỉ khác các dòng `ADS_*`); bản có quảng cáo lưu ở `.env.bak-with-ads-202610251000`. Container không còn biến `ADS_*`.
+- **DB giữ nguyên** (chủ dự án chọn): 3 migration quảng cáo vẫn trên production, các bảng đều trống (0 dòng lúc lùi). File migration + `ads-rls.test.mjs` giữ trong repo để khớp DB.
+- `main`: revert PR #62 (code quảng cáo web + iOS, SDK GoogleMobileAds). Spec/plan giữ lại; code đầy đủ còn ở nhánh `feat/in-app-ads` để làm lại sau. Phiên bản iOS giữ 1.0.2 (23) — **lần upload sau: build 24** (không lùi số build).
+- Build 1.0.2 (23) trên TestFlight: server không gửi cấu hình quảng cáo nên bản này không hiện quảng cáo nữa; chủ dự án có thể Expire build trên App Store Connect.
+- 4 người đã đồng ý điều khoản bản 2 — server về bản 1 vẫn coi họ hợp lệ (≥), không ai bị hỏi lại.
+- PR #64 (sửa `/app-ads.txt`) đóng, không merge.
+
 ### 23/10/2026 — Quảng cáo ĐÃ LÊN PRODUCTION (chưa tính lượt dịch) + 1.0.2 (23) ĐÃ UPLOAD TestFlight
 
 - **Chủ dự án duyệt 23/10.** Sao lưu schema trước khi chạy: scratchpad phiên (`prod-schema-pre-ads.sql`, 3757 dòng). 3 migration `20261023000100/0200/0300` ĐÃ CHẠY production (mỗi file một transaction, `NOTIFY pgrst`): 5 bảng mới bật RLS; `grant_ad_reward`/`admin_stats_ads` chỉ service role; `usage_daily.kind` chỉ nới thêm 2 giá trị; 75 hồ sơ nguyên. Không câu lệnh nào sửa/xoá dữ liệu đang có.

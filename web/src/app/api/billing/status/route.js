@@ -7,7 +7,6 @@ import { billingConfig } from "@/lib/billing/enforce";
 import { createBillingDeps } from "@/lib/billing/store";
 import { loadBillingStatus } from "@/lib/billing/status";
 import { buildFromHeader } from "@/lib/admin/activity";
-import { adsConfig, adsApplyToBuild } from "@/lib/ads/config";
 
 export async function GET(request) {
   const user = await getUserFast();
@@ -20,12 +19,7 @@ export async function GET(request) {
     .catch((e) => console.error("[billing/status] touch_activity", e.message));
   const deps = createBillingDeps({ supabase, sharedSupabase: createSharedClient(), userId: user.id });
   try {
-    // Quảng cáo: chỉ bản app có quảng cáo (build ≥ ADS_MIN_BUILD) bị tính lượt dịch
-    const ads = adsConfig();
-    const status = await loadBillingStatus({
-      deps, enforced: billingConfig(process.env, user.id).enforced,
-      ads: { enforced: ads.enforced && adsApplyToBuild(request?.headers?.get("x-wordly-build"), ads.minBuild), dailyFree: ads.dailyFree },
-    });
+    const status = await loadBillingStatus({ deps, enforced: billingConfig(process.env, user.id).enforced });
     await touch;
     return Response.json(status, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {

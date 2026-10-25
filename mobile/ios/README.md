@@ -23,9 +23,6 @@ open WordlyiOS.xcodeproj
   supabase-swift). `.xcodeproj` là file sinh ra — sửa `project.yml` rồi chạy lại
   `xcodegen generate`, không sửa trong Xcode.
 - Bundle ID / App Group nằm trong `Config/Base.xcconfig`.
-- Quảng cáo AdMob: `Base.xcconfig` mặc định ID **test** của Google (`WORDLY_ADMOB_APP_ID`,
-  `WORDLY_ADMOB_UNIT_*`) — Debug luôn dùng test. ID thật chỉ đặt cho Release trong
-  `Secrets.xcconfig` (`...[config=Release] = ...`, xem `Secrets.example.xcconfig`).
 - Build dòng lệnh: `xcodebuild -project WordlyiOS.xcodeproj -scheme WordlyiOS -destination 'generic/platform=iOS Simulator' build`
 - Test (target `WordlyiOSTests`, chạy trên simulator): `xcodebuild -project WordlyiOS.xcodeproj -scheme WordlyiOS -destination 'platform=iOS Simulator,name=<tên máy ảo>' test`.
   Logic thuần (đọc ngày giờ, xử lý 401…) đặt ở `WordlyiOS/Core/` để test được.
