@@ -31,9 +31,6 @@ final class TranslateViewModel: ObservableObject {
     @Published var dictionary: DictionaryState = .hidden
     @Published var saved = false
     @Published var toast: String?
-    /// Hết lượt dịch (402 limit_translate) → sheet mời xem quảng cáo thưởng
-    @Published var adGate: AdGate?
-    @Published private(set) var isRewarding = false
     /// Sheet hỏi bật nhắc ôn qua thông báo — chỉ một lần, sau lần lưu từ đầu tiên.
     @Published var offerPushReminder = false
     /// Tăng mỗi khi lịch sử đổi (tự ghi / lưu) để danh sách lịch sử tải lại.
@@ -165,10 +162,7 @@ final class TranslateViewModel: ObservableObject {
                 // Gõ tiếp → yêu cầu cũ bị huỷ (URLSession ném lỗi huỷ) — không phải
                 // mất mạng; trước đây hiện "Mất kết nối" sai mỗi khi gõ nhanh.
                 guard !Task.isCancelled else { return }
-                if case APIError.limitReached(.translate, let message, _) = error {
-                    translatedText = ""
-                    adGate = AdGate(message: message, pending: .text)
-                } else if ProStore.shared.handle(error) {
+                if ProStore.shared.handle(error) {
                     translatedText = ""
                 } else if case APIError.serverError(let m) = error, m.contains("429") {
                     toast = "Bạn dịch hơi nhanh, chờ vài giây rồi thử lại nhé"
@@ -380,11 +374,7 @@ final class TranslateViewModel: ObservableObject {
                 saved = false
                 scheduleAutoLog()
             } catch {
-                if case APIError.limitReached(.translate, let message, _) = error {
-                    adGate = AdGate(message: message, pending: .image(image))
-                } else if !ProStore.shared.handle(error) {
-                    imageError = TranslateLogic.imageErrorMessage(error)
-                }
+                if !ProStore.shared.handle(error) { imageError = TranslateLogic.imageErrorMessage(error) }
             }
         }
     }
@@ -426,50 +416,4 @@ final class TranslateViewModel: ObservableObject {
             suppressSuggestions = false
         }
     }
-
-    // MARK: Hết lượt dịch → quảng cáo thưởng (spec 2026-10-23)
-
-    /// Xem quảng cáo → chờ server cộng lượt (callback SSV) → dịch lại đúng lần
-    /// đang chờ (giữ quota_key cũ). Quảng cáo lỗi / callback trễ → lượt dự phòng.
-    func watchRewardAd() async {
-        guard let gate = adGate, !isRewarding else { return }
-        guard let uid = AuthManager.shared.currentUser?.id else { adGate = nil; return }
-        isRewarding = true
-        defer { isRewarding = false }
-        var next = RewardFlow.afterAd(await AdsManager.shared.showRewarded(userId: uid, customData: RewardData.translate))
-        let started = Date()
-        while next == .poll {
-            try? await Task.sleep(for: .milliseconds(1500))
-            await ProStore.shared.refreshStatus()
-            next = RewardFlow.afterPoll(creditsNow: ProStore.shared.status.ads?.translate?.credits,
-                                        elapsed: Date().timeIntervalSince(started))
-        }
-        switch next {
-        case .retry:
-            adGate = nil
-            await retry(gate.pending)
-        case .fallback:
-            if let r = try? await api.postAdFallback(), r.granted {
-                adGate = nil
-                Task { await ProStore.shared.refreshStatus() }
-                await retry(gate.pending)
-            } else {
-                adGate = nil
-                toast = "Chưa tải được quảng cáo, thử lại sau ít phút nhé"
-            }
-        case .stay, .poll:
-            break
-        }
-    }
-
-    private func retry(_ pending: AdGate.Pending) async {
-        switch pending {
-        case .text:
-            guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-            await translate(inputText)
-        case .image(let image):
-            handleImagePicked(image)
-        }
-    }
-
 }

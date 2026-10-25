@@ -9,7 +9,6 @@ import { callAI } from "@/lib/ai/ai-models";
 import { validateImageDataUrl, parseImageTranslateResponse } from "@/lib/translate/image-validation";
 import { withAdvancedQuota } from "@/lib/billing/enforce";
 import { billingForRequest } from "@/lib/billing/request";
-import { withTranslateQuota } from "@/lib/ads/enforce";
 
 // Ảnh đắt hơn text nhiều (token hình + token OCR) nên hạn mức thấp hơn
 // /api/translate (20/60 mỗi phút).
@@ -82,9 +81,5 @@ export async function POST(request) {
     return Response.json({ source_text, translated_text });
   };
   const billing = await billingForRequest(request, user);
-  // Quảng cáo: mỗi ảnh một lượt dịch (không gộp theo quota_key)
-  return withTranslateQuota(
-    { config: billing.ads, user, build: billing.build, deps: billing.deps, signal: request.signal },
-    () => withAdvancedQuota({ ...billing, user, kind: "image", signal: request.signal }, run),
-  );
+  return withAdvancedQuota({ ...billing, user, kind: "image", signal: request.signal }, run);
 }

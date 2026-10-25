@@ -382,13 +382,7 @@ struct QuizView: View {
                     Button("Ôn lại \(vm.wrongCount) từ sai") { vm.retryWrong() }
                         .buttonStyle(ElectricButtonStyle(isFullWidth: true))
                 }
-                // Rời màn kết quả = điểm chuyển tự nhiên → quảng cáo xen màn hình (nếu đủ khoảng cách)
-                Button {
-                    Task {
-                        await AdsCenter.shared.maybeInterstitial()
-                        await vm.start()
-                    }
-                } label: {
+                Button { Task { await vm.start() } } label: {
                     Text("Lượt mới")
                         .font(WordlyFonts.body(15, weight: .bold))
                         .frame(maxWidth: .infinity)
@@ -396,12 +390,7 @@ struct QuizView: View {
                 }
                 .foregroundStyle(WordlyColors.electric)
                 .disabled(vm.isLoading)
-                Button("Đổi chế độ") {
-                    Task {
-                        await AdsCenter.shared.maybeInterstitial()
-                        vm.restart()
-                    }
-                }
+                Button("Đổi chế độ") { vm.restart() }
                     .font(WordlyFonts.body(13, weight: .semibold))
                     .foregroundStyle(WordlyColors.inkSoft)
             }

@@ -122,8 +122,6 @@ struct ProfileView: View {
             }
             .scrollContentBackground(.hidden)
             .screenBackground()
-            // Quảng cáo biểu ngữ (spec 2026-10-23) — ghim trên thanh tab
-            .safeAreaInset(edge: .bottom, spacing: 0) { AdBanner() }
             .navigationTitle("Cá nhân")
             .task {
                 await vm.fetchProfile()

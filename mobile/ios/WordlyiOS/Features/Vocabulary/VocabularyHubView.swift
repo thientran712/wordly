@@ -31,8 +31,6 @@ struct VocabularyHubView: View {
                           })
                     .background(WordlyColors.background)
             }
-            // Quảng cáo biểu ngữ (spec 2026-10-23) — ghim trên thanh tab
-            .safeAreaInset(edge: .bottom, spacing: 0) { AdBanner() }
         }
     }
 }
@@ -155,8 +153,7 @@ struct SavedWordsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await vm.loadIfNeeded() }
         .refreshable { await vm.load() }
-        // Đóng thẻ từ → quảng cáo xen màn hình (nếu đủ khoảng cách, spec 2026-10-23)
-        .sheet(item: $selected, onDismiss: { Task { await AdsCenter.shared.maybeInterstitial() } }) { entry in
+        .sheet(item: $selected) { entry in
             SavedWordDetailSheet(entry: entry)
         }
         // Bấm widget (từ của bạn) → mở popup từ đó

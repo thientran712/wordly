@@ -6,7 +6,7 @@ export const metadata = { title: "Điều khoản sử dụng · Wordly" };
 // (src/lib/legal/terms.js) để app hỏi đồng ý lại.
 export default function TermsPage() {
   return (
-    <LegalPage title="Điều khoản sử dụng" updated="23/10/2026">
+    <LegalPage title="Điều khoản sử dụng" updated="15/10/2026">
       <p>Điều khoản này áp dụng khi bạn dùng Wordly (ứng dụng iOS và website). Bấm “Đồng ý” khi tạo tài khoản hoặc khi app hỏi nghĩa là bạn đồng ý với Điều khoản này và <a href="/privacy" className="underline">Chính sách quyền riêng tư</a>.</p>
 
       <LegalSection heading="Tài khoản">
@@ -18,18 +18,8 @@ export default function TermsPage() {
 
       <LegalSection heading="Dịch vụ">
         <ul className="list-disc pl-5 flex flex-col gap-1">
-          <li>Wordly hiện miễn phí và có quảng cáo trong ứng dụng iOS (quảng cáo khi mở app, biểu ngữ, quảng cáo toàn màn hình giữa các thao tác). Nếu sau này có gói trả phí, Wordly báo trước và bạn tự chọn có mua hay không.</li>
+          <li>Wordly hiện miễn phí. Nếu sau này có gói trả phí, Wordly báo trước và bạn tự chọn có mua hay không.</li>
           <li>Wordly có thể thay đổi, thêm hoặc bỏ tính năng, và đôi lúc tạm gián đoạn để bảo trì.</li>
-        </ul>
-      </LegalSection>
-
-      <LegalSection heading="Lượt dịch và quảng cáo có thưởng">
-        <ul className="list-disc pl-5 flex flex-col gap-1">
-          <li>Mỗi ngày bạn có 10 lượt dịch miễn phí (mọi lần dịch đều tính, kể cả từ đơn). Lượt miễn phí làm mới lúc 0:00 giờ Việt Nam.</li>
-          <li>Hết lượt miễn phí, bạn xem một quảng cáo ngắn để nhận thêm lượt dịch. Lượt nhận được cộng dồn và dùng được cả những ngày sau.</li>
-          <li>Một số theme widget đặc biệt mở khoá bằng cách xem quảng cáo; theme đã mở giữ nguyên trên tài khoản.</li>
-          <li>Lượt dịch và theme nhận từ quảng cáo không quy đổi ra tiền, không chuyển sang tài khoản khác, và mất khi bạn xoá tài khoản. Wordly có thể thay đổi số lượt hoặc tạm dừng quảng cáo có thưởng.</li>
-          <li>Không dùng công cụ hay cách gian lận để nhận thưởng; Wordly có thể huỷ lượt nhận được bằng gian lận.</li>
         </ul>
       </LegalSection>
 

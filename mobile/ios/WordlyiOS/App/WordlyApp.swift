@@ -12,8 +12,6 @@ struct WordlyApp: App {
     @AppStorage("wordly-theme") private var savedTheme: String = "dark"
 
     init() {
-        // Tạo sớm để biết phiên đăng nhập có sẵn lúc mở app (quảng cáo mở app)
-        _ = AdsCenter.shared
         #if DEBUG
         if PreviewMode.isOn {
             if CommandLine.arguments.contains("-WordlyOnboarding") {
@@ -44,14 +42,9 @@ struct WordlyApp: App {
                     KeyboardDismiss.install()
                 }
                 // Bấm widget (wordly://word?...) → mở đúng từ trong tab Từ vựng
-                .onOpenURL {
-                    // Mở từ widget → không chen quảng cáo mở app
-                    AdsCenter.shared.noteOpenSource(.widget)
-                    router.open($0)
-                }
+                .onOpenURL { router.open($0) }
                 // Bấm thông báo nhắc ôn → mở đúng từ như bấm widget
                 .onReceive(push.$pendingURL.compactMap { $0 }) { url in
-                    AdsCenter.shared.noteOpenSource(.push)
                     router.open(url)
                     push.pendingURL = nil
                 }
