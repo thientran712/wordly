@@ -22,6 +22,19 @@ final class ProfileScreenUITests: XCTestCase {
         add(shot(app, "edit-profile"))
     }
 
+    // Review UI 11/11 (P3): người dùng miễn phí thấy thẻ Pro có lợi ích + nút rõ ràng
+    func testFreeUserSeesProCardWithButton() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-WordlyUIPreview", "profile"]
+        app.launch()
+
+        let cta = app.buttons["Xem gói Pro"]
+        XCTAssertTrue(cta.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Dịch ảnh, giọng nói không giới hạn"].exists)
+        cta.tap()
+        XCTAssertTrue(app.staticTexts["paywall.headline"].waitForExistence(timeout: 5))
+    }
+
     private func shot(_ app: XCUIApplication, _ name: String) -> XCTAttachment {
         let a = XCTAttachment(screenshot: app.screenshot())
         a.name = name

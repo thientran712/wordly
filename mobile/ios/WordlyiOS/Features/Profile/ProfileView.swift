@@ -39,14 +39,35 @@ struct ProfileView: View {
                 // hoặc đang Pro / server đang chặn
                 if pro.isPro || pro.status.enforced || !pro.plans.isEmpty {
                     Section {
-                        Button { pro.present(.general) } label: {
-                            HStack {
-                                settingRow("crown.fill", WordlyColors.duoOrange, "Wordly Pro", proSubtitle)
-                                ProBadge()
+                        if pro.isPro {
+                            Button { pro.present(.general) } label: {
+                                HStack {
+                                    settingRow("crown.fill", WordlyColors.duoOrange, "Wordly Pro", proSubtitle)
+                                    ProBadge()
+                                }
                             }
+                            .foregroundStyle(WordlyColors.ink)
+                            .accessibilityIdentifier("profile.pro")
+                        } else {
+                            // Thẻ riêng thay vì một dòng cài đặt (review UI 11/11, P3)
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(spacing: 12) {
+                                    IconTile(systemImage: "crown.fill", color: WordlyColors.duoOrange, size: 32)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack(spacing: 6) {
+                                            Text("Wordly Pro").font(WordlyFonts.body(15, weight: .bold)).foregroundStyle(WordlyColors.ink)
+                                            ProBadge()
+                                        }
+                                        Text("Dịch ảnh, giọng nói không giới hạn")
+                                            .font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft)
+                                    }
+                                }
+                                Button("Xem gói Pro") { pro.present(.general) }
+                                    .buttonStyle(ElectricButtonStyle(isFullWidth: true))
+                                    .accessibilityIdentifier("profile.pro")
+                            }
+                            .padding(.vertical, 4)
                         }
-                        .foregroundStyle(WordlyColors.ink)
-                        .accessibilityIdentifier("profile.pro")
                     }
                 }
 
@@ -83,24 +104,14 @@ struct ProfileView: View {
                             settingRow("key.fill", WordlyColors.duoOrange, "Đổi mật khẩu", nil)
                         }
                     }
-                    Button(role: .destructive) { confirmSignOut = true } label: {
-                        settingRow("rectangle.portrait.and.arrow.right", WordlyColors.error, "Đăng xuất", nil)
+                    // Đăng xuất hoàn tác được (đăng nhập lại) → chữ thường; chỉ Xoá tài khoản mới đỏ (P1)
+                    Button { confirmSignOut = true } label: {
+                        settingRow("rectangle.portrait.and.arrow.right", WordlyColors.inkSoft, "Đăng xuất", nil)
                     }
-                    Button(role: .destructive) { confirmDelete = true } label: {
-                        HStack {
-                            settingRow("trash.fill", WordlyColors.error, "Xoá tài khoản", nil)
-                            if isDeleting { ProgressView() }
-                        }
-                    }
-                    .disabled(isDeleting)
                 } header: {
                     Text("Tài khoản")
                 } footer: {
-                    if let deleteError {
-                        Text(deleteError).foregroundStyle(WordlyColors.error)
-                    } else {
-                        Text(providerLabel)
-                    }
+                    Text(providerLabel)
                 }
 
                 Section {
@@ -122,11 +133,27 @@ struct ProfileView: View {
                     }
                 } header: {
                     Text("Thông tin")
+                }
+
+                // Hành động không hoàn tác: nhóm riêng, cuối trang, chữ đỏ
+                Section {
+                    Button(role: .destructive) { confirmDelete = true } label: {
+                        HStack {
+                            settingRow("trash.fill", WordlyColors.error, "Xoá tài khoản", nil, titleColor: WordlyColors.error)
+                            if isDeleting { ProgressView() }
+                        }
+                    }
+                    .disabled(isDeleting)
                 } footer: {
-                    // Version làm chú thích của mục cuối — trước đây là cả một Section riêng, dư khoảng trắng
-                    Text("Wordly \(appVersion)")
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 4)
+                    VStack(spacing: 8) {
+                        if let deleteError {
+                            Text(deleteError).foregroundStyle(WordlyColors.error)
+                        }
+                        // Version làm chú thích của mục cuối
+                        Text("Wordly \(appVersion)")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .padding(.top, 4)
                 }
             }
             .scrollContentBackground(.hidden)
@@ -215,11 +242,12 @@ struct ProfileView: View {
         }
     }
 
-    private func settingRow(_ icon: String, _ color: Color, _ title: String, _ subtitle: String?) -> some View {
+    private func settingRow(_ icon: String, _ color: Color, _ title: String, _ subtitle: String?,
+                            titleColor: Color = WordlyColors.ink) -> some View {
         HStack(spacing: 12) {
             IconTile(systemImage: icon, color: color, size: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(WordlyFonts.body(15, weight: .medium)).foregroundStyle(icon.hasPrefix("rectangle.portrait") ? WordlyColors.error : WordlyColors.ink)
+                Text(title).font(WordlyFonts.body(15, weight: .medium)).foregroundStyle(titleColor)
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
                 }
