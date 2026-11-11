@@ -3,6 +3,20 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 11/11/2026 — Quảng cáo MỞ APP (chỉ một loại) — branch `feat/app-open-ad`, CHƯA commit
+
+- **Chủ dự án chốt 11/11:** làm lại quảng cáo nhưng chỉ quảng cáo mở app: **mở app lạnh, tối đa 1 lần/ngày**, **ai cũng thấy (kể cả Pro)**, công tắc ở server. Không biểu ngữ, không xen màn hình, không quảng cáo thưởng, không tính lượt dịch, không migration.
+- **Web:** `src/lib/ads/config.js` (`ADS_ENABLED` mặc định TẮT, `ADS_APP_OPEN_PER_DAY` mặc định 1) → khối `ads` trong `/api/app-config`; `/app-ads.txt` theo `ADMOB_PUBLISHER_ID` (đã mở qua cổng tắt-web — sửa lỗi của PR #64 cũ); chính sách quyền riêng tư thêm mục Quảng cáo (KHÔNG nâng phiên bản điều khoản → không ai bị hỏi đồng ý lại).
+- **iOS:** SDK GoogleMobileAds + UMP + ATT trở lại; `Features/Ads/` gọn còn `AdsLogic` (cấu hình, sổ/ngày giờ VN theo máy, `AdsPolicy`, `ActivationTracker`), `AdsManager` (chỉ App Open), `AdsCenter`. Không hiện khi: quay lại từ nền, mở từ widget/thông báo, ngay sau đăng nhập/đăng ký, đang onboarding/"Có gì mới", quảng cáo chưa tải xong trong 3 giây. ID test của Google trong `Base.xcconfig`; ID thật chỉ cho Release trong `Secrets.xcconfig`.
+- **Bằng chứng:** web `npm test` 609 pass / 0 fail (60 test RLS bị huỷ do máy không có Supabase local — có từ trước), `next build` Compiled successfully, eslint sạch trên file đổi; iOS `WordlyiOSTests` 305/305 trên Wordly-Test (`AdsLogicTests` 8/8, đã thấy RED trước khi viết code). Simulator: form đồng ý IDFA của Google → ATT → mở lạnh lần sau thấy quảng cáo mở app test; mở lạnh tiếp → không hiện (trần 1/ngày).
+- **Lưu ý:** lần mở đầu tiên có form đồng ý thì thường không kịp hiện quảng cáo (tải > 3 giây) — chấp nhận được.
+- **Việc của chủ dự án (trước khi bật):**
+  1. ✅ 11/11: app iOS đã thêm vào AdMob (App ID `ca-app-pub-8182552012312179~4523919461`), ad unit App open `wordly-app-open` = `ca-app-pub-8182552012312179/8199615606`. AdMob chưa xác minh app-ads.txt (production đang trả trang HTML — hết khi deploy; có thể cần thêm file ở tên miền gốc `www.skillproof.work`, đang 404). Privacy & messaging: GDPR (198 đối tác thường dùng, tự thêm nguồn mới), Tiểu bang Hoa Kỳ, IDFA explainer (tiếng Việt) — cả 3 đang hoạt động. Thanh toán: thuế VN đã chấp nhận; W-8BEN Hoa Kỳ đang xác minh (tên tài khoản Google "Thiện Trần" khác tên tờ khai → Google có thể đòi ảnh hộ chiếu/CCCD; hồ sơ thanh toán đã đúng tên đầy đủ). Còn thiếu số điện thoại trong hồ sơ thanh toán.
+  - ✅ Đã thêm (11/11): dòng "Tuỳ chọn quyền riêng tư quảng cáo" ở Cá nhân → Thông tin (chỉ hiện khi quảng cáo bật + UMP báo `privacyOptionsRequirementStatus == .required`; mở `ConsentForm.presentPrivacyOptionsForm`; trạng thái đồng ý cập nhật mỗi lần mở lạnh kể cả hôm không hiện quảng cáo); bỏ tự gọi ATT — UMP hiện IDFA explainer → ATT. `AdsLogicTests` 8/8 (RED trước khi viết), toàn bộ `WordlyiOSTests` 305/305.
+  2. ✅ 11/11: 2 ID thật đã điền vào `Secrets.xcconfig` (chỉ `[config=Release]`; đã kiểm `-showBuildSettings`: Debug = ID test, Release = ID thật).
+  3. ✅ 11/11: App Store Connect → App Privacy đã xuất bản (11 loại dữ liệu; theo dõi: Device ID + Advertising Data).
+  4. Env production: `ADMOB_PUBLISHER_ID=pub-8182552012312179`, giữ `ADS_ENABLED=0` tới khi bản app có quảng cáo lên store, rồi bật `ADS_ENABLED=1`. Lần upload sau: build 24.
+
 ### 25/10/2026 — TẠM GÁC QUẢNG CÁO: production lùi về bản trước quảng cáo
 
 - **Chủ dự án quyết 25/10:** quay lại phiên bản trước, tạm gác quảng cáo trong app.
