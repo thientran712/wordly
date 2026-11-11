@@ -26,6 +26,13 @@ struct WordlyApp: App {
             }
         }
         #endif
+        // Widget màn hình chính: máy chưa có cài đặt → nền mặc định "Bàn sáng mai" (cắt ảnh nền phụ)
+        #if DEBUG
+        let seedWidget = !PreviewMode.isOn
+        #else
+        let seedWidget = true
+        #endif
+        if seedWidget { Task.detached(priority: .utility) { WidgetDefaults.seedIfNeeded() } }
         // Gợi ý tính năng (TipKit) — tối đa 1 gợi ý mỗi ngày (spec 2026-10-15 §6.5)
         try? Tips.configure([.displayFrequency(.daily)])
     }
