@@ -141,6 +141,19 @@ final class ProStore: ObservableObject {
         paywall = .general
     }
 
+    /// Bấm mic / camera: hết lượt ảnh / giọng nói hôm nay → mở paywall ngay, trả true (đừng bắt đầu).
+    func gate(_ code: LimitCode) -> Bool {
+        let counter: BillingStatus.Counter
+        switch code {
+        case .image: counter = status.limits.image
+        case .voice: counter = status.limits.voice
+        default: return false
+        }
+        guard ProGate.blocks(counter, showsLimits: showsLimits) else { return false }
+        paywall = .limit(code, counter.limit)
+        return true
+    }
+
     /// Lỗi 402 từ server → mở paywall đúng ngữ cảnh. Trả true nếu đã xử lý.
     @discardableResult
     func handle(_ error: Error) -> Bool {
@@ -220,12 +233,16 @@ final class ProStore: ObservableObject {
             let pro = CommandLine.arguments.contains("-WordlyProPlan")
             let on = !CommandLine.arguments.contains("-WordlyBillingOff")
             typealias C = BillingStatus.Counter
+            let usedIV = CommandLine.arguments.contains("-WordlyImageVoiceUsed") ? 1 : 0
             status = BillingStatus(pro: pro, expiresAt: pro ? "2027-10-16T00:00:00Z" : nil, source: pro ? "app_store" : nil,
                                    inGrace: false, enforced: on,
                                    limits: .init(savedWords: C(used: 24, limit: pro ? nil : 30),
                                                  advancedTranslate: C(used: 2, limit: pro ? nil : 5),
                                                  dictionary: C(used: 3, limit: pro ? nil : 5),
-                                                 pushSlots: .init(limit: pro ? 10 : 1)),
+                                                 pushSlots: .init(limit: pro ? 10 : 1),
+                                                 // -WordlyImageVoiceUsed: đã dùng lượt ảnh + giọng nói hôm nay
+                                                 image: C(used: usedIV, limit: pro ? nil : 1),
+                                                 voice: C(used: usedIV, limit: pro ? nil : 1)),
                                    hasActiveSubscription: pro)
             return
         }

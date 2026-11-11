@@ -8,6 +8,9 @@ enum LimitCode: String, Equatable {
     case advancedTranslate = "limit_advanced_translate"
     case dictionary = "limit_dictionary"
     case pushSlots = "limit_push_slots"
+    /// Ảnh / giọng nói: free 1 lượt/ngày mỗi loại (chủ dự án chốt 11/11/2026)
+    case image = "limit_image"
+    case voice = "limit_voice"
 }
 
 extension APIError {
@@ -39,8 +42,28 @@ struct BillingStatus: Decodable, Equatable {
         let advancedTranslate: Counter
         let dictionary: Counter
         let pushSlots: Slots
+        /// Server cũ chưa có 2 bộ đếm này → coi như không giới hạn (server vẫn tự chặn)
+        var image = Counter(used: 0, limit: nil)
+        var voice = Counter(used: 0, limit: nil)
         enum CodingKeys: String, CodingKey {
             case savedWords = "saved_words", advancedTranslate = "advanced_translate", dictionary, pushSlots = "push_slots"
+            case image, voice
+        }
+
+        init(savedWords: Counter, advancedTranslate: Counter, dictionary: Counter, pushSlots: Slots,
+             image: Counter = Counter(used: 0, limit: nil), voice: Counter = Counter(used: 0, limit: nil)) {
+            (self.savedWords, self.advancedTranslate, self.dictionary, self.pushSlots, self.image, self.voice) =
+                (savedWords, advancedTranslate, dictionary, pushSlots, image, voice)
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            savedWords = try c.decode(Counter.self, forKey: .savedWords)
+            advancedTranslate = try c.decode(Counter.self, forKey: .advancedTranslate)
+            dictionary = try c.decode(Counter.self, forKey: .dictionary)
+            pushSlots = try c.decode(Slots.self, forKey: .pushSlots)
+            image = try c.decodeIfPresent(Counter.self, forKey: .image) ?? Counter(used: 0, limit: nil)
+            voice = try c.decodeIfPresent(Counter.self, forKey: .voice) ?? Counter(used: 0, limit: nil)
         }
     }
 
@@ -137,7 +160,7 @@ enum SoftPaywall {
 /// Câu bộ đếm luôn thấy (spec §2). nil = không giới hạn → không hiện.
 enum ProCopy {
     static func advanced(_ c: BillingStatus.Counter) -> String? {
-        c.limit.map { "Còn \(max(0, $0 - c.used))/\($0) lượt dịch câu, ảnh, giọng nói hôm nay" }
+        c.limit.map { "Còn \(max(0, $0 - c.used))/\($0) lượt dịch câu hôm nay" }
     }
     static func saved(_ c: BillingStatus.Counter) -> String? {
         c.limit.map { "Đã lưu \(c.used)/\($0) từ" }
@@ -169,6 +192,8 @@ enum PaywallReason: Equatable, Identifiable {
         case .limit(.advancedTranslate, let n): return "Hết \(n ?? 5) lượt dịch nâng cao hôm nay"
         case .limit(.dictionary, let n): return "Hết \(n ?? 5) lượt tra từ mới hôm nay"
         case .limit(.pushSlots, _): return "Thêm khung giờ nhắc ôn với Pro"
+        case .limit(.image, _): return "Hết lượt dịch ảnh miễn phí hôm nay"
+        case .limit(.voice, _): return "Hết lượt dịch giọng nói miễn phí hôm nay"
         case .theme: return "Mở khoá toàn bộ theme"
         case .customStyle: return "Ảnh của bạn và tuỳ chỉnh màu"
         case .general: return "Học không giới hạn với Wordly Pro"
@@ -179,6 +204,15 @@ enum PaywallReason: Equatable, Identifiable {
     var offersUnsaveHint: Bool {
         if case .limit(.savedWords, _) = self { return true }
         return false
+    }
+}
+
+/// Chặn TRƯỚC khi ghi âm / mở camera: đã hết lượt hôm nay → mở paywall ngay,
+/// không để người dùng nói/chụp xong mới báo hết lượt.
+enum ProGate {
+    static func blocks(_ c: BillingStatus.Counter, showsLimits: Bool) -> Bool {
+        guard showsLimits, let remaining = c.remaining else { return false }
+        return remaining == 0
     }
 }
 

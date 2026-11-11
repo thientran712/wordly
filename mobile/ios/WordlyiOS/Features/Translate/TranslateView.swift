@@ -149,7 +149,8 @@ struct TranslateView: View {
                             }
                         }
                         Button {
-                            showImageSourceDialog = true
+                            // Hết lượt dịch ảnh hôm nay (bản miễn phí) → paywall, không mở camera
+                            if !pro.gate(.image) { showImageSourceDialog = true }
                         } label: {
                             if vm.isReadingImage {
                                 ProgressView().frame(width: 34, height: 34)

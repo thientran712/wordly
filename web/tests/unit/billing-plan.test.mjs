@@ -10,8 +10,8 @@ const iso = (ms) => new Date(NOW.getTime() + ms).toISOString();
 const DAY = 86_400_000;
 
 test("giới hạn theo gói đúng spec §1", () => {
-  assert.deepEqual(FREE_LIMITS, { saved_words: 30, advanced_translate: 5, dictionary: 5, push_slots: 1 });
-  assert.deepEqual(PRO_LIMITS, { saved_words: null, advanced_translate: null, dictionary: null, push_slots: 10 });
+  assert.deepEqual(FREE_LIMITS, { saved_words: 30, advanced_translate: 5, dictionary: 5, push_slots: 1, image: 1, voice: 1 });
+  assert.deepEqual(PRO_LIMITS, { saved_words: null, advanced_translate: null, dictionary: null, push_slots: 10, image: null, voice: null });
   assert.deepEqual(PRO_ABUSE_CAPS, { sentence: 200, image: 30, voice: 50 });
 });
 
@@ -81,7 +81,7 @@ test("limitsFor: tắt chặn → không giới hạn (push 10); miễn phí / P
 });
 
 test("buildStatus: miễn phí, đang chặn — đúng hình §8", () => {
-  const s = buildStatus({ entitlement: null, usage: { advanced_translate: 2, dictionary: 1 }, savedCount: 24, enforced: true, now: NOW });
+  const s = buildStatus({ entitlement: null, usage: { advanced_translate: 2, dictionary: 1, image: 1 }, savedCount: 24, enforced: true, now: NOW });
   assert.deepEqual(s, {
     pro: false, expires_at: null, source: null, in_grace: false, enforced: true, has_active_subscription: false,
     limits: {
@@ -89,6 +89,8 @@ test("buildStatus: miễn phí, đang chặn — đúng hình §8", () => {
       advanced_translate: { used: 2, limit: 5 },
       dictionary: { used: 1, limit: 5 },
       push_slots: { limit: 1 },
+      image: { used: 1, limit: 1 },
+      voice: { used: 0, limit: 1 },
     },
   });
 });
@@ -112,6 +114,7 @@ test("buildStatus: tắt chặn → enforced false, mọi limit null, push 10", 
   assert.deepEqual(s.limits, {
     saved_words: { used: 3, limit: null }, advanced_translate: { used: 9, limit: null },
     dictionary: { used: 0, limit: null }, push_slots: { limit: 10 },
+    image: { used: 0, limit: null }, voice: { used: 0, limit: null },
   });
 });
 
@@ -133,7 +136,7 @@ test("hasActiveSubscription: chỉ app_store còn hạn và chưa tắt tự gia
 });
 
 test("limitBody / UPDATE_REQUIRED_BODY đúng hợp đồng §8", () => {
-  for (const code of ["limit_saved_words", "limit_advanced_translate", "limit_dictionary", "limit_push_slots"]) {
+  for (const code of ["limit_saved_words", "limit_advanced_translate", "limit_dictionary", "limit_push_slots", "limit_image", "limit_voice"]) {
     const b = limitBody(code, 5);
     assert.equal(b.code, code);
     assert.equal(b.limit, 5);
@@ -154,4 +157,11 @@ test("billingEnforced: BILLING_ENFORCE_TEST_USERS chỉ bật chặn cho tài kh
   assert.equal(billingEnforced(env), false, "không biết người dùng (cron, khách) → tắt");
   assert.equal(billingEnforced(env, "not-a-uuid"), false, "chỉ nhận UUID");
   assert.equal(billingEnforced({ BILLING_ENFORCE: "1" }, "22222222-2222-4222-8222-222222222222"), true, "bật chung vẫn áp cho mọi người");
+});
+
+test("limitBody: ảnh / giọng nói có câu riêng (chủ dự án chốt 11/11: free 1 lượt/ngày mỗi loại)", () => {
+  assert.match(limitBody("limit_image", 1).error, /ảnh/);
+  assert.match(limitBody("limit_voice", 1).error, /giọng nói/);
+  assert.match(limitBody("limit_advanced_translate", 5).error, /dịch câu/);
+  assert.doesNotMatch(limitBody("limit_advanced_translate", 5).error, /ảnh/, "câu dài giờ không còn chung lượt với ảnh");
 });

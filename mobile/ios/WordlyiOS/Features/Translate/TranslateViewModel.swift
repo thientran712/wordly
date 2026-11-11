@@ -387,6 +387,8 @@ final class TranslateViewModel: ObservableObject {
             dictation.stop()
             return
         }
+        // Hết lượt dịch giọng nói hôm nay (bản miễn phí) → paywall, không ghi âm
+        if ProStore.shared.gate(.voice) { return }
         isTogglingDictation = true
         defer { isTogglingDictation = false }
         guard await dictation.requestPermissions() else { return }
