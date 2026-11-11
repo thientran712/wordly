@@ -16,8 +16,7 @@ struct ContentView: View {
                 TermsGate {
                     #if DEBUG
                     if let screen = PreviewMode.screen {
-                        NavigationStack { PreviewScreens.view(for: screen) }
-                            .task { await ProStore.shared.refreshStatus() }
+                        PreviewScreenHost(screen: screen)
                     } else {
                         MainTabView()
                     }

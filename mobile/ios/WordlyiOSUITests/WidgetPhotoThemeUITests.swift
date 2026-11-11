@@ -6,7 +6,8 @@ import XCTest
 final class WidgetPhotoThemeUITests: XCTestCase {
     func testPickPhotoThemeFromThemeSection() {
         let app = XCUIApplication()
-        app.launchArguments = ["-WordlyUIPreview", "profile", "-WordlyUIPreviewScreen", "homestyle"]
+        // Theme Vũ trụ là theme Pro → chạy như người dùng Pro (preview mặc định là bản miễn phí)
+        app.launchArguments = ["-WordlyUIPreview", "profile", "-WordlyUIPreviewScreen", "homestyle", "-WordlyProPlan"]
         app.launch()
 
         XCTAssertFalse(app.buttons["widgetPresetOpen"].exists, "không còn nút mẫu riêng — đã gộp vào Theme")
@@ -44,5 +45,32 @@ final class WidgetPhotoThemeUITests: XCTestCase {
         applied.name = "photo-theme-applied"
         applied.lifetime = .keepAlways
         add(applied)
+    }
+
+    // Review UI 11/11 (W3): người dùng miễn phí chạm theme Pro → xem thử, nút nói rõ
+    // là mở khoá với Pro (dẫn tới paywall), không phải "Dùng theme này".
+    func testFreeUserTryOnSaysUnlockWithPro() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-WordlyUIPreview", "profile", "-WordlyUIPreviewScreen", "homestyle"]
+        app.launch()
+
+        let groupPicker = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Nhóm'")).firstMatch
+        XCTAssertTrue(groupPicker.waitForExistence(timeout: 10))
+        groupPicker.tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Vũ trụ'")).firstMatch.tap()
+        // Không phải ô đầu: test Pro có thể đã lưu "Dải Ngân Hà" làm theme đang dùng (giữ được, không khoá)
+        let photo = app.buttons["theme.space-stars"]
+        XCTAssertTrue(photo.waitForExistence(timeout: 5))
+        photo.tap()
+
+        let cta = app.buttons["theme.tryOn.use"]
+        XCTAssertTrue(cta.waitForExistence(timeout: 5))
+        XCTAssertEqual(cta.label, "Mở khoá với Pro")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "theme-try-on"
+        shot.lifetime = .keepAlways
+        add(shot)
+        cta.tap()
+        XCTAssertTrue(app.staticTexts["paywall.headline"].waitForExistence(timeout: 5))
     }
 }

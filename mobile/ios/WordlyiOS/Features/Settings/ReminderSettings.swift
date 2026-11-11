@@ -110,6 +110,8 @@ struct HalfHourPicker: View {
     let selection: String
     let options: [String]
     let onPick: (String) -> Void
+    /// Có khi xoá được khung này (≥ 2 khung) — nút xoá nằm trong tấm chọn giờ (M2)
+    var onDelete: (() -> Void)? = nil
     @State private var showing = false
     @State private var draft = ""
 
@@ -161,8 +163,20 @@ struct HalfHourPicker: View {
                 .pickerStyle(.wheel)
                 .labelsHidden()
                 .frame(maxWidth: 220)
+
+                if let onDelete {
+                    Button(role: .destructive) {
+                        showing = false
+                        onDelete()
+                    } label: {
+                        Label("Xoá khung giờ này", systemImage: "trash")
+                            .font(WordlyFonts.body(15, weight: .semibold))
+                            .foregroundStyle(WordlyColors.error)
+                    }
+                    .padding(.bottom, 12)
+                }
             }
-            .presentationDetents([.height(290)])
+            .presentationDetents([.height(onDelete == nil ? 290 : 340)])
             .presentationDragIndicator(.visible)
             .presentationBackground(WordlyColors.surfaceElevated)
         }
@@ -217,7 +231,9 @@ struct ReminderSettingsForm: View {
                             options: ReminderScheduleLogic.options(
                                 current: slot.sendTime,
                                 others: vm.slots.filter { $0.id != slot.id }.map(\.sendTime)),
-                            onPick: { t in Task { await vm.update(slot, to: t) } })
+                            onPick: { t in Task { await vm.update(slot, to: t) } },
+                            onDelete: ReminderScheduleLogic.canDeleteSlot(count: vm.slots.count)
+                                ? { Task { await vm.delete(slot) } } : nil)
                         if isLocked(slot) {
                             Spacer()
                             Button { pro.present(.limit(.pushSlots, slotLimit)) } label: { ProBadge(locked: true) }
@@ -251,10 +267,10 @@ struct ReminderSettingsForm: View {
                     }
                 }
             } header: {
-                Text(pro.showsLimits ? "Giờ gửi (\(vm.slots.count) · miễn phí \(slotLimit) khung, Pro tối đa \(ReminderScheduleLogic.maxSlots))"
-                                     : "Giờ gửi (\(vm.slots.count)/\(ReminderScheduleLogic.maxSlots))")
+                // Luật gói đã nằm ở hàng "Thêm khung giờ 🔒PRO" — đầu mục chỉ cần tên (M1)
+                Text("Giờ gửi")
             } footer: {
-                Text("Chỉ chọn giờ tròn hoặc rưỡi. Theo múi giờ \(vm.timezone). Vuốt sang trái để xoá một khung giờ.")
+                Text("Chỉ chọn giờ tròn hoặc rưỡi.")
             }
 
             Section("Ngày gửi") {

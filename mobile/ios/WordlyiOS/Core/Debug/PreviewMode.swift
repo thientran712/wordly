@@ -122,6 +122,25 @@ enum PreviewMode {
     """#
 }
 
+/// Khung cho màn mở thẳng: thay MainTabView nên phải tự hiện paywall như app thật.
+/// Chỉ modifier theo dõi ProStore — màn bên trong không bị dựng lại mỗi lần trạng thái Pro đổi.
+struct PreviewScreenHost: View {
+    let screen: String
+
+    var body: some View {
+        NavigationStack { PreviewScreens.view(for: screen) }
+            .task { await ProStore.shared.refreshStatus() }
+            .modifier(PreviewPaywallPresenter())
+    }
+}
+
+private struct PreviewPaywallPresenter: ViewModifier {
+    @ObservedObject private var pro = ProStore.shared
+    func body(content: Content) -> some View {
+        content.sheet(item: $pro.paywall) { reason in PaywallView(reason: reason) }
+    }
+}
+
 /// Màn mở thẳng khi chụp ảnh kiểm giao diện (chỉ bản Debug).
 enum PreviewScreens {
     /// Ảnh mẫu 3000×2000 dựng bằng code cho màn chỉnh khung ảnh nền widget.

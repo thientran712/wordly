@@ -10,7 +10,12 @@ final class ReminderTimePickerUITests: XCTestCase {
 
         let row = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Gửi lúc'")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 10))
+        // Review UI 11/11 (M1, M2, G4): đầu mục gọn, không chuỗi múi giờ kỹ thuật,
+        // không câu hướng dẫn vuốt; 1 khung giờ thì không có nút xoá
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'miễn phí 1 khung'")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Asia/' OR label CONTAINS 'Vuốt'")).firstMatch.exists)
         row.tap()
+        XCTAssertFalse(app.buttons["Xoá khung giờ này"].waitForExistence(timeout: 2), "chỉ 1 khung giờ → không xoá được")
 
         let wheel = app.pickerWheels.firstMatch
         let opened = wheel.waitForExistence(timeout: 3)

@@ -92,6 +92,20 @@ final class WidgetSettingsViewModel: ObservableObject {
     }
 }
 
+/// Thứ tự khối trên trang Widget (review UI 11/11, W1).
+enum WidgetHubLayout {
+    /// Chưa có widget loại đang xem → khối "Cách thêm widget" lên đầu trang.
+    static func addGuideFirst(tab: WidgetSettingsView.Tab, lock: Bool, home: Bool) -> Bool {
+        tab == .lock ? !lock : !home
+    }
+
+    /// nil = chưa kiểm xong → giữ bố cục cũ, không để khối nhảy khi vừa mở.
+    static func addGuideFirst(tab: WidgetSettingsView.Tab, installed: (lock: Bool, home: Bool)?) -> Bool {
+        guard let installed else { return false }
+        return addGuideFirst(tab: tab, lock: installed.lock, home: installed.home)
+    }
+}
+
 /// Trang "Widget" gộp (spec 2026-10-15-shared-word-source-design.md §5.5, cách B):
 /// nút chuyển [Màn hình khoá | Màn hình chính] ở đầu; các khối là thẻ tách rời có
 /// tiêu đề rõ — xem trước → hướng dẫn → riêng loại đang chọn → ÁP DỤNG CHO CẢ 2
@@ -103,6 +117,7 @@ struct WidgetSettingsView: View {
     @ObservedObject private var source = WordSourceStore.shared
     @AppStorage("widgetHub.tab") private var tabRaw = Tab.lock.rawValue
     @State private var guideOpen = false
+    @State private var installed: (lock: Bool, home: Bool)?
 
     private var tab: Tab { Tab(rawValue: tabRaw) ?? .lock }
 
@@ -118,6 +133,8 @@ struct WidgetSettingsView: View {
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
+            if guideFirst { addGuideSection }
+
             if tab == .home {
                 HomeStylePreviewSection(vm: vm)
             } else {
@@ -131,8 +148,6 @@ struct WidgetSettingsView: View {
                     .padding(.horizontal, 4)
                 } header: {
                     HubHeader("Xem trước", systemImage: "eye")
-                } footer: {
-                    Text("Màn hình khoá iOS tự tô màu đơn sắc — chỉ chỉnh được kiểu chữ.")
                 }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
@@ -160,9 +175,9 @@ struct WidgetSettingsView: View {
                 Toggle("Hiện nghĩa tiếng Việt", isOn: $vm.settings.showMeaning)
                     .tint(WordlyColors.electric)
                 Picker("Căn chữ", selection: $vm.settings.textAlign) {
-                    Image(systemName: "text.alignleft").tag(WidgetSettings.TextAlign.leading)
-                    Image(systemName: "text.aligncenter").tag(WidgetSettings.TextAlign.center)
-                    Image(systemName: "text.alignright").tag(WidgetSettings.TextAlign.trailing)
+                    Text("Trái").tag(WidgetSettings.TextAlign.leading)
+                    Text("Giữa").tag(WidgetSettings.TextAlign.center)
+                    Text("Phải").tag(WidgetSettings.TextAlign.trailing)
                 }
                 .pickerStyle(.segmented)
             } header: {
@@ -214,28 +229,7 @@ struct WidgetSettingsView: View {
                 Text("Dùng chung với thông báo nhắc ôn.")
             }
 
-            // ── Cách thêm widget (theo loại đang chọn) ──
-            Section {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(alignment: .top, spacing: 12) {
-                        ForEach(Array(addSteps.enumerated()), id: \.offset) { i, text in
-                            stepCard(i + 1, text)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            } header: {
-                HubHeader(tab == .lock ? "Cách thêm widget vào màn hình khoá" : "Cách thêm widget vào màn hình chính",
-                          systemImage: "plus.square.on.square")
-                    .accessibilityIdentifier(tab == .lock ? "addStepsLock" : "addStepsHome")
-                    .padding(.top, 8)
-            } footer: {
-                if tab == .lock {
-                    Text("iOS đặt hàng widget ở giữa khi hàng chưa đủ chỗ. Muốn Wordly sát mép trái: đặt Wordly đầu hàng rồi thêm 2 widget tròn bên phải cho kín hàng.")
-                } else {
-                    Text("Cỡ Vừa có thêm câu nhắc vui bên cạnh từ.")
-                }
-            }
+            if !guideFirst { addGuideSection }
         }
         .listSectionSpacing(20)
         .scrollContentBackground(.hidden)
@@ -243,7 +237,44 @@ struct WidgetSettingsView: View {
         .navigationTitle("Widget")
         .navigationBarTitleDisplayMode(.inline)
         .task { if vm.words.isEmpty { await vm.refresh() } }
+        .task { await loadInstalled() }
         .onAppear { source.reload() }
+    }
+
+    private var guideFirst: Bool { WidgetHubLayout.addGuideFirst(tab: tab, installed: installed) }
+
+    private func loadInstalled() async {
+        if PreviewMode.isOn {
+            let on = CommandLine.arguments.contains("-WordlyWidgetInstalled")
+            installed = (on, on)
+            return
+        }
+        installed = await OnboardingCenter.installedFamilies()
+    }
+
+    // ── Cách thêm widget (theo loại đang chọn) ──
+    private var addGuideSection: some View {
+        Section {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(Array(addSteps.enumerated()), id: \.offset) { i, text in
+                        stepCard(i + 1, text)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        } header: {
+            HubHeader(tab == .lock ? "Cách thêm widget vào màn hình khoá" : "Cách thêm widget vào màn hình chính",
+                      systemImage: "plus.square.on.square")
+                .accessibilityIdentifier(tab == .lock ? "addStepsLock" : "addStepsHome")
+                .padding(.top, 8)
+        } footer: {
+            if tab == .lock {
+                Text("iOS đặt hàng widget ở giữa khi hàng chưa đủ chỗ. Muốn Wordly sát mép trái: đặt Wordly đầu hàng rồi thêm 2 widget tròn bên phải cho kín hàng.")
+            } else {
+                Text("Cỡ Vừa có thêm câu nhắc vui bên cạnh từ.")
+            }
+        }
     }
 
     private struct GuideItem { let icon: String; let text: String }

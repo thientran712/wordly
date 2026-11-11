@@ -34,21 +34,20 @@ final class SettingsRedesignUITests: XCTestCase {
         shot(app, "profile-learning")
     }
 
-    func testWordSourcePageLocksBankWhenSavedOff() {
+    // Review UI 11/11 (W5): công tắc iOS thay ô tick kiểu web; không lặp tiêu đề "Nguồn từ".
+    // Logic khoá nguồn (bỏ đã lưu → kho luôn bật) nằm ở WordSourceTests — XCUITest trên
+    // iOS 26 không bật/tắt được Toggle SwiftUI (thử cả tap, toạ độ, vuốt, nhấn giữ).
+    func testWordSourcePageUsesSwitches() {
         let app = launch()
         app.buttons["entryWordSource"].tap()
-        let saved = app.buttons["sourceSaved"]
-        let bank = app.buttons["sourceBank"]
+        let saved = app.switches["sourceSaved"]
         XCTAssertTrue(saved.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Wordly luôn dùng từ mới trong kho'")).firstMatch.exists,
+        XCTAssertTrue(app.switches["sourceBank"].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Wordly dùng từ mới trong kho'")).firstMatch.exists,
                       "luôn có ghi chú về từ kho")
+        XCTAssertEqual(app.collectionViews.staticTexts.matching(NSPredicate(format: "label ==[c] 'Nguồn từ'")).count, 0,
+                       "tiêu đề trang đã là Nguồn từ — không lặp ở đầu mục")
         shot(app, "word-source")
-        saved.tap()
-        XCTAssertFalse(saved.isSelected)
-        XCTAssertTrue(bank.isSelected, "bỏ đã lưu → trộn kho tự bật")
-        bank.tap()
-        XCTAssertTrue(bank.isSelected, "đang khoá thì không tắt được")
-        saved.tap()
     }
 
     func testPinWordFromPinnedListAndPinnedOnlyToggle() {
@@ -80,8 +79,21 @@ final class SettingsRedesignUITests: XCTestCase {
         shot(app, "quick-pin")
     }
 
-    func testWidgetHubSwitchesTabsWithGuideAndSteps() {
+    // Review UI 11/11 (W1): chưa có widget → "Cách thêm widget" ngay đầu trang
+    func testWidgetHubShowsAddStepsFirstWhenNoWidget() {
         let app = launch()
+        app.buttons["entryWidget"].tap()
+        XCTAssertTrue(app.buttons["Màn hình khoá"].waitForExistence(timeout: 5))
+        app.buttons["Màn hình khoá"].tap()
+        let steps = app.staticTexts["addStepsLock"]
+        XCTAssertTrue(steps.waitForExistence(timeout: 5) && steps.isHittable, "chưa có widget → cách thêm nằm ngay màn đầu")
+        XCTAssertLessThan(steps.frame.minY, app.buttons["widgetGuideToggle"].frame.minY, "cách thêm đứng trước hướng dẫn sử dụng")
+        shot(app, "widget-lock-no-widget")
+    }
+
+    func testWidgetHubSwitchesTabsWithGuideAndSteps() {
+        // Đã có widget → bố cục cũ: cách thêm widget ở cuối trang
+        let app = launch("profile", ["-WordlyWidgetInstalled"])
         app.buttons["entryWidget"].tap()
         XCTAssertTrue(app.buttons["Màn hình khoá"].waitForExistence(timeout: 5))
         app.buttons["Màn hình khoá"].tap()   // tab được nhớ từ lần trước
