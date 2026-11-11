@@ -3,7 +3,21 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
-### 11/11/2026 — Quảng cáo MỞ APP (chỉ một loại) — branch `feat/app-open-ad`, CHƯA commit
+### 11/11/2026 (tối) — iOS 1.0.2 (24) ĐÃ UPLOAD TestFlight: quảng cáo mở app + thiết lập lần đầu + widget nền Bàn sáng mai
+
+- **Build 1.0.2 (24) upload 18:38** (archive từ nhánh `feat/free-study-theme` `ed5fc1a`, PR #68 — **chưa merge**): app + widget 24, IPA kiểm `aps-environment = production`, `get-task-allow = false`, 0 cờ xem trước, App ID / ad unit AdMob **thật**. **Lần upload sau: build 25.**
+- **Thiết lập lần đầu (chủ dự án chốt 11/11, thay thẻ to-do "Bắt đầu với Wordly"):** tài khoản chưa có từ phải làm 3 bước bắt buộc trước màn chính — lưu từ đầu tiên → bật nhắc ôn → thêm widget; thoát giữa chừng mở lại đúng bước; không lấy được số từ từ server thì không bắt đầu (tránh bắt người cũ làm lại). Hộp quyền thông báo iOS chọn gì cũng đi tiếp (App Store 4.5.4). Bước widget chỉ qua khi `WidgetCenter` thấy widget Wordly (chính hoặc khoá) — **rủi ro duyệt App Store:** người duyệt không thêm widget sẽ kẹt; nếu bị từ chối thì thêm lối thoát.
+- **Widget mặc định:** cài mới → widget màn hình chính nền ảnh "Bàn sáng mai"; gói free được dùng thử theme ảnh này.
+- **Bằng chứng:** `WordlyiOSTests` 312/312; UI 35/36 — lỗi duy nhất `WidgetPhotoThemeUITests.testPickPhotoThemeFromThemeSection` **có từ trước** (chạy trên `origin/main` cũng lỗi y hệt; có lẽ theme Vũ trụ bị khoá Pro trong chế độ xem trước). `OnboardingTests` RED trước khi viết code; UI test đi hết 3 bước trên simulator (ảnh chụp đã xem).
+- **Chưa kiểm trên máy thật:** tự nhận widget khi quay lại app, hộp quyền thông báo thật, quảng cáo thật (AdMob ID thật chỉ có ở bản Release).
+- **Tiếp:** chủ dự án duyệt merge PR #68 (+ #67); thử build 24 trên TestFlight; khi lên store → `ADS_ENABLED=1`.
+
+### 11/11/2026 — Quảng cáo MỞ APP: web ĐÃ LÊN PRODUCTION (quảng cáo vẫn TẮT)
+
+- PR #66 merge → deploy qua workflow, production = `01b8917` (`/api/health` đúng SHA). `.env` production thêm `ADS_ENABLED=0`, `ADS_APP_OPEN_PER_DAY=1`, `ADMOB_PUBLISHER_ID=pub-8182552012312179` (sao lưu `.env.bak-pre-app-open-ad-202611111029`). Đã kiểm: `/app-ads.txt` 200 text/plain đúng dòng Google; `/api/app-config` → `{"min_build":22,"ads":{"enabled":false,"app_open_per_day":1}}`; `/privacy` có mục Quảng cáo (cập nhật 11/11/2026); khách dịch 200. App trên store (build 22) không đọc khối `ads` → người dùng không thấy gì khác.
+- **Tiếp:** chủ dự án bấm "Kiểm tra để tìm bản cập nhật" app-ads.txt trên AdMob (≤ 24 giờ; không qua → thêm file ở `www.skillproof.work`). Build 1.0.2 (24) đã upload (xem mục trên). Khi bản có quảng cáo lên store → đặt `ADS_ENABLED=1` trong `/opt/wordly/prod/web/.env` + deploy lại (hoặc recreate container).
+
+### 11/11/2026 — Quảng cáo MỞ APP (chỉ một loại) — PR #66 (đã merge)
 
 - **Chủ dự án chốt 11/11:** làm lại quảng cáo nhưng chỉ quảng cáo mở app: **mở app lạnh, tối đa 1 lần/ngày**, **ai cũng thấy (kể cả Pro)**, công tắc ở server. Không biểu ngữ, không xen màn hình, không quảng cáo thưởng, không tính lượt dịch, không migration.
 - **Web:** `src/lib/ads/config.js` (`ADS_ENABLED` mặc định TẮT, `ADS_APP_OPEN_PER_DAY` mặc định 1) → khối `ads` trong `/api/app-config`; `/app-ads.txt` theo `ADMOB_PUBLISHER_ID` (đã mở qua cổng tắt-web — sửa lỗi của PR #64 cũ); chính sách quyền riêng tư thêm mục Quảng cáo (KHÔNG nâng phiên bản điều khoản → không ai bị hỏi đồng ý lại).
