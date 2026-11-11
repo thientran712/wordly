@@ -103,7 +103,7 @@ struct TermsConsentView: View {
                             item("person.crop.circle.fill", "Email và tên", "để tạo và giữ tài khoản của bạn")
                             item("books.vertical.fill", "Từ đã lưu, sổ tay, lịch sử dịch", "chỉ bạn xem được, dùng để ôn tập")
                             item("bell.badge.fill", "Mã thiết bị", "chỉ khi bạn bật thông báo nhắc ôn")
-                            item("hand.raised.fill", "Không bán dữ liệu", "không quảng cáo, không theo dõi bạn")
+                            item("hand.raised.fill", "Không bán dữ liệu", "không chia sẻ email, tên hay từ của bạn cho quảng cáo")
                         }
                         .padding(16)
                         .frame(maxWidth: .infinity, alignment: .leading)
