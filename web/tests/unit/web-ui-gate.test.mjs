@@ -19,7 +19,7 @@ test("đang bật → mọi trang đi như cũ", () => {
 test("đang tắt → API, privacy, support, auth, reset-password, email-templates vẫn chạy", () => {
   for (const p of ["/api/translate", "/api/push/devices", "/api/cron/send-emails", "/api/health",
     "/privacy", "/support", "/terms", "/auth/confirm", "/auth/callback", "/reset-password",
-    "/email-templates/recovery.html", MOBILE_ONLY_PATH]) {
+    "/email-templates/recovery.html", "/app-ads.txt", MOBILE_ONLY_PATH]) {
     assert.equal(webUiGate(p, false), "allow", p);
   }
 });

@@ -15,6 +15,8 @@ struct ProfileView: View {
     @State private var isDeleting = false
     @State private var deleteError: String?
     @ObservedObject private var pro = ProStore.shared
+    @ObservedObject private var ads = AdsManager.shared
+    @ObservedObject private var adsCenter = AdsCenter.shared
 
     /// Xoá tài khoản không huỷ gói Apple → cảnh báo trước (spec Pro §9.4)
     private var warnSubscription: Bool { ProAccess.warnBeforeDelete(status: pro.status, localEntitled: pro.localEntitled) }
@@ -107,6 +109,13 @@ struct ProfileView: View {
                     }
                     Link(destination: webURL("/privacy")) {
                         settingRow("hand.raised.fill", WordlyColors.duoBlue, "Chính sách quyền riêng tư", nil)
+                    }
+                    // GDPR / luật tiểu bang Mỹ: đổi lựa chọn đồng ý quảng cáo — chỉ người dùng cần mới thấy
+                    if AdsPolicy.showsPrivacyOptions(adsEnabled: adsCenter.config.enabled, required: ads.privacyOptionsRequired) {
+                        Button { Task { await ads.presentPrivacyOptions() } } label: {
+                            settingRow("checkmark.shield.fill", WordlyColors.duoBlue, "Tuỳ chọn quyền riêng tư quảng cáo", nil)
+                        }
+                        .accessibilityIdentifier("entryAdPrivacy")
                     }
                     Link(destination: webURL("/support")) {
                         settingRow("questionmark.circle.fill", WordlyColors.electric, "Hỗ trợ & liên hệ", nil)
