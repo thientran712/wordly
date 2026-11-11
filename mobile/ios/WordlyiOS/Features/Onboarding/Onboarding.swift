@@ -1,4 +1,5 @@
 import Foundation
+import UserNotifications
 
 /// Luật giới thiệu tính năng (spec 2026-10-15-shared-word-source-design.md §6).
 /// Cờ lưu trên máy (UserDefaults chuẩn), không gửi server.
@@ -6,7 +7,7 @@ enum Onboarding {
     /// Phiên bản có nội dung "Có gì mới" — đổi khi có đợt tính năng mới cần giới thiệu.
     static let whatsNewVersion = "1.0.1"
 
-    enum Intro: Equatable { case whatsNew, none }
+    enum Intro: Equatable { case whatsNew, setup(SetupStep), none }
 
     enum LaunchFlow: Equatable { case show, markSeen, none }
 
@@ -23,27 +24,39 @@ enum Onboarding {
         savedCount > 0 && seenVersion != whatsNewVersion
     }
 
-    struct Checklist: Equatable {
-        let savedWord: Bool
-        let lockWidget: Bool
-        let homeWidget: Bool
-        let push: Bool
-        var doneCount: Int { [savedWord, lockWidget, homeWidget, push].filter { $0 }.count }
-        var allDone: Bool { doneCount == 4 }
+    // MARK: Thiết lập lần đầu (chủ dự án chốt 11/11/2026, thay thẻ "Bắt đầu với Wordly")
+    // Tài khoản chưa có từ: lưu từ đầu tiên → nhắc ôn → thêm widget, bắt buộc theo thứ tự
+    // rồi mới vào màn chính (thông báo + widget là tính năng lõi).
+
+    enum SetupStep: Int, Equatable, CaseIterable { case saveWord = 0, reminder, widget }
+
+    /// Bước cần hiện khi vào app; nil = không thiết lập. `savedCount` nil = chưa biết (lỗi mạng)
+    /// → chỉ mở lại bước đang làm dở, không bắt đầu mới (tránh bắt người dùng cũ làm lại).
+    static func setupStep(savedCount: Int?, done: Bool, stored: Int?) -> SetupStep? {
+        if done { return nil }
+        if let stored, let step = SetupStep(rawValue: stored) { return step }
+        return savedCount == 0 ? .saveWord : nil
     }
 
-    static func checklist(savedCount: Int, hasLockWidget: Bool, hasHomeWidget: Bool, pushOn: Bool) -> Checklist {
-        Checklist(savedWord: savedCount > 0, lockWidget: hasLockWidget, homeWidget: hasHomeWidget, push: pushOn)
+    static func nextSetupStep(after step: SetupStep) -> SetupStep? {
+        SetupStep(rawValue: step.rawValue + 1)
     }
 
-    enum CardState: Equatable { case hidden, show, celebrate }
+    enum ReminderAction: Equatable { case ask, enable, proceed }
 
-    /// ✕ ẩn vĩnh viễn; xong hết → chúc mừng một lần rồi ẩn.
-    static func card(dismissed: Bool, allDone: Bool, celebrated: Bool) -> CardState {
-        if dismissed { return .hidden }
-        if allDone { return celebrated ? .hidden : .celebrate }
-        return .show
+    /// Nút ở bước nhắc ôn. Đã từ chối quyền / máy không có push → vẫn đi tiếp
+    /// (App Store 4.5.4: không được bắt bật thông báo mới cho dùng app).
+    static func reminderAction(status: UNAuthorizationStatus, pushAvailable: Bool) -> ReminderAction {
+        guard pushAvailable else { return .proceed }
+        switch status {
+        case .notDetermined: return .ask
+        case .authorized, .provisional, .ephemeral: return .enable
+        default: return .proceed
+        }
     }
+
+    /// Bước widget chỉ qua khi đã có widget Wordly (màn hình chính hoặc màn hình khoá).
+    static func widgetStepDone(lock: Bool, home: Bool) -> Bool { lock || home }
 
     /// Gợi ý thêm widget: lưu từ thứ 3 trở đi, chưa có widget, chưa gợi ý lần nào,
     /// khác ngày với lời mời nhắc ôn, không trong lần mở có màn chào / "Có gì mới".
@@ -60,8 +73,8 @@ enum Onboarding {
         static let flowSeen = "onboarding.flowSeen"
         // Theo TÀI KHOẢN — dùng qua OnboardingCenter.key(_:) (thêm ".<userId>")
         static let whatsNewSeen = "onboarding.whatsNewSeen"
-        static let cardDismissed = "onboarding.cardDismissed"
-        static let cardCelebrated = "onboarding.cardCelebrated"
+        static let setupStep = "onboarding.setupStep"
+        static let setupDone = "onboarding.setupDone"
         static let widgetNudgeShown = "onboarding.widgetNudgeShown"
         static let pushInviteDay = "onboarding.pushInviteDay"
     }

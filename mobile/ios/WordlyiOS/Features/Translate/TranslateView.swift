@@ -21,9 +21,6 @@ struct TranslateView: View {
             ScrollView {
                 VStack(spacing: 14) {
                     languageBar.id("translateTop")
-                    if onboarding.cardState != .hidden {
-                        StartChecklistCard(center: onboarding) { inputFocused = true }
-                    }
                     inputCard
                     if pro.showsLimits, let line = ProCopy.advanced(pro.status.limits.advancedTranslate) {
                         ProCounterLine(text: line) { pro.present(.limit(.advancedTranslate, pro.status.limits.advancedTranslate.limit)) }

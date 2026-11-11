@@ -4,14 +4,12 @@ import WidgetKit
 import TipKit
 
 /// Điều phối giới thiệu tính năng (spec 2026-10-15-shared-word-source-design.md §6):
-/// màn chào / "Có gì mới" lúc mở, thẻ "Bắt đầu với Wordly", gợi ý thêm widget.
+/// "Có gì mới" lúc mở (tài khoản cũ), thiết lập lần đầu (tài khoản mới), gợi ý thêm widget.
 @MainActor
 final class OnboardingCenter: ObservableObject {
     static let shared = OnboardingCenter()
 
     @Published var intro: Onboarding.Intro = .none
-    @Published private(set) var checklist = Onboarding.checklist(savedCount: 0, hasLockWidget: false, hasHomeWidget: false, pushOn: false)
-    @Published private(set) var cardState: Onboarding.CardState = .hidden
     @Published var nudgeWord: WidgetWordItem?
     /// Tài khoản đang dùng — mọi cờ (trừ onboarding 4 màn) lưu theo tài khoản
     private(set) var userId = ""
@@ -37,7 +35,7 @@ final class OnboardingCenter: ObservableObject {
 
     private var savedCount: Int { AppGroupStorage.shared.words.filter(\.isSaved).count }
 
-    var isCardDismissed: Bool { defaults.bool(forKey: key(Onboarding.Key.cardDismissed)) }
+    var isSettingUp: Bool { if case .setup = intro { return true } else { return false } }
 
     // MARK: Onboarding 4 màn (theo máy)
     @Published private(set) var flowSeen = false
@@ -47,13 +45,36 @@ final class OnboardingCenter: ObservableObject {
     }
 
     /// Mỗi lần vào app với một tài khoản (kể cả đổi tài khoản trong cùng lần chạy).
-    func decideIntro(userId: String, savedCount: Int) {
+    /// `savedCount` nil = không lấy được số từ từ server.
+    func decideIntro(userId: String, savedCount: Int?) {
         guard Self.enabled, decidedUser != userId else { return }
         self.userId = userId
         decidedUser = userId
-        intro = Onboarding.showWhatsNew(savedCount: savedCount,
-                                        seenVersion: defaults.string(forKey: key(Onboarding.Key.whatsNewSeen))) ? .whatsNew : .none
+        if let step = Onboarding.setupStep(savedCount: savedCount,
+                                           done: defaults.bool(forKey: key(Onboarding.Key.setupDone)),
+                                           stored: defaults.object(forKey: key(Onboarding.Key.setupStep)) as? Int) {
+            intro = .setup(step)
+        } else {
+            intro = Onboarding.showWhatsNew(savedCount: savedCount ?? 0,
+                                            seenVersion: defaults.string(forKey: key(Onboarding.Key.whatsNewSeen))) ? .whatsNew : .none
+        }
         introThisSession = intro != .none
+    }
+
+    /// Xong một bước thiết lập → bước sau; xong bước cuối → vào màn chính. Bước khác bước
+    /// đang hiện thì bỏ qua (không nhảy cóc).
+    func completeSetupStep(_ step: Onboarding.SetupStep) {
+        guard intro == .setup(step) else { return }
+        if let next = Onboarding.nextSetupStep(after: step) {
+            defaults.set(next.rawValue, forKey: key(Onboarding.Key.setupStep))
+            intro = .setup(next)
+        } else {
+            defaults.set(true, forKey: key(Onboarding.Key.setupDone))
+            defaults.removeObject(forKey: key(Onboarding.Key.setupStep))
+            // Tài khoản mới vừa thiết lập: "Có gì mới" của bản này coi như đã xem
+            defaults.set(Onboarding.whatsNewVersion, forKey: key(Onboarding.Key.whatsNewSeen))
+            intro = .none
+        }
     }
 
     /// Chờ quyết định "Có gì mới" của lần vào app này (false = hết giờ / bị huỷ).
@@ -72,30 +93,12 @@ final class OnboardingCenter: ObservableObject {
         intro = .none
     }
 
-    /// Kiểm lại thẻ "Bắt đầu" — khi mở app, quay lại app (vừa thêm widget ngoài app), sau khi lưu từ.
-    func refreshChecklist() async {
-        guard Self.enabled, !userId.isEmpty else { cardState = .hidden; return }
-        let kinds = await Self.installedFamilies()
-        let pushOn = await Self.pushOn()
-        checklist = Onboarding.checklist(savedCount: savedCount, hasLockWidget: kinds.lock,
-                                         hasHomeWidget: kinds.home, pushOn: pushOn)
-        cardState = Onboarding.card(dismissed: isCardDismissed, allDone: checklist.allDone,
-                                    celebrated: defaults.bool(forKey: key(Onboarding.Key.cardCelebrated)))
-        if cardState == .celebrate { defaults.set(true, forKey: key(Onboarding.Key.cardCelebrated)) }
-    }
-
-    func dismissCard() {
-        defaults.set(true, forKey: key(Onboarding.Key.cardDismissed))
-        cardState = .hidden
-    }
-
     /// Lời mời bật nhắc ôn vừa hiện → gợi ý widget không cùng ngày.
     func notePushInvite() { defaults.set(Date(), forKey: key(Onboarding.Key.pushInviteDay)) }
 
-    /// Sau khi lưu từ: cập nhật thẻ + gợi ý thêm widget (một lần, từ thứ 3).
+    /// Sau khi lưu từ: gợi ý thêm widget (một lần, từ thứ 3, khi vẫn chưa có widget).
     func afterSave() async {
-        await refreshChecklist()
-        guard Self.enabled else { return }
+        guard Self.enabled, intro == .none else { return }
         let kinds = await Self.installedFamilies()
         guard Onboarding.shouldNudgeWidget(savedCount: savedCount, hasWidget: kinds.lock || kinds.home,
                                            nudgeShown: defaults.bool(forKey: key(Onboarding.Key.widgetNudgeShown)),
@@ -114,12 +117,6 @@ final class OnboardingCenter: ObservableObject {
         let lock = wordly.contains { [.accessoryRectangular, .accessoryCircular, .accessoryInline].contains($0.family) }
         let home = wordly.contains { [.systemSmall, .systemMedium, .systemLarge].contains($0.family) }
         return (lock, home)
-    }
-
-    static func pushOn() async -> Bool {
-        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
-        guard status == .authorized || status == .provisional || PreviewModeFlag.isOn else { return false }
-        return (try? await APIClient.shared.fetchPushPreferences())??.enabled ?? false
     }
 }
 
@@ -199,76 +196,9 @@ struct WhatsNewView: View {
     }
 }
 
-// MARK: - Thẻ "Bắt đầu với Wordly" (đầu tab Dịch)
-
-struct StartChecklistCard: View {
-    @ObservedObject var center: OnboardingCenter
-    let onSaveWord: () -> Void
-    @State private var guide: WidgetSettingsView.Tab?
-    @State private var showPush = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(center.cardState == .celebrate ? "Xong hết rồi 🎉" : "Bắt đầu với Wordly")
-                    .font(WordlyFonts.body(16, weight: .bold)).foregroundStyle(WordlyColors.ink)
-                if center.cardState == .show {
-                    Text("\(center.checklist.doneCount)/4")
-                        .font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.electric)
-                }
-                Spacer()
-                Button { center.dismissCard() } label: {
-                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
-                        .frame(width: 30, height: 30)
-                }
-                .accessibilityLabel("Ẩn")
-                .accessibilityIdentifier("checklistDismiss")
-            }
-            if center.cardState == .show {
-                item("savedWord", "Lưu từ đầu tiên", done: center.checklist.savedWord, action: onSaveWord)
-                item("lockWidget", "Đưa từ lên màn hình khoá", done: center.checklist.lockWidget) { guide = .lock }
-                item("homeWidget", "Thêm widget màn hình chính", done: center.checklist.homeWidget) { guide = .home }
-                item("push", "Bật nhắc ôn", done: center.checklist.push) { showPush = true }
-            } else {
-                Text("Bạn đã dùng đủ các tính năng chính của Wordly.")
-                    .font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft)
-            }
-        }
-        .padding(14)
-        .background(WordlyColors.surfaceElevated)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(WordlyColors.electric.opacity(0.35), lineWidth: 1))
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("startChecklist")
-        .sheet(item: $guide) { kind in WidgetAddGuideView(kind: kind) }
-        .sheet(isPresented: $showPush, onDismiss: { Task { await center.refreshChecklist() } }) {
-            NavigationStack { PushSettingsView() }
-        }
-    }
-
-    private func item(_ id: String, _ title: String, done: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20)).foregroundStyle(done ? WordlyColors.electric : WordlyColors.inkSoft)
-                Text(title).font(WordlyFonts.body(14, weight: .medium))
-                    .foregroundStyle(done ? WordlyColors.inkSoft : WordlyColors.ink)
-                    .strikethrough(done)
-                Spacer()
-                if !done { Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(WordlyColors.inkSoft) }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(done)
-        .accessibilityIdentifier("checklist.\(id)")
-        .accessibilityAddTraits(done ? .isSelected : [])
-    }
-}
-
 extension WidgetSettingsView.Tab: Identifiable { var id: String { rawValue } }
 
-// MARK: - Hướng dẫn thêm widget (từ thẻ Bắt đầu / gợi ý)
+// MARK: - Hướng dẫn thêm widget (từ thiết lập lần đầu / gợi ý)
 
 struct WidgetAddGuideView: View {
     let kind: WidgetSettingsView.Tab
