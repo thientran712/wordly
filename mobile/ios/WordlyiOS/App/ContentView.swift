@@ -104,19 +104,19 @@ struct MainTabView: View {
                 if Onboarding.launchFlow(flowSeen: onboarding.flowSeen, authenticated: true) == .markSeen {
                     onboarding.markFlowSeen()
                 }
-                // Quyết định "Có gì mới" + thẻ Bắt đầu TRƯỚC đồng bộ widget (đồng bộ có thể chậm),
-                // theo tài khoản đang đăng nhập (đổi tài khoản trong cùng lần chạy cũng đúng)
+                // Quyết định "Có gì mới" / thiết lập lần đầu TRƯỚC đồng bộ widget (đồng bộ có thể chậm),
+                // theo tài khoản đang đăng nhập (đổi tài khoản trong cùng lần chạy cũng đúng).
+                // Lỗi mạng → số từ chưa biết (nil): máy còn từ thì dùng, không thì không bắt đầu thiết lập
                 let uid = authManager.currentUser?.id.uuidString ?? "preview"
+                let local = AppGroupStorage.shared.words.filter(\.isSaved).count
                 let saved = (try? await APIClient.shared.fetchSavedHistory().filter { $0.isSaved == true }.count)
-                    ?? AppGroupStorage.shared.words.filter(\.isSaved).count
+                    ?? (local > 0 ? local : nil)
                 onboarding.decideIntro(userId: uid, savedCount: saved)
-                await onboarding.refreshChecklist()
                 await WidgetSync.refreshIfStale()
-                await onboarding.refreshChecklist()
                 await PushManager.shared.syncIfNeeded()
                 await AppUpdateGate.shared.check()
                 await pro.refreshStatus()
-                if onboarding.intro != .whatsNew { pro.maybeShowSoftPaywall() }
+                if onboarding.intro == .none { pro.maybeShowSoftPaywall() }
             }
         }
         // Quảng cáo mở app (chỉ mở lạnh, xem AdsCenter): theo chuyển trạng thái, không theo task bị huỷ giữa chừng
@@ -133,5 +133,9 @@ struct MainTabView: View {
             WhatsNewView { onboarding.finishIntro() }
         }
         .sheet(item: $pro.paywall) { reason in PaywallView(reason: reason) }
+        // Thiết lập lần đầu (tài khoản mới): bắt buộc, không vuốt đóng được
+        .fullScreenCover(isPresented: Binding(get: { onboarding.isSettingUp }, set: { _ in })) {
+            SetupFlowView(center: onboarding)
+        }
     }
 }

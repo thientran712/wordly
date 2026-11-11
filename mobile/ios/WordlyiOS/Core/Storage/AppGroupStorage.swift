@@ -22,6 +22,9 @@ final class AppGroupStorage {
         return (try? JSONDecoder().decode([WidgetWordItem].self, from: data)) ?? []
     }
 
+    /// Đã từng lưu cài đặt widget (chưa có = máy mới cài / chưa chỉnh widget lần nào).
+    var hasStoredSettings: Bool { defaults?.data(forKey: Self.settingsKey) != nil }
+
     var settings: WidgetSettings {
         get {
             guard let data = defaults?.data(forKey: Self.settingsKey),
