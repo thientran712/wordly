@@ -43,15 +43,13 @@ struct RemindedWordsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    SectionHeader(title: "Đã nhắc 7 ngày qua")
-                    if !vm.sections.isEmpty {
-                        Button { router.selectedTab = .review } label: {
-                            Label("Ôn bằng quiz", systemImage: "bolt.fill")
-                        }
-                        .font(WordlyFonts.body(13, weight: .bold))
-                        .foregroundStyle(WordlyColors.electric)
+                SectionHeader(title: "Đã nhắc 7 ngày qua")
+                // Hành động là nút (S2)
+                if !vm.sections.isEmpty {
+                    Button { router.selectedTab = .review } label: {
+                        Label("Ôn bằng quiz", systemImage: "bolt.fill")
                     }
+                    .buttonStyle(ElectricButtonStyle(isFullWidth: true))
                 }
                 if !vm.sections.isEmpty {
                     TipView(RemindedTip())
@@ -118,6 +116,10 @@ struct RemindedWordsView: View {
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(WordlyColors.electric)
                         }
+                        // Icon kèm chữ — chuông/khoá máy/phong bì một mình không ai hiểu (R1)
+                        Text(RemindedLogic.sourcesLabel(row.sources))
+                            .font(WordlyFonts.body(11, weight: .semibold))
+                            .foregroundStyle(WordlyColors.inkSoft)
                     }
                     Text(row.latest, format: .dateTime.hour().minute())
                         .font(WordlyFonts.body(11))

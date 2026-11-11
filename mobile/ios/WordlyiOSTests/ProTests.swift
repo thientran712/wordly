@@ -90,7 +90,11 @@ final class ProTests: XCTestCase {
 
     func testCounterLabels() {
         let c = BillingStatus.Counter.self
-        XCTAssertEqual(ProCopy.advanced(c.init(used: 2, limit: 5)), "Còn 3/5 lượt dịch câu hôm nay", "ảnh / giọng nói giờ đếm riêng")
+        // Review UI 11/11 (T2): chỉ hiện khi gần hết (còn ≤ 2), không gộp ảnh / giọng nói
+        XCTAssertNil(ProCopy.advanced(c.init(used: 2, limit: 5)), "còn 3 → chưa cần nhắc")
+        XCTAssertEqual(ProCopy.advanced(c.init(used: 3, limit: 5)), "Còn 2 lượt dịch câu hôm nay")
+        XCTAssertEqual(ProCopy.advanced(c.init(used: 4, limit: 5)), "Còn 1 lượt dịch câu hôm nay")
+        XCTAssertEqual(ProCopy.advanced(c.init(used: 5, limit: 5)), "Hết lượt dịch câu hôm nay")
         XCTAssertEqual(ProCopy.saved(c.init(used: 24, limit: 30)), "Đã lưu 24/30 từ")
         XCTAssertEqual(ProCopy.dictionary(c.init(used: 3, limit: 5)), "Còn 2 lượt tra từ mới hôm nay")
         XCTAssertNil(ProCopy.advanced(c.init(used: 2, limit: nil)), "không giới hạn → không hiện")
@@ -200,5 +204,16 @@ final class ProTests: XCTestCase {
         XCTAssertFalse(show(2, shown: 0, pro: true))
         XCTAssertFalse(show(2, shown: 0, enforced: false))
         XCTAssertFalse(SoftPaywall.shouldShow(isPro: false, enforced: true, firstSave: nil, now: first, shownCount: 0))
+    }
+
+    // Review UI 11/11 (S3): thanh tiến độ từ đã lưu; từ 80% thì mời nâng cấp
+    func testSavedWordsProgressAndNudge() {
+        typealias C = BillingStatus.Counter
+        XCTAssertEqual(ProCopy.savedProgress(C(used: 15, limit: 30)), 0.5)
+        XCTAssertEqual(ProCopy.savedProgress(C(used: 40, limit: 30)), 1, "không vượt 100%")
+        XCTAssertNil(ProCopy.savedProgress(C(used: 5, limit: nil)), "Pro → không có thanh")
+        XCTAssertNil(ProCopy.savedNudge(C(used: 23, limit: 30)))
+        XCTAssertEqual(ProCopy.savedNudge(C(used: 24, limit: 30)), "Nâng cấp để lưu không giới hạn")
+        XCTAssertNil(ProCopy.savedNudge(C(used: 99, limit: nil)))
     }
 }

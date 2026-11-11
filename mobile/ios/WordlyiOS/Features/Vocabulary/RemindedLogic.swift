@@ -104,6 +104,17 @@ enum RemindedLogic {
         }
     }
 
+    /// Tên kênh đã nhắc, ghép bằng " · " (R1)
+    static func sourcesLabel(_ sources: [String]) -> String {
+        sources.map { s in
+            switch s {
+            case "push": return "Thông báo"
+            case "widget": return "Widget"
+            default: return "Email"
+            }
+        }.joined(separator: " · ")
+    }
+
     static func shouldLoadMore(lastPage: [RemindedItem], hasMore: Bool, pagesLoaded: Int, now: Date, calendar: Calendar = .current) -> Bool {
         guard hasMore, pagesLoaded < maxPages,
               let oldest = lastPage.last.flatMap({ APIDate.parse($0.shownAt) }) else { return false }

@@ -15,6 +15,20 @@ struct TranslateView: View {
     @ObservedObject private var onboarding = OnboardingCenter.shared
     @ObservedObject private var pro = ProStore.shared
 
+    /// Bản miễn phí đã dùng hết lượt hôm nay → ổ khoá nhỏ trên nút (T2), bấm vẫn mở paywall
+    @ViewBuilder
+    private func usedUpLock(_ c: BillingStatus.Counter) -> some View {
+        if ProGate.blocks(c, showsLimits: pro.showsLimits) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 15, height: 15)
+                .background(WordlyColors.duoOrange, in: Circle())
+                .offset(x: 3, y: -3)
+                .accessibilityHidden(true)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -161,6 +175,7 @@ struct TranslateView: View {
                         .background(WordlyColors.hoverBG)
                         .foregroundStyle(WordlyColors.inkSoft)
                         .clipShape(Circle())
+                        .overlay(alignment: .topTrailing) { usedUpLock(pro.status.limits.image) }
                         .disabled(vm.isReadingImage)
                         .accessibilityLabel("Chụp hoặc chọn ảnh để dịch")
                         Button {
@@ -171,6 +186,7 @@ struct TranslateView: View {
                         .background(WordlyColors.hoverBG)
                         .foregroundStyle(WordlyColors.inkSoft)
                         .clipShape(Circle())
+                        .overlay(alignment: .topTrailing) { usedUpLock(pro.status.limits.voice) }
                         .accessibilityLabel("Ghi âm để dịch")
                     }
                     Spacer()

@@ -141,18 +141,17 @@ struct QuickPinButton: View {
         let on = store.settings.isPinned(id)
         Button {
             PinTip().invalidate(reason: .actionPerformed)
-            switch store.update({ $0.togglePin(id) }) {
-            case .pinned: toast = "Đã ghim — gặp từ này nhiều hơn"
-            case .unpinned: toast = "Đã bỏ ghim"
-            case .limitReached: toast = "Tối đa \(WordSourceSettings.maxPins) từ ghim"
+            // Nút tự đổi chữ "Ghim"/"Đã ghim" → không cần thông báo đè lên ví dụ; chỉ báo khi chạm giới hạn (S4)
+            if case .limitReached = store.update({ $0.togglePin(id) }) {
+                toast = "Tối đa \(WordSourceSettings.maxPins) từ ghim"
             }
         } label: {
-            Image(systemName: on ? "pin.fill" : "pin")
-                .font(.system(size: 17, weight: .semibold))
+            Label(on ? "Đã ghim" : "Ghim", systemImage: on ? "pin.fill" : "pin")
+                .font(WordlyFonts.body(13, weight: .bold))
                 .foregroundStyle(on ? WordlyColors.onElectric : WordlyColors.electric)
-                .frame(width: 40, height: 40)
+                .padding(.horizontal, 12).frame(height: 34)
                 .background(on ? WordlyColors.electric : WordlyColors.electricSubtle)
-                .clipShape(Circle())
+                .clipShape(Capsule())
         }
         .accessibilityIdentifier("quickPin")
         .popoverTip(PinTip())
