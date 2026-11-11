@@ -2,9 +2,11 @@
 // §1, §3, §8). Tách khỏi route để test được mọi ca không cần DB/Apple.
 
 // Miễn phí: giới hạn để có lý do nâng cấp nhưng vòng thói quen vẫn đủ dùng.
-export const FREE_LIMITS = Object.freeze({ saved_words: 30, advanced_translate: 5, dictionary: 5, push_slots: 1 });
+// advanced_translate = câu dài (Gemini). Ảnh / giọng nói: 1 lượt/ngày MỖI LOẠI,
+// tách khỏi câu dài — lần 2 mời nâng cấp (chủ dự án chốt 11/11/2026).
+export const FREE_LIMITS = Object.freeze({ saved_words: 30, advanced_translate: 5, dictionary: 5, push_slots: 1, image: 1, voice: 1 });
 // Pro: null = không giới hạn (hợp đồng §8). push_slots 10 = trần sẵn có (MAX_PUSH_SLOTS).
-export const PRO_LIMITS = Object.freeze({ saved_words: null, advanced_translate: null, dictionary: null, push_slots: 10 });
+export const PRO_LIMITS = Object.freeze({ saved_words: null, advanced_translate: null, dictionary: null, push_slots: 10, image: null, voice: null });
 // Pro vẫn có trần chống lạm dụng mỗi ngày: một tài khoản bị lộ / script gọi
 // liên tục không được đốt tiền AI vô hạn (spec §1).
 export const PRO_ABUSE_CAPS = Object.freeze({ sentence: 200, image: 30, voice: 50 });
@@ -93,13 +95,17 @@ export function buildStatus({ entitlement, usage, savedCount, enforced, now = ne
       advanced_translate: { used: usage?.advanced_translate || 0, limit: limits.advanced_translate },
       dictionary: { used: usage?.dictionary || 0, limit: limits.dictionary },
       push_slots: { limit: limits.push_slots },
+      image: { used: usage?.image || 0, limit: limits.image },
+      voice: { used: usage?.voice || 0, limit: limits.voice },
     },
   };
 }
 
 const LIMIT_MESSAGES = {
   limit_saved_words: (n) => `Bản miễn phí lưu được tối đa ${n} từ. Nâng cấp Wordly Pro để lưu không giới hạn, hoặc bỏ lưu bớt từ cũ.`,
-  limit_advanced_translate: (n) => `Bạn đã dùng hết ${n} lượt dịch câu, ảnh, giọng nói hôm nay. Nâng cấp Wordly Pro để dịch thoải mái.`,
+  limit_advanced_translate: (n) => `Bạn đã dùng hết ${n} lượt dịch câu hôm nay. Nâng cấp Wordly Pro để dịch thoải mái.`,
+  limit_image: (n) => `Bản miễn phí dịch bằng ảnh ${n} lần mỗi ngày. Nâng cấp Wordly Pro để chụp dịch thoải mái.`,
+  limit_voice: (n) => `Bản miễn phí dịch bằng giọng nói ${n} lần mỗi ngày. Nâng cấp Wordly Pro để nói dịch thoải mái.`,
   limit_dictionary: (n) => `Bạn đã tra hết ${n} từ mới hôm nay. Nâng cấp Wordly Pro để tra thoải mái.`,
   limit_push_slots: (n) => `Bản miễn phí có ${n} khung giờ nhắc ôn. Nâng cấp Wordly Pro để thêm tới ${PRO_LIMITS.push_slots} khung giờ.`,
 };

@@ -19,7 +19,7 @@ function fakeDeps({ entitlement = null, usage = {}, consumeResult = { allowed: t
     calls,
     names: () => calls.map((c) => c[0]),
     getEntitlement: async () => { rec("getEntitlement"); return entitlement; },
-    usageToday: async (key, qk) => { rec("usageToday", key, qk); return { advanced_translate: 0, dictionary: 0, known_word: false, ...usage }; },
+    usageToday: async (key, qk) => { rec("usageToday", key, qk); return { advanced_translate: 0, dictionary: 0, image: 0, voice: 0, known_word: false, ...usage }; },
     consume: async (kind, limit, key, qk) => { rec("consume", kind, limit, key, qk); return consumeResult; },
     bumpProCap: async (kind, cap, qk) => { rec("bumpProCap", kind, cap, qk); return { allowed: capAllowed }; },
     countSaved: async () => { rec("countSaved"); return saved; },
@@ -66,7 +66,7 @@ test("advanced: khách khi đang chặn → 401, không gọi AI", async () => {
 test("advanced miễn phí: còn lượt → gọi AI rồi mới trừ 1 lượt", async () => {
   const deps = fakeDeps({ usage: { advanced_translate: 4 } });
   const run = runSpy();
-  const res = await withAdvancedQuota({ config: ON, user: USER, build: "21", kind: "voice", deps, now: NOW }, run);
+  const res = await withAdvancedQuota({ config: ON, user: USER, build: "21", kind: "sentence", deps, now: NOW }, run);
   assert.equal(res.status, 200);
   assert.equal(run.n, 1);
   assert.deepEqual(deps.calls.find((c) => c[0] === "consume"), ["consume", "advanced_translate", 5, undefined, undefined]);
@@ -281,18 +281,18 @@ test("app huỷ request (signal aborted) trước khi xong → không trừ lư�
 const KEY = "3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b";
 
 test("quota_key: chuyển xuống usageToday + consume (câu / giọng nói)", async () => {
-  for (const kind of ["sentence", "voice"]) {
+  for (const [kind, counter, limit] of [["sentence", "advanced_translate", 5], ["voice", "voice", 1]]) {
     const deps = fakeDeps();
     await withAdvancedQuota({ config: ON, user: USER, build: "21", kind, quotaKey: KEY, deps, now: NOW }, runSpy());
     assert.deepEqual(deps.calls.find((c) => c[0] === "usageToday"), ["usageToday", undefined, KEY]);
-    assert.deepEqual(deps.calls.find((c) => c[0] === "consume"), ["consume", "advanced_translate", 5, undefined, KEY]);
+    assert.deepEqual(deps.calls.find((c) => c[0] === "consume"), ["consume", counter, limit, undefined, KEY]);
   }
 });
 
 test("quota_key: ảnh luôn tính theo request (bỏ key)", async () => {
   const deps = fakeDeps();
   await withAdvancedQuota({ config: ON, user: USER, build: "21", kind: "image", quotaKey: KEY, deps, now: NOW }, runSpy());
-  assert.deepEqual(deps.calls.find((c) => c[0] === "consume"), ["consume", "advanced_translate", 5, undefined, undefined]);
+  assert.deepEqual(deps.calls.find((c) => c[0] === "consume"), ["consume", "image", 1, undefined, undefined]);
 });
 
 test("quota_key sai định dạng → coi như không có key (tính theo request)", async () => {
@@ -327,4 +327,58 @@ test("billingConfig: tài khoản test được bật chặn theo userId", () =>
   const A = "11111111-1111-4111-8111-111111111111";
   assert.equal(billingConfig({ BILLING_ENFORCE_TEST_USERS: A }, A).enforced, true);
   assert.equal(billingConfig({ BILLING_ENFORCE_TEST_USERS: A }).enforced, false);
+});
+
+// ── Ảnh / giọng nói: free 1 lượt/ngày MỖI LOẠI, tách khỏi 5 lượt câu dài (chủ dự án chốt 11/11/2026)
+test("ảnh/giọng nói miễn phí: lượt đầu trong ngày → dịch rồi trừ vào bộ đếm riêng", async () => {
+  for (const kind of ["image", "voice"]) {
+    const deps = fakeDeps({ usage: { advanced_translate: 5 } });
+    const run = runSpy();
+    const res = await withAdvancedQuota({ config: ON, user: USER, build: "21", kind, deps, now: NOW }, run);
+    assert.equal(res.status, 200, `${kind}: hết 5 lượt câu dài không ảnh hưởng`);
+    assert.equal(run.n, 1);
+    assert.deepEqual(deps.calls.find((c) => c[0] === "consume"), ["consume", kind, 1, undefined, undefined]);
+  }
+});
+
+test("ảnh/giọng nói miễn phí: lượt 2 trong ngày → 402 mã riêng, không gọi AI, không trừ", async () => {
+  for (const kind of ["image", "voice"]) {
+    const deps = fakeDeps({ usage: { [kind]: 1 } });
+    const run = runSpy();
+    const res = await withAdvancedQuota({ config: ON, user: USER, build: "25", kind, deps, now: NOW }, run);
+    assert.equal(res.status, 402);
+    const body = await res.json();
+    assert.equal(body.code, `limit_${kind}`);
+    assert.equal(body.limit, 1);
+    assert.equal(run.n, 0);
+    assert.ok(!deps.names().includes("consume"));
+  }
+});
+
+test("giọng nói: cùng một câu đang nói (key đã trừ) → không chặn giữa câu", async () => {
+  const deps = fakeDeps({ usage: { voice: 1, key_active: true } });
+  const run = runSpy();
+  const res = await withAdvancedQuota({ config: ON, user: USER, build: "21", kind: "voice", quotaKey: KEY, deps, now: NOW }, run);
+  assert.equal(res.status, 200);
+  assert.equal(run.n, 1);
+});
+
+test("câu dài không tính vào lượt ảnh/giọng nói", async () => {
+  const deps = fakeDeps({ usage: { image: 1, voice: 1, advanced_translate: 0 } });
+  const res = await withAdvancedQuota({ config: ON, user: USER, build: "21", kind: "sentence", deps, now: NOW }, runSpy());
+  assert.equal(res.status, 200);
+  assert.deepEqual(deps.calls.find((c) => c[0] === "consume"), ["consume", "advanced_translate", 5, undefined, undefined]);
+});
+
+test("app cũ (< build 25) không biết mã limit_image/limit_voice → vẫn nhận mã cũ để mở paywall", async () => {
+  for (const [build, kind, code] of [["22", "image", "limit_advanced_translate"], ["24", "voice", "limit_advanced_translate"],
+    ["25", "image", "limit_image"], ["25", "voice", "limit_voice"]]) {
+    const deps = fakeDeps({ usage: { [kind]: 1 } });
+    const res = await withAdvancedQuota({ config: { enforced: true, minBuild: 21 }, user: USER, build, kind, deps, now: NOW }, runSpy());
+    assert.equal(res.status, 402);
+    const body = await res.json();
+    assert.equal(body.code, code, `build ${build} ${kind}`);
+    assert.equal(body.limit, 1);
+    assert.match(body.error, kind === "image" ? /ảnh/ : /giọng nói/, "câu báo vẫn nói đúng loại");
+  }
 });

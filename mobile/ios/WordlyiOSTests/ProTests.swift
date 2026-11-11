@@ -90,7 +90,7 @@ final class ProTests: XCTestCase {
 
     func testCounterLabels() {
         let c = BillingStatus.Counter.self
-        XCTAssertEqual(ProCopy.advanced(c.init(used: 2, limit: 5)), "Còn 3/5 lượt dịch câu, ảnh, giọng nói hôm nay")
+        XCTAssertEqual(ProCopy.advanced(c.init(used: 2, limit: 5)), "Còn 3/5 lượt dịch câu hôm nay", "ảnh / giọng nói giờ đếm riêng")
         XCTAssertEqual(ProCopy.saved(c.init(used: 24, limit: 30)), "Đã lưu 24/30 từ")
         XCTAssertEqual(ProCopy.dictionary(c.init(used: 3, limit: 5)), "Còn 2 lượt tra từ mới hôm nay")
         XCTAssertNil(ProCopy.advanced(c.init(used: 2, limit: nil)), "không giới hạn → không hiện")
@@ -103,9 +103,47 @@ final class ProTests: XCTestCase {
         XCTAssertEqual(PaywallReason.limit(.advancedTranslate, 5).headline, "Hết 5 lượt dịch nâng cao hôm nay")
         XCTAssertEqual(PaywallReason.limit(.dictionary, 5).headline, "Hết 5 lượt tra từ mới hôm nay")
         XCTAssertEqual(PaywallReason.limit(.pushSlots, 1).headline, "Thêm khung giờ nhắc ôn với Pro")
+        XCTAssertEqual(PaywallReason.limit(.image, 1).headline, "Hết lượt dịch ảnh miễn phí hôm nay")
+        XCTAssertEqual(PaywallReason.limit(.voice, 1).headline, "Hết lượt dịch giọng nói miễn phí hôm nay")
         XCTAssertEqual(PaywallReason.theme.headline, "Mở khoá toàn bộ theme")
         XCTAssertTrue(PaywallReason.limit(.savedWords, 30).offersUnsaveHint, "đủ 30 từ → gợi ý bỏ lưu bớt, không xoá gì")
         XCTAssertFalse(PaywallReason.theme.offersUnsaveHint)
+    }
+
+    // MARK: Ảnh / giọng nói: free 1 lượt/ngày mỗi loại (chủ dự án chốt 11/11/2026)
+
+    func testParsesImageVoiceLimitCodes() {
+        let body = Data(#"{"error": "Bản miễn phí dịch bằng ảnh 1 lần mỗi ngày.", "code": "limit_image", "limit": 1}"#.utf8)
+        guard case .limitReached(let code, _, let limit) = APIError.from(status: 402, body: body) else { return XCTFail() }
+        XCTAssertEqual(code, .image)
+        XCTAssertEqual(limit, 1)
+        XCTAssertEqual(LimitCode(rawValue: "limit_voice"), .voice)
+    }
+
+    func testDecodesImageVoiceCountersAndOldServer() throws {
+        let new = try JSONDecoder().decode(BillingStatus.self, from: Data(#"""
+        {"pro": false, "enforced": true,
+         "limits": {"saved_words": {"used": 1, "limit": 30}, "advanced_translate": {"used": 0, "limit": 5},
+                    "dictionary": {"used": 0, "limit": 5}, "push_slots": {"limit": 1},
+                    "image": {"used": 1, "limit": 1}, "voice": {"used": 0, "limit": 1}}}
+        """#.utf8))
+        XCTAssertEqual(new.limits.image, .init(used: 1, limit: 1))
+        XCTAssertEqual(new.limits.voice, .init(used: 0, limit: 1))
+        let old = try JSONDecoder().decode(BillingStatus.self, from: Data(#"""
+        {"pro": false, "enforced": true,
+         "limits": {"saved_words": {"used": 1, "limit": 30}, "advanced_translate": {"used": 0, "limit": 5},
+                    "dictionary": {"used": 0, "limit": 5}, "push_slots": {"limit": 1}}}
+        """#.utf8))
+        XCTAssertNil(old.limits.image.limit, "server chưa có bộ đếm mới → không khoá trước, server tự chặn")
+    }
+
+    /// Bấm mic / camera lần 2 trong ngày → mở paywall NGAY, không ghi âm / chụp.
+    func testImageVoiceGateBeforeStarting() {
+        let c = BillingStatus.Counter.self
+        XCTAssertTrue(ProGate.blocks(c.init(used: 1, limit: 1), showsLimits: true))
+        XCTAssertFalse(ProGate.blocks(c.init(used: 0, limit: 1), showsLimits: true), "lượt đầu trong ngày")
+        XCTAssertFalse(ProGate.blocks(c.init(used: 1, limit: 1), showsLimits: false), "Pro / server tắt chặn")
+        XCTAssertFalse(ProGate.blocks(c.init(used: 9, limit: nil), showsLimits: true), "không giới hạn")
     }
 
     // MARK: Khung giờ nhắc ôn (miễn phí 1, Pro tối đa 10)

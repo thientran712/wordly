@@ -40,7 +40,7 @@ async function proOrNull(deps, now) {
 
 /**
  * Dịch nâng cao: câu (> 3 chữ, Gemini), ảnh, giọng nói. `kind` ∈ sentence|image|voice.
- * Miễn phí: 5 lượt/ngày tính chung — kiểm TRƯỚC (hết lượt thì không đốt tiền
+ * Miễn phí: câu 5 lượt/ngày, ảnh 1, giọng nói 1 (mỗi loại riêng) — kiểm TRƯỚC (hết lượt thì không đốt tiền
  * AI), trừ SAU khi thành công. Pro: chỉ trần chống lạm dụng theo từng loại.
  */
 // quota_key: UUID app tạo cho mỗi lần soạn (dịch trực tiếp khi gõ/nói gửi
@@ -51,6 +51,16 @@ export function normalizeQuotaKey(kind, quotaKey) {
   if (kind === "image" || typeof quotaKey !== "string") return undefined;
   const k = quotaKey.trim().toLowerCase();
   return UUID_RE.test(k) ? k : undefined;
+}
+
+// App trước build 25 chỉ hiểu 4 mã giới hạn cũ — mã lạ thành dòng lỗi "HTTP 402"
+// thay vì paywall. Gửi mã cũ (câu báo vẫn nói đúng ảnh / giọng nói).
+export const IMAGE_VOICE_CODES_MIN_BUILD = 25;
+function imageVoiceLimit(counter, limit, build) {
+  const body = limitBody(`limit_${counter}`, limit);
+  const b = Number.parseInt(String(build ?? ""), 10);
+  if (counter !== "advanced_translate" && !(b >= IMAGE_VOICE_CODES_MIN_BUILD)) body.code = "limit_advanced_translate";
+  return Response.json(body, { status: 402 });
 }
 
 export async function withAdvancedQuota({ config, user, build, kind, quotaKey: rawKey, deps, now = new Date(), signal }, run) {
@@ -73,12 +83,14 @@ export async function withAdvancedQuota({ config, user, build, kind, quotaKey: r
     return run();
   }
 
-  const limit = FREE_LIMITS.advanced_translate;
+  // Ảnh / giọng nói: bộ đếm riêng mỗi loại; câu dài: bộ đếm advanced_translate
+  const counter = kind === "image" || kind === "voice" ? kind : "advanced_translate";
+  const limit = FREE_LIMITS[counter];
   try {
     const usage = await deps.usageToday(undefined, quotaKey);
-    // Câu đang soạn đã trừ lượt hôm nay → không chặn giữa câu dù đã hết lượt
-    if ((usage?.advanced_translate || 0) >= limit && !usage?.key_active) {
-      return limitReached("limit_advanced_translate", limit);
+    // Câu đang soạn / đang nói đã trừ lượt hôm nay → không chặn giữa câu dù đã hết lượt
+    if ((usage?.[counter] || 0) >= limit && !usage?.key_active) {
+      return imageVoiceLimit(counter, limit, build);
     }
   } catch (e) {
     logFail("usageToday", e);
@@ -88,7 +100,7 @@ export async function withAdvancedQuota({ config, user, build, kind, quotaKey: r
   const res = await run();
   if (isSuccess(res, signal)) {
     try {
-      await deps.consume("advanced_translate", limit, undefined, quotaKey);
+      await deps.consume(counter, limit, undefined, quotaKey);
     } catch (e) {
       logFail("consume", e);
     }

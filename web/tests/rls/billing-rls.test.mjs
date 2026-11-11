@@ -207,6 +207,39 @@ describe("Wordly Pro: RLS + hàm hạn mức", { skip: skip ? `Bỏ qua: ${skip}
     }
   });
 
+  // Ảnh / giọng nói: bộ đếm riêng mỗi loại (chủ dự án chốt 11/11/2026: free 1 lượt/ngày)
+  test("consume_quota image/voice: bộ đếm riêng, chặn ở giới hạn, usage_today trả về", async () => {
+    const u = await createTestUser("proImgVoice");
+    try {
+      const c = (kind) => u.client.rpc("consume_quota", { p_kind: kind, p_limit: 1 });
+      for (const kind of ["image", "voice"]) {
+        const first = await c(kind);
+        assert.ok(!first.error, first.error?.message);
+        assert.deepEqual([first.data.allowed, first.data.used], [true, 1], kind);
+        assert.equal((await c(kind)).data.allowed, false, `${kind}: lượt 2 bị chặn`);
+      }
+      const { data: today } = await u.client.rpc("usage_today", {});
+      assert.deepEqual([today.image, today.voice, today.advanced_translate], [1, 1, 0], "không ăn vào lượt câu dài");
+      assert.equal((await b.client.rpc("usage_today", {})).data.image, 0, "không thấy lượt của người khác");
+      assert.ok((await u.client.from("usage_daily").insert({ user_id: u.id, day: "2026-11-11", kind: "image", count: 0 })).error, "không tự ghi bộ đếm");
+    } finally {
+      await cleanupUsers(u);
+    }
+  });
+
+  test("consume_quota voice quota_key: một câu nói nhiều request chỉ trừ 1 lượt, không chặn giữa câu", async () => {
+    const u = await createTestUser("proVoiceKey");
+    try {
+      const key = crypto.randomUUID();
+      const c = (k) => u.client.rpc("consume_quota", { p_kind: "voice", p_limit: 1, p_quota_key: k });
+      assert.deepEqual([(await c(key)).data.allowed, (await c(key)).data.allowed, (await c(key)).data.charged], [true, true, false]);
+      assert.equal((await u.client.rpc("usage_today", {})).data.voice, 1);
+      assert.equal((await c(crypto.randomUUID())).data.allowed, false, "câu nói mới → hết lượt");
+    } finally {
+      await cleanupUsers(u);
+    }
+  });
+
   test("due_push_slots(p_free_one_slot): miễn phí chỉ khung sớm nhất, Pro gửi đủ", async () => {
     const u = await createTestUser("proPush");
     try {
