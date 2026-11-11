@@ -49,7 +49,10 @@ struct SignupCodeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                Text("✉️").font(WordlyFonts.body(56)).padding(.top, 24)
+                Image(systemName: "envelope.badge.fill")
+                    .font(.system(size: 48, weight: .semibold))
+                    .foregroundStyle(WordlyColors.electric)
+                    .padding(.top, 24)
                 Text("Xác nhận email")
                     .font(WordlyFonts.display(28))
                     .foregroundStyle(WordlyColors.ink(scheme: scheme))
@@ -63,9 +66,7 @@ struct SignupCodeView: View {
                     .multilineTextAlignment(.center)
 
                 VStack(spacing: 14) {
-                    WordlyTextField(label: "Mã xác nhận", placeholder: "123456", text: $code,
-                                   keyboardType: .numberPad, autocap: .never)
-                        .textContentType(.oneTimeCode)
+                    OTPCodeField(code: $code)
 
                     if let message = errorBanner.message {
                         Text(message).font(WordlyFonts.body(13, weight: .medium))
@@ -91,7 +92,8 @@ struct SignupCodeView: View {
                         .foregroundStyle(WordlyColors.onElectric)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
-                    .disabled(isLoading || code.isEmpty)
+                    .disabled(isLoading || code.count < 6)
+                    .opacity(code.count < 6 ? 0.5 : 1)
 
                     ResendCodeButton(lastSent: lastSent, isBusy: isLoading) { Task { await resend() } }
 
@@ -111,7 +113,11 @@ struct SignupCodeView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .autoHidingError($errorBanner)
-        .onChange(of: code) { errorBanner.userEdited() }
+        .onChange(of: code) { _, new in
+            errorBanner.userEdited()
+            // Đủ 6 số (gõ hoặc tự điền từ Mail) → xác nhận luôn
+            if new.count == 6, !isLoading { Task { await verify() } }
+        }
     }
 
     private func verify() async {

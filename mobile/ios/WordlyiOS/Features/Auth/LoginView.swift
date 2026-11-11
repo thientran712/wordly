@@ -39,14 +39,14 @@ struct LoginView: View {
                 .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 32) {
+                    VStack(spacing: 24) {
                         // Logo
                         VStack(spacing: 12) {
                             // Logo đặt thẳng, không khung gradient → nền xanh liền một màu
-                            WordlyLogo(size: 96)
-                                .shadow(color: WordlyColors.logoGreen.opacity(0.35), radius: 20, y: 8)
+                            WordlyLogo(size: 64)
+                                .shadow(color: WordlyColors.logoGreen.opacity(0.35), radius: 16, y: 6)
                             Text("Wordly")
-                                .font(WordlyFonts.display(48))
+                                .font(WordlyFonts.display(36))
                                 .foregroundStyle(
                                     LinearGradient(
                                         colors: [WordlyColors.electric, WordlyColors.electric],
@@ -58,7 +58,71 @@ struct LoginView: View {
                                 .font(WordlyFonts.body(15, weight: .medium))
                                 .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
                         }
-                        .padding(.top, 60)
+                        .padding(.top, 24)
+
+                        // Apple/Google trước form email — nhanh hơn với đa số (A2)
+                        VStack(spacing: 12) {
+                            // Đăng nhập Google (giống web) + Apple (bắt buộc khi có Google — App Store 4.8)
+                            Button {
+                                Task {
+                                    socialLoading = true
+                                    await authManager.signInWithGoogle()
+                                    socialLoading = false
+                                }
+                            } label: {
+                                HStack(spacing: 10) {
+                                    GoogleLogoIcon(size: 18)
+                                    Text("Tiếp tục với Google")
+                                        .font(WordlyFonts.body(16, weight: .semibold))
+                                        .foregroundStyle(Color(hex: "#1F1F1F"))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 15)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(hex: "#DADCE0"), lineWidth: 1))
+                            }
+                            .disabled(socialLoading)
+
+                            SignInWithAppleButton(.continue) { request in
+                                appleNonce = SocialAuth.randomNonce()
+                                request.requestedScopes = [.fullName, .email]
+                                request.nonce = SocialAuth.sha256(appleNonce)
+                            } onCompletion: { result in
+                                switch result {
+                                case .success(let auth):
+                                    guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else { return }
+                                    let token = credential.identityToken.flatMap { String(data: $0, encoding: .utf8) }
+                                    let name = [credential.fullName?.givenName, credential.fullName?.familyName]
+                                        .compactMap { $0 }.joined(separator: " ")
+                                    Task {
+                                        socialLoading = true
+                                        await authManager.signInWithApple(idToken: token, rawNonce: appleNonce, fullName: name)
+                                        socialLoading = false
+                                    }
+                                case .failure(let error):
+                                    authManager.authError = SocialAuth.userMessage(for: error)
+                                }
+                            }
+                            .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
+                            // Kiểu nút chỉ được đọc khi tạo → tạo lại khi đổi sáng/tối
+                            .id(scheme)
+                            .frame(height: 52)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .disabled(socialLoading)
+
+                            // Divider
+                            HStack {
+                                Rectangle().fill(WordlyColors.divider(scheme: scheme)).frame(height: 1)
+                                Text("hoặc dùng email")
+                                    .font(WordlyFonts.body(12, weight: .medium))
+                                    .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                                    .padding(.horizontal, 8)
+                                Rectangle().fill(WordlyColors.divider(scheme: scheme)).frame(height: 1)
+                            }
+
+                        }
+                        .padding(.horizontal, 24)
 
                         // Form
                         VStack(spacing: 16) {
@@ -196,82 +260,16 @@ struct LoginView: View {
                             }
                             .disabled(email.isEmpty || password.isEmpty || isLoading)
 
-                            // Divider
-                            HStack {
-                                Rectangle().fill(WordlyColors.divider(scheme: scheme)).frame(height: 1)
-                                Text("hoặc")
-                                    .font(WordlyFonts.body(12, weight: .medium))
-                                    .foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
-                                    .padding(.horizontal, 8)
-                                Rectangle().fill(WordlyColors.divider(scheme: scheme)).frame(height: 1)
-                            }
-
-                            // Đăng nhập Google (giống web) + Apple (bắt buộc khi có Google — App Store 4.8)
-                            Button {
-                                Task {
-                                    socialLoading = true
-                                    await authManager.signInWithGoogle()
-                                    socialLoading = false
-                                }
-                            } label: {
-                                HStack(spacing: 10) {
-                                    GoogleLogoIcon(size: 18)
-                                    Text("Tiếp tục với Google")
-                                        .font(WordlyFonts.body(16, weight: .semibold))
-                                        .foregroundStyle(Color(hex: "#1F1F1F"))
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 15)
-                                .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(hex: "#DADCE0"), lineWidth: 1))
-                            }
-                            .disabled(socialLoading)
-
-                            SignInWithAppleButton(.continue) { request in
-                                appleNonce = SocialAuth.randomNonce()
-                                request.requestedScopes = [.fullName, .email]
-                                request.nonce = SocialAuth.sha256(appleNonce)
-                            } onCompletion: { result in
-                                switch result {
-                                case .success(let auth):
-                                    guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else { return }
-                                    let token = credential.identityToken.flatMap { String(data: $0, encoding: .utf8) }
-                                    let name = [credential.fullName?.givenName, credential.fullName?.familyName]
-                                        .compactMap { $0 }.joined(separator: " ")
-                                    Task {
-                                        socialLoading = true
-                                        await authManager.signInWithApple(idToken: token, rawNonce: appleNonce, fullName: name)
-                                        socialLoading = false
-                                    }
-                                case .failure(let error):
-                                    authManager.authError = SocialAuth.userMessage(for: error)
-                                }
-                            }
-                            .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
-                            // Kiểu nút chỉ được đọc khi tạo → tạo lại khi đổi sáng/tối
-                            .id(scheme)
-                            .frame(height: 52)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .disabled(socialLoading)
-
-                            // Signup button
+                            // Điều hướng sang màn đăng ký → link một dòng, không phải nút thứ 4 (A2)
                             Button {
                                 errorBanner.clear()
                                 showSignup = true
                             } label: {
-                                Text("Tạo tài khoản mới")
-                                    .font(WordlyFonts.body(16, weight: .bold))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(WordlyColors.surfaceElevated(scheme: scheme))
-                                    .foregroundStyle(WordlyColors.ink(scheme: scheme))
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(WordlyColors.divider(scheme: scheme), lineWidth: 1.5)
-                                    )
+                                (Text("Chưa có tài khoản? ").foregroundStyle(WordlyColors.inkSoft(scheme: scheme))
+                                 + Text("Tạo tài khoản mới").foregroundStyle(WordlyColors.electric).bold())
+                                    .font(WordlyFonts.body(15))
                             }
+                            .accessibilityLabel("Tạo tài khoản mới")
 
                             Text(LegalLinks.sentence("Bằng việc tiếp tục, bạn đồng ý với", suffix: " của Wordly."))
                                 .font(WordlyFonts.body(12))
@@ -337,7 +335,6 @@ struct SignupView: View {
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
-    @State private var confirmPassword = ""
     @State private var isLoading = false
     @State private var showPassword = false
     @State private var errorBanner = AuthErrorBanner()
@@ -370,10 +367,9 @@ struct SignupView: View {
                             WordlyTextField(label: "Tên của bạn", placeholder: "Nguyễn Văn A", text: $name)
                             WordlyTextField(label: "Email", placeholder: "example@gmail.com", text: $email,
                                            keyboardType: .emailAddress, autocap: .never)
+                            // Không có ô nhập lại: nút con mắt để xem lại mật khẩu đã gõ (A3)
                             WordlySecureField(label: "Mật khẩu", placeholder: "Tối thiểu 6 ký tự",
                                              text: $password, show: $showPassword)
-                            WordlySecureField(label: "Xác nhận mật khẩu", placeholder: "Nhập lại mật khẩu",
-                                             text: $confirmPassword, show: $showPassword)
                         }
                         .padding(.horizontal, 24)
 
@@ -435,7 +431,6 @@ struct SignupView: View {
                 .onChange(of: name) { errorBanner.userEdited() }
                 .onChange(of: email) { errorBanner.userEdited() }
                 .onChange(of: password) { errorBanner.userEdited() }
-                .onChange(of: confirmPassword) { errorBanner.userEdited() }
                 .onChange(of: authManager.authError) { _, new in errorBanner.show(new) }
                 }
             }
@@ -452,7 +447,6 @@ struct SignupView: View {
     private func signup() async {
         errorBanner.clear()
         guard password.count >= 6 else { errorBanner.show("Mật khẩu phải có ít nhất 6 ký tự"); return }
-        guard password == confirmPassword else { errorBanner.show("Mật khẩu xác nhận không khớp"); return }
         isLoading = true
         defer { isLoading = false }
         guard let outcome = try? await authManager.signUp(email: email, password: password, name: name.isEmpty ? nil : name) else { return }
