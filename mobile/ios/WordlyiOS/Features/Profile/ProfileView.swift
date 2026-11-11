@@ -159,6 +159,8 @@ struct ProfileView: View {
             .scrollContentBackground(.hidden)
             .screenBackground()
             .navigationTitle("Cá nhân")
+            // Cùng kiểu tiêu đề nhỏ ở giữa như các tab khác (G3)
+            .navigationBarTitleDisplayMode(.inline)
             .task {
                 await vm.fetchProfile()
                 if let p = try? await APIClient.shared.fetchPushPreferences() {

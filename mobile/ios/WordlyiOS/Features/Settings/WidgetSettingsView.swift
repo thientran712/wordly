@@ -182,9 +182,8 @@ struct WidgetSettingsView: View {
                 .pickerStyle(.segmented)
             } header: {
                 VStack(alignment: .leading, spacing: 10) {
-                    Label("ÁP DỤNG CHO CẢ 2 WIDGET", systemImage: "square.on.square")
-                        .font(WordlyFonts.body(13, weight: .heavy))
-                        .foregroundStyle(WordlyColors.electric)
+                    // Một kiểu đầu mục cho cả app (HubHeader) — trước là chữ xanh in hoa riêng (G3)
+                    HubHeader("Áp dụng cho cả 2 widget", systemImage: "square.on.square", tint: WordlyColors.ink)
                         .accessibilityIdentifier("sharedSettingsHeader")
                     HubHeader("Chữ", systemImage: "textformat")
                 }

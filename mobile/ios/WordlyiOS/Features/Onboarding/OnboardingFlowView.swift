@@ -11,11 +11,12 @@ struct OnboardingFlowView: View {
     @State private var page = 0
     private let count = 4
 
-    private struct Page { let title: String; let text: String }
+    /// `next`: nút nói màn sau là gì (O3) — "Tiếp" là nút rỗng
+    private struct Page { let title: String; let text: String; var next = "" }
     private let pages = [
-        Page(title: "Dịch & lưu từ trong 1 chạm", text: "Dịch từ, câu, ảnh hay giọng nói. Bấm Lưu là Wordly giúp bạn nhớ."),
-        Page(title: "Liếc điện thoại là ôn", text: "Thêm widget vào màn hình khoá hoặc màn hình chính — 40 theme màu và ảnh."),
-        Page(title: "Nhắc đúng lúc sắp quên", text: "Chọn giờ nhắc, Wordly gửi từng từ đúng lúc bạn cần ôn. Ghim từ khó để gặp nhiều hơn."),
+        Page(title: "Dịch & lưu từ trong 1 chạm", text: "Dịch từ, câu, ảnh hay giọng nói. Bấm Lưu là Wordly giúp bạn nhớ.", next: "Xem widget ôn từ"),
+        Page(title: "Liếc điện thoại là ôn", text: "Thêm widget vào màn hình khoá hoặc màn hình chính — 40 theme màu và ảnh.", next: "Xem cách nhắc ôn"),
+        Page(title: "Nhắc đúng lúc sắp quên", text: "Chọn giờ nhắc, Wordly gửi từng từ đúng lúc bạn cần ôn. Ghim từ khó để gặp nhiều hơn.", next: "Xem quiz ôn tập"),
         Page(title: "Ôn nhanh, nhớ lâu", text: "Vài phút quiz mỗi ngày để chắc là bạn nhớ thật."),
     ]
 
@@ -75,7 +76,7 @@ struct OnboardingFlowView: View {
 
     @ViewBuilder private var buttons: some View {
         if page < count - 1 {
-            primary("Tiếp") { withAnimation { page += 1 } }
+            primary(pages[page].next) { withAnimation { page += 1 } }
                 .accessibilityIdentifier("onboardingNext")
         } else {
             VStack(spacing: 10) {
@@ -182,12 +183,11 @@ private struct TranslateDemo: View {
         .accessibilityLabel("Minh hoạ: dịch “resilient” thành “kiên cường” rồi bấm Lưu")
     }
 
+    /// Chỉ là minh hoạ → chữ + icon trơn, không khung viên thuốc trông như nút bấm được (O4)
     private func chip(_ icon: String, _ text: String) -> some View {
         Label(text, systemImage: icon)
             .font(WordlyFonts.body(13, weight: .semibold))
-            .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(WordlyColors.surfaceElevated).foregroundStyle(WordlyColors.ink)
-            .clipShape(Capsule())
+            .foregroundStyle(WordlyColors.inkSoft)
     }
 }
 

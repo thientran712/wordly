@@ -139,8 +139,8 @@ private struct SetupSaveWordStep: View {
             .padding(14)
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(WordlyColors.electric, lineWidth: 2))
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+            // Xuống dòng thay vì cuộn ngang — chip cuối không bị cắt mép (O4)
+            FlowLayout(spacing: 8) {
                     ForEach(Self.suggestions, id: \.self) { s in
                         Button { text = s; focused = false } label: {
                             Text(s).font(WordlyFonts.body(14, weight: .bold))
@@ -152,8 +152,8 @@ private struct SetupSaveWordStep: View {
                         }
                         .accessibilityIdentifier("setupSuggest.\(s)")
                     }
-                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if translating {
                 ProgressView().tint(WordlyColors.electric)

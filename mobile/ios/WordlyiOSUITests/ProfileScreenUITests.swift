@@ -18,7 +18,8 @@ final class ProfileScreenUITests: XCTestCase {
 
         header.tap()
         XCTAssertTrue(app.navigationBars["Hồ sơ học tập"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.navigationBars.buttons["Lưu"].isEnabled, "chưa sửa gì thì Lưu bị khoá")
+        // Review UI 11/11 (P4): tự lưu như màn Thông báo nhắc ôn — không còn nút Lưu
+        XCTAssertFalse(app.navigationBars.buttons["Lưu"].exists, "hồ sơ tự lưu, không có nút Lưu")
         add(shot(app, "edit-profile"))
     }
 
