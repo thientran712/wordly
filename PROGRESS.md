@@ -3,6 +3,63 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 11/11/2026 (đêm) — Sửa giao diện iOS theo review UI 39 điểm (nhánh `feat/ui-review-fixes`)
+
+- **Nguồn:** báo cáo review UI (uxpeak + Mobbin), 39 điểm. Chủ dự án bảo "start làm luôn".
+- **Không làm (trái với quyết định trước của chủ dự án):**
+  - O1, O2: bước thiết lập và 4 màn giới thiệu bắt buộc.
+  - P2: không có streak.
+  - A1: đã sửa ở PR #69.
+- **Đã làm**, chỉ iOS, không đổi server hay DB:
+  - **Quiz:**
+    - Trong phiên ẩn thanh tab và nút chọn loại, nút Tiếp ghim đáy, có nút X (G1/Q1/Q3).
+    - Q2: quiz thật đã dùng nghĩa Việt; chỉ dữ liệu mẫu preview là tiếng Anh, đã sửa.
+  - **Cá nhân:**
+    - Xoá tài khoản chữ đỏ, nhóm riêng cuối trang; Đăng xuất chữ thường (P1).
+    - Thẻ Pro có nút "Xem gói Pro" (P3).
+    - Hồ sơ tự lưu (P4).
+  - **Widget:**
+    - Chưa có widget thì "Cách thêm" lên đầu trang (W1).
+    - Theme Pro: nút "Mở khoá với Pro"; paywall mở sau khi sheet đóng; nền một lớp (W3).
+    - Ổ khoá nhỏ thay nhãn PRO (W4).
+    - Căn lề có chữ Trái/Giữa/Phải (W2).
+    - Nguồn từ: công tắc iOS, bỏ đầu mục lặp (W5).
+  - **Nhắc ôn:** đầu mục "Giờ gửi", nút xoá khung giờ trong tấm chọn giờ (M1/M2).
+  - **Chung:**
+    - Màu nhấn xanh toàn app qua AccentColor (G2).
+    - Bớt chữ giải thích, bỏ "Asia/Ho_Chi_Minh" (G4).
+    - "Theme" → "Hình nền" (G5).
+    - Thống nhất tiêu đề và đầu mục, ghi vào `docs/ui-kit.md` (file mới) (G3).
+  - **Dịch:**
+    - Chỉ "Lưu" là nút đặc (T1).
+    - Dòng hạn mức chỉ hiện khi còn ≤ 2 lượt; ổ khoá trên camera/mic khi hết lượt (T2).
+    - Ô nhập ~3 dòng (T3).
+  - **Từ vựng:**
+    - Thẻ widget 1 dòng (S1).
+    - Nút "Ôn N từ này" (S2).
+    - Thanh tiến độ + mời nâng cấp từ 80% (S3).
+    - Nút ghim có chữ (S4).
+    - Kênh nhắc có chữ (R1).
+    - Nút Lọc mở sheet, ghi "Xem N từ" (N1).
+    - Popup từ mới có nghĩa Việt và nút "Lưu từ này" (N2/N3).
+  - **Đăng nhập:**
+    - Apple/Google lên đầu (A2).
+    - Bỏ ô xác nhận mật khẩu (A3).
+    - Ô mã 6 số, tự xác nhận (A4).
+    - "Xem lại điều khoản" (A5).
+  - **Onboarding:** nút nói rõ màn sau (O3); chip minh hoạ bỏ khung, chip gợi ý xuống dòng (O4).
+- **N2 làm một phần:**
+  - Popup tra nghĩa Việt qua `/api/dictionary` (từ kho tra miễn phí).
+  - Danh sách Từ mới chỉ hiện nghĩa Việt với từ đã có trong cache nghĩa Việt của widget; từ khác vẫn hiện định nghĩa Anh.
+  - Muốn đủ nghĩa Việt cho cả kho 7.5k từ thì cần thêm cột hoặc dịch hàng loạt. Đây là việc riêng, chờ chủ dự án quyết.
+- **Chưa làm:**
+  - W4 phần "nhóm có theme miễn phí xếp lên đầu".
+  - S4 phần chiều cao sheet câu.
+- **Test:**
+  - `WidgetPhotoThemeUITests` đỏ từ trước: test chạy bằng gói miễn phí trong khi theme Vũ trụ là theme Pro. Đã cho chạy với `-WordlyProPlan`, giờ xanh.
+  - XCUITest trên iOS 26 không bật/tắt được Toggle SwiftUI (đã thử tap, toạ độ, vuốt, nhấn giữ). Logic khoá nguồn vẫn có unit test.
+- **Bằng chứng:** toàn bộ test iOS 372/372 pass trên Wordly-Test (unit 325, UI 47 — lần đầu từ 6/10 không còn test UI đỏ); mỗi điểm có logic đều thấy RED trước khi viết code; ảnh chụp từng màn đã xem. Web không đổi. **Tiếp:** PR → chủ dự án merge → build 1.0.2 (25) khi được bảo (gồm cả cổng ảnh/giọng nói + sửa màn điều khoản của PR #69).
+
 ### 11/11/2026 (tối) — iOS 1.0.2 (24) ĐÃ UPLOAD TestFlight: quảng cáo mở app + thiết lập lần đầu + widget nền Bàn sáng mai
 
 - **Build 1.0.2 (24) upload 18:38** (archive từ nhánh `feat/free-study-theme` `ed5fc1a`, PR #68 — **chưa merge**): app + widget 24, IPA kiểm `aps-environment = production`, `get-task-allow = false`, 0 cờ xem trước, App ID / ad unit AdMob **thật**. **Lần upload sau: build 25.**
