@@ -3,6 +3,17 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 12/11/2026 — iOS 1.0.2 (25) ĐÃ UPLOAD TestFlight
+
+- PR #70 (sửa giao diện) đã merge. **Build 25 upload lúc 14:14**, archive từ main sau #70 + nhánh `chore/ios-build-25`.
+- **Kiểm IPA:** app và widget đều 25; `aps-environment = production`; `get-task-allow = false`; 0 cờ xem trước; AdMob App ID thật.
+- **Gồm:**
+  - Giới hạn ảnh/giọng nói 1 lượt/ngày cho bản miễn phí (#69).
+  - Màn điều khoản bỏ câu "không quảng cáo" (#69).
+  - Sửa giao diện 33/39 điểm (#70).
+- **Lỗi tìm thấy khi archive:** `WidgetSettingsView` gọi `PreviewMode` (chỉ có ở Debug) mà không bọc `#if DEBUG` → bản Release không biên dịch. Đã sửa trong nhánh này. Test iOS chạy Debug nên không bắt được lỗi này.
+- **Lần upload sau: build 26.**
+
 ### 11/11/2026 (đêm) — Sửa giao diện iOS theo review UI 39 điểm (nhánh `feat/ui-review-fixes`)
 
 - **Nguồn:** báo cáo review UI (uxpeak + Mobbin), 39 điểm. Chủ dự án bảo "start làm luôn".
