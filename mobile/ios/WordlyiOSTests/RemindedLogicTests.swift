@@ -85,4 +85,12 @@ final class RemindedLogicTests: XCTestCase {
         XCTAssertFalse(RemindedLogic.shouldLoadMore(lastPage: old, hasMore: true, pagesLoaded: 1, now: now, calendar: cal))
         XCTAssertFalse(RemindedLogic.shouldLoadMore(lastPage: recent, hasMore: true, pagesLoaded: 4, now: now, calendar: cal))
     }
+
+    // Review UI 11/11 (R1): icon chuông / khoá máy / phong bì không ai hiểu → kèm chữ
+    func testSourcesLabelNamesEachChannel() {
+        XCTAssertEqual(RemindedLogic.sourcesLabel(["push"]), "Thông báo")
+        XCTAssertEqual(RemindedLogic.sourcesLabel(["push", "widget"]), "Thông báo · Widget")
+        XCTAssertEqual(RemindedLogic.sourcesLabel(["email"]), "Email")
+        XCTAssertEqual(RemindedLogic.sourcesLabel([]), "")
+    }
 }

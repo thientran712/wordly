@@ -35,6 +35,8 @@ struct HomeStyleSections: View {
     @ObservedObject private var pro = ProStore.shared
     /// Theme Pro đang xem thử (không lưu)
     @State private var tryOn: WidgetTheme?
+    /// Bấm "Mở khoá với Pro" → mở paywall SAU khi sheet xem thử đóng xong (mở lúc đang đóng bị iOS bỏ qua)
+    @State private var unlockAfterTryOn = false
 
     /// Ảnh của bạn + tuỳ chỉnh màu là Pro (spec §1); chỉ khoá khi server đang chặn.
     private var customLocked: Bool { pro.showsLimits }
@@ -51,14 +53,16 @@ struct HomeStyleSections: View {
             }
             .pickerStyle(.menu)
             themeGrid
-                .sheet(item: $tryOn) { theme in
+                .sheet(item: $tryOn, onDismiss: {
+                    if unlockAfterTryOn { unlockAfterTryOn = false; pro.present(.theme) }
+                }) { theme in
                     ThemeTryOnSheet(theme: theme) {
+                        unlockAfterTryOn = true
                         tryOn = nil
-                        pro.present(.theme)
                     }
                 }
         } header: {
-            HubHeader("Theme", systemImage: "paintpalette")
+            HubHeader("Hình nền", systemImage: "paintpalette")
         } footer: {
             Text("Theme màu hoặc theme ảnh có sẵn, chữ đều dễ đọc.")
         }
@@ -218,7 +222,16 @@ struct HomeStyleSections: View {
                     .overlay(RoundedRectangle(cornerRadius: 12)
                         .stroke(selected ? WordlyColors.electric : Color.primary.opacity(0.12), lineWidth: selected ? 3 : 1))
                     .overlay(alignment: .topTrailing) {
-                        if locked { ProBadge(locked: true).padding(5) }
+                        // Ổ khoá nhỏ thay nhãn PRO to — không che tên theme, lưới không trông như bị chặn (W4)
+                        if locked {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 20, height: 20)
+                                .background(.black.opacity(0.45), in: Circle())
+                                .padding(5)
+                                .accessibilityLabel("Cần Wordly Pro")
+                        }
                     }
                 }
                 .buttonStyle(.plain)
@@ -296,8 +309,9 @@ struct ThemeTryOnSheet: View {
             .frame(height: 150)
             .background { ThemeTileBackground(theme: theme, large: true) }
             .clipShape(RoundedRectangle(cornerRadius: 22))
+            // Sheet chỉ mở cho theme đang khoá → nút nói rõ bấm là ra gói Pro (W3)
             Button(action: unlock) {
-                Text("Dùng theme này")
+                Text("Mở khoá với Pro")
                     .font(WordlyFonts.body(16, weight: .bold))
                     .frame(maxWidth: .infinity).padding(.vertical, 16)
                     .background(WordlyColors.electric).foregroundStyle(WordlyColors.onElectric)
@@ -308,8 +322,11 @@ struct ThemeTryOnSheet: View {
                 .font(WordlyFonts.body(15, weight: .semibold)).foregroundStyle(WordlyColors.inkSoft)
         }
         .padding(24)
+        .frame(maxHeight: .infinity, alignment: .top)
         .presentationDetents([.medium])
-        .screenBackground()
+        // Một lớp nền cho cả sheet — .screenBackground() chỉ phủ khối nội dung nên
+        // trên/dưới lộ nền sheet mặc định thành 2 dải xám
+        .presentationBackground(WordlyColors.background)
     }
 }
 

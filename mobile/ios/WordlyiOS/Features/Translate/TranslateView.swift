@@ -15,6 +15,20 @@ struct TranslateView: View {
     @ObservedObject private var onboarding = OnboardingCenter.shared
     @ObservedObject private var pro = ProStore.shared
 
+    /// Bản miễn phí đã dùng hết lượt hôm nay → ổ khoá nhỏ trên nút (T2), bấm vẫn mở paywall
+    @ViewBuilder
+    private func usedUpLock(_ c: BillingStatus.Counter) -> some View {
+        if ProGate.blocks(c, showsLimits: pro.showsLimits) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 15, height: 15)
+                .background(WordlyColors.duoOrange, in: Circle())
+                .offset(x: 3, y: -3)
+                .accessibilityHidden(true)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -121,7 +135,8 @@ struct TranslateView: View {
                     .font(WordlyFonts.body(22, weight: .medium))
                     .foregroundStyle(WordlyColors.ink)
                     .scrollContentBackground(.hidden)
-                    .frame(minHeight: 130, maxHeight: 220)
+                    // Trong ScrollView TextEditor tự giãn theo nội dung: tối thiểu ~3 dòng (T3, trước 130pt trống)
+                    .frame(minHeight: 96, maxHeight: 220)
                     .focused($inputFocused)
             }
             if vm.isDictating {
@@ -161,6 +176,7 @@ struct TranslateView: View {
                         .background(WordlyColors.hoverBG)
                         .foregroundStyle(WordlyColors.inkSoft)
                         .clipShape(Circle())
+                        .overlay(alignment: .topTrailing) { usedUpLock(pro.status.limits.image) }
                         .disabled(vm.isReadingImage)
                         .accessibilityLabel("Chụp hoặc chọn ảnh để dịch")
                         Button {
@@ -171,6 +187,7 @@ struct TranslateView: View {
                         .background(WordlyColors.hoverBG)
                         .foregroundStyle(WordlyColors.inkSoft)
                         .clipShape(Circle())
+                        .overlay(alignment: .topTrailing) { usedUpLock(pro.status.limits.voice) }
                         .accessibilityLabel("Ghi âm để dịch")
                     }
                     Spacer()
@@ -223,13 +240,13 @@ struct TranslateView: View {
                     .accessibilityLabel("Sao chép")
                     if vm.canLookUp && !vm.dictionaryLocked {
                         Button { vm.retryLookup() } label: {
-                            Label("Tra nghĩa", systemImage: "book.fill")
-                                .font(WordlyFonts.body(13, weight: .bold))
+                            // Hành động phụ: nút viền, không tranh với nút Lưu (T1)
+                            Label("Tra nghĩa", systemImage: "book")
+                                .font(WordlyFonts.body(13, weight: .semibold))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
-                                .background(WordlyColors.duoBlue.opacity(0.14))
-                                .foregroundStyle(WordlyColors.duoBlue)
-                                .clipShape(Capsule())
+                                .foregroundStyle(WordlyColors.inkSoft)
+                                .overlay(Capsule().stroke(WordlyColors.cardBorder, lineWidth: 1))
                         }
                     }
                     Spacer()
@@ -247,8 +264,9 @@ struct TranslateView: View {
                                 .font(WordlyFonts.body(13, weight: .bold))
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 8)
-                                .background(vm.saved ? WordlyColors.electric : WordlyColors.cardBG)
-                                .foregroundStyle(vm.saved ? WordlyColors.onElectric : WordlyColors.electric)
+                                // "Lưu" là hành động chính duy nhất trên thẻ → nền đặc; đã lưu thì lùi về nền thường (T1)
+                                .background(vm.saved ? WordlyColors.cardBG : WordlyColors.electric)
+                                .foregroundStyle(vm.saved ? WordlyColors.electric : WordlyColors.onElectric)
                                 .clipShape(Capsule())
                         }
                         .disabled(!vm.canSave)

@@ -55,6 +55,7 @@ struct TopicVocabularyView: View {
     @StateObject private var vm = TopicVocabularyViewModel()
     @EnvironmentObject private var router: AppRouter
     @State private var selected: TopicWord?
+    @State private var showFilters = false
 
     var body: some View {
         ScrollView {
@@ -90,6 +91,7 @@ struct TopicVocabularyView: View {
         .sheet(item: $selected) { word in
             TopicWordDetailSheet(word: word)
         }
+        .sheet(isPresented: $showFilters) { filterSheet }
         // Bấm widget (từ mới trong kho) → mở popup ngay bằng từ + nghĩa trong
         // link, rồi tải đủ chi tiết (ví dụ, cụm từ…) thay vào cùng popup.
         .onChange(of: router.widgetWord, initial: true) { _, link in
@@ -107,38 +109,85 @@ struct TopicVocabularyView: View {
         }
     }
 
+    /// 1 dòng: tóm tắt bộ lọc + nút "Lọc" (trước là 3 hàng chip cuộn ngang chiếm 1/3 màn — N1)
     private var filters: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            optionalChips(VocabCatalog.exams, selection: $vm.exam, allLabel: "🌐 Mọi kỳ thi") { vm.examCounts[$0.key] }
-            optionalChips(VocabCatalog.topics, selection: $vm.topic, allLabel: "🗂️ Mọi chủ đề") { vm.topicCounts[$0.key] }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    FilterChip(label: "Mọi trình độ", isSelected: vm.level == nil) { set(\.level, nil) }
-                    ForEach(VocabCatalog.levels, id: \.self) { lv in
-                        FilterChip(label: lv, isSelected: vm.level == lv) { set(\.level, lv) }
-                    }
-                }
-                .padding(.horizontal, 16)
+        let n = VocabCatalog.activeFilterCount(exam: vm.exam, topic: vm.topic, level: vm.level)
+        return HStack(spacing: 10) {
+            Text(VocabCatalog.filterSummary(exam: vm.exam, topic: vm.topic, level: vm.level))
+                .font(WordlyFonts.body(14, weight: .semibold))
+                .foregroundStyle(WordlyColors.ink)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            Button { showFilters = true } label: {
+                Label(n > 0 ? "Lọc (\(n))" : "Lọc", systemImage: "line.3.horizontal.decrease")
+                    .font(WordlyFonts.body(14, weight: .bold))
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(n > 0 ? WordlyColors.electricSubtle : WordlyColors.hoverBG)
+                    .foregroundStyle(n > 0 ? WordlyColors.electric : WordlyColors.ink)
+                    .clipShape(Capsule())
             }
+            .accessibilityIdentifier("vocabFilterOpen")
         }
+        .padding(.horizontal, 16)
     }
 
-    private func optionalChips(_ options: [VocabCatalog.Option], selection: Binding<String?>, allLabel: String,
-                               count: @escaping (VocabCatalog.Option) -> Int?) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                FilterChip(label: allLabel, isSelected: selection.wrappedValue == nil) {
-                    selection.wrappedValue = nil
-                    Task { await vm.reload() }
+    /// Sheet 3 nhóm lọc; chọn là áp ngay, nút đáy ghi số từ để biết trước khi đóng.
+    private var filterSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    filterGroup("Kỳ thi", VocabCatalog.exams, selection: \.exam) { vm.examCounts[$0.key] }
+                    filterGroup("Chủ đề", VocabCatalog.topics, selection: \.topic) { vm.topicCounts[$0.key] }
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Trình độ").font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
+                        FlowLayout(spacing: 8) {
+                            ForEach(VocabCatalog.levels, id: \.self) { lv in
+                                FilterChip(label: lv, isSelected: vm.level == lv) { set(\.level, vm.level == lv ? nil : lv) }
+                            }
+                        }
+                    }
                 }
-                ForEach(options) { option in
-                    FilterChip(label: option.label(count: count(option)), isSelected: selection.wrappedValue == option.key) {
-                        selection.wrappedValue = option.key
-                        Task { await vm.reload() }
+                .padding(20)
+            }
+            .safeAreaInset(edge: .bottom) {
+                Button { showFilters = false } label: {
+                    Text(vm.pager.total.map { "Xem \($0) từ" } ?? "Xem kết quả")
+                }
+                .buttonStyle(ElectricButtonStyle(isLoading: vm.state.isLoading, isFullWidth: true))
+                .padding(16)
+                .background(WordlyColors.background)
+                .accessibilityIdentifier("vocabFilterApply")
+            }
+            .screenBackground()
+            .navigationTitle("Lọc từ")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if VocabCatalog.activeFilterCount(exam: vm.exam, topic: vm.topic, level: vm.level) > 0 {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Bỏ lọc") {
+                            vm.exam = nil; vm.topic = nil; vm.level = nil
+                            Task { await vm.reload() }
+                        }
                     }
                 }
             }
-            .padding(.horizontal, 16)
+        }
+        .presentationDetents([.large])
+    }
+
+    private func filterGroup(_ title: String, _ options: [VocabCatalog.Option],
+                             selection: ReferenceWritableKeyPath<TopicVocabularyViewModel, String?>,
+                             count: @escaping (VocabCatalog.Option) -> Int?) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
+            FlowLayout(spacing: 8) {
+                ForEach(options) { option in
+                    let on = vm[keyPath: selection] == option.key
+                    FilterChip(label: option.label(count: count(option)), isSelected: on) {
+                        set(selection, on ? nil : option.key)
+                    }
+                }
+            }
         }
     }
 
@@ -159,8 +208,13 @@ struct TopicWordRow: View {
                 Spacer()
                 if let level = word.level { Badge(text: level, color: WordlyColors.duoBlue) }
             }
-            if let def = word.defEn {
-                Text(def).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft).lineLimit(2)
+            // Nghĩa Việt (nếu đã có trong bảng của widget) trước, định nghĩa Anh sau (N2)
+            let m = BankWordLogic.meanings(vi: BankWordLogic.cachedVi(word.word), en: word.defEn)
+            if !m.main.isEmpty {
+                Text(m.main).font(WordlyFonts.body(14, weight: .semibold)).foregroundStyle(WordlyColors.ink).lineLimit(2)
+            }
+            if let en = m.secondary {
+                Text(en).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft).lineLimit(1)
             }
             if let topic = word.topicLabel {
                 Text(topic).font(WordlyFonts.body(11, weight: .semibold)).foregroundStyle(WordlyColors.inkGhost)
@@ -176,6 +230,12 @@ struct TopicWordDetailSheet: View {
     @StateObject private var tts = TTSManager.shared
     @EnvironmentObject private var router: AppRouter
     @Environment(\.dismiss) private var dismiss
+    @State private var vi: String?
+    @State private var saving = false
+    @State private var saved = false
+    @State private var toast: String?
+
+    private var meanings: (main: String, secondary: String?) { BankWordLogic.meanings(vi: vi, en: word.defEn) }
 
     var body: some View {
         FitContentSheet {
@@ -190,8 +250,14 @@ struct TopicWordDetailSheet: View {
                     accentButton("🇺🇸 US", lang: "en-US")
                     accentButton("🇬🇧 UK", lang: "en-GB")
                 }
-                if let def = word.defEn {
-                    labeled("Nghĩa", def)
+                if !meanings.main.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Nghĩa").font(WordlyFonts.body(13, weight: .bold)).foregroundStyle(WordlyColors.inkSoft)
+                        Text(meanings.main).font(WordlyFonts.body(17, weight: .semibold)).foregroundStyle(WordlyColors.ink)
+                        if let en = meanings.secondary {
+                            Text(en).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.inkSoft)
+                        }
+                    }
                 }
                 if let ex = word.exEn, !ex.isEmpty {
                     labeled("Ví dụ", "“\(ex)”", color: WordlyColors.duoBlue)
@@ -205,19 +271,53 @@ struct TopicWordDetailSheet: View {
                 if let notes = word.usageNotes, !notes.isEmpty {
                     labeled("Lưu ý khi dùng", notes)
                 }
+                // Lưu từ là bước kích hoạt (từ đã lưu mới vào quiz + widget) → nút chính (N3)
+                Button { Task { await save() } } label: {
+                    Label(saved ? "Đã lưu" : "Lưu từ này", systemImage: saved ? "checkmark" : "bookmark.fill")
+                }
+                .buttonStyle(ElectricButtonStyle(isLoading: saving, isFullWidth: true))
+                .disabled(saved || saving || BankWordLogic.meaningToSave(vi: vi) == nil)
+                .accessibilityIdentifier("bankWordSave")
                 if AppRouter.alexPracticeEnabled {
                     Button {
                         dismiss()
                         router.practice(word: word.word, wordId: word.id)
                     } label: {
                         Label("Học từ này với Alex", systemImage: "bubble.left.and.text.bubble.right.fill")
+                            .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(ElectricButtonStyle(isFullWidth: true))
+                    .buttonStyle(GhostButtonStyle())
                 }
             }
             .padding(20)
         }
         .screenBackground()
+        .toast($toast, systemImage: "exclamationmark.circle.fill", color: WordlyColors.duoOrange)
+        .task {
+            vi = BankWordLogic.cachedVi(word.word)
+            // Từ trong kho tra miễn phí (không trừ lượt tra từ mới)
+            if let d = try? await APIClient.shared.lookupWord(word.word), !d.shortMeaningVi.isEmpty {
+                vi = d.shortMeaningVi
+            }
+        }
+    }
+
+    private func save() async {
+        guard let meaning = BankWordLogic.meaningToSave(vi: vi), !saved else { return }
+        saving = true
+        defer { saving = false }
+        do {
+            try await APIClient.shared.markSaved(sourceText: word.word, translatedText: meaning, direction: "EN→VI")
+            saved = true
+            SavedWordsSignal.shared.changed()
+            Task {
+                await WidgetSync.refresh()
+                await ProStore.shared.noteSaved()
+            }
+        } catch {
+            // Hết chỗ lưu (bản miễn phí) → paywall; lỗi khác → báo nhẹ
+            if !ProStore.shared.handle(error) { toast = "Không lưu được, thử lại nhé" }
+        }
     }
 
     private func accentButton(_ label: String, lang: String) -> some View {

@@ -10,25 +10,24 @@ struct WordSourceView: View {
     var body: some View {
         Form {
             Section {
-                checkbox("Từ đã lưu", detail: "Những từ bạn bấm Lưu khi dịch",
-                         isOn: store.settings.includeSaved, id: "sourceSaved") {
-                    store.update { $0.setIncludeSaved(!$0.includeSaved) }
-                }
-                checkbox("Trộn từ mới trong kho", detail: "1 từ mới sau mỗi 2 từ của bạn, theo trình độ của bạn",
-                         isOn: store.settings.includeBank, id: "sourceBank", locked: store.settings.bankLocked) {
-                    store.update { $0.setIncludeBank(!$0.includeBank) }
-                }
+                sourceToggle("Từ đã lưu", detail: "Những từ bạn bấm Lưu khi dịch", id: "sourceSaved",
+                             isOn: Binding(get: { store.settings.includeSaved },
+                                           set: { on in store.update { $0.setIncludeSaved(on) } }))
+                sourceToggle("Trộn từ mới trong kho", detail: "1 từ mới sau mỗi 2 từ của bạn, theo trình độ", id: "sourceBank",
+                             locked: store.settings.bankLocked,
+                             isOn: Binding(get: { store.settings.includeBank },
+                                           set: { on in store.update { $0.setIncludeBank(on) } }))
             } header: {
-                Text("Nguồn từ")
+                // Tiêu đề trang đã là "Nguồn từ" → đầu mục nói nó dùng cho đâu (W5)
+                Text("Dùng cho widget và thông báo nhắc ôn")
             } footer: {
-                Label("Nếu bạn không chọn “Từ đã lưu” (hoặc chưa lưu từ nào), Wordly luôn dùng từ mới trong kho.",
-                      systemImage: "info.circle")
+                Text("Chưa có từ đã lưu thì Wordly dùng từ mới trong kho.")
             }
 
             Section {
                 NavigationLink { PinnedWordsView() } label: {
                     HStack {
-                        Label("Từ ghim", systemImage: "pin.fill")
+                        Label("Chọn từ ghim", systemImage: "pin.fill")
                         Spacer()
                         Text("\(store.settings.validPinCount(savedIds: store.savedIds))/\(WordSourceSettings.maxPins)")
                             .foregroundStyle(WordlyColors.inkSoft)
@@ -37,11 +36,7 @@ struct WordSourceView: View {
                 .accessibilityIdentifier("pinnedEntry")
                 Toggle(isOn: Binding(get: { store.settings.pinnedOnly },
                                      set: { on in store.update { $0.pinnedOnly = on } })) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Chỉ dùng từ ghim")
-                        Text("Bật khi muốn ôn tập trung một danh sách ngắn")
-                            .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
-                    }
+                    Text("Chỉ dùng từ ghim")
                 }
                 .tint(WordlyColors.electric)
                 .accessibilityIdentifier("pinnedOnly")
@@ -52,42 +47,29 @@ struct WordSourceView: View {
             } header: {
                 Text("Từ ghim")
             } footer: {
-                Text("Từ ghim được nhắc nhiều gấp đôi. Ghim nhanh bằng nút 📌 khi xem chi tiết một từ đã lưu.")
+                Text("Từ ghim được nhắc nhiều gấp đôi.")
             }
         }
         .scrollContentBackground(.hidden)
         .screenBackground()
-        .safeAreaInset(edge: .bottom) {
-            Text("Dùng chung cho widget màn hình khoá, màn hình chính và thông báo nhắc ôn.")
-                .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24).padding(.vertical, 10)
-        }
         .navigationTitle("Nguồn từ")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.reload() }
     }
 
-    private func checkbox(_ title: String, detail: String, isOn: Bool, id: String, locked: Bool = false,
-                          action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: isOn ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 22))
-                    .foregroundStyle(isOn ? WordlyColors.electric : WordlyColors.inkSoft)
-                    .opacity(locked ? 0.5 : 1)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).foregroundStyle(WordlyColors.ink)
-                    Text(locked ? "Đang là nguồn duy nhất nên luôn bật" : detail)
-                        .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
-                }
-                Spacer()
+    /// Công tắc iOS (trước là ô tick kiểu web). Nguồn duy nhất còn lại → khoá, không tắt được.
+    private func sourceToggle(_ title: String, detail: String, id: String, locked: Bool = false,
+                              isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).foregroundStyle(WordlyColors.ink)
+                Text(locked ? "Đang là nguồn duy nhất nên luôn bật" : detail)
+                    .font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
             }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .tint(WordlyColors.electric)
+        .disabled(locked)
         .accessibilityIdentifier(id)
-        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }
 
@@ -159,18 +141,17 @@ struct QuickPinButton: View {
         let on = store.settings.isPinned(id)
         Button {
             PinTip().invalidate(reason: .actionPerformed)
-            switch store.update({ $0.togglePin(id) }) {
-            case .pinned: toast = "Đã ghim — gặp từ này nhiều hơn"
-            case .unpinned: toast = "Đã bỏ ghim"
-            case .limitReached: toast = "Tối đa \(WordSourceSettings.maxPins) từ ghim"
+            // Nút tự đổi chữ "Ghim"/"Đã ghim" → không cần thông báo đè lên ví dụ; chỉ báo khi chạm giới hạn (S4)
+            if case .limitReached = store.update({ $0.togglePin(id) }) {
+                toast = "Tối đa \(WordSourceSettings.maxPins) từ ghim"
             }
         } label: {
-            Image(systemName: on ? "pin.fill" : "pin")
-                .font(.system(size: 17, weight: .semibold))
+            Label(on ? "Đã ghim" : "Ghim", systemImage: on ? "pin.fill" : "pin")
+                .font(WordlyFonts.body(13, weight: .bold))
                 .foregroundStyle(on ? WordlyColors.onElectric : WordlyColors.electric)
-                .frame(width: 40, height: 40)
+                .padding(.horizontal, 12).frame(height: 34)
                 .background(on ? WordlyColors.electric : WordlyColors.electricSubtle)
-                .clipShape(Circle())
+                .clipShape(Capsule())
         }
         .accessibilityIdentifier("quickPin")
         .popoverTip(PinTip())

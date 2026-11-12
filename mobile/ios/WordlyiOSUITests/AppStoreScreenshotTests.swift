@@ -36,7 +36,7 @@ final class AppStoreScreenshotTests: XCTestCase {
 
     func test02Saved() {
         let app = launch(["vocab"])
-        XCTAssertTrue(app.staticTexts["Sắp hiện trên widget"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["savedWidgetCard"].waitForExistence(timeout: 10))
         sleep(2)
         snap(app, "02-saved-words")
     }

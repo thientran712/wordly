@@ -10,6 +10,11 @@ enum ResetPasswordLogic {
         code.filter { !$0.isWhitespace }
     }
 
+    /// Ô mã 6 số: chỉ giữ chữ số, tối đa 6 (dán cả câu trong email vẫn lấy đúng mã)
+    static func otpInput(_ raw: String) -> String {
+        String(raw.filter(\.isNumber).prefix(6))
+    }
+
     /// Câu báo lỗi; nil = hợp lệ.
     static func error(code: String, password: String, confirm: String) -> String? {
         let c = normalizedCode(code)

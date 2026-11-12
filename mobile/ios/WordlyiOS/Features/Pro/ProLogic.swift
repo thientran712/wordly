@@ -159,11 +159,25 @@ enum SoftPaywall {
 
 /// Câu bộ đếm luôn thấy (spec §2). nil = không giới hạn → không hiện.
 enum ProCopy {
+    /// Chỉ nhắc khi gần hết (còn ≤ 2) — dòng đếm thường trực chỉ là chữ thừa (review UI 11/11, T2)
     static func advanced(_ c: BillingStatus.Counter) -> String? {
-        c.limit.map { "Còn \(max(0, $0 - c.used))/\($0) lượt dịch câu hôm nay" }
+        guard let limit = c.limit else { return nil }
+        let left = max(0, limit - c.used)
+        guard left <= 2 else { return nil }
+        return left == 0 ? "Hết lượt dịch câu hôm nay" : "Còn \(left) lượt dịch câu hôm nay"
     }
     static func saved(_ c: BillingStatus.Counter) -> String? {
         c.limit.map { "Đã lưu \(c.used)/\($0) từ" }
+    }
+    /// Thanh tiến độ từ đã lưu (0…1); nil khi không giới hạn (S3)
+    static func savedProgress(_ c: BillingStatus.Counter) -> Double? {
+        guard let limit = c.limit, limit > 0 else { return nil }
+        return min(1, Double(c.used) / Double(limit))
+    }
+    /// Từ 80% hạn mức → mời nâng cấp (S3)
+    static func savedNudge(_ c: BillingStatus.Counter) -> String? {
+        guard let p = savedProgress(c), p >= 0.8 else { return nil }
+        return "Nâng cấp để lưu không giới hạn"
     }
     static func dictionary(_ c: BillingStatus.Counter) -> String? {
         c.remaining.map { "Còn \($0) lượt tra từ mới hôm nay" }

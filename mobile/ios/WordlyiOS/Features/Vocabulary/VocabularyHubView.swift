@@ -111,23 +111,20 @@ struct SavedWordsView: View {
     @EnvironmentObject private var router: AppRouter
     @State private var selected: TranslateHistoryEntry?
     @ObservedObject private var pro = ProStore.shared
+    @State private var widgetExpanded = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 widgetCard
-                if pro.showsLimits, let line = ProCopy.saved(pro.status.limits.savedWords) {
-                    ProCounterLine(text: line) { pro.present(.limit(.savedWords, pro.status.limits.savedWords.limit)) }
-                }
-                HStack {
-                    SectionHeader(title: "Từ đã lưu (\(vm.saved.count))")
-                    if !vm.saved.isEmpty {
-                        Button { router.selectedTab = .review } label: {
-                            Label("Ôn bằng quiz", systemImage: "bolt.fill")
-                        }
-                        .font(WordlyFonts.body(13, weight: .bold))
-                        .foregroundStyle(WordlyColors.electric)
+                SectionHeader(title: "Từ đã lưu (\(vm.saved.count))")
+                if pro.showsLimits { savedQuota }
+                // Hành động là nút, có số từ (S2) — quiz lấy tối đa 10 từ
+                if !vm.saved.isEmpty {
+                    Button { router.selectedTab = .review } label: {
+                        Label("Ôn \(min(vm.saved.count, 10)) từ này", systemImage: "bolt.fill")
                     }
+                    .buttonStyle(ElectricButtonStyle(isFullWidth: true))
                 }
                 if vm.isLoading {
                     ProgressView().tint(WordlyColors.electric).frame(maxWidth: .infinity).padding(30)
@@ -166,47 +163,90 @@ struct SavedWordsView: View {
         }
     }
 
+    /// Đã lưu x/30 + thanh tiến độ; ≥ 80% thì mời nâng cấp (S3)
+    @ViewBuilder
+    private var savedQuota: some View {
+        let c = pro.status.limits.savedWords
+        if let line = ProCopy.saved(c), let progress = ProCopy.savedProgress(c) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(line).font(WordlyFonts.body(12)).foregroundStyle(WordlyColors.inkSoft)
+                    Spacer()
+                    if let nudge = ProCopy.savedNudge(c) {
+                        Button(nudge) { pro.present(.limit(.savedWords, c.limit)) }
+                            .font(WordlyFonts.body(12, weight: .bold))
+                            .foregroundStyle(WordlyColors.duoOrange)
+                    }
+                }
+                ProgressView(value: progress)
+                    .tint(progress >= 0.8 ? WordlyColors.duoOrange : WordlyColors.electric)
+                    .accessibilityIdentifier("savedProgress")
+            }
+        }
+    }
+
+    /// Thẻ widget gọn 1 dòng (S1) — danh sách từ đã lưu mới là thứ người dùng mở tab để xem.
+    /// Chạm để mở rộng các từ sắp hiện + nút tuỳ chỉnh.
     private var widgetCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label("Sắp hiện trên widget", systemImage: "lock.iphone")
-                    .font(WordlyFonts.body(13, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.9))
-                Spacer()
+            Button {
+                withAnimation(.snappy) { widgetExpanded.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.iphone").font(.system(size: 13, weight: .bold))
+                    if let next = vm.upcoming.first {
+                        (Text("Tiếp theo trên widget: ").font(WordlyFonts.body(13, weight: .semibold))
+                         + Text(next.word).font(WordlyFonts.body(15, weight: .bold)))
+                            .lineLimit(1)
+                    } else {
+                        Text("Widget xen kẽ từ của bạn với từ mới").font(WordlyFonts.body(13, weight: .semibold)).lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: widgetExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("savedWidgetCard")
+
+            if widgetExpanded {
+                if vm.upcoming.isEmpty {
+                    Text("Lưu từ khi dịch — widget sẽ xen kẽ từ của bạn với từ mới trong kho theo trình độ.")
+                        .font(WordlyFonts.body(13)).foregroundStyle(.white.opacity(0.85))
+                } else {
+                    ForEach(Array(vm.upcoming.enumerated()), id: \.offset) { i, w in
+                        HStack(spacing: 10) {
+                            Image(systemName: w.fromBank ? "sparkles" : "bookmark.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .frame(width: 26, height: 26)
+                                .background(.white.opacity(i == 0 ? 0.3 : 0.15))
+                                .clipShape(Circle())
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(w.word).font(WordlyFonts.body(i == 0 ? 17 : 15, weight: .bold))
+                                Text(w.meaning).font(WordlyFonts.body(12)).opacity(0.8).lineLimit(1)
+                            }
+                            Spacer()
+                            Text(w.fromBank ? "Từ mới" : "Của bạn")
+                                .font(WordlyFonts.body(10, weight: .bold))
+                                .padding(.horizontal, 7).padding(.vertical, 3)
+                                .background(.white.opacity(0.18)).clipShape(Capsule())
+                        }
+                        .foregroundStyle(.white)
+                        .opacity(i == 0 ? 1 : 0.85)
+                    }
+                }
                 NavigationLink { WidgetSettingsView() } label: {
-                    Text("Tuỳ chỉnh").font(WordlyFonts.body(12, weight: .bold))
-                        .padding(.horizontal, 10).padding(.vertical, 5)
+                    Text("Tuỳ chỉnh widget").font(WordlyFonts.body(13, weight: .bold))
+                        .frame(maxWidth: .infinity).padding(.vertical, 8)
                         .background(.white.opacity(0.2)).clipShape(Capsule())
                 }
                 .foregroundStyle(.white)
             }
-            if vm.upcoming.isEmpty {
-                Text("Lưu từ khi dịch — widget sẽ xen kẽ từ của bạn với từ mới trong kho theo trình độ.")
-                    .font(WordlyFonts.body(13)).foregroundStyle(.white.opacity(0.85))
-            } else {
-                ForEach(Array(vm.upcoming.enumerated()), id: \.offset) { i, w in
-                    HStack(spacing: 10) {
-                        Image(systemName: w.fromBank ? "sparkles" : "bookmark.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .frame(width: 26, height: 26)
-                            .background(.white.opacity(i == 0 ? 0.3 : 0.15))
-                            .clipShape(Circle())
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(w.word).font(WordlyFonts.body(i == 0 ? 17 : 15, weight: .bold))
-                            Text(w.meaning).font(WordlyFonts.body(12)).opacity(0.8).lineLimit(1)
-                        }
-                        Spacer()
-                        Text(w.fromBank ? "Từ mới" : "Của bạn")
-                            .font(WordlyFonts.body(10, weight: .bold))
-                            .padding(.horizontal, 7).padding(.vertical, 3)
-                            .background(.white.opacity(0.18)).clipShape(Capsule())
-                    }
-                    .foregroundStyle(.white)
-                    .opacity(i == 0 ? 1 : 0.85)
-                }
-            }
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(LinearGradient(colors: [WordlyColors.duoBlue, WordlyColors.electric],
                                    startPoint: .topLeading, endPoint: .bottomTrailing))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))

@@ -142,6 +142,12 @@ final class QuizViewModel: ObservableObject {
     }
 }
 
+/// true khi tab Ôn tập đang trong một phiên làm bài → ẩn nút chọn loại phía trên.
+struct ReviewSessionActiveKey: PreferenceKey {
+    static let defaultValue = false
+    static func reduce(value: inout Bool, nextValue: () -> Bool) { value = value || nextValue() }
+}
+
 struct QuizView: View {
     @StateObject private var vm = QuizViewModel()
     @StateObject private var tts = TTSManager.shared
@@ -172,10 +178,38 @@ struct QuizView: View {
             }
             .padding(16)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            // Nút chính ghim đáy trong phiên — không bị thanh tab hay nếp gập che
+            if inSession { nextButton.padding(16).background(WordlyColors.background) }
+        }
         .screenBackground()
         .navigationTitle("Quiz từ vựng")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if inSession {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { vm.restart() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel("Thoát quiz")
+                }
+            }
+        }
+        // Đang làm bài: ẩn thanh tab + nút chọn loại (ReviewHubView đọc preference)
+        .toolbar(inSession ? .hidden : .visible, for: .tabBar)
+        .preference(key: ReviewSessionActiveKey.self, value: inSession)
         .animation(.snappy, value: vm.phase)
+    }
+
+    private var inSession: Bool { vm.phase == .playing || vm.phase == .submitting }
+
+    private var nextButton: some View {
+        Button {
+            Task { await vm.next() }
+        } label: {
+            Text(vm.session.isFinished ? "Thử nộp lại" : vm.session.isLastQuestion ? "Xem kết quả" : "Tiếp")
+        }
+        .buttonStyle(ElectricButtonStyle(isLoading: vm.phase == .submitting, isFullWidth: true))
+        .disabled(!vm.session.canAdvance || vm.phase == .submitting)
+        .opacity(vm.session.canAdvance ? 1 : 0.4)
     }
 
     // MARK: Chọn chế độ
@@ -319,14 +353,6 @@ struct QuizView: View {
             if let error = vm.error {
                 Text(error).font(WordlyFonts.body(13)).foregroundStyle(WordlyColors.error)
             }
-            Button {
-                Task { await vm.next() }
-            } label: {
-                Text(vm.session.isFinished ? "Thử nộp lại" : vm.session.isLastQuestion ? "Xem kết quả" : "Tiếp")
-            }
-            .buttonStyle(ElectricButtonStyle(isLoading: vm.phase == .submitting, isFullWidth: true))
-            .disabled(!vm.session.canAdvance || vm.phase == .submitting)
-            .opacity(vm.session.canAdvance ? 1 : 0.4)
         }
     }
 

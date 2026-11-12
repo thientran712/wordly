@@ -152,9 +152,10 @@ struct TermsConsentView: View {
         }
         .confirmationDialog("Không đồng ý thì chưa dùng được Wordly",
                             isPresented: $showDecline, titleVisibility: .visible) {
+            // Lựa chọn an toàn nói rõ nó giữ lại gì: ở lại đọc điều khoản (A5)
+            Button("Xem lại điều khoản") {}
             Button("Chỉ đăng xuất") { leave(delete: false) }
             Button("Xoá tài khoản và dữ liệu", role: .destructive) { leave(delete: true) }
-            Button("Huỷ", role: .cancel) {}
         } message: {
             Text("Bạn có thể đăng xuất (dữ liệu vẫn giữ, lần sau đồng ý là dùng tiếp), hoặc xoá tài khoản cùng toàn bộ dữ liệu.")
         }
