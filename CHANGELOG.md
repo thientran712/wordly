@@ -31,3 +31,11 @@ bản đó được phát hành trên App Store.
 
 ### Fixed
 - Bản Release biên dịch được lại sau #70, build 25 (#71)
+
+### Removed
+- Dọn bảng và hàm DB của hệ quảng cáo thưởng cũ (đã gỡ code từ #65)
+  <details><summary>Chi tiết</summary>
+
+  Migration `20261114000100_remove_old_ads`: xoá `ad_credits`, `ad_rewards`, `theme_unlocks`,
+  `translate_ad_keys`, `translate_charges` + 6 hàm; `usage_daily.kind` còn 4 loại. Bảng đều 0 dòng.
+  </details>
