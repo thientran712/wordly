@@ -22,7 +22,7 @@ bản đó được phát hành trên App Store.
   Đăng nhập Apple/Google lên đầu, ô mã 6 số tự xác nhận; quiz ẩn thanh tab và ghim nút Tiếp;
   hồ sơ tự lưu; kho từ có bộ lọc và nghĩa tiếng Việt; hướng dẫn thêm widget lên đầu khi chưa cài.
   </details>
-- Thu phí Wordly Pro bật lại trên production 14/11/2026 (`BILLING_ENFORCE=1`)
+- Thu phí Wordly Pro bật lại trên production 14/11/2026 (#71)
 
 ### Fixed
-- Bản Release biên dịch được lại sau #70 (build 25)
+- Bản Release biên dịch được lại sau #70, build 25 (#71)
