@@ -3,6 +3,31 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 14/11/2026 (chiều) — Quảng cáo: Pro bỏ quảng cáo, miễn phí 3 lần/ngày; dọn quảng cáo cũ; build 26
+
+- **Merge:** #71 (build 25 + CHANGELOG/`.hf-changelog.json`), #72 (quảng cáo), #73 (dọn quảng cáo cũ).
+- **#72:**
+  - Pro không thấy quảng cáo mở app; bảng giá thêm "Không quảng cáo".
+  - Bản miễn phí 3 lần/ngày, cách nhau ≥ 180 phút. Giãn cách giữ qua nửa đêm, do server gửi `app_open_min_gap_minutes`.
+- **Production:**
+  - `.env`: `ADS_APP_OPEN_PER_DAY=3`, `ADS_APP_OPEN_MIN_GAP_MINUTES=180`. Bản sao lưu: `.env.bak-pre-ads-3x-202611140942`.
+  - Deploy `acc3ba2` qua `deploy-production.yml` (run 43581850075, success).
+  - Đã kiểm: `/api/health` đúng SHA; `/api/app-config` → `{min_build:22, ads:{enabled:true, app_open_per_day:3, app_open_min_gap_minutes:180}}`; khách dịch câu 401.
+  - Build 25 (TestFlight) chưa biết giãn cách → người thử có thể thấy 3 lần liền. Build 22 trên store không đọc khối `ads`.
+- **#73:** migration `20261114000100_remove_old_ads` xoá 5 bảng + 6 hàm quảng cáo thưởng cũ.
+  - Đã kiểm production (chỉ đọc): bảng 0 dòng, không gì khác trỏ tới.
+  - Đã chạy thử trên Postgres local.
+  - **CHƯA chạy production — chờ chủ dự án đồng ý.**
+  - Nhánh `feat/in-app-ads` giữ lại (chủ dự án chốt).
+- **AdMob:**
+  - `app-ads.txt` đã lên `skillproof.work` (Vercel, project `skillproof-production`), deploy từ đúng bản production cũ `248f5ea` + file.
+  - AdMob chỉ tìm ở tên miền gốc của website nhà phát triển (`app.wordly.skillproof.work` → `skillproof.work`).
+  - Cả 6 địa chỉ trả đúng nội dung. Chủ dự án đã bấm "Kiểm tra", chờ Google ≤ 24 giờ.
+  - Tài khoản AdMob đúng là tài khoản có App ID `~4523919461`. Tài khoản `~7693629436` không dùng.
+- **Build 1.0.2 (26):**
+  - Archive xong (kiểm: app + widget 26, AdMob ID thật, 0 cờ xem trước).
+  - **Upload bị chặn:** Apple báo "PLA Update available" → chủ tài khoản phải chấp nhận thoả thuận mới trên developer.apple.com rồi upload lại. Archive ở scratchpad phiên này.
+
 ### 14/11/2026 — BẬT LẠI THU PHÍ WORDLY PRO trên production
 
 - Chủ dự án mở bán lại 2 gói `wordly.pro.monthly` / `wordly.pro.yearly` trên App Store Connect, cả hai đã Approved.
