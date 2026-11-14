@@ -1,5 +1,6 @@
 // Quảng cáo mở app (chủ dự án chốt 11/11/2026): một loại duy nhất — mở app lạnh,
-// tối đa ADS_APP_OPEN_PER_DAY lần/ngày. ADS_ENABLED mặc định TẮT = công tắc khẩn,
+// tối đa ADS_APP_OPEN_PER_DAY lần/ngày, hai lần cách nhau ít nhất
+// ADS_APP_OPEN_MIN_GAP_MINUTES phút (chốt 14/11: 3 lần, 180 phút; Pro không thấy — app tự lọc). ADS_ENABLED mặc định TẮT = công tắc khẩn,
 // tắt được ngay không cần ra bản app mới.
 
 const ON = ["1", "true", "on", "yes"];
@@ -19,6 +20,7 @@ export function adsAppConfig(env = process.env) {
   return {
     enabled: flag(env.ADS_ENABLED),
     app_open_per_day: count(env.ADS_APP_OPEN_PER_DAY, 1),
+    app_open_min_gap_minutes: count(env.ADS_APP_OPEN_MIN_GAP_MINUTES, 0),
   };
 }
 

@@ -7,7 +7,12 @@ bản đó được phát hành trên App Store.
 ## [Unreleased]
 
 ### Added
-- Quảng cáo khi mở app cho bản miễn phí, tối đa 1 lần mỗi ngày (#66)
+- Quảng cáo khi mở app cho bản miễn phí (#66): 3 lần mỗi ngày, cách nhau ít nhất 3 tiếng
+  <details><summary>Chi tiết</summary>
+
+  Server gửi `app_open_per_day` + `app_open_min_gap_minutes` (`ADS_APP_OPEN_MIN_GAP_MINUTES`);
+  giãn cách giữ qua nửa đêm. Gói Pro không thấy quảng cáo, bảng giá thêm "Không quảng cáo".
+  </details>
 - Bộ hình nền widget học tập miễn phí (#68)
 
 ### Changed
