@@ -1,28 +1,33 @@
 import Foundation
 
 // Quảng cáo mở app — logic thuần (chủ dự án chốt 11/11/2026): chỉ khi mở app
-// lạnh, tối đa `appOpenPerDay` lần/ngày, ai cũng thấy. AdsManager chỉ tải/hiện.
+// lạnh, tối đa `appOpenPerDay` lần/ngày. Chốt 14/11/2026: Pro không thấy quảng cáo;
+// hai lần cách nhau ít nhất `appOpenMinGapMinutes`. AdsManager chỉ tải/hiện.
 
 /// Khối `ads` của GET /api/app-config — server bật/tắt + đổi tần suất không cần ra bản mới.
 struct AdsConfig: Decodable, Equatable {
     var enabled: Bool
     var appOpenPerDay: Int
+    /// Khoảng cách tối thiểu giữa 2 lần hiện (phút); 0 = không giãn cách
+    var appOpenMinGapMinutes: Int
 
     static let off = AdsConfig(enabled: false, appOpenPerDay: 0)
 
-    init(enabled: Bool, appOpenPerDay: Int) {
+    init(enabled: Bool, appOpenPerDay: Int, appOpenMinGapMinutes: Int = 0) {
         self.enabled = enabled
         self.appOpenPerDay = appOpenPerDay
+        self.appOpenMinGapMinutes = appOpenMinGapMinutes
     }
 
     enum CodingKeys: String, CodingKey {
-        case enabled, appOpenPerDay = "app_open_per_day"
+        case enabled, appOpenPerDay = "app_open_per_day", appOpenMinGapMinutes = "app_open_min_gap_minutes"
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
         appOpenPerDay = try c.decodeIfPresent(Int.self, forKey: .appOpenPerDay) ?? 1
+        appOpenMinGapMinutes = try c.decodeIfPresent(Int.self, forKey: .appOpenMinGapMinutes) ?? 0
     }
 }
 
@@ -39,6 +44,14 @@ enum OpenSource: Equatable {
 struct AdLedger: Codable, Equatable {
     var day: String
     var appOpenShown: Int
+    /// Lần hiện gần nhất — giữ qua nửa đêm để vẫn giãn cách đúng (sổ của bản cũ không có → nil)
+    var lastShownAt: Date?
+
+    init(day: String, appOpenShown: Int, lastShownAt: Date? = nil) {
+        self.day = day
+        self.appOpenShown = appOpenShown
+        self.lastShownAt = lastShownAt
+    }
 
     static func vnDayKey(_ date: Date) -> String {
         let f = DateFormatter()
@@ -52,20 +65,26 @@ struct AdLedger: Codable, Equatable {
     /// Sổ của ngày `now` — sang ngày mới thì đếm lại từ 0.
     func rolled(now: Date) -> AdLedger {
         let today = Self.vnDayKey(now)
-        return today == day ? self : AdLedger(day: today, appOpenShown: 0)
+        return today == day ? self : AdLedger(day: today, appOpenShown: 0, lastShownAt: lastShownAt)
     }
 
     mutating func noteAppOpen(now: Date) {
         self = rolled(now: now)
         appOpenShown += 1
+        lastShownAt = now
     }
 }
 
 enum AdsPolicy {
     static func shouldShowAppOpen(config: AdsConfig, ledger: AdLedger, source: OpenSource,
-                                  inOnboarding: Bool, now: Date) -> Bool {
-        guard config.enabled, source == .launch, !inOnboarding else { return false }
-        return ledger.rolled(now: now).appOpenShown < config.appOpenPerDay
+                                  inOnboarding: Bool, isPro: Bool, now: Date) -> Bool {
+        guard config.enabled, !isPro, source == .launch, !inOnboarding else { return false }
+        let today = ledger.rolled(now: now)
+        if let last = today.lastShownAt, config.appOpenMinGapMinutes > 0,
+           now.timeIntervalSince(last) < TimeInterval(config.appOpenMinGapMinutes * 60) {
+            return false
+        }
+        return today.appOpenShown < config.appOpenPerDay
     }
 
     /// Dòng "Tuỳ chọn quyền riêng tư" ở Cá nhân — GDPR / luật tiểu bang Mỹ bắt buộc

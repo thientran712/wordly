@@ -71,6 +71,7 @@ struct PaywallView: View {
         ("bookmark.fill", "Lưu từ không giới hạn"),
         ("text.bubble.fill", "Dịch câu, ảnh, giọng nói không giới hạn"),
         ("book.fill", "Tra từ điển chi tiết không giới hạn"),
+        ("nosign", "Không quảng cáo"),
         ("paintpalette.fill", "Tất cả theme widget, ảnh của bạn, tuỳ chỉnh màu"),
         ("bell.badge.fill", "Tối đa 10 khung giờ nhắc ôn mỗi ngày"),
     ]

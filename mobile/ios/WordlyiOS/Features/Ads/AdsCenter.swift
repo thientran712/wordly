@@ -46,6 +46,9 @@ final class AdsCenter: ObservableObject {
         guard let source, source == .launch else { return }
         await refresh()
         guard config.enabled else { return }
+        // Lúc mở lạnh trạng thái Pro có thể chưa tải — lấy ngay (giao dịch trên máy + server) trước khi xét
+        await ProStore.shared.refreshLocal()
+        await ProStore.shared.refreshStatus()
         let onboarding = OnboardingCenter.shared
         guard allowed(source) else {
             // Không hiện quảng cáo lần này — vẫn cập nhật đồng ý cho dòng "Tuỳ chọn quyền riêng tư"
@@ -69,6 +72,7 @@ final class AdsCenter: ObservableObject {
 
     private func allowed(_ source: OpenSource) -> Bool {
         AdsPolicy.shouldShowAppOpen(config: config, ledger: store.load(now: Date()), source: source,
-                                    inOnboarding: OnboardingCenter.shared.intro != .none, now: Date())
+                                    inOnboarding: OnboardingCenter.shared.intro != .none,
+                                    isPro: ProStore.shared.isPro, now: Date())
     }
 }
