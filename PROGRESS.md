@@ -3,6 +3,19 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 14/11/2026 — BẬT LẠI THU PHÍ WORDLY PRO trên production
+
+- Chủ dự án mở bán lại 2 gói `wordly.pro.monthly` / `wordly.pro.yearly` trên App Store Connect, cả hai đã Approved.
+- `.env` production: `BILLING_ENFORCE=0` → `1`, giữ `APP_MIN_BUILD=22`, `ADS_ENABLED=1`. Bản sao lưu: `.env.bak-pre-enforce-202611140845`.
+- Deploy lại `befc902` (phần web không khác `main`) qua `deploy-production.yml`: run 43577331581, success. Container mới là `wordly-green-web-1`.
+- **Đã kiểm:**
+  - Trong container, `BILLING_ENFORCE=1`.
+  - `/api/health` báo đúng SHA.
+  - `/api/app-config` → `{min_build:22, ads:{enabled:true}}`.
+  - Khách dịch câu → **401**; dịch từ đơn → 200.
+- **Chưa kiểm trên máy thật:** bảng giá hiện lại; mua thật bằng tài khoản sandbox.
+- Muốn tắt: đặt `BILLING_ENFORCE=0` rồi chạy lại `deploy-production.yml`.
+
 ### 12/11/2026 — iOS 1.0.2 (25) ĐÃ UPLOAD TestFlight
 
 - PR #70 (sửa giao diện) đã merge. **Build 25 upload lúc 14:14**, archive từ main sau #70 + nhánh `chore/ios-build-25`.
