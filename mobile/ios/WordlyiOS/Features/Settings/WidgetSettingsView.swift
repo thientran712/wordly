@@ -243,11 +243,13 @@ struct WidgetSettingsView: View {
     private var guideFirst: Bool { WidgetHubLayout.addGuideFirst(tab: tab, installed: installed) }
 
     private func loadInstalled() async {
+        #if DEBUG
         if PreviewMode.isOn {
             let on = CommandLine.arguments.contains("-WordlyWidgetInstalled")
             installed = (on, on)
             return
         }
+        #endif
         installed = await OnboardingCenter.installedFamilies()
     }
 

@@ -3,6 +3,30 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 14/11/2026 — BẬT LẠI THU PHÍ WORDLY PRO trên production
+
+- Chủ dự án mở bán lại 2 gói `wordly.pro.monthly` / `wordly.pro.yearly` trên App Store Connect, cả hai đã Approved.
+- `.env` production: `BILLING_ENFORCE=0` → `1`, giữ `APP_MIN_BUILD=22`, `ADS_ENABLED=1`. Bản sao lưu: `.env.bak-pre-enforce-202611140845`.
+- Deploy lại `befc902` (phần web không khác `main`) qua `deploy-production.yml`: run 43577331581, success. Container mới là `wordly-green-web-1`.
+- **Đã kiểm:**
+  - Trong container, `BILLING_ENFORCE=1`.
+  - `/api/health` báo đúng SHA.
+  - `/api/app-config` → `{min_build:22, ads:{enabled:true}}`.
+  - Khách dịch câu → **401**; dịch từ đơn → 200.
+- **Chưa kiểm trên máy thật:** bảng giá hiện lại; mua thật bằng tài khoản sandbox.
+- Muốn tắt: đặt `BILLING_ENFORCE=0` rồi chạy lại `deploy-production.yml`.
+
+### 12/11/2026 — iOS 1.0.2 (25) ĐÃ UPLOAD TestFlight
+
+- PR #70 (sửa giao diện) đã merge. **Build 25 upload lúc 14:14**, archive từ main sau #70 + nhánh `chore/ios-build-25`.
+- **Kiểm IPA:** app và widget đều 25; `aps-environment = production`; `get-task-allow = false`; 0 cờ xem trước; AdMob App ID thật.
+- **Gồm:**
+  - Giới hạn ảnh/giọng nói 1 lượt/ngày cho bản miễn phí (#69).
+  - Màn điều khoản bỏ câu "không quảng cáo" (#69).
+  - Sửa giao diện 33/39 điểm (#70).
+- **Lỗi tìm thấy khi archive:** `WidgetSettingsView` gọi `PreviewMode` (chỉ có ở Debug) mà không bọc `#if DEBUG` → bản Release không biên dịch. Đã sửa trong nhánh này. Test iOS chạy Debug nên không bắt được lỗi này.
+- **Lần upload sau: build 26.**
+
 ### 11/11/2026 (đêm) — Sửa giao diện iOS theo review UI 39 điểm (nhánh `feat/ui-review-fixes`)
 
 - **Nguồn:** báo cáo review UI (uxpeak + Mobbin), 39 điểm. Chủ dự án bảo "start làm luôn".
