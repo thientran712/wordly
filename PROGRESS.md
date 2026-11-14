@@ -24,9 +24,10 @@
   - AdMob chỉ tìm ở tên miền gốc của website nhà phát triển (`app.wordly.skillproof.work` → `skillproof.work`).
   - Cả 6 địa chỉ trả đúng nội dung. Chủ dự án đã bấm "Kiểm tra", chờ Google ≤ 24 giờ.
   - Tài khoản AdMob đúng là tài khoản có App ID `~4523919461`. Tài khoản `~7693629436` không dùng.
-- **Build 1.0.2 (26):**
-  - Archive xong (kiểm: app + widget 26, AdMob ID thật, 0 cờ xem trước).
-  - **Upload bị chặn:** Apple báo "PLA Update available" → chủ tài khoản phải chấp nhận thoả thuận mới trên developer.apple.com rồi upload lại. Archive ở scratchpad phiên này.
+- **Build 1.0.2 (26) ĐÃ UPLOAD TestFlight lúc 16:52.**
+  - Lần đầu bị chặn vì Apple báo "PLA Update available"; chủ dự án đã chấp nhận thoả thuận mới.
+  - Kiểm IPA: app + widget 26, `aps-environment = production`, `get-task-allow = false`, AdMob ID thật, 0 cờ xem trước.
+  - **Lần upload sau: build 27.**
 
 ### 14/11/2026 — BẬT LẠI THU PHÍ WORDLY PRO trên production
 
