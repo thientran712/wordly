@@ -31,6 +31,7 @@ bản đó được phát hành trên App Store.
 
 ### Fixed
 - Bản Release biên dịch được lại sau #70, build 25 (#71)
+- Build 26 cho TestFlight gồm #72 (Pro không quảng cáo, 3 lần/ngày) và #73
 
 ### Removed
 - Dọn bảng và hàm DB của hệ quảng cáo thưởng cũ (đã gỡ code từ #65)
