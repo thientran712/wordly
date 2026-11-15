@@ -3,6 +3,26 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 15/11/2026 — Nộp 1.0.2 (26) lên App Store; AdMob chưa chạy vì 2 lý do
+
+- **App Store:** chủ dự án đã nộp **1.0.2 (26)**, chọn **phát hành thủ công**. Đang chờ Apple duyệt (Waiting for Review).
+  - Nội dung bản cập nhật (What's New) viết tiếng Việt, không có emoji.
+  - Ghi chú cho người duyệt: Pro không có quảng cáo; bản miễn phí 3 lần/ngày, cách 3 tiếng; quảng cáo có thể không hiện vì AdMob đang thiết lập.
+  - App Privacy đã xuất bản từ 11/11, đã gồm dữ liệu AdMob (Identifiers + Usage Data dùng để theo dõi; Location, Diagnostics không gắn với danh tính). Trang `/privacy` đã nói về AdMob và IDFA.
+  - **Khi Apple duyệt xong:** chủ dự án bấm phát hành; đổi CHANGELOG `[Unreleased]` → `[1.0.2] — <ngày>`; cân nhắc nâng `APP_MIN_BUILD` (hiện 22).
+- **PR #74** (build 26 + PROGRESS) đã merge.
+- **AdMob: chưa phân phát quảng cáo vì 2 lý do**
+  1. **Tài khoản trùng lặp:** Google báo tài khoản `pub-8182552012312179` (tài khoản app dùng) "chưa được phê duyệt" vì cùng người có tài khoản thứ 2 (App ID `~7693629436`). Chủ dự án đã huỷ tài khoản 2 và bấm "Gửi lại" ngày 15/11. **Chờ email AdMob báo đã duyệt.**
+  2. **App "Yêu cầu xem xét" và "Chưa được xác minh":** Verify app báo app-ads.txt "không khớp", nhưng mục app-ads.txt cho thấy **chưa có yêu cầu quảng cáo nào**, nên Google chưa quét file.
+     - Bản 1.0.1 trên store (16/10) chưa có SDK AdMob (thêm ngày 23/10). Chỉ khi 1.0.2 lên store thì người dùng thật mới gửi yêu cầu quảng cáo.
+     - Đã kiểm 15/11: app-ads.txt đúng ở `www.skillproof.work` (apex chuyển 308 sang www, được phép) và `app.wordly.skillproof.work`. text/plain, 59 byte, đúng `pub-8182552012312179`, robots.txt không chặn.
+     - **Thứ tự sẽ diễn ra:** tài khoản được duyệt → 1.0.2 phát hành, có yêu cầu quảng cáo → Google quét app-ads.txt (≤ 7 ngày) → bấm Verify app lại → app được duyệt.
+  - **Nên làm:** thêm iPhone của chủ dự án vào AdMob → Cài đặt → Thiết bị thử nghiệm. Không bấm vào quảng cáo của chính mình.
+  - **Đã kiểm phía app (đúng):** App ID và đơn vị quảng cáo Release thật, 50 SKAdNetwork, câu giải thích ATT, xin đồng ý qua UMP trước khi tải quảng cáo.
+  - **Hạn chế, chưa sửa:**
+    - Quảng cáo chỉ hiện nếu tải xong trong 3 giây khi mở lạnh.
+    - Lỗi tải quảng cáo bị nuốt (`try?`), không ghi log. Có thể thêm log cho build 27 nếu chủ dự án muốn.
+
 ### 14/11/2026 (chiều) — Quảng cáo: Pro bỏ quảng cáo, miễn phí 3 lần/ngày; dọn quảng cáo cũ; build 26
 
 - **Merge:** #71 (build 25 + CHANGELOG/`.hf-changelog.json`), #72 (quảng cáo), #73 (dọn quảng cáo cũ).
@@ -17,7 +37,7 @@
 - **#73:** migration `20261114000100_remove_old_ads` xoá 5 bảng + 6 hàm quảng cáo thưởng cũ.
   - Đã kiểm production (chỉ đọc): bảng 0 dòng, không gì khác trỏ tới.
   - Đã chạy thử trên Postgres local.
-  - **CHƯA chạy production — chờ chủ dự án đồng ý.**
+  - **ĐÃ chạy production 14/11/2026 (chủ dự án đồng ý)** trong một transaction: 5 bảng + 6 hàm đã xoá, `usage_daily_kind_check` còn 4 loại. Sao lưu trước khi chạy: `/var/backups/wordly/prod/pre-remove-old-ads-202611141605*.sql` (cả 5 bảng 0 dòng). Sau khi chạy: `/api/app-config` 200, log web không lỗi.
   - Nhánh `feat/in-app-ads` giữ lại (chủ dự án chốt).
 - **AdMob:**
   - `app-ads.txt` đã lên `skillproof.work` (Vercel, project `skillproof-production`), deploy từ đúng bản production cũ `248f5ea` + file.
