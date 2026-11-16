@@ -3,6 +3,14 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 16/11/2026 — 1.0.2 (26) ĐÃ PHÁT HÀNH trên App Store
+
+- Apple duyệt 1.0.2; chủ dự án bấm **Release This Version** ngày 16/11. Bản mới mất tới 24 giờ để hiện với mọi người.
+- CHANGELOG: `[Unreleased]` → `[1.0.2] — 2026-11-16`. Tag `v1.0.2` gắn lên commit merge vào main.
+- **Chưa nâng `APP_MIN_BUILD`** (vẫn 22). Chờ khoảng 3–5 ngày (≈ 19–21/11) rồi mới nâng lên 26, để người dùng 1.0.1 không bị bắt cập nhật khi App Store chưa hiện bản mới cho họ.
+- **AdMob:** giờ người dùng thật bắt đầu gửi yêu cầu quảng cáo → Google sẽ quét app-ads.txt (≤ 7 ngày). Sau đó bấm Verify app lại (nếu tài khoản đã được duyệt lại).
+- **Lần upload TestFlight sau: build 27.**
+
 ### 15/11/2026 — Nộp 1.0.2 (26) lên App Store; AdMob chưa chạy vì 2 lý do
 
 - **App Store:** chủ dự án đã nộp **1.0.2 (26)**, chọn **phát hành thủ công**. Đang chờ Apple duyệt (Waiting for Review).

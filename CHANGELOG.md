@@ -6,6 +6,8 @@ bản đó được phát hành trên App Store.
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-11-16
+
 ### Added
 - Quảng cáo khi mở app cho bản miễn phí (#66): 3 lần mỗi ngày, cách nhau ít nhất 3 tiếng
   <details><summary>Chi tiết</summary>
@@ -31,10 +33,10 @@ bản đó được phát hành trên App Store.
 
 ### Fixed
 - Bản Release biên dịch được lại sau #70, build 25 (#71)
-- Build 26 cho TestFlight gồm #72 (Pro không quảng cáo, 3 lần/ngày) và #73
+- Build 26 lên App Store: Pro không quảng cáo, 3 lần/ngày, dọn quảng cáo cũ (#74)
 
 ### Removed
-- Dọn bảng và hàm DB của hệ quảng cáo thưởng cũ (đã gỡ code từ #65)
+- Dọn bảng và hàm DB của hệ quảng cáo thưởng cũ, code đã gỡ ở #65 (#73)
   <details><summary>Chi tiết</summary>
 
   Migration `20261114000100_remove_old_ads`: xoá `ad_credits`, `ad_rewards`, `theme_unlocks`,
