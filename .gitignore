@@ -55,6 +55,7 @@ next-env.d.ts
 
 # File tạm của Supabase CLI
 supabase/.temp/
+supabase/.branches/
 
 # Mobile — app iOS native (SwiftUI) ở mobile/ios/. .xcodeproj sinh từ project.yml (XcodeGen).
 # Secrets.xcconfig chứa credential thật, KHÔNG BAO GIỜ commit.
