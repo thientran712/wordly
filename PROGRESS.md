@@ -3,6 +3,20 @@
 > **Đọc file này đầu mỗi phiên** để biết đang ở đâu.
 > Quy chuẩn làm việc: `CLAUDE.md`. Thiết kế: `docs/superpowers/specs/`.
 
+### 25/11/2026 — AdMob: nguyên nhân tài khoản bị "trùng lặp" lặp lại
+
+- **Hai tài khoản Google, hai tài khoản AdMob:**
+  - `huythien712@gmail.com` → `pub-8182552012312179`: **tài khoản app dùng**, App ID `~4523919461`.
+  - `huythien7122@gmail.com` → `pub-6934659513941145`: tài khoản thừa. Đã được duyệt 02/11, huỷ 15/11.
+- **Vì sao lặp lại:** ngày 24/11 lúc 06:12:36 UTC, `pub-6934659513941145` được **tạo lại** (có email "Chào mừng"), rồi bị huỷ 26 giây sau. Mỗi lần mở admob.google.com mà Chrome đang ở tài khoản `huythien7122`, AdMob tự tạo lại tài khoản. Google lại thấy một người có 2 tài khoản, nên `pub-8182552012312179` bị đưa về trạng thái "chưa được phê duyệt" và xét lại từ đầu.
+- **Cách tránh:** chỉ mở AdMob bằng `https://admob.google.com/v2/home?authuser=huythien712@gmail.com`. Không bao giờ mở AdMob bằng `huythien7122`.
+- **Trạng thái 25/11:** tài khoản "đang được xác minh" (24 giờ, tối đa 2 tuần kể từ 24/11). Trung tâm chính sách không có vấn đề nào. App "Đang chuẩn bị", "Việc phân phát quảng cáo bị hạn chế". 0 yêu cầu quảng cáo trong 7 ngày; app-ads.txt chưa được quét.
+- **Chưa kiểm được:** vì sao 0 yêu cầu dù 1.0.2 đã lên store và `/api/app-config` trả `ads.enabled=true`.
+  - Đọc code iOS (AdsCenter/AdsManager/ActivationTracker) không thấy lỗi chặn.
+  - Có thể AdMob không ghi yêu cầu khi tài khoản chưa duyệt.
+  - Không xem được log server (SSH bị chặn trong phiên).
+  - Sau khi tài khoản được duyệt mà vẫn 0 yêu cầu → thử trên iPhone thật (thêm vào Thiết bị thử nghiệm) và thêm log lỗi tải quảng cáo ở build 27.
+
 ### 16/11/2026 — 1.0.2 (26) ĐÃ PHÁT HÀNH trên App Store
 
 - Apple duyệt 1.0.2; chủ dự án bấm **Release This Version** ngày 16/11. Bản mới mất tới 24 giờ để hiện với mọi người.
